@@ -8,7 +8,7 @@
  *
  * The logged-in walk (register -> pick the activity -> item -> sale -> order
  * through every stage -> payment -> delivery) is covered in the database by
- * supabase/tests/verticals_order_flow_test.sql, and by hand on staging, per
+ * supabase/staging-checks/verticals_order_flow_test.sql, and by hand on staging, per
  * this project's rule against synthetic accounts.
  */
 import { test, expect } from '@playwright/test';

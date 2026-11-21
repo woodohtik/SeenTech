@@ -8,7 +8,7 @@
  * with statsFromRows (src/components/dashboard/dashboardStats.ts) -- which
  * its own unit test proves equal to the old page code. Read only.
  * Uses `npx supabase db query --linked` (database owner, so RLS is not in
- * play here; supabase/tests/get_dashboard_stats_rls_test.sql covers RLS).
+ * play here; supabase/staging-checks/get_dashboard_stats_rls_test.sql covers RLS).
  */
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';

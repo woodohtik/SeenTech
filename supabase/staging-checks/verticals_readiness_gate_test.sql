@@ -1,5 +1,5 @@
 -- Phase 0 gate (seen-verticals-readiness-task.md): run on staging with
---   npx supabase db query --linked --file supabase/tests/verticals_readiness_gate_test.sql
+--   npx supabase db query --linked --file supabase/staging-checks/verticals_readiness_gate_test.sql
 -- Ends with an exception on purpose so every change rolls back.
 DO $test$
 DECLARE

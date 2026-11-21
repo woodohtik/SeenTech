@@ -1,5 +1,5 @@
 -- get_setup_progress(): RLS test (seen-performance-first-open-login-task.md Phase 4.6).
--- Run on staging: npx supabase db query --linked --file supabase/tests/get_setup_progress_rls_test.sql
+-- Run on staging: npx supabase db query --linked --file supabase/staging-checks/get_setup_progress_rls_test.sql
 -- As an active staff member of shop A (authenticated + their JWT sub):
 --  - their own shop's answers match what the database owner sees;
 --  - asking about shop B (a shop with orders) answers false for everything.

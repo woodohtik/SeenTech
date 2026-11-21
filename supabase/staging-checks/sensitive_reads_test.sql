@@ -1,7 +1,7 @@
 -- seen-permissions-fix-task.md Phase 5 (20270101000005_sensitive_reads).
---   npx supabase db query --linked --file supabase/tests/sensitive_reads_test.sql
+--   npx supabase db query --linked --file supabase/staging-checks/sensitive_reads_test.sql
 -- The financial summary, the dashboard amounts and the customers page are
--- also measured cell by cell by supabase/tests/permissions_matrix.sql. Rolled back.
+-- also measured cell by cell by supabase/staging-checks/permissions_matrix.sql. Rolled back.
 DO $test$
 DECLARE
   T uuid := gen_random_uuid();

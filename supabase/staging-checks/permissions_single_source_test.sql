@@ -1,5 +1,5 @@
 -- seen-permissions-fix-task.md Phase 1 (20270101000000_permissions_single_source).
---   npx supabase db query --linked --file supabase/tests/permissions_single_source_test.sql
+--   npx supabase db query --linked --file supabase/staging-checks/permissions_single_source_test.sql
 -- Rolled back (ends in RAISE EXCEPTION 'PASS: ...').
 DO $test$
 DECLARE

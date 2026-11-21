@@ -1,5 +1,5 @@
 -- The status repair of 20261231000002 on a simulated furniture order, rolled back.
---   npx supabase db query --linked --file supabase/tests/fix_non_mens_order_status_test.sql
+--   npx supabase db query --linked --file supabase/staging-checks/fix_non_mens_order_status_test.sql
 DO $test$
 DECLARE
   o record;

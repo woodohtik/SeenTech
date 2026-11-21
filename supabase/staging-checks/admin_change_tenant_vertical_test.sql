@@ -1,5 +1,5 @@
 -- admin_change_tenant_vertical (seen-verticals-readiness-task.md Phase 7.2), rolled back.
---   npx supabase db query --linked --file supabase/tests/admin_change_tenant_vertical_test.sql
+--   npx supabase db query --linked --file supabase/staging-checks/admin_change_tenant_vertical_test.sql
 DO $test$
 DECLARE
   admin_uid text;

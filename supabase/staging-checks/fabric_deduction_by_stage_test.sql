@@ -1,6 +1,6 @@
 -- Fabric is deducted at the stage that uses it, not before
 -- (seen-verticals-readiness-task.md Phase 2.4 / acceptance criterion).
---   npx supabase db query --linked --file supabase/tests/fabric_deduction_by_stage_test.sql
+--   npx supabase db query --linked --file supabase/staging-checks/fabric_deduction_by_stage_test.sql
 --
 -- trg_orders_deduct_fabric_on_stage fires when orders.status reaches
 -- 'cutting' or later (and not cancelled). orders.status is the stage's

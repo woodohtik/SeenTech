@@ -1,7 +1,7 @@
 -- Selling by length (seen-verticals-readiness-task.md Phase 5): 2.5 m from a
 -- 30 m roll leaves 27.5 m; the line keeps 2.5 at 'meter'; the price is per
 -- metre; returning the 2.5 m puts the stock back to 30. Rolled back.
---   npx supabase db query --linked --file supabase/tests/pos_sale_by_length_test.sql
+--   npx supabase db query --linked --file supabase/staging-checks/pos_sale_by_length_test.sql
 DO $test$
 DECLARE
   o record;

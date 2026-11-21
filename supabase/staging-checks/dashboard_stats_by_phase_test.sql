@@ -1,5 +1,5 @@
 -- get_dashboard_stats by phase (seen-verticals-readiness-task.md Phase 2), rolled back.
---   npx supabase db query --linked --file supabase/tests/dashboard_stats_by_phase_test.sql
+--   npx supabase db query --linked --file supabase/staging-checks/dashboard_stats_by_phase_test.sql
 DO $test$
 DECLARE
   o record;

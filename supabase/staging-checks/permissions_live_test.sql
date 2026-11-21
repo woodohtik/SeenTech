@@ -1,5 +1,5 @@
 -- seen-permissions-fix-task.md Phase 6 (20270101000006_permissions_live).
---   npx supabase db query --linked --file supabase/tests/permissions_live_test.sql
+--   npx supabase db query --linked --file supabase/staging-checks/permissions_live_test.sql
 -- Rolled back.
 DO $test$
 DECLARE

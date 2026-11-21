@@ -4,7 +4,7 @@
  *
  *   npx tsx scripts/permissions/verify-matrix.ts [--out docs/permissions/matrix-before.md] [--check]
  *
- * Runs supabase/tests/permissions_matrix.sql against the linked project
+ * Runs supabase/staging-checks/permissions_matrix.sql against the linked project
  * (staging) -- one rolled-back transaction, no accounts created -- and writes:
  *   - the measured matrix (--out, default docs/permissions/matrix-after.md);
  *   - docs/permissions/matrix-expected.md: what each role should be able to
@@ -55,7 +55,7 @@ export const ACTION_RULES: Record<string, { label: string; needs: string[] | 'al
   'isolation.other_shop_customer_edit': { label: 'تعديل عميل محل آخر', needs: 'never' },
 };
 
-// The test's custom role and personal exception (supabase/tests/permissions_matrix.sql).
+// The test's custom role and personal exception (supabase/staging-checks/permissions_matrix.sql).
 const CUSTOM_SENIOR_CASHIER = [
   'orders.view', 'orders.create', 'orders.update_status', 'payments.collect', 'action.discount',
   'action.refund', 'shifts.manage', 'customers.view', 'customers.create', 'customers.edit',
@@ -85,7 +85,7 @@ export function expectedOutcome(label: string, action: string): 'allow' | 'deny'
 }
 
 function runMatrix(): Measured {
-  const r = spawnSync('npx', ['supabase', 'db', 'query', '--linked', '--file', 'supabase/tests/permissions_matrix.sql'], {
+  const r = spawnSync('npx', ['supabase', 'db', 'query', '--linked', '--file', 'supabase/staging-checks/permissions_matrix.sql'], {
     encoding: 'utf-8', shell: true, maxBuffer: 64 * 1024 * 1024,
   });
   // The CLI prints the error JSON on one stream and "Initialising..." on the other.
@@ -136,7 +136,7 @@ function main() {
   }
 
   const header = (what: string) => `# مصفوفة الصلاحيات — ${what} (${today})\n\n`
-    + 'مقيسة على Staging بـ `supabase/tests/permissions_matrix.sql` (معاملة واحدة تُلغى بالكامل، بلا حسابات دخول). '
+    + 'مقيسة على Staging بـ `supabase/staging-checks/permissions_matrix.sql` (معاملة واحدة تُلغى بالكامل، بلا حسابات دخول). '
     + 'الوضع (أ): الموظف بهويته. الوضع (ب): جهاز بحساب المالك والموظف داخل بالـ PIN.\n\n'
     + '✅ سماح · ⛔ منع · ⚠️ خطأ (بنصّه)\n\n';
   const measuredMd = header('النتيجة الفعلية')

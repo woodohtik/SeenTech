@@ -1,5 +1,5 @@
 -- get_session_identity(): RLS test (seen-performance-first-open-login-task.md Phase 3).
--- Run on staging:  npx supabase db query --linked --file supabase/tests/get_session_identity_test.sql
+-- Run on staging:  npx supabase db query --linked --file supabase/staging-checks/get_session_identity_test.sql
 -- Picks two active staff members of two different shops, then, as each of
 -- them (authenticated role + their JWT sub), checks the function returns
 -- their own shop and nothing of the other. Ends with an exception on

@@ -1,5 +1,5 @@
 -- get_dashboard_stats(): RLS test (seen-performance-first-open-login-task.md Phase 4.3).
--- Run on staging: npx supabase db query --linked --file supabase/tests/get_dashboard_stats_rls_test.sql
+-- Run on staging: npx supabase db query --linked --file supabase/staging-checks/get_dashboard_stats_rls_test.sql
 -- As an active staff member of shop A (authenticated + their JWT sub):
 --  - their own shop's figures match what the database owner sees;
 --  - asking for shop B (a shop with orders) returns nothing of B: zeros.

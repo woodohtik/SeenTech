@@ -1,6 +1,6 @@
 # الصلاحيات — المرحلة 0: ما يقبله الخادم اليوم
 
-المهمة: `seen-permissions-fix-task.md`. القياس على Staging بـ `supabase/tests/permissions_matrix.sql`، ويشغّله `scripts/permissions/verify-matrix.ts`.
+المهمة: `seen-permissions-fix-task.md`. القياس على Staging بـ `supabase/staging-checks/permissions_matrix.sql`، ويشغّله `scripts/permissions/verify-matrix.ts`.
 
 - **الملفات:**
   - [`matrix-before.md`](matrix-before.md): النتيجة الفعلية في الوضعين، والفرق عن المتوقع (185 خانة).

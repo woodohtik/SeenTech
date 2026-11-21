@@ -1,5 +1,5 @@
 -- seen-permissions-fix-task.md Phase 2 (20270101000001_staff_acting_sessions).
---   npx supabase db query --linked --file supabase/tests/staff_acting_sessions_test.sql
+--   npx supabase db query --linked --file supabase/staging-checks/staff_acting_sessions_test.sql
 -- Rolled back (ends in RAISE EXCEPTION 'PASS: ...'). No account is created:
 -- staff rows are named in request.jwt.claims, the PIN token in request.headers.
 DO $test$

@@ -2,7 +2,7 @@
 -- every vertical, the way the app drives it (create_tailoring_order,
 -- update_order_status with the stage's legacy_status, record_order_payment),
 -- as a real shop owner. Rolled back at the end -- nothing stays.
---   npx supabase db query --linked --file supabase/tests/verticals_order_flow_test.sql
+--   npx supabase db query --linked --file supabase/staging-checks/verticals_order_flow_test.sql
 --
 -- At every stage it checks:
 --   - orders.status is the stage's legacy_status (no stage before "ready" is

@@ -1,6 +1,6 @@
 -- tenants.tax_settings, tenant_tax_rules and the sync trigger
 -- (migration 20261230000000; team review M-8 / action 17).
--- Run on staging: npx supabase db query --linked --file supabase/tests/tenant_tax_settings_test.sql
+-- Run on staging: npx supabase db query --linked --file supabase/staging-checks/tenant_tax_settings_test.sql
 -- Ends with an exception on purpose so every change rolls back: the message
 -- says PASS or FAIL.
 DO $test$

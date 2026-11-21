@@ -1,6 +1,6 @@
 -- seen-permissions-fix-task.md Phase 0: the permissions matrix, measured on
 -- the server (the database the app calls), not through the UI.
---   npx supabase db query --linked --file supabase/tests/permissions_matrix.sql
+--   npx supabase db query --linked --file supabase/staging-checks/permissions_matrix.sql
 -- (scripts/permissions/verify-matrix.ts runs it and writes the markdown.)
 --
 -- Everything happens inside one transaction that ends in RAISE EXCEPTION, so

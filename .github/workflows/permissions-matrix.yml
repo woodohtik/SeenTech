@@ -1,0 +1,55 @@
+# seen-permissions-fix-task.md Phase 7: the permissions matrix, measured on
+# staging, compared with docs/permissions/matrix-expected.md. Runs by hand
+# (Actions > Permissions matrix > Run workflow) and nightly.
+#
+# It needs two repository secrets (Settings > Secrets and variables > Actions):
+#   SUPABASE_ACCESS_TOKEN  -- a Supabase personal access token
+#   STAGING_DB_PASSWORD    -- the staging database password
+# Until they exist the job stops at "Link staging" and nothing else runs.
+# The check runs inside one rolled-back transaction: it leaves nothing on
+# staging and creates no login account.
+name: Permissions matrix (staging)
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '30 2 * * *'
+
+permissions:
+  contents: read
+
+jobs:
+  matrix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: 'npm'
+
+      - run: npm ci
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 2.114.0
+
+      - name: Link staging
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.STAGING_DB_PASSWORD }}
+        run: supabase link --project-ref yodvqhdjzjyhvrlhguzf
+
+      - name: Measure and compare
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: npx tsx scripts/permissions/verify-matrix.ts --out matrix-ci.md --check
+
+      - name: Keep the measured matrix
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: permissions-matrix
+          path: matrix-ci.md
+          if-no-files-found: ignore
