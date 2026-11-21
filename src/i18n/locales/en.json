@@ -2141,7 +2141,8 @@
     "work_card_title": "Work card",
     "print_work_card": "Print work card",
     "work_card_delivery": "Delivery date",
-    "work_card_notes": "Notes"
+    "work_card_notes": "Notes",
+    "fabric_enter_manually": "Enter the metres this item uses by hand"
   },
   "permissions": {
     "access_denied_desc": "Not specified",

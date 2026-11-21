@@ -4,7 +4,7 @@ import { fuzzyIncludes } from '../utils/fuzzySearch';
 import { useDebouncedValue } from '../hooks/useDebouncedValue';
 import { useMeasurementUnit } from '../hooks/useMeasurementUnit';
 import { cmToDisplayUnit, unitLabelKey } from '../utils/measurementUnits';
-import { measurementRows } from '../constants/measurementFields';
+import { measurementRows, measurementSetFor } from '../constants/measurementFields';
 import { orderItemRowToLine, cuttingFabricLines, isFabricDeductionDue, type CuttingFabricLine } from '../utils/tailoringOrder';
 import CuttingFabricDialog from './CuttingFabricDialog';
 import { createPortal } from 'react-dom';
@@ -1653,8 +1653,8 @@ export default function Orders({ tenantId }: { tenantId: string }) {
               </div>
             </section>
 
-            {/* Customer Measurements */}
-            {orderMeasurements(order) && (
+            {/* Customer Measurements -- only for an activity that takes them (Phase 4). */}
+            {measurementSetFor(capabilities.body_measurements).length > 0 && orderMeasurements(order) && (
               <section className="space-y-4">
                 <h3 className="text-xs font-black text-content-muted uppercase tracking-widest flex items-center gap-2">
                   <Ruler size={14} />

@@ -78,7 +78,7 @@ import VariantPickerModal from './ui/VariantPickerModal';
 import { isRtlLang } from '../lib/direction';
 import { useMeasurementUnit } from '../hooks/useMeasurementUnit';
 import { cmToDisplayUnit, unitLabelKey, type MeasurementUnit } from '../utils/measurementUnits';
-import { measurementRows } from '../constants/measurementFields';
+import { measurementRows, measurementSetFor } from '../constants/measurementFields';
 import { useVerticalConfig } from '../hooks/useVerticalConfig';
 import { useTenantCategoryPicker } from '../hooks/useTenantCategoryPicker';
 import { LEGACY_INVENTORY_CATEGORY_SEED } from '../services/categoryService';
@@ -893,7 +893,9 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
   // مستأجر (tenant_categories) بدل القيمة الثابتة category -- تبويبات
   // النقطة تقرأ الآن category_key (الحر) مع رجوع آمن لـcategory (enum
   // القديم) للعناصر التي لا تحمل category_key بعد.
-  const { inventoryCategories, isLegacyVertical } = useVerticalConfig();
+  const { inventoryCategories, isLegacyVertical, capabilities } = useVerticalConfig();
+  // Measurements print only for an activity that takes them (Phase 4).
+  const hasBodyMeasurements = measurementSetFor(capabilities.body_measurements).length > 0;
   const posCategorySeed = useMemo(
     () =>
       isLegacyVertical
@@ -1460,7 +1462,7 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
            // actually configured (ProductFormFields.tsx lets a product be
            // exclusive or exempt too).
            taxType: item.taxType,
-           measurements: buildInvoiceMeasurements(item, selectedCustomer, t, measurementUnit)
+           measurements: hasBodyMeasurements ? buildInvoiceMeasurements(item, selectedCustomer, t, measurementUnit) : undefined
          })),
          qrCode: qrCodeBase64,
          issuedAt: timestamp

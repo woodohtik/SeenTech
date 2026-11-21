@@ -31,7 +31,7 @@ import { createTailoringOrder } from '../services/tailoringOrderService';
 import { formatItemStock, type ContentUnit } from '../utils/fabricUomConverter';
 import { formatSaudiPhone } from '../utils/phoneUtils';
 import { cmToDisplayUnit, unitLabelKey } from '../utils/measurementUnits';
-import { measurementRows } from '../constants/measurementFields';
+import { measurementRows, measurementSetFor } from '../constants/measurementFields';
 import { estimateFabricMeters, fabricInputFromMeasurements } from '../utils/fabricEstimate';
 import {
   computeLineFabric, computeTailoringTotals, fabricFromContentUnit, fabricInContentUnit,
@@ -416,7 +416,12 @@ function TailoringOrderFormBody({
   const { currentStaff } = useStaff();
   const { user: currentAuthUser } = useAuth();
   const { hasPermission } = usePermissions(currentStaff);
-  const { workflowStages, orderItemFields, isLegacyVertical } = useVerticalConfig();
+  const { workflowStages, orderItemFields, isLegacyVertical, capabilities } = useVerticalConfig();
+  // Phase 4 of seen-verticals-readiness-task.md: the activity's own
+  // measurement set (thobe for men's tailoring, as before; none -- the
+  // section is hidden -- for an activity without an approved set).
+  const hasBodyMeasurements = measurementSetFor(capabilities.body_measurements).length > 0;
+  const estimatesFabricFromMeasurements = capabilities.body_measurements === 'thobe';
   const measurementUnit = useMeasurementUnit(tenantId);
   const fabricEstimateSettings = useFabricEstimateSettings(tenantId);
   const voiceSupported = isSpeechRecognitionSupported();
@@ -573,7 +578,8 @@ function TailoringOrderFormBody({
   const lineFabric = (item: any) => {
     const isExternal = item?.fabric === EXTERNAL_FABRIC;
     const fabricRow = fabrics.find((f) => f.id === item?.fabricId);
-    const perPieceMeters = isLegacyVertical && (isExternal || fabricRow)
+    // The thobe formula as before; any other activity enters the metres by hand.
+    const perPieceMeters = estimatesFabricFromMeasurements && (isExternal || fabricRow)
       ? estimateFabricMeters(
           fabricInputFromMeasurements(activeMeasurements, fabricRow ? Number(fabricRow.fabric_width_cm) || null : null),
           fabricEstimateSettings
@@ -879,8 +885,8 @@ function TailoringOrderFormBody({
               </div>
             </div>
 
-            {/* Measurements */}
-            {selectedCustomer && (
+            {/* Measurements -- only for an activity that takes them (Phase 4). */}
+            {selectedCustomer && hasBodyMeasurements && (
               <div className="bg-brand/5 p-4 sm:p-5 rounded-3xl border border-brand/10 space-y-4">
                 <div className="flex items-center justify-between text-brand">
                   <div className="flex items-center gap-2">
@@ -1061,11 +1067,15 @@ function TailoringOrderFormBody({
                     </div>
 
                     {/* Fabric for the line */}
-                    {isLegacyVertical && fabric.hasFabric && (
+                    {capabilities.fabric_consumption && fabric.hasFabric && (
                       <div className="md:col-span-4 rounded-xl border border-brand/15 bg-surface px-3 py-2 flex flex-wrap items-center gap-x-4 gap-y-2">
                         <p className="text-sm font-bold text-content flex-1 min-w-[220px]" role="status">
                           {fabric.perPieceMeters === null ? (
-                            <span className="text-xs text-content-muted">{t('measurements.fabric_estimate_missing')}</span>
+                            <span className="text-xs text-content-muted">
+                              {estimatesFabricFromMeasurements
+                                ? t('measurements.fabric_estimate_missing')
+                                : t('orders.fabric_enter_manually', 'أدخل الأمتار المستهلكة لهذا الصنف يدوياً')}
+                            </span>
                           ) : (
                             <>
                               {t('orders.fabric_line', {

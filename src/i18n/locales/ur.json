@@ -2139,7 +2139,8 @@
     "work_card_title": "ورک کارڈ",
     "print_work_card": "ورک کارڈ پرنٹ کریں",
     "work_card_delivery": "حوالگی کی تاریخ",
-    "work_card_notes": "نوٹس"
+    "work_card_notes": "نوٹس",
+    "fabric_enter_manually": "اس آئٹم میں استعمال ہونے والے میٹر خود درج کریں"
   },
   "permissions": {
     "access_denied_desc": "غیر متعین",

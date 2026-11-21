@@ -74,6 +74,26 @@ export const MEASUREMENT_FIELDS: readonly MeasurementField[] = [
 
 export const MEASUREMENT_KEYS: readonly MeasurementKey[] = MEASUREMENT_FIELDS.map((f) => f.key);
 
+/**
+ * Measurement sets by activity (seen-verticals-readiness-task.md Phase 4):
+ * verticals.capabilities.body_measurements names the set a shop uses.
+ * `thobe` is the 15 fields above, unchanged. `womens` stays empty until the
+ * founder approves its list (task file question 4) -- an empty set means the
+ * measurements section is not shown at all, rather than thobe measurements
+ * on a women's or furniture order.
+ */
+export type MeasurementSetKey = 'thobe' | 'womens';
+export const MEASUREMENT_SETS: Readonly<Record<MeasurementSetKey, readonly MeasurementField[]>> = {
+  thobe: MEASUREMENT_FIELDS,
+  womens: [],
+};
+
+/** The measurement fields of a shop's activity; empty when it takes none (or its set is not approved yet). */
+export function measurementSetFor(bodyMeasurements: string | null | undefined): readonly MeasurementField[] {
+  if (!bodyMeasurements) return [];
+  return MEASUREMENT_SETS[bodyMeasurements as MeasurementSetKey] ?? [];
+}
+
 export const LEGACY_MEASUREMENT_FIELDS: readonly { key: LegacyMeasurementKey; maxCm: number }[] = [
   { key: 'midSleeveWidth', maxCm: 100 },
   { key: 'hips', maxCm: 200 },

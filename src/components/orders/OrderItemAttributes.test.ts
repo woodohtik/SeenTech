@@ -38,7 +38,7 @@ describe('a line\'s specs', () => {
 
 describe('an invoice\'s lines get the order lines\' specs', () => {
   test('in order, custom lines only', () => {
-    const items = [{ type: 'custom', garmentType: 'كنب' }, { type: 'ready_made', name: 'وسادة' }, { type: 'custom', garmentType: 'كرسي' }];
+    const items: Array<Record<string, any>> = [{ type: 'custom', garmentType: 'كنب' }, { type: 'ready_made', name: 'وسادة' }, { type: 'custom', garmentType: 'كرسي' }];
     const out = attachLineAttributes(items, [{ attributes: { wood_type: 'زان' } }, { attributes: { wood_type: 'سويد' } }]);
     expect(out[0].attributes).toEqual({ wood_type: 'زان' });
     expect((out[1] as any).attributes).toBeUndefined();

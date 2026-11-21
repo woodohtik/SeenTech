@@ -2141,7 +2141,8 @@
     "work_card_title": "بطاقة عمل",
     "print_work_card": "طباعة بطاقة العمل",
     "work_card_delivery": "تاريخ التسليم",
-    "work_card_notes": "ملاحظات"
+    "work_card_notes": "ملاحظات",
+    "fabric_enter_manually": "أدخل الأمتار المستهلكة لهذا الصنف يدوياً"
   },
   "permissions": {
     "access_denied_desc": "غير محدد",

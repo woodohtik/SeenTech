@@ -3,7 +3,8 @@ import { useDebouncedValue } from '../hooks/useDebouncedValue';
 import { useMeasurementUnit } from '../hooks/useMeasurementUnit';
 import { useFabricEstimateSettings } from '../hooks/useFabricEstimateSettings';
 import { cmToDisplayUnit, unitLabelKey, type MeasurementUnit } from '../utils/measurementUnits';
-import { MEASUREMENT_KEYS, measurementLabelKey, measurementRows } from '../constants/measurementFields';
+import { MEASUREMENT_KEYS, measurementLabelKey, measurementRows, measurementSetFor } from '../constants/measurementFields';
+import { useVerticalConfig } from '../hooks/useVerticalConfig';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import DateTimeDisplay from './DateTimeDisplay';
@@ -98,6 +99,8 @@ interface CustomersProps {
 }
 
 export default function Customers({ tenantId }: CustomersProps) {
+  const { capabilities: verticalCapabilities } = useVerticalConfig();
+  const hasBodyMeasurements = measurementSetFor(verticalCapabilities.body_measurements).length > 0;
   const { t, i18n } = useTranslation();
   // Unsupported browsers render VoiceMicButton as null -- without this
   // gate, IconInput's endIcon (array or single element) would still count
@@ -1256,6 +1259,8 @@ export default function Customers({ tenantId }: CustomersProps) {
                                   </div>
                                 </button>
 
+                                {/* Only for an activity that takes measurements (Phase 4). */}
+                                {hasBodyMeasurements && (
                                 <button
                                   type="button"
                                   onClick={() => {
@@ -1269,6 +1274,7 @@ export default function Customers({ tenantId }: CustomersProps) {
                                     <Ruler size={12} />
                                   </div>
                                 </button>
+                                )}
 
                                 {canEdit && (
                                   <>
@@ -1577,6 +1583,8 @@ export default function Customers({ tenantId }: CustomersProps) {
                               </button>
 
                               {/* Send Measurements Link */}
+                              {/* Only for an activity that takes measurements (Phase 4). */}
+                              {hasBodyMeasurements && (
                               <button
                                 type="button"
                                 onClick={() => {
@@ -1590,6 +1598,7 @@ export default function Customers({ tenantId }: CustomersProps) {
                                   <Ruler size={12} />
                                 </div>
                               </button>
+                              )}
 
                               {canEdit && (
                                 <>
@@ -1816,7 +1825,7 @@ export default function Customers({ tenantId }: CustomersProps) {
                   </div>
                 </div>
 
-                {editingCustomer?.measurementsToken && (
+                {hasBodyMeasurements && editingCustomer?.measurementsToken && (
                   <button
                     type="button"
                     onClick={() => sendMeasurementsLink({ ...editingCustomer, phone: watch('phone'), name: watch('name') })}
@@ -1862,6 +1871,10 @@ export default function Customers({ tenantId }: CustomersProps) {
                   </div>
                 </div>
 
+                {/* Measurements: only for an activity that takes them -- thobe for
+                    men's tailoring, as before (seen-verticals-readiness-task.md Phase 4). */}
+                {hasBodyMeasurements && (
+                <>
                 <h4 className="text-lg font-bold text-content mb-4 flex items-center gap-2">
                   <Zap size={20} className="text-brand" />
                   {t('customers.visual_details_and_interactive_measurements')}
@@ -1890,6 +1903,9 @@ export default function Customers({ tenantId }: CustomersProps) {
                     fabricEstimate={{ settings: fabricEstimateSettings }}
                   />
                 </div>
+
+                </>
+                )}
 
                 <div className="space-y-2 mb-8 mt-8 pt-8 border-t border-border">
                   <label htmlFor="customer-notes" className="text-sm font-bold text-content-muted">{t('customers.additional_notes')}</label>
@@ -2047,6 +2063,8 @@ const CustomerDetailsModal = ({
   visualIcons: Record<string, React.ReactNode>,
   measurementUnit: MeasurementUnit
 }) => {
+  const { capabilities: verticalCapabilities } = useVerticalConfig();
+  const hasBodyMeasurements = measurementSetFor(verticalCapabilities.body_measurements).length > 0;
   const { t, i18n } = useTranslation();
   const isRtl = isRtlLang(i18n.language);
 
@@ -2101,6 +2119,8 @@ const CustomerDetailsModal = ({
              </DetailSection>
           )}
 
+{hasBodyMeasurements && (
+          <>
           {/* Measurements Section */}
           <DetailSection title={t('customers.current_measurements')} icon={Ruler}>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
@@ -2125,6 +2145,8 @@ const CustomerDetailsModal = ({
               })}
             </div>
           </DetailSection>
+          </>
+          )}
 
           {/* Visual Details Section */}
           <DetailSection title={t('customers.visual_details_chart')} icon={Zap}>
