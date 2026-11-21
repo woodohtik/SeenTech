@@ -352,7 +352,7 @@ INSERT INTO public.role_default_permissions (role_key, permission_key, allowed) 
   ('cashier', 'settings.view', false),
   ('cashier', 'orders.create', true),
   ('cashier', 'orders.view_details', true),
-  ('cashier', 'orders.update_status', false),
+  ('cashier', 'orders.update_status', true),
   ('cashier', 'orders.edit', false),
   ('cashier', 'orders.delete', false),
   ('cashier', 'invoices.view', true),

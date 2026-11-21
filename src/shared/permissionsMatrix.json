@@ -273,6 +273,7 @@
       "inventory.view",
       "orders.create",
       "orders.view_details",
+      "orders.update_status",
       "invoices.view",
       "payments.collect",
       "action.discount",

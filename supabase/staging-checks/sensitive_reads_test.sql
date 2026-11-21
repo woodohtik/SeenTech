@@ -56,7 +56,11 @@ BEGIN
   RESET ROLE;
   checks := checks + 1;
 
-  -- 3. The cashier may take the payment but not deliver in the same step (no orders.update_status).
+  -- 3. A cashier without orders.update_status (taken away by a personal exception;
+  --    cashiers hold it by default) may take the payment but not deliver in the same step.
+  SET LOCAL session_replication_role = replica;
+  INSERT INTO public.user_permission_overrides (tenant_id, staff_id, overrides) VALUES (T, s_cash, '{"orders.update_status": false}'::jsonb);
+  SET LOCAL session_replication_role = origin;
   PERFORM set_config('request.jwt.claims', json_build_object('sub', cash, 'role', 'authenticated')::text, true);
   SET LOCAL ROLE authenticated;
   BEGIN
