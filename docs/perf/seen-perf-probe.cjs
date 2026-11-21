@@ -206,6 +206,19 @@ function tableData(table, url) {
   const perf = await page.evaluate(() => window.__perf);
   const navTiming = await page.evaluate(() => { const n = performance.getEntriesByType('navigation')[0]; return { domContentLoaded: n.domContentLoadedEventEnd, load: n.loadEventEnd }; });
   await page.screenshot({ path: `perf-out/${process.env.TAG||""}${scenario}-${profile}${process.env.DATA === 'big' ? '-big' : ''}.png` });
+  // Visual regression (seen-verticals-readiness-task.md Phase 8): SHOTS=/orders,/sales
+  // SHOT_DIR=out -> one screenshot per page, motion reduced, after the page settles.
+  if (process.env.SHOTS && process.env.SHOT_DIR) {
+    const fs = require('fs');
+    fs.mkdirSync(process.env.SHOT_DIR, { recursive: true });
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    for (const path of process.env.SHOTS.split(',')) {
+      await page.evaluate((p) => { window.history.pushState({}, '', p); window.dispatchEvent(new PopStateEvent('popstate')); }, path);
+      await page.waitForTimeout(Number(process.env.SHOT_WAIT || 6000));
+      await page.mouse.move(0, 0);
+      await page.screenshot({ path: `${process.env.SHOT_DIR}/${path.replace(/\W+/g, '_') || 'root'}.png` });
+    }
+  }
   await browser.close();
 
   const sumBytes = (f) => reqs.filter(f).reduce((a, r) => a + (r.bytes || 0), 0);
