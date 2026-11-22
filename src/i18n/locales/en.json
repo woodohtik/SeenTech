@@ -1530,7 +1530,11 @@
     "cost_price_per_meter": "Purchase price (cost) per meter",
     "selling_price_per_meter": "Selling price per meter",
     "fabric_width_cm": "Cloth width (cm)",
-    "fabric_width_hint": "Optional. Used to estimate fabric per thobe; when empty, the default width from Settings is used."
+    "fabric_width_hint": "Optional. Used to estimate fabric per thobe; when empty, the default width from Settings is used.",
+    "transfer_reject": "Reject the transfer",
+    "transfer_cancel": "Cancel the transfer",
+    "transfer_cancel_returns_stock": "The shipped stock goes back to the sending branch.",
+    "transfer_reject_reason": "Reason"
   },
   "invoice_print": {
     "address": "Address",

@@ -1530,7 +1530,11 @@
     "cost_price_per_meter": "سعر الشراء (التكلفة) للمتر",
     "selling_price_per_meter": "سعر البيع للمتر",
     "fabric_width_cm": "عرض القماش (سم)",
-    "fabric_width_hint": "اختياري. يُستعمل لحساب قماش الثوب، وإن تُرك فارغاً يُؤخذ العرض الافتراضي من الإعدادات."
+    "fabric_width_hint": "اختياري. يُستعمل لحساب قماش الثوب، وإن تُرك فارغاً يُؤخذ العرض الافتراضي من الإعدادات.",
+    "transfer_reject": "رفض السند",
+    "transfer_cancel": "إلغاء النقل",
+    "transfer_cancel_returns_stock": "الكمية المشحونة تعود إلى الفرع المرسل.",
+    "transfer_reject_reason": "السبب"
   },
   "invoice_print": {
     "address": "العنوان",

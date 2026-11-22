@@ -1528,7 +1528,11 @@
     "cost_price_per_meter": "لاگت قیمت (خریداری) فی میٹر",
     "selling_price_per_meter": "فروخت قیمت فی میٹر",
     "fabric_width_cm": "کپڑے کی چوڑائی (سم)",
-    "fabric_width_hint": "اختیاری۔ فی ثوب کپڑے کے اندازے کے لیے؛ خالی ہو تو ترتیبات کی پہلے سے طے چوڑائی استعمال ہوگی۔"
+    "fabric_width_hint": "اختیاری۔ فی ثوب کپڑے کے اندازے کے لیے؛ خالی ہو تو ترتیبات کی پہلے سے طے چوڑائی استعمال ہوگی۔",
+    "transfer_reject": "منتقلی مسترد کریں",
+    "transfer_cancel": "منتقلی منسوخ کریں",
+    "transfer_cancel_returns_stock": "بھیجا گیا سامان بھیجنے والی شاخ میں واپس جائے گا۔",
+    "transfer_reject_reason": "وجہ"
   },
   "invoice_print": {
     "address": "پتہ",

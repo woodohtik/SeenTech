@@ -128,53 +128,16 @@ const StockTransferWorkflow: React.FC<StockTransferWorkflowProps> = ({ tenantId 
 
   const getBranchName = (id: string) => branches.find(b => b.id === id)?.name || id;
 
-  const handleShip = async (transfer: StockTransfer) => {
+  // seen-readiness-fixes-task.md P4 (OPERATIONS-02, OPERATIONS-10): the
+  // voucher ships, arrives or is rejected in one server call -- all its lines
+  // and its status together, or nothing (ship/receive/reject_stock_transfer).
+  const runTransfer = async (transfer: StockTransfer, fn: string, args: Record<string, unknown>, after?: () => void) => {
     if (busyTransferId) return;
     setBusyTransferId(transfer.id);
     try {
-      /* --------------------------------------------------------------------
-         The old loop did: read quantity -> compute currentQty - requested ->
-         write the absolute value, all client-side, with
-           * no availability re-check at ship time (only at request time), so a
-             transfer requested on Monday could drive the branch negative on
-             Wednesday after the stock had been sold;
-           * an `if (stockSnap)` that silently skipped the deduction AND the
-             ledger row when the source branch had no inventory row, while
-             still marking the line shipped — the destination was then credited
-             the full amount, creating stock from nothing;
-           * a lost-update race against any concurrent sale.
-
-         One server call per line now does the delta, the >= 0 check and the
-         ledger row in a single transaction, keyed for idempotency.
-         -------------------------------------------------------------------- */
-      for (const item of transfer.items) {
-        const { error } = await supabase.rpc('transfer_ship_item', {
-          p_operation_id: `${transfer.id}:${item.itemId}:ship`,
-          p_transfer_id: transfer.id,
-          p_from_branch: transfer.fromBranchId,
-          p_item_id: item.itemId,
-          p_qty: item.requestedQuantity,
-        });
-        if (error) throw error;
-
-        await supabase
-          .from('stock_transfer_items')
-          .update({ shipped_quantity: item.requestedQuantity })
-          .eq('transfer_id', transfer.id)
-          .eq('item_id', item.itemId);
-      }
-
-      // 4. Update transfer status to in_transit
-      await supabase
-        .from('stock_transfers')
-        .update({
-          status: 'in_transit',
-          shipped_by: currentAuthUser?.id,
-          shipped_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', transfer.id);
-
+      const { error } = await supabase.rpc(fn, { p_transfer_id: transfer.id, ...args });
+      if (error) throw error;
+      after?.();
     } catch (error) {
       handleError(error as any, OperationType.UPDATE, 'stock_transfers');
     } finally {
@@ -182,56 +145,17 @@ const StockTransferWorkflow: React.FC<StockTransferWorkflowProps> = ({ tenantId 
     }
   };
 
-  const handleReceive = async (transfer: StockTransfer, receivedQuantities: Record<string, number>, remarks: string) => {
-    if (busyTransferId) return;
-    setBusyTransferId(transfer.id);
-    try {
-      /* --------------------------------------------------------------------
-         Same treatment as handleShip. Additionally the old code wrote a
-         "discrepancy" ledger row with previous_quantity == new_quantity but a
-         non-zero `change`, and with no matching stock write — so a shortfall
-         was counted twice in the reports. The received quantity is the only
-         thing that moves stock; the shortfall is recorded on the transfer line
-         itself, not as a phantom ledger entry.
-         -------------------------------------------------------------------- */
-      for (const item of transfer.items) {
-        const receivedQty = Math.max(0, Number(receivedQuantities[item.itemId]) || 0);
+  const handleShip = (transfer: StockTransfer) => runTransfer(transfer, 'ship_stock_transfer', {});
 
-        if (receivedQty > 0) {
-          const { error } = await supabase.rpc('transfer_receive_item', {
-            p_operation_id: `${transfer.id}:${item.itemId}:receive`,
-            p_transfer_id: transfer.id,
-            p_to_branch: transfer.toBranchId,
-            p_item_id: item.itemId,
-            p_qty: receivedQty,
-          });
-          if (error) throw error;
-        }
+  const handleReceive = (transfer: StockTransfer, receivedQuantities: Record<string, number>, remarks: string) =>
+    runTransfer(transfer, 'receive_stock_transfer', { p_received: receivedQuantities, p_remarks: remarks || null }, () => setSelectedTransfer(null));
 
-        await supabase
-          .from('stock_transfer_items')
-          .update({ received_quantity: receivedQty })
-          .eq('transfer_id', transfer.id)
-          .eq('item_id', item.itemId);
-      }
-
-      await supabase
-        .from('stock_transfers')
-        .update({
-          status: 'completed',
-          received_by: currentAuthUser?.id,
-          received_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-          remarks: remarks || null
-        })
-        .eq('id', transfer.id);
-
-      setSelectedTransfer(null);
-    } catch (error) {
-      handleError(error as any, OperationType.UPDATE, 'stock_transfers');
-    } finally {
-      setBusyTransferId(null);
-    }
+  // Pending: rejected. In transit: cancelled, the shipped stock back in the source branch.
+  const [rejecting, setRejecting] = useState<StockTransfer | null>(null);
+  const [rejectReason, setRejectReason] = useState('');
+  const confirmReject = () => {
+    if (!rejecting || rejectReason.trim().length < 3) return;
+    void runTransfer(rejecting, 'reject_stock_transfer', { p_reason: rejectReason.trim() }, () => { setRejecting(null); setRejectReason(''); });
   };
 
   const statusMap: Record<string, { label: string, color: string, icon: any }> = {
@@ -324,6 +248,15 @@ const StockTransferWorkflow: React.FC<StockTransferWorkflowProps> = ({ tenantId 
                         {t('inventory.receive_items')}
                       </button>
                     )}
+                    {(transfer.status === 'pending' || transfer.status === 'in_transit') && (
+                      <button
+                        onClick={() => { setRejectReason(''); setRejecting(transfer); }}
+                        disabled={busyTransferId === transfer.id}
+                        className="bg-danger/10 text-danger px-4 py-2.5 rounded-xl font-black text-xs hover:bg-danger/20 transition-all disabled:opacity-50"
+                      >
+                        {transfer.status === 'pending' ? t('inventory.transfer_reject') : t('inventory.transfer_cancel')}
+                      </button>
+                    )}
                     <button 
                       onClick={() => setSelectedTransfer(transfer)}
                       className="bg-surface-muted text-content-muted px-6 py-2.5 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-border/20 transition-all"
@@ -347,6 +280,33 @@ const StockTransferWorkflow: React.FC<StockTransferWorkflowProps> = ({ tenantId 
           />
         )}
       </AnimatePresence>
+      {rejecting && (
+        <div className="fixed inset-0 z-[170] flex items-center justify-center bg-black/40 p-4" role="dialog" aria-modal="true" aria-labelledby="transfer-reject-title">
+          <div className="w-full max-w-md rounded-3xl bg-surface p-6 shadow-2xl border border-border space-y-4">
+            <h3 id="transfer-reject-title" className="text-lg font-black text-content">
+              {rejecting.status === 'pending' ? t('inventory.transfer_reject') : t('inventory.transfer_cancel')}
+            </h3>
+            {rejecting.status === 'in_transit' && (
+              <p className="text-sm font-bold text-content-muted">{t('inventory.transfer_cancel_returns_stock')}</p>
+            )}
+            <label className="block space-y-1">
+              <span className="text-sm font-bold text-content">{t('inventory.transfer_reject_reason')}</span>
+              <input value={rejectReason} onChange={(e) => setRejectReason(e.target.value)} autoFocus
+                className="w-full min-h-11 rounded-xl border border-border bg-surface-muted px-3 text-sm" />
+            </label>
+            <div className="flex gap-2">
+              <button type="button" onClick={confirmReject} disabled={rejectReason.trim().length < 3 || busyTransferId !== null}
+                className="flex-1 min-h-12 rounded-2xl bg-danger text-white font-bold disabled:opacity-50">
+                {t('common.confirm')}
+              </button>
+              <button type="button" onClick={() => setRejecting(null)}
+                className="flex-1 min-h-12 rounded-2xl border border-border font-bold text-content">
+                {t('common.cancel')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
