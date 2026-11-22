@@ -6,6 +6,7 @@ import { QRCodeSVG } from 'qrcode.react';
 import { generateZatcaQR } from '../services/zatcaService';
 import { CurrencySymbol } from '../components/CurrencySymbol';
 import { useDirection, localeOf } from '../lib/direction';
+import PublicLanguageSwitch from '../components/public/PublicLanguageSwitch';
 
 export default function PublicInvoice() {
   const { t, dir } = useDirection();
@@ -120,6 +121,7 @@ export default function PublicInvoice() {
 
   return (
     <div className="min-h-screen bg-slate-50 py-8 px-4 font-sans flex flex-col" dir={dir}>
+      <PublicLanguageSwitch className="mb-3" />
       <div className="max-w-md w-full mx-auto mb-6 flex justify-between items-center">
         <h1 className="text-lg font-bold text-slate-900">{t('public_invoice.digital_access')}</h1>
         <button 

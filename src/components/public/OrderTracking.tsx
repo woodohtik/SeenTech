@@ -19,6 +19,7 @@
  * push) في هذا الملف -- عرض فقط.
  */
 
+import PublicLanguageSwitch from './PublicLanguageSwitch';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Capacitor } from '@capacitor/core';
@@ -205,6 +206,7 @@ export default function OrderTracking({ token }: { token: string }) {
 
   return (
     <div dir={dir} style={styles.page}>
+      <PublicLanguageSwitch className="mb-3" />
       <div style={styles.card}>
         <div style={styles.brand}>
           <span style={styles.brandMark}>{t('public_tracking.brand_mark')}</span>

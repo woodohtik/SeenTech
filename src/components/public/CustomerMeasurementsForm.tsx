@@ -16,6 +16,7 @@
  * المكوّنين.
  */
 
+import PublicLanguageSwitch from './PublicLanguageSwitch';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { XCircle } from 'lucide-react';
@@ -141,6 +142,7 @@ export default function CustomerMeasurementsForm({ token }: { token: string }) {
       @media (min-width: 1024px) { .seen-measurements-card { max-width: 960px; } }
     `}</style>
     <div dir={dir} style={styles.page}>
+      <PublicLanguageSwitch className="mb-3" />
       <div className="seen-measurements-card" style={styles.card}>
         <div style={styles.brand}>
           <span style={styles.brandMark}>{t('public_tracking.brand_mark')}</span>
