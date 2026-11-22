@@ -30,6 +30,7 @@ import PrinterSettings from './PrinterSettings';
 import WhatsAppSettings from './WhatsAppSettings';
 import BillingSettings from './BillingSettings';
 import ZatcaOnboardingSettings from './ZatcaOnboardingSettings';
+import ZatcaSubmissionsList from './ZatcaSubmissionsList';
 import CategoriesSettings from './CategoriesSettings';
 
 import Branding from './Branding';
@@ -1079,7 +1080,10 @@ export default function Settings({ tenantId }: SettingsProps) {
               )}
 
               {activeTab === 'zatca' && hasPermission('settings.tax') && (
-                <ZatcaOnboardingSettings tenantId={tenantId} />
+                <div className="space-y-6">
+                  <ZatcaOnboardingSettings tenantId={tenantId} />
+                  <ZatcaSubmissionsList tenantId={tenantId} />
+                </div>
               )}
 
               {activeTab === 'categories' && canEdit && (

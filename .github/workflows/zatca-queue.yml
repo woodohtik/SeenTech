@@ -1,0 +1,33 @@
+name: ZATCA queue
+
+# seen-readiness-fixes-task.md P2.4: sends the invoices and credit notes due
+# in public.zatca_submissions, from the server, every few minutes. Vercel
+# cron is limited to once a day on this plan (see blog-rebuild-sweep.yml), so
+# GitHub Actions calls the CRON_SECRET-gated route instead. GitHub may delay a
+# scheduled run; the cashier's device also asks for an immediate send at the
+# sale, and a simplified invoice has 24 hours, so a late run only means a
+# later retry.
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch: {}
+
+jobs:
+  send:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        host: [staging.seentech.io, www.seentech.io]
+    steps:
+      - name: Run the ZATCA queue on ${{ matrix.host }}
+        run: |
+          status=$(curl -sS -o response.json -w "%{http_code}" -X POST \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            https://${{ matrix.host }}/api/cron/zatca-queue)
+          echo "Response status: $status"
+          cat response.json || true
+          if [ "$status" != "200" ]; then
+            echo "::error::zatca-queue on ${{ matrix.host }} returned HTTP $status"
+            exit 1
+          fi

@@ -5498,5 +5498,22 @@
     "loading_settings": "Loading your activity's settings...",
     "settings_unavailable_title": "Your activity's settings could not be loaded",
     "settings_unavailable_desc": "An order cannot be created with the right settings for your activity right now. Connect to the internet and try again."
+  },
+  "zatca_queue": {
+    "title": "Sending to ZATCA",
+    "subtitle": "The last 50 invoices and credit notes the server sends on its own, retrying when ZATCA cannot be reached.",
+    "refresh": "Refresh",
+    "load_failed": "The sending status could not be loaded",
+    "empty": "No documents yet",
+    "kind_invoice": "Invoice",
+    "kind_credit_note": "Credit note",
+    "status_sent": "Sent",
+    "status_pending": "Waiting",
+    "status_sending": "Sending",
+    "status_retry": "Will retry",
+    "status_rejected": "Rejected by ZATCA",
+    "status_failed": "Could not be sent -- needs attention",
+    "status_not_applicable": "Not sent (no production certificate)",
+    "next_try": "Next try {{when}} ({{attempts}} attempts)"
   }
 }

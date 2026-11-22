@@ -2374,11 +2374,25 @@ app.post("/api/chat", authenticate, async (req: any, res) => {
 // per-tenant invoice-issuance queue) before any tenant with meaningfully
 // concurrent B2B checkout traffic goes live on this.
 // =============================================================================
-app.post("/api/zatca/submit-invoice", authenticate, asyncHandler(async (req: any, res) => {
-  const tenantId = req.user?.tenantId;
-  const { orderId } = req.body || {};
-  if (!tenantId) return res.status(401).json({ error: 'Unauthorized' });
-  if (typeof orderId !== 'string' || !orderId) return res.status(400).json({ error: 'orderId is required' });
+
+// seen-readiness-fixes-task.md P2.4 -- the ZATCA send, shared by the routes and the queue.
+type ZatcaSendResult = { status: number; body: any };
+const reply = (status: number, body: any): ZatcaSendResult => ({ status, body });
+function internalFailure(context: string, err: unknown): ZatcaSendResult {
+  logger.error({ err }, context);
+  captureServerException(err, { context });
+  return { status: 500, body: { error: 'Internal Server Error' } };
+}
+/** ZATCA turned the document down (a 4xx other than 429); anything else is worth retrying. */
+function isZatcaRejection(err: any): boolean {
+  const code = Number(err?.status ?? err?.statusCode);
+  return err?.name === 'ZatcaApiError' && code >= 400 && code < 500 && code !== 429;
+}
+
+// seen-readiness-fixes-task.md P2.4: the invoice send, callable by its route
+// (the cashier's device asking for an immediate send) and by the ZATCA
+// queue worker (/api/cron/zatca-queue), so both run the same code.
+async function zatcaSendInvoice(tenantId: string, orderId: string): Promise<ZatcaSendResult> {
 
   const { supabaseAdmin } = await import("./src/server/supabase-admin.ts");
 
@@ -2392,7 +2406,7 @@ app.post("/api/zatca/submit-invoice", authenticate, asyncHandler(async (req: any
   // No production CSID for this tenant yet -- the normal case until Phase ج.
   // zatca_status already defaults to 'not_applicable'; nothing to do.
   if (!prodCreds) {
-    return res.json({ ok: true, status: 'not_applicable' });
+    return reply(200, { ok: true, status: 'not_applicable' });
   }
 
   const { data: order } = await supabaseAdmin
@@ -2401,7 +2415,7 @@ app.post("/api/zatca/submit-invoice", authenticate, asyncHandler(async (req: any
     .eq('id', orderId)
     .maybeSingle();
   if (!order || order.tenant_id !== tenantId) {
-    return res.status(404).json({ error: 'Order not found' });
+    return reply(404, { error: 'Order not found' });
   }
 
   const { data: invoice } = await supabaseAdmin
@@ -2411,7 +2425,7 @@ app.post("/api/zatca/submit-invoice", authenticate, asyncHandler(async (req: any
     .eq('tenant_id', tenantId)
     .maybeSingle();
   if (!invoice) {
-    return res.status(404).json({ error: 'Invoice not found for this order' });
+    return reply(404, { error: 'Invoice not found for this order' });
   }
 
   // seen-deep-technical-audit.md High #2: no idempotency check here meant a
@@ -2423,7 +2437,7 @@ app.post("/api/zatca/submit-invoice", authenticate, asyncHandler(async (req: any
   // deliberately NOT short-circuited here so a genuinely failed submission
   // can still be retried.
   if (invoice.zatca_status === 'cleared' || invoice.zatca_status === 'reported') {
-    return res.json({ ok: true, status: invoice.zatca_status, replayed: true });
+    return reply(200, { ok: true, status: invoice.zatca_status, replayed: true });
   }
 
   const { data: items } = await supabaseAdmin
@@ -2442,7 +2456,7 @@ app.post("/api/zatca/submit-invoice", authenticate, asyncHandler(async (req: any
     // unreachable in practice (a tenant can't have a production CSID
     // without real tax settings), but never submit under a fabricated
     // seller identity regardless.
-    return res.status(409).json({ error: 'Tenant tax settings incomplete; cannot submit to ZATCA' });
+    return reply(409, { error: 'Tenant tax settings incomplete; cannot submit to ZATCA' });
   }
 
   const { decryptZatcaSecret } = await import('./src/server/zatcaCrypto.ts');
@@ -2554,9 +2568,9 @@ app.post("/api/zatca/submit-invoice", authenticate, asyncHandler(async (req: any
       .not('zatca_status', 'in', '(cleared,reported,pending)')
       .select('id')
       .maybeSingle();
-    if (claimError) return internalError(res, "Error in POST /api/zatca/submit-invoice (claim):", claimError);
+    if (claimError) return internalFailure("Error in POST /api/zatca/submit-invoice (claim):", claimError);
     if (!claimed) {
-      return res.status(409).json({ error: 'ZATCA submission already in progress or completed for this invoice' });
+      return reply(409, { error: 'ZATCA submission already in progress or completed for this invoice' });
     }
 
     const result = isB2B
@@ -2599,13 +2613,16 @@ app.post("/api/zatca/submit-invoice", authenticate, asyncHandler(async (req: any
       })
       .eq('id', invoice.id);
 
-    res.json({ ok: true, status: isB2B ? 'cleared' : 'reported' });
+    return reply(200, { ok: true, status: isB2B ? 'cleared' : 'reported' });
   } catch (err: any) {
     const isZatcaError = err instanceof ZatcaApiError;
+    // ZATCA-17: ZATCA turning the document down (4xx) is a rejection; a
+    // network failure, a timeout or ZATCA being down (5xx, 429) is retried.
+    const failedStatus = isZatcaRejection(err) ? 'rejected' : 'retry';
     await supabaseAdmin
       .from('tax_invoices')
       .update({
-        zatca_status: 'rejected',
+        zatca_status: failedStatus,
         zatca_response: isZatcaError ? err.body : { message: String(err?.message || err) },
         zatca_submitted_at: now.toISOString(),
       })
@@ -2614,8 +2631,17 @@ app.post("/api/zatca/submit-invoice", authenticate, asyncHandler(async (req: any
     logger.error({ err }, '[zatca/submit-invoice]');
     // B2B rejection must never look like success to the caller -- POS.tsx
     // surfaces this to the cashier instead of treating the sale as done.
-    res.status(502).json({ error: 'ZATCA rejected or failed to process this invoice', status: 'rejected', isB2B });
+    return reply(502, { error: 'ZATCA rejected or failed to process this invoice', status: failedStatus, isB2B });
   }
+}
+
+app.post("/api/zatca/submit-invoice", authenticate, asyncHandler(async (req: any, res) => {
+  const tenantId = req.user?.tenantId;
+  const { orderId } = req.body || {};
+  if (!tenantId) return res.status(401).json({ error: 'Unauthorized' });
+  if (typeof orderId !== 'string' || !orderId) return res.status(400).json({ error: 'orderId is required' });
+  const r = await zatcaSendInvoice(tenantId, orderId);
+  return res.status(r.status).json(r.body);
 }));
 
 // =============================================================================
@@ -2639,11 +2665,10 @@ app.post("/api/zatca/submit-invoice", authenticate, asyncHandler(async (req: any
 // workflow actually exists; inventing one now with no real entry point
 // would just be dead, never-wired code.
 // =============================================================================
-app.post("/api/zatca/submit-credit-note", authenticate, asyncHandler(async (req: any, res) => {
-  const tenantId = req.user?.tenantId;
-  const { creditNoteId } = req.body || {};
-  if (!tenantId) return res.status(401).json({ error: 'Unauthorized' });
-  if (typeof creditNoteId !== 'string' || !creditNoteId) return res.status(400).json({ error: 'creditNoteId is required' });
+// seen-readiness-fixes-task.md P2.4: the credit note send, callable by its route
+// (the cashier's device asking for an immediate send) and by the ZATCA
+// queue worker (/api/cron/zatca-queue), so both run the same code.
+async function zatcaSendCreditNote(tenantId: string, creditNoteId: string): Promise<ZatcaSendResult> {
 
   const { supabaseAdmin } = await import("./src/server/supabase-admin.ts");
 
@@ -2657,7 +2682,7 @@ app.post("/api/zatca/submit-credit-note", authenticate, asyncHandler(async (req:
   // No production CSID for this tenant yet -- same "normal case" as
   // submit-invoice; zatca_status already defaults to 'not_applicable'.
   if (!prodCreds) {
-    return res.json({ ok: true, status: 'not_applicable' });
+    return reply(200, { ok: true, status: 'not_applicable' });
   }
 
   const { data: note } = await supabaseAdmin
@@ -2666,13 +2691,13 @@ app.post("/api/zatca/submit-credit-note", authenticate, asyncHandler(async (req:
     .eq('id', creditNoteId)
     .maybeSingle();
   if (!note || note.tenant_id !== tenantId) {
-    return res.status(404).json({ error: 'Credit note not found' });
+    return reply(404, { error: 'Credit note not found' });
   }
 
   // Same idempotency reasoning as submit-invoice: a genuinely failed/
   // 'not_applicable' note can still be retried, a cleared/reported one must not be re-submitted.
   if (note.zatca_status === 'cleared' || note.zatca_status === 'reported') {
-    return res.json({ ok: true, status: note.zatca_status, replayed: true });
+    return reply(200, { ok: true, status: note.zatca_status, replayed: true });
   }
 
   const { data: originalInvoice } = await supabaseAdmin
@@ -2682,7 +2707,7 @@ app.post("/api/zatca/submit-credit-note", authenticate, asyncHandler(async (req:
     .eq('tenant_id', tenantId)
     .maybeSingle();
   if (!originalInvoice) {
-    return res.status(404).json({ error: 'Original invoice not found for this credit note' });
+    return reply(404, { error: 'Original invoice not found for this credit note' });
   }
 
   const { data: tenant } = await supabaseAdmin
@@ -2691,7 +2716,7 @@ app.post("/api/zatca/submit-credit-note", authenticate, asyncHandler(async (req:
     .eq('id', tenantId)
     .maybeSingle();
   if (!tenant?.vat_number || !tenant?.name) {
-    return res.status(409).json({ error: 'Tenant tax settings incomplete; cannot submit to ZATCA' });
+    return reply(409, { error: 'Tenant tax settings incomplete; cannot submit to ZATCA' });
   }
 
   const { decryptZatcaSecret } = await import('./src/server/zatcaCrypto.ts');
@@ -2784,7 +2809,7 @@ app.post("/api/zatca/submit-credit-note", authenticate, asyncHandler(async (req:
       p_tenant_id: tenantId,
       p_note_id: note.id,
     });
-    if (pihClaimError) return internalError(res, "Error in POST /api/zatca/submit-credit-note (pih claim):", pihClaimError);
+    if (pihClaimError) return internalFailure("Error in POST /api/zatca/submit-credit-note (pih claim):", pihClaimError);
 
     // Same atomic submission-status mutex as submit-invoice.
     const { data: claimed, error: claimError } = await supabaseAdmin
@@ -2794,9 +2819,9 @@ app.post("/api/zatca/submit-credit-note", authenticate, asyncHandler(async (req:
       .not('zatca_status', 'in', '(cleared,reported,pending)')
       .select('id')
       .maybeSingle();
-    if (claimError) return internalError(res, "Error in POST /api/zatca/submit-credit-note (claim):", claimError);
+    if (claimError) return internalFailure("Error in POST /api/zatca/submit-credit-note (claim):", claimError);
     if (!claimed) {
-      return res.status(409).json({ error: 'ZATCA submission already in progress or completed for this credit note' });
+      return reply(409, { error: 'ZATCA submission already in progress or completed for this credit note' });
     }
 
     const result = isB2B
@@ -2824,21 +2849,33 @@ app.post("/api/zatca/submit-credit-note", authenticate, asyncHandler(async (req:
       })
       .eq('id', note.id);
 
-    res.json({ ok: true, status: isB2B ? 'cleared' : 'reported' });
+    return reply(200, { ok: true, status: isB2B ? 'cleared' : 'reported' });
   } catch (err: any) {
     const isZatcaError = err instanceof ZatcaApiError;
+    // ZATCA-17: ZATCA turning the document down (4xx) is a rejection; a
+    // network failure, a timeout or ZATCA being down (5xx, 429) is retried.
+    const failedStatus = isZatcaRejection(err) ? 'rejected' : 'retry';
     await supabaseAdmin
       .from('sales_returns')
       .update({
-        zatca_status: 'rejected',
+        zatca_status: failedStatus,
         zatca_response: isZatcaError ? err.body : { message: String(err?.message || err) },
         zatca_submitted_at: now.toISOString(),
       })
       .eq('id', note.id);
 
     logger.error({ err }, '[zatca/submit-credit-note]');
-    res.status(502).json({ error: 'ZATCA rejected or failed to process this credit note', status: 'rejected', isB2B });
+    return reply(502, { error: 'ZATCA rejected or failed to process this credit note', status: failedStatus, isB2B });
   }
+}
+
+app.post("/api/zatca/submit-credit-note", authenticate, asyncHandler(async (req: any, res) => {
+  const tenantId = req.user?.tenantId;
+  const { creditNoteId } = req.body || {};
+  if (!tenantId) return res.status(401).json({ error: 'Unauthorized' });
+  if (typeof creditNoteId !== 'string' || !creditNoteId) return res.status(400).json({ error: 'creditNoteId is required' });
+  const r = await zatcaSendCreditNote(tenantId, creditNoteId);
+  return res.status(r.status).json(r.body);
 }));
 
 // =============================================================================
@@ -3181,6 +3218,50 @@ app.get("/api/cron/zatca-cert-expiry-check", asyncHandler(async (req: any, res) 
   }
 
   res.json({ ok: true, checked: (expiringSoon || []).length, alerted });
+}));
+
+// seen-readiness-fixes-task.md P2.4 -- the ZATCA queue worker. Sends the
+// invoices and credit notes that are due (public.zatca_submissions), the same
+// send the cashier's device asks for, and records the outcome: retried with a
+// growing delay when ZATCA cannot be reached, kept with its reason when ZATCA
+// rejects it. Scheduled by .github/workflows/zatca-queue.yml; CRON_SECRET only.
+app.all("/api/cron/zatca-queue", asyncHandler(async (req: any, res) => {
+  const cronSecret = (process.env.CRON_SECRET || '').trim();
+  const providedAuth = typeof req.headers.authorization === 'string' ? req.headers.authorization : '';
+  const expectedAuth = `Bearer ${cronSecret}`;
+  const providedBuf = Buffer.from(providedAuth);
+  const expectedBuf = Buffer.from(expectedAuth);
+  const authMatches = cronSecret.length > 0
+    && providedBuf.length === expectedBuf.length
+    && crypto.timingSafeEqual(providedBuf, expectedBuf);
+  if (!authMatches) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+
+  const { supabaseAdmin } = await import("./src/server/supabase-admin.ts");
+  const { classifyZatcaSend } = await import('./src/server/zatcaQueue.ts');
+  const { data: rows, error } = await supabaseAdmin.rpc('zatca_claim_submissions', { p_limit: 20 });
+  if (error) return internalError(res, 'Error in /api/cron/zatca-queue (claim):', error);
+
+  const summary: Record<string, number> = { sent: 0, retry: 0, rejected: 0, failed: 0, not_applicable: 0 };
+  for (const row of (rows || []) as Array<{ id: string; tenant_id: string; kind: string; ref_id: string }>) {
+    let outcome: { status: string; error: string | null };
+    let result: ZatcaSendResult | null = null;
+    try {
+      result = row.kind === 'invoice'
+        ? await zatcaSendInvoice(row.tenant_id, row.ref_id)
+        : await zatcaSendCreditNote(row.tenant_id, row.ref_id);
+      outcome = classifyZatcaSend(result);
+    } catch (err: any) {
+      outcome = { status: 'retry', error: String(err?.message || err).slice(0, 500) };
+    }
+    await supabaseAdmin.rpc('zatca_finish_submission', {
+      p_id: row.id, p_status: outcome.status, p_error: outcome.error, p_result: result?.body ?? null,
+    });
+    summary[outcome.status] = (summary[outcome.status] || 0) + 1;
+  }
+  logger.info({ claimed: (rows || []).length, ...summary }, '[cron/zatca-queue]');
+  return res.json({ ok: true, claimed: (rows || []).length, ...summary });
 }));
 
 // Vercel Cron يستدعي هذا المسار دورياً (vercel.json) ليدفع إعادة بناء الموقع
