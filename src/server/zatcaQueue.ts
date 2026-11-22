@@ -18,9 +18,10 @@ export function classifyZatcaSend(r: { status: number; body: any }): { status: Q
     return { status: body.status === 'rejected' ? 'rejected' : 'retry', error: message };
   }
   if (r.status === 409) {
-    // Another send of this document is running -- see it again later. Missing
-    // seller tax settings need the owner, not another try.
-    return /tax settings incomplete/i.test(message ?? '')
+    // Another send (or the shop's signing) is running -- see it again later.
+    // Missing seller tax settings need the owner, and a document issued before
+    // the chain existed is never sent; neither is worth another try.
+    return /tax settings incomplete|before the ZATCA chain/i.test(message ?? '')
       ? { status: 'failed', error: message }
       : { status: 'retry', error: message };
   }

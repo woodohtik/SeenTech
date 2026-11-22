@@ -2356,23 +2356,12 @@ app.post("/api/chat", authenticate, async (req: any, res) => {
 // onboarding; this endpoint is what activates per-tenant once that happens,
 // with zero code changes needed elsewhere.
 //
-// KNOWN LIMITATION, not yet resolved: create_pos_sale (20260917000000)
-// computes and commits a PLACEHOLDER invoice_hash into the PIH chain
-// (zatca_invoice_chain_state) synchronously, inside the checkout
-// transaction, before this endpoint ever runs -- building and signing the
-// real UBL XML needs Node crypto + a live HTTP round-trip to ZATCA, neither
-// of which belongs inside a Postgres function or the checkout transaction
-// itself. This endpoint recomputes the REAL hash from the actual signed XML
-// and -- synchronously, in this same request, holding the same chain-state
-// row lock create_pos_sale uses -- overwrites both this invoice's stored
-// hash AND the chain tip with it, so the next sale's PIH reference is
-// correct. The real gap: a second concurrent sale for the SAME tenant that
-// lands between create_pos_sale committing (placeholder) and this endpoint
-// committing (real hash) would still chain its own PIH off the placeholder,
-// not the real hash -- a small window, not eliminated here. Safe for a
-// single/few-terminal tailor shop in practice; revisit (e.g. a serialized
-// per-tenant invoice-issuance queue) before any tenant with meaningfully
-// concurrent B2B checkout traffic goes live on this.
+// The PIH chain (seen-readiness-fixes-task.md P2.2, ZATCA-07/08): the
+// placeholder hash create_pos_sale writes is no longer what the chain hangs
+// on. Each document is stamped at issue (ICV, UUID, lines), then signed by
+// the server strictly in ICV order -- PIH = the previous document's real
+// hash -- under one signing turn per shop (zatca_signing_begin/_store/_end,
+// 20270103000001), and that signed XML is what is sent and resent.
 // =============================================================================
 
 // seen-readiness-fixes-task.md P2.4 -- the ZATCA send, shared by the routes and the queue.
@@ -2389,128 +2378,53 @@ function isZatcaRejection(err: any): boolean {
   return err?.name === 'ZatcaApiError' && code >= 400 && code < 500 && code !== 429;
 }
 
-// seen-readiness-fixes-task.md P2.4: the invoice send, callable by its route
-// (the cashier's device asking for an immediate send) and by the ZATCA
-// queue worker (/api/cron/zatca-queue), so both run the same code.
-async function zatcaSendInvoice(tenantId: string, orderId: string): Promise<ZatcaSendResult> {
-
+// seen-readiness-fixes-task.md P2.4: the send of an invoice or a credit note,
+// called by the routes (the cashier's device asking for an immediate send)
+// and by the ZATCA queue worker (/api/cron/zatca-queue).
+async function zatcaSendDocument(kind: 'invoice' | 'credit_note', tenantId: string, refId: string): Promise<ZatcaSendResult> {
+  const route = kind === 'invoice' ? '/api/zatca/submit-invoice' : '/api/zatca/submit-credit-note';
+  const table = kind === 'invoice' ? 'tax_invoices' : 'sales_returns';
   const { supabaseAdmin } = await import("./src/server/supabase-admin.ts");
 
   const { data: prodCreds } = await supabaseAdmin
     .from('zatca_credentials')
-    .select('certificate, private_key_encrypted, secret_encrypted, request_id')
+    .select('certificate, private_key_encrypted, secret_encrypted, created_at')
     .eq('tenant_id', tenantId)
     .eq('csid_type', 'production')
     .maybeSingle();
+  // No production certificate for this shop: nothing is sent.
+  if (!prodCreds) return reply(200, { ok: true, status: 'not_applicable' });
 
-  // No production CSID for this tenant yet -- the normal case until Phase ج.
-  // zatca_status already defaults to 'not_applicable'; nothing to do.
-  if (!prodCreds) {
-    return reply(200, { ok: true, status: 'not_applicable' });
+  // seen-readiness-fixes-task.md P2.1/P2.2: what is sent is the document as
+  // it was fixed at issue (ICV, UUID, date, lines) and signed in ICV order
+  // (src/server/zatcaChain.ts) -- the same XML on every retry.
+  const columns = 'id, tenant_id, icv, zatca_uuid, signed_xml, invoice_hash, zatca_status';
+  const load = async () => {
+    const q = supabaseAdmin.from(table).select(columns).eq('tenant_id', tenantId);
+    const { data } = await (kind === 'invoice' ? q.eq('order_id', refId) : q.eq('id', refId)).maybeSingle();
+    return data as any;
+  };
+  let doc = await load();
+  if (!doc) return reply(404, { error: kind === 'invoice' ? 'Invoice not found for this order' : 'Credit note not found' });
+  if (doc.zatca_status === 'cleared' || doc.zatca_status === 'reported') {
+    return reply(200, { ok: true, status: doc.zatca_status, replayed: true });
   }
-
-  const { data: order } = await supabaseAdmin
-    .from('orders')
-    .select('id, tenant_id, customer_name, order_number, total_amount, tax_amount, tax_rate, notes')
-    .eq('id', orderId)
-    .maybeSingle();
-  if (!order || order.tenant_id !== tenantId) {
-    return reply(404, { error: 'Order not found' });
-  }
-
-  const { data: invoice } = await supabaseAdmin
-    .from('tax_invoices')
-    .select('id, invoice_number, subtotal, tax_amount, total_amount, previous_invoice_hash, notes, zatca_status')
-    .eq('order_id', orderId)
-    .eq('tenant_id', tenantId)
-    .maybeSingle();
-  if (!invoice) {
-    return reply(404, { error: 'Invoice not found for this order' });
-  }
-
-  // seen-deep-technical-audit.md High #2: no idempotency check here meant a
-  // retried request (network timeout on the client, double-click, a queued
-  // offline submission replayed) rebuilt a fresh XML with a new UUID and
-  // called ZATCA's Clearance/Reporting API again for an invoice already
-  // successfully cleared/reported -- a real duplicate submission to ZATCA
-  // itself, not just a wasted request. 'rejected'/'not_applicable' are
-  // deliberately NOT short-circuited here so a genuinely failed submission
-  // can still be retried.
-  if (invoice.zatca_status === 'cleared' || invoice.zatca_status === 'reported') {
-    return reply(200, { ok: true, status: invoice.zatca_status, replayed: true });
-  }
-
-  const { data: items } = await supabaseAdmin
-    .from('order_items')
-    .select('name, garment_type, quantity, price, selected_unit, tax_type, line_net, line_tax')
-    .eq('order_id', orderId)
-    .eq('tenant_id', tenantId);
-
-  const { data: tenant } = await supabaseAdmin
-    .from('tenants')
-    .select('name, vat_number, commercial_register, address, city, postal_code')
-    .eq('id', tenantId)
-    .maybeSingle();
-  if (!tenant?.vat_number || !tenant?.name) {
-    // Mirrors POS.tsx's own guard (hasValidTaxSettings) -- should be
-    // unreachable in practice (a tenant can't have a production CSID
-    // without real tax settings), but never submit under a fabricated
-    // seller identity regardless.
-    return reply(409, { error: 'Tenant tax settings incomplete; cannot submit to ZATCA' });
+  if (doc.icv === null || doc.icv === undefined) {
+    return reply(409, { error: 'Issued before the ZATCA chain -- not sent' });
   }
 
   const { decryptZatcaSecret } = await import('./src/server/zatcaCrypto.ts');
-  const { signData, sha256Base64 } = await import('./src/server/zatcaSigning.ts');
-  const { buildSimplifiedInvoiceXml, buildStandardInvoiceXml } = await import('./src/server/zatcaInvoiceXml.ts');
-  const { clearInvoice, reportInvoice, ZatcaApiError } = await import('./src/server/zatcaApiClient.ts');
-  const { decodeOrderB2BNotes } = await import('./src/utils/b2bHelper.ts');
-
-  const b2bMeta = decodeOrderB2BNotes(order.notes);
-  const isB2B = !!b2bMeta.isB2B;
-
-  const privateKeyPem = decryptZatcaSecret(prodCreds.private_key_encrypted);
-  const secret = decryptZatcaSecret(prodCreds.secret_encrypted);
-  const auth = { binarySecurityToken: prodCreds.certificate, secret };
-
-  // tax_rate may be stored as a fraction (0.15) or a whole percentage (15)
-  // depending on which write path created this order -- same ambiguity
-  // this project already normalizes for on every READ path (POS.tsx,
-  // Orders.tsx). Treat anything > 1 as already a percentage.
-  // One reader of a stored rate (P1.2, CODEHEALTH-01): a real 0 stays 0, never 15.
-  const { taxRatePercent } = await import('./src/shared/taxRate.ts');
-  const vatPercent = taxRatePercent(order.tax_rate) ?? 0;
-
-  const now = new Date();
-  const lines = (items || []).map((item: any, i: number) => {
-    const qty = Number(item.quantity) > 0 ? Number(item.quantity) : 1;
-    // seen-readiness-fixes-task.md P1.1 (MONEY-16, CODEHEALTH-02): a line sold
-    // through the one tax engine carries the figures it was charged -- net and
-    // tax after its share of the discount, by its own tax type -- so the lines
-    // add up to the invoice header. Older lines fall back to the old reading.
-    const charged = item.line_net !== null && item.line_net !== undefined;
-    const lineExtensionAmount = charged ? Number(item.line_net) : qty * (Number(item.price) || 0);
-    const lineTax = charged ? Number(item.line_tax) || 0 : lineExtensionAmount * (vatPercent / 100);
-    const linePercent = charged && (item.tax_type === 'exempt' || lineTax === 0) ? 0 : vatPercent;
-    return {
-      id: String(i + 1),
-      itemName: item.name || item.garment_type || 'منتج',
-      quantity: qty,
-      unitPrice: Math.round((lineExtensionAmount / qty) * 100) / 100,
-      lineExtensionAmount,
-      taxPercent: linePercent,
-      taxAmount: lineTax,
-      // A line sold by length carries its unit (2.5 metres); any other line
-      // is written exactly as before (seen-verticals-readiness-task.md Phase 5).
-      ...(item.selected_unit === 'meter' ? { unitCode: 'MTR' } : item.selected_unit === 'yard' ? { unitCode: 'YRD' } : {}),
-    };
-  });
-
-  const commonInput = {
-    invoiceNumber: invoice.invoice_number,
-    uuid: crypto.randomUUID(),
-    issueDateIso: now.toISOString().slice(0, 10),
-    issueTimeIso: now.toISOString().slice(11, 19),
-    seller: {
+  if (!doc.signed_xml) {
+    const { data: tenant } = await supabaseAdmin
+      .from('tenants')
+      .select('name, vat_number, commercial_register, address, city, postal_code')
+      .eq('id', tenantId)
+      .maybeSingle();
+    if (!tenant?.vat_number || !tenant?.name) {
+      return reply(409, { error: 'Tenant tax settings incomplete; cannot submit to ZATCA' });
+    }
+    const { signPendingDocuments } = await import('./src/server/zatcaChain.ts');
+    const seller = {
       legalName: tenant.name,
       vatNumber: tenant.vat_number,
       crn: tenant.commercial_register || undefined,
@@ -2518,100 +2432,73 @@ async function zatcaSendInvoice(tenantId: string, orderId: string): Promise<Zatc
       city: tenant.city || undefined,
       postalCode: tenant.postal_code || undefined,
       countryCode: 'SA',
-    },
-    paymentMeansCode: '10',
-    lines,
-    subtotal: Number(invoice.subtotal) || 0,
-    taxAmount: Number(invoice.tax_amount) || 0,
-    totalWithTax: Number(invoice.total_amount) || 0,
-    previousInvoiceHash: invoice.previous_invoice_hash,
-    invoiceHash: '', // filled in on the second (signed) pass below
+    };
+    const key = {
+      privateKeyPem: decryptZatcaSecret(prodCreds.private_key_encrypted),
+      certificate: prodCreds.certificate,
+      since: prodCreds.created_at,
+    };
+    // Every earlier document of the shop is signed first, in order.
+    for (let round = 0; round < 10 && !doc.signed_xml; round++) {
+      const r = await signPendingDocuments(supabaseAdmin, tenantId, seller, key);
+      if (r.error) return internalFailure(`Error in ${route} (signing):`, new Error(r.error));
+      if (r.busy) return reply(409, { error: 'ZATCA signing in progress for this shop' });
+      doc = await load();
+      if (r.signed === 0) break;
+    }
+    // Still unsigned with nothing left to sign: issued before the shop's
+    // production certificate, so outside its chain.
+    if (!doc?.signed_xml) return reply(200, { ok: true, status: 'not_applicable' });
+  }
+
+  const { clearInvoice, reportInvoice, ZatcaApiError } = await import('./src/server/zatcaApiClient.ts');
+  const { qrFromDocument } = await import('./src/server/zatcaXades.ts');
+  const isB2B = doc.signed_xml.includes('<cbc:InvoiceTypeCode name="0100000">');
+  const auth = { binarySecurityToken: prodCreds.certificate, secret: decryptZatcaSecret(prodCreds.secret_encrypted) };
+  const submission = {
+    invoiceHash: doc.invoice_hash,
+    uuid: doc.zatca_uuid,
+    invoiceBase64: Buffer.from(doc.signed_xml, 'utf8').toString('base64'),
   };
-
-  // Two-pass build: hash the unsigned XML first (what gets signed), then
-  // rebuild with the real signature embedded -- buildXxxInvoiceXml only
-  // includes the UBLDocumentSignatures block when signatureBase64 is set.
-  const buildXml = isB2B
-    ? () => buildStandardInvoiceXml({ ...commonInput, buyer: { legalName: b2bMeta.b2bCompanyName || '', vatNumber: b2bMeta.b2bTRN || '' } })
-    : () => buildSimplifiedInvoiceXml(commonInput);
-
-  const unsignedXml = buildXml();
-  const invoiceHash = sha256Base64(unsignedXml);
-  const signatureBase64 = signData(invoiceHash, privateKeyPem);
-  const signedXml = isB2B
-    ? buildStandardInvoiceXml({ ...commonInput, invoiceHash, signatureBase64, buyer: { legalName: b2bMeta.b2bCompanyName || '', vatNumber: b2bMeta.b2bTRN || '' } })
-    : buildSimplifiedInvoiceXml({ ...commonInput, invoiceHash, signatureBase64 });
-  const invoiceBase64 = Buffer.from(signedXml, 'utf8').toString('base64');
-
-  const submission = { invoiceHash, uuid: commonInput.uuid, invoiceBase64 };
+  const now = new Date();
 
   try {
-    // Atomic claim, not just the read above: that SELECT-then-check only
-    // closes the *sequential* retry case (a request that starts after an
-    // earlier one already finished). Two near-simultaneous requests for
-    // the same invoice (a double-click, or a client retrying before the
-    // first response returns) would both read the same pre-submission
-    // status and both pass that check -- this UPDATE...RETURNING is the
-    // actual mutex: only the request that successfully flips the status
-    // away from a non-terminal value gets a row back. Placed as the very
-    // first thing inside this try block, immediately before the actual
-    // network call, specifically so every failure path from here on
-    // (including this claim itself erroring) is covered by this same
-    // try/catch -- an earlier version claimed before the XML build/sign
-    // steps above, which aren't inside any catch that resets the status,
-    // and could leave an invoice stuck at 'pending' forever if one of
-    // them threw.
+    // Atomic claim: only one request sends a given document at a time.
     const { data: claimed, error: claimError } = await supabaseAdmin
-      .from('tax_invoices')
+      .from(table)
       .update({ zatca_status: 'pending' })
-      .eq('id', invoice.id)
+      .eq('id', doc.id)
       .not('zatca_status', 'in', '(cleared,reported,pending)')
       .select('id')
       .maybeSingle();
-    if (claimError) return internalFailure("Error in POST /api/zatca/submit-invoice (claim):", claimError);
+    if (claimError) return internalFailure(`Error in ${route} (claim):`, claimError);
     if (!claimed) {
-      return reply(409, { error: 'ZATCA submission already in progress or completed for this invoice' });
+      return reply(409, { error: `ZATCA submission already in progress or completed for this ${kind === 'invoice' ? 'invoice' : 'credit note'}` });
     }
 
     const result = isB2B
       ? await clearInvoice(submission, auth, 'production')
       : await reportInvoice(submission, auth, 'production');
 
-    // Chain-tip swap: placeholder -> real hash, locked the same way
-    // create_pos_sale locks it. See the KNOWN LIMITATION note above this
-    // route for the concurrency window this does NOT close.
-    //
-    // seen-launch-readiness-report.md blocker #2: this RPC's own return
-    // value (and any PostgREST error) used to be discarded entirely. The
-    // function deliberately returns FALSE -- not an exception -- when this
-    // invoice is no longer the chain's tip (a newer sale already advanced
-    // it), specifically so a stale/out-of-order call can't corrupt the
-    // chain by overwriting a newer hash. That FALSE is exactly the signal
-    // this route needs and was silently throwing away: the invoice itself
-    // genuinely cleared/reported with ZATCA (so it must NOT be marked
-    // rejected -- that would be factually wrong), but the chain tip was NOT
-    // updated with its real hash, which corrupts the PIH reference every
-    // invoice AFTER this one chains off of. That has to be loud, not silent.
-    const { data: chainAdvanced, error: chainError } = await supabaseAdmin.rpc('zatca_advance_chain_with_real_hash', {
-      p_tenant_id: tenantId,
-      p_order_id: orderId,
-      p_real_hash: invoiceHash,
-    });
-    if (chainError || chainAdvanced !== true) {
-      const chainFailMsg = '[zatca/submit-invoice] PIH CHAIN NOT ADVANCED -- invoice cleared/reported with ZATCA but the chain tip still holds a stale hash. Every subsequent invoice for this tenant will chain off the WRONG previous hash until this is investigated.';
-      logger.error({ tenantId, orderId, invoiceId: invoice.id, invoiceHash, err: chainError }, chainFailMsg);
-      captureServerException(new Error(chainFailMsg), { tenantId, orderId, invoiceId: invoice.id, invoiceHash, chainError });
+    // ZATCA-09: a cleared (standard) document is printed with the QR ZATCA put in it.
+    let clearedQr: string | null = null;
+    if (isB2B) {
+      let raw: any = result.raw;
+      if (typeof raw === 'string') { try { raw = JSON.parse(raw); } catch { raw = null; } }
+      if (typeof raw?.clearedInvoice === 'string') {
+        clearedQr = qrFromDocument(Buffer.from(raw.clearedInvoice, 'base64').toString('utf8'));
+      }
     }
 
     await supabaseAdmin
-      .from('tax_invoices')
+      .from(table)
       .update({
-        invoice_hash: invoiceHash,
         zatca_status: isB2B ? 'cleared' : 'reported',
-        zatca_response: chainAdvanced === true ? result.raw : { originalResponse: result.raw, _pihChainAdvanceFailed: true },
+        zatca_response: result.raw,
         zatca_submitted_at: now.toISOString(),
+        ...(clearedQr ? { zatca_qr: clearedQr } : {}),
       })
-      .eq('id', invoice.id);
+      .eq('id', doc.id);
 
     return reply(200, { ok: true, status: isB2B ? 'cleared' : 'reported' });
   } catch (err: any) {
@@ -2620,20 +2507,23 @@ async function zatcaSendInvoice(tenantId: string, orderId: string): Promise<Zatc
     // network failure, a timeout or ZATCA being down (5xx, 429) is retried.
     const failedStatus = isZatcaRejection(err) ? 'rejected' : 'retry';
     await supabaseAdmin
-      .from('tax_invoices')
+      .from(table)
       .update({
         zatca_status: failedStatus,
         zatca_response: isZatcaError ? err.body : { message: String(err?.message || err) },
         zatca_submitted_at: now.toISOString(),
       })
-      .eq('id', invoice.id);
+      .eq('id', doc.id);
 
-    logger.error({ err }, '[zatca/submit-invoice]');
+    logger.error({ err }, `[zatca${route.slice('/api/zatca'.length)}]`);
     // B2B rejection must never look like success to the caller -- POS.tsx
     // surfaces this to the cashier instead of treating the sale as done.
-    return reply(502, { error: 'ZATCA rejected or failed to process this invoice', status: failedStatus, isB2B });
+    return reply(502, { error: `ZATCA rejected or failed to process this ${kind === 'invoice' ? 'invoice' : 'credit note'}`, status: failedStatus, isB2B });
   }
 }
+
+const zatcaSendInvoice = (tenantId: string, orderId: string) => zatcaSendDocument('invoice', tenantId, orderId);
+const zatcaSendCreditNote = (tenantId: string, creditNoteId: string) => zatcaSendDocument('credit_note', tenantId, creditNoteId);
 
 app.post("/api/zatca/submit-invoice", authenticate, asyncHandler(async (req: any, res) => {
   const tenantId = req.user?.tenantId;
@@ -2665,210 +2555,6 @@ app.post("/api/zatca/submit-invoice", authenticate, asyncHandler(async (req: any
 // workflow actually exists; inventing one now with no real entry point
 // would just be dead, never-wired code.
 // =============================================================================
-// seen-readiness-fixes-task.md P2.4: the credit note send, callable by its route
-// (the cashier's device asking for an immediate send) and by the ZATCA
-// queue worker (/api/cron/zatca-queue), so both run the same code.
-async function zatcaSendCreditNote(tenantId: string, creditNoteId: string): Promise<ZatcaSendResult> {
-
-  const { supabaseAdmin } = await import("./src/server/supabase-admin.ts");
-
-  const { data: prodCreds } = await supabaseAdmin
-    .from('zatca_credentials')
-    .select('certificate, private_key_encrypted, secret_encrypted')
-    .eq('tenant_id', tenantId)
-    .eq('csid_type', 'production')
-    .maybeSingle();
-
-  // No production CSID for this tenant yet -- same "normal case" as
-  // submit-invoice; zatca_status already defaults to 'not_applicable'.
-  if (!prodCreds) {
-    return reply(200, { ok: true, status: 'not_applicable' });
-  }
-
-  const { data: note } = await supabaseAdmin
-    .from('sales_returns')
-    .select('id, tenant_id, order_id, invoice_id, return_number, reason, refunded_amount, returned_at, previous_invoice_hash, zatca_status')
-    .eq('id', creditNoteId)
-    .maybeSingle();
-  if (!note || note.tenant_id !== tenantId) {
-    return reply(404, { error: 'Credit note not found' });
-  }
-
-  // Same idempotency reasoning as submit-invoice: a genuinely failed/
-  // 'not_applicable' note can still be retried, a cleared/reported one must not be re-submitted.
-  if (note.zatca_status === 'cleared' || note.zatca_status === 'reported') {
-    return reply(200, { ok: true, status: note.zatca_status, replayed: true });
-  }
-
-  const { data: originalInvoice } = await supabaseAdmin
-    .from('tax_invoices')
-    .select('invoice_number, tax_rate')
-    .eq('id', note.invoice_id)
-    .eq('tenant_id', tenantId)
-    .maybeSingle();
-  if (!originalInvoice) {
-    return reply(404, { error: 'Original invoice not found for this credit note' });
-  }
-
-  const { data: tenant } = await supabaseAdmin
-    .from('tenants')
-    .select('name, vat_number, commercial_register, address, city, postal_code')
-    .eq('id', tenantId)
-    .maybeSingle();
-  if (!tenant?.vat_number || !tenant?.name) {
-    return reply(409, { error: 'Tenant tax settings incomplete; cannot submit to ZATCA' });
-  }
-
-  const { decryptZatcaSecret } = await import('./src/server/zatcaCrypto.ts');
-  const { signData, sha256Base64 } = await import('./src/server/zatcaSigning.ts');
-  const { buildCreditNoteXml } = await import('./src/server/zatcaInvoiceXml.ts');
-  const { clearInvoice, reportInvoice, ZatcaApiError } = await import('./src/server/zatcaApiClient.ts');
-  const { decodeOrderB2BNotes } = await import('./src/utils/b2bHelper.ts');
-
-  let isB2B = false;
-  let b2bMeta: { b2bCompanyName?: string; b2bTRN?: string } = {};
-  if (note.order_id) {
-    const { data: originalOrder } = await supabaseAdmin
-      .from('orders')
-      .select('notes')
-      .eq('id', note.order_id)
-      .maybeSingle();
-    const decoded = decodeOrderB2BNotes(originalOrder?.notes);
-    isB2B = !!decoded.isB2B;
-    b2bMeta = decoded;
-  }
-
-  const privateKeyPem = decryptZatcaSecret(prodCreds.private_key_encrypted);
-  const secret = decryptZatcaSecret(prodCreds.secret_encrypted);
-  const auth = { binarySecurityToken: prodCreds.certificate, secret };
-
-  // One reader of a stored rate (P1.2, CODEHEALTH-01): a real 0 stays 0, never 15.
-  const { taxRatePercent } = await import('./src/shared/taxRate.ts');
-  const vatPercent = taxRatePercent(originalInvoice.tax_rate) ?? 0;
-  const refundedAmount = Number(note.refunded_amount) || 0;
-  // refunded_amount is tax-inclusive (CreditNotes.tsx caps it at the
-  // original invoice's own total_amount, which is tax-inclusive) -- back
-  // out the tax-exclusive subtotal the same way CreditNotes.tsx's own
-  // refundTax calculation already does, so this XML's totals are internally
-  // consistent (subtotal + tax = totalWithTax) rather than double-counting tax.
-  const subtotal = refundedAmount / (1 + vatPercent / 100);
-  const taxAmount = refundedAmount - subtotal;
-
-  const now = new Date();
-  const uuid = crypto.randomUUID();
-
-  const commonInput = {
-    invoiceNumber: `CN-${note.return_number}`,
-    uuid,
-    issueDateIso: now.toISOString().slice(0, 10),
-    issueTimeIso: now.toISOString().slice(11, 19),
-    seller: {
-      legalName: tenant.name,
-      vatNumber: tenant.vat_number,
-      crn: tenant.commercial_register || undefined,
-      street: tenant.address || undefined,
-      city: tenant.city || undefined,
-      postalCode: tenant.postal_code || undefined,
-      countryCode: 'SA',
-    },
-    paymentMeansCode: '10',
-    lines: [{
-      id: '1',
-      itemName: note.reason || 'مرتجع',
-      quantity: 1,
-      unitPrice: subtotal,
-      lineExtensionAmount: subtotal,
-      taxPercent: vatPercent,
-      taxAmount,
-    }],
-    subtotal,
-    taxAmount,
-    totalWithTax: refundedAmount,
-    previousInvoiceHash: note.previous_invoice_hash,
-    invoiceHash: '',
-    billingReferenceInvoiceNumber: originalInvoice.invoice_number,
-    reason: note.reason || undefined,
-    buyer: isB2B ? { legalName: b2bMeta.b2bCompanyName || '', vatNumber: b2bMeta.b2bTRN || '' } : undefined,
-  };
-
-  const unsignedXml = buildCreditNoteXml(commonInput);
-  const invoiceHash = sha256Base64(unsignedXml);
-  const signatureBase64 = signData(invoiceHash, privateKeyPem);
-  const signedXml = buildCreditNoteXml({ ...commonInput, invoiceHash, signatureBase64 });
-  const invoiceBase64 = Buffer.from(signedXml, 'utf8').toString('base64');
-
-  const submission = { invoiceHash, uuid, invoiceBase64 };
-
-  try {
-    // PIH chain claim FIRST (separate from the submission-status claim right
-    // after it): a note only ever gets one chain link regardless of how many
-    // times submission is retried -- zatca_claim_credit_note_pih is itself
-    // idempotent (returns the existing hash on a second call), so calling it
-    // again here on a retry is safe and does not advance the chain twice.
-    const { data: claimedHash, error: pihClaimError } = await supabaseAdmin.rpc('zatca_claim_credit_note_pih', {
-      p_tenant_id: tenantId,
-      p_note_id: note.id,
-    });
-    if (pihClaimError) return internalFailure("Error in POST /api/zatca/submit-credit-note (pih claim):", pihClaimError);
-
-    // Same atomic submission-status mutex as submit-invoice.
-    const { data: claimed, error: claimError } = await supabaseAdmin
-      .from('sales_returns')
-      .update({ zatca_status: 'pending' })
-      .eq('id', note.id)
-      .not('zatca_status', 'in', '(cleared,reported,pending)')
-      .select('id')
-      .maybeSingle();
-    if (claimError) return internalFailure("Error in POST /api/zatca/submit-credit-note (claim):", claimError);
-    if (!claimed) {
-      return reply(409, { error: 'ZATCA submission already in progress or completed for this credit note' });
-    }
-
-    const result = isB2B
-      ? await clearInvoice(submission, auth, 'production')
-      : await reportInvoice(submission, auth, 'production');
-
-    const { data: chainAdvanced, error: chainError } = await supabaseAdmin.rpc('zatca_advance_chain_with_real_hash', {
-      p_tenant_id: tenantId,
-      p_order_id: note.id,
-      p_real_hash: invoiceHash,
-    });
-    if (chainError || chainAdvanced !== true) {
-      const chainFailMsg = '[zatca/submit-credit-note] PIH CHAIN NOT ADVANCED -- credit note cleared/reported with ZATCA but the chain tip still holds a stale hash (or the claimed hash above was already stale). Every subsequent invoice/note for this tenant will chain off the WRONG previous hash until this is investigated.';
-      logger.error({ tenantId, noteId: note.id, invoiceHash, err: chainError }, chainFailMsg);
-      captureServerException(new Error(chainFailMsg), { tenantId, noteId: note.id, invoiceHash, chainError });
-    }
-
-    await supabaseAdmin
-      .from('sales_returns')
-      .update({
-        invoice_hash: invoiceHash,
-        zatca_status: isB2B ? 'cleared' : 'reported',
-        zatca_response: chainAdvanced === true ? result.raw : { originalResponse: result.raw, _pihChainAdvanceFailed: true },
-        zatca_submitted_at: now.toISOString(),
-      })
-      .eq('id', note.id);
-
-    return reply(200, { ok: true, status: isB2B ? 'cleared' : 'reported' });
-  } catch (err: any) {
-    const isZatcaError = err instanceof ZatcaApiError;
-    // ZATCA-17: ZATCA turning the document down (4xx) is a rejection; a
-    // network failure, a timeout or ZATCA being down (5xx, 429) is retried.
-    const failedStatus = isZatcaRejection(err) ? 'rejected' : 'retry';
-    await supabaseAdmin
-      .from('sales_returns')
-      .update({
-        zatca_status: failedStatus,
-        zatca_response: isZatcaError ? err.body : { message: String(err?.message || err) },
-        zatca_submitted_at: now.toISOString(),
-      })
-      .eq('id', note.id);
-
-    logger.error({ err }, '[zatca/submit-credit-note]');
-    return reply(502, { error: 'ZATCA rejected or failed to process this credit note', status: failedStatus, isB2B });
-  }
-}
-
 app.post("/api/zatca/submit-credit-note", authenticate, asyncHandler(async (req: any, res) => {
   const tenantId = req.user?.tenantId;
   const { creditNoteId } = req.body || {};
@@ -3033,14 +2719,15 @@ app.post("/api/zatca/run-compliance-tests", authenticate, requirePermission('set
   if (!creds) return res.status(409).json({ error: 'لا توجد شهادة Compliance CSID بعد -- أكمِل خطوة OTP أولاً' });
 
   const { decryptZatcaSecret } = await import('./src/server/zatcaCrypto.ts');
-  const { signData, sha256Base64 } = await import('./src/server/zatcaSigning.ts');
-  const { buildSimplifiedInvoiceXml, buildStandardInvoiceXml } = await import('./src/server/zatcaInvoiceXml.ts');
+  const { signZatcaDocument } = await import('./src/server/zatcaInvoiceXml.ts');
+  const { ZATCA_FIRST_PIH, readZatcaCertificate } = await import('./src/server/zatcaXades.ts');
+  const { riyadhDateTime } = await import('./src/server/zatcaChain.ts');
   const { submitComplianceInvoice, ZatcaApiError } = await import('./src/server/zatcaApiClient.ts');
 
   const privateKeyPem = decryptZatcaSecret(creds.private_key_encrypted);
   const auth = { binarySecurityToken: creds.certificate, secret: decryptZatcaSecret(creds.secret_encrypted) };
-
-  const now = new Date();
+  const certificate = readZatcaCertificate(creds.certificate);
+  const at = riyadhDateTime(new Date());
   const seller = {
     legalName: tenant?.name || 'Seen Test Merchant',
     vatNumber: tenant?.vat_number || '399999999900003',
@@ -3049,53 +2736,52 @@ app.post("/api/zatca/run-compliance-tests", authenticate, requirePermission('set
     city: tenant?.city || undefined,
     countryCode: 'SA',
   };
-  const testLine = { id: '1', itemName: 'Test Item', quantity: 1, unitPrice: 100, lineExtensionAmount: 100, taxPercent: 15, taxAmount: 15 };
+  const buyer = { legalName: 'Test Buyer', vatNumber: '399999999900003', street: 'Test Street', buildingNumber: '1234', district: 'Test', city: 'Riyadh', postalCode: '12345' };
+  const lines = [{ id: '1', itemName: 'Test Item', quantity: 1, lineExtensionAmount: 100, taxAmount: 15, taxPercent: 15 }];
 
-  // Submits one simplified (B2C) and one standard (B2B) test invoice -- the
-  // two invoice types this codebase can currently build (zatcaInvoiceXml.ts
-  // has no credit/debit note builder yet, so a full ZATCA compliance
-  // checklist isn't covered here; this is the honest subset, not the whole
-  // required suite).
-  async function runOne(kind: 'simplified' | 'standard') {
-    const common = {
-      invoiceNumber: kind === 'simplified' ? 'TEST-COMPLIANCE-SIMPLIFIED' : 'TEST-COMPLIANCE-STANDARD',
-      uuid: crypto.randomUUID(),
-      issueDateIso: now.toISOString().slice(0, 10),
-      issueTimeIso: now.toISOString().slice(11, 19),
-      seller,
-      paymentMeansCode: '10',
-      lines: [testLine],
-      subtotal: 100,
-      taxAmount: 15,
-      totalWithTax: 115,
-      previousInvoiceHash: null as string | null,
-      invoiceHash: '',
-    };
-    const buyer = { legalName: 'Test Buyer', vatNumber: '399999999900003' };
-    const build = (withSignature: { invoiceHash: string; signatureBase64: string } | null) => {
-      const input = withSignature ? { ...common, ...withSignature } : common;
-      return kind === 'simplified' ? buildSimplifiedInvoiceXml(input) : buildStandardInvoiceXml({ ...input, buyer });
-    };
-    const unsignedXml = build(null);
-    const invoiceHash = sha256Base64(unsignedXml);
-    const signatureBase64 = signData(invoiceHash, privateKeyPem);
-    const signedXml = build({ invoiceHash, signatureBase64 });
-    const invoiceBase64 = Buffer.from(signedXml, 'utf8').toString('base64');
-    const result = await submitComplianceInvoice({ invoiceHash, uuid: common.uuid, invoiceBase64 }, auth, zatcaTestEnvironment());
-    return { type: kind, status: result.status };
-  }
-
+  // seen-readiness-fixes-task.md P2.3 (ZATCA-06): the six documents ZATCA's
+  // compliance check asks for, chained like real ones (ICV 1-6, each PIH the
+  // previous document's hash). Notes reference the invoice of their kind.
+  const plan = [
+    { name: 'standard invoice', type: 'invoice', simplified: false },
+    { name: 'standard credit note', type: 'credit_note', simplified: false },
+    { name: 'standard debit note', type: 'debit_note', simplified: false },
+    { name: 'simplified invoice', type: 'invoice', simplified: true },
+    { name: 'simplified credit note', type: 'credit_note', simplified: true },
+    { name: 'simplified debit note', type: 'debit_note', simplified: true },
+  ] as const;
+  let pih = ZATCA_FIRST_PIH;
   const results: { type: string; status?: string; error?: unknown }[] = [];
-  for (const kind of ['simplified', 'standard'] as const) {
+  for (const [i, p] of plan.entries()) {
     try {
-      results.push(await runOne(kind));
+      const uuid = crypto.randomUUID();
+      const doc = signZatcaDocument({
+        type: p.type,
+        simplified: p.simplified,
+        invoiceNumber: `TEST-COMPLIANCE-${i + 1}`,
+        uuid,
+        issueDate: at.date,
+        issueTime: at.time,
+        icv: i + 1,
+        pih,
+        seller,
+        buyer: p.simplified ? undefined : buyer,
+        paymentMeansCode: '10',
+        billingReference: p.type === 'invoice' ? undefined : (p.simplified ? 'TEST-COMPLIANCE-4' : 'TEST-COMPLIANCE-1'),
+        reason: p.type === 'invoice' ? undefined : 'Compliance test',
+        lines,
+      }, { privateKeyPem, certificate, signingTime: `${at.date}T${at.time}` });
+      pih = doc.invoiceHash;
+      const invoiceBase64 = Buffer.from(doc.xml, 'utf8').toString('base64');
+      const result = await submitComplianceInvoice({ invoiceHash: doc.invoiceHash, uuid, invoiceBase64 }, auth, zatcaTestEnvironment());
+      results.push({ type: p.name, status: result.status });
     } catch (err: any) {
-      logger.error({ err, kind }, '[zatca/run-compliance-tests]');
-      results.push({ type: kind, error: err instanceof ZatcaApiError ? err.body : String(err?.message || err) });
+      logger.error({ err, kind: p.name }, '[zatca/run-compliance-tests]');
+      results.push({ type: p.name, error: err instanceof ZatcaApiError ? err.body : String(err?.message || err) });
     }
   }
 
-  res.json({ ok: results.every(r => !r.error), results });
+  res.json({ ok: results.length === plan.length && results.every(r => !r.error), results });
 }));
 
 app.post("/api/zatca/request-production-csid", authenticate, requirePermission('settings.tax'), asyncHandler(async (req: any, res) => {

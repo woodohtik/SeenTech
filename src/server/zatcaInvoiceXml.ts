@@ -1,314 +1,321 @@
 import { create } from 'xmlbuilder2';
+import {
+  NS_DS, NS_XADES, ZatcaCertificate, signInvoiceHash, signedPropertiesDigest, zatcaInvoiceHash, zatcaPhase2Qr,
+} from './zatcaXades';
 
 /**
- * ZATCA Phase 2 readiness (seen-zatca-readiness-task.md, extended by
- * seen-zatca-real-onboarding-task.md Phase ب step 4): builds UBL 2.1 tax
- * invoice XML -- "Simplified" for B2C sales (Reporting flow, 24h window)
- * and "Standard" for B2B sales (synchronous Clearance flow) -- matching
- * what POS.tsx currently issues as a QR-only Phase 1 receipt.
+ * seen-readiness-fixes-task.md P2.1 (ZATCA-02, ZATCA-03, ZATCA-10, ZATCA-11)
+ * -- the UBL 2.1 document ZATCA Phase 2 expects, for a tax invoice (388), a
+ * credit note (381) or a debit note (383), simplified (B2C, reported) or
+ * standard (B2B, cleared):
  *
- * CONFIDENCE LEVELS (read before trusting any part of this against a real
- * ZATCA submission):
- *  - HIGH: the general UBL 2.1 invoice skeleton -- namespaces, supplier/
- *    customer party structure, tax total, legal monetary total, invoice
- *    lines. This is standard UBL, stable and widely documented.
- *  - LOWER, ZATCA-SPECIFIC, NEEDS VALIDATION: cbc:InvoiceTypeCode's `name`
- *    attribute (a 7-digit flag string ZATCA overlays on top of the
- *    standard UBL invoice type code) and the exact internal structure of
- *    the ext:UBLExtensions signature block (ZATCA's own sac:/sig:
- *    namespaces for UBLDocumentSignatures, not plain UBL). Both are
- *    implemented here to the best of available knowledge but have NOT
- *    been checked against ZATCA's actual XSD or a real compliance
- *    response -- that only happens the first time a built invoice is
- *    actually submitted via zatcaApiClient.ts's submitComplianceInvoice().
- *    Cross-check both specifically against ZATCA's own published technical
- *    implementation guideline and reference examples before relying on
- *    this for a real submission.
+ *   ext:UBLExtensions (XAdES signature) . ProfileID . ID . UUID . IssueDate .
+ *   IssueTime . InvoiceTypeCode . DocumentCurrencyCode . TaxCurrencyCode .
+ *   BillingReference (notes) . AdditionalDocumentReference ICV, PIH, QR
+ *   (simplified) . cac:Signature . supplier . customer . Delivery (standard) .
+ *   PaymentMeans (+ InstructionNote, the reason of a note) . TaxTotal twice .
+ *   LegalMonetaryTotal . InvoiceLine...
  *
- * What IS verified (see zatcaInvoiceXml.test.ts): the output is
- * well-formed XML, uses the correct namespaces, and every field passed in
- * actually appears in the expected element -- not that ZATCA's validator
- * would accept it.
+ * The amounts come from the document's own fixed lines (P1's one tax engine,
+ * snapshotted at issue): every line already carries its share of any discount,
+ * so the lines add up to the header and no document-level AllowanceCharge is
+ * written. Written compact (no whitespace between elements): ZATCA hashes the
+ * document after removing the signature parts, and whitespace left behind is
+ * the classic cause of a hash mismatch.
+ *
+ * NOT YET CHECKED against ZATCA's SDK validator or its sandbox -- see
+ * docs/zatca/compliance-run.md.
  */
+
+export type ZatcaTaxCategory = 'S' | 'Z' | 'E' | 'O';
 
 export interface ZatcaInvoiceLine {
   id: string;
   itemName: string;
   quantity: number;
-  unitPrice: number;
-  /** Line total before tax (quantity * unitPrice, after any line-level discount). */
-  lineExtensionAmount: number;
-  /** VAT rate as a percentage, e.g. 15 for the standard Saudi rate. */
-  taxPercent: number;
-  taxAmount: number;
-  /**
-   * UN/ECE unit of the quantity, only for a line sold by length (MTR / YRD --
-   * seen-verticals-readiness-task.md Phase 5). Absent: the element is written
-   * exactly as before, with no unitCode.
-   */
+  /** UN/ECE unit (MTR / YRD for fabric sold by length); PCE when absent. */
   unitCode?: string;
+  /** The line's net as charged (after its share of any discount). */
+  lineExtensionAmount: number;
+  taxAmount: number;
+  /** VAT rate as a percentage, e.g. 15. */
+  taxPercent: number;
+  /** S standard; O not subject to VAT (an item the shop marks exempt). Defaults from the rate. */
+  taxCategory?: ZatcaTaxCategory;
 }
 
 export interface ZatcaParty {
   legalName: string;
   vatNumber: string;
-  crn?: string; // Commercial Registration number, if available -- seller only
+  crn?: string;
   street?: string;
+  buildingNumber?: string;
+  district?: string;
   city?: string;
   postalCode?: string;
-  countryCode?: string; // ISO 3166-1 alpha-2, e.g. "SA"
+  countryCode?: string;
 }
 
-interface ZatcaInvoiceInputCommon {
+export interface ZatcaDocumentInput {
+  type: 'invoice' | 'credit_note' | 'debit_note';
+  simplified: boolean;
   invoiceNumber: string;
-  /** A UUID identifying this specific invoice instance (distinct from invoiceNumber, which is human-facing/sequential). */
   uuid: string;
-  issueDateIso: string; // e.g. "2026-09-17"
-  issueTimeIso: string; // e.g. "14:32:00"
+  /** "YYYY-MM-DD" and "HH:MM:SS", fixed when the document was issued. */
+  issueDate: string;
+  issueTime: string;
+  /** Invoice counter value: the shop's documents numbered 1, 2, 3... with no gap. */
+  icv: number;
+  /** The previous document's hash; ZATCA_FIRST_PIH for the first. */
+  pih: string;
   seller: ZatcaParty;
-  paymentMeansCode: string; // UNCL4461, e.g. "10" = cash, "48" = card
-  lines: ZatcaInvoiceLine[];
-  subtotal: number; // sum of lineExtensionAmount
-  taxAmount: number; // total VAT
-  totalWithTax: number; // subtotal + taxAmount
-  /** The previous-invoice-hash from the PIH chain (create_pos_sale / zatca_invoice_chain_state) -- null only for the very first invoice in a tenant's chain. */
-  previousInvoiceHash: string | null;
-  /** This invoice's own hash. Currently the placeholder hash from create_pos_sale (Phase 3) until this XML is what actually gets hashed instead. */
-  invoiceHash: string;
-  /** Base64 XML-DSig signature over invoiceHash, once zatcaSigning.ts is wired to a real CSID. Omit while there is no real key yet. */
-  signatureBase64?: string;
-  /** Base64 of the signing certificate, embedded in UBLExtensions once available. */
-  certificateBase64?: string;
-}
-
-export type ZatcaSimplifiedInvoiceInput = ZatcaInvoiceInputCommon;
-
-export interface ZatcaStandardInvoiceInput extends ZatcaInvoiceInputCommon {
-  /** Required for a standard (B2B) invoice -- absent on a simplified one. */
-  buyer: ZatcaParty;
-}
-
-/**
- * seen-ai-assistant-zatca-cr-task.md, ZATCA #1: a credit note is not a new
- * invoice type so much as the SAME invoice skeleton with a different
- * cbc:InvoiceTypeCode (381 instead of 388) plus a mandatory
- * cac:BillingReference back to the invoice it corrects -- ZATCA has no
- * concept of a credit note that doesn't reference an original invoice.
- * CONFIDENCE LEVEL: same as the module-level note above -- the general UBL
- * shape here is standard and documented; the exact BillingReference
- * structure has not been checked against a real ZATCA compliance response
- * (no tenant has completed real onboarding yet, see zatcaApiClient.ts).
- */
-export interface ZatcaCreditNoteInput extends ZatcaInvoiceInputCommon {
-  /** Buyer party -- present for a standard (B2B) credit note, absent for simplified (B2C). */
   buyer?: ZatcaParty;
-  /** The original invoice's own invoice number (cbc:ID), not its UUID. */
-  billingReferenceInvoiceNumber: string;
-  /** Free-text reason, e.g. the merchant-entered refund reason -- ZATCA recommends but does not strictly require this. */
+  paymentMeansCode: string;
+  /** Standard documents: the supply date (defaults to the issue date). */
+  deliveryDate?: string;
+  /** Credit / debit notes: the original invoice's number, and why the note was issued. */
+  billingReference?: string;
   reason?: string;
+  lines: ZatcaInvoiceLine[];
 }
 
-const NS = {
+export type ZatcaSignature = {
+  certificate: ZatcaCertificate;
+  /** "YYYY-MM-DDTHH:MM:SS" */
+  signingTime: string;
+  invoiceHash: string;
+  signature: string;
+  qr?: string;
+};
+
+export const NS = {
   invoice: 'urn:oasis:names:specification:ubl:schema:xsd:Invoice-2',
   cac: 'urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2',
   cbc: 'urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2',
   ext: 'urn:oasis:names:specification:ubl:schema:xsd:CommonExtensionComponents-2',
   sig: 'urn:oasis:names:specification:ubl:schema:xsd:CommonSignatureComponents-2',
   sac: 'urn:oasis:names:specification:ubl:schema:xsd:SignatureAggregateComponents-2',
+  sbc: 'urn:oasis:names:specification:ubl:schema:xsd:SignatureBasicComponents-2',
 };
 
-/**
- * Shared UBL skeleton for both invoice types -- the two public builders
- * below only differ in invoiceTypeCode's `name` flag and whether an
- * AccountingCustomerParty (buyer) block is present, per ZATCA's own
- * standard/simplified distinction.
- */
-function buildInvoiceXmlCore(
-  input: ZatcaInvoiceInputCommon & { buyer?: ZatcaParty; billingReferenceInvoiceNumber?: string; reason?: string },
-  invoiceTypeNameFlag: string,
-  invoiceTypeCode: string = '388'
-): string {
+const TYPE_CODE = { invoice: '388', credit_note: '381', debit_note: '383' } as const;
+const r2 = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100;
+const money = (n: number) => r2(n).toFixed(2);
+/** A unit price: as many decimals as it takes (up to 6) for quantity x price to be the line. */
+function unitPrice(net: number, qty: number): string {
+  const p = net / qty;
+  for (let d = 2; d <= 6; d++) if (Math.abs(Number(p.toFixed(d)) * qty - net) < 0.005) return p.toFixed(d);
+  return p.toFixed(6);
+}
+const pct = (n: number) => String(r2(n));
+const categoryOf = (l: ZatcaInvoiceLine): ZatcaTaxCategory => l.taxCategory ?? (l.taxPercent > 0 ? 'S' : 'O');
+// An item the shop marks exempt is reported as not subject to VAT; the exact
+// exemption code (VATEX-SA-...) is for the founder's tax adviser to confirm.
+const EXEMPTION: Partial<Record<ZatcaTaxCategory, { code: string; reason: string }>> = {
+  O: { code: 'VATEX-SA-OOS', reason: 'Not subject to VAT' },
+};
+
+export type ZatcaTotals = { lineExtension: number; tax: number; taxInclusive: number };
+export function zatcaTotals(lines: ZatcaInvoiceLine[]): ZatcaTotals {
+  const lineExtension = r2(lines.reduce((s, l) => s + r2(l.lineExtensionAmount), 0));
+  const tax = r2(lines.reduce((s, l) => s + r2(l.taxAmount), 0));
+  return { lineExtension, tax, taxInclusive: r2(lineExtension + tax) };
+}
+
+function party(parent: any, p: ZatcaParty, isSeller: boolean) {
+  const node = parent.ele(NS.cac, 'cac:Party');
+  if (isSeller && p.crn) node.ele(NS.cac, 'cac:PartyIdentification').ele(NS.cbc, 'cbc:ID', { schemeID: 'CRN' }).txt(p.crn);
+  const address = node.ele(NS.cac, 'cac:PostalAddress');
+  if (p.street) address.ele(NS.cbc, 'cbc:StreetName').txt(p.street);
+  if (p.buildingNumber) address.ele(NS.cbc, 'cbc:BuildingNumber').txt(p.buildingNumber);
+  if (p.district) address.ele(NS.cbc, 'cbc:CitySubdivisionName').txt(p.district);
+  if (p.city) address.ele(NS.cbc, 'cbc:CityName').txt(p.city);
+  if (p.postalCode) address.ele(NS.cbc, 'cbc:PostalZone').txt(p.postalCode);
+  address.ele(NS.cac, 'cac:Country').ele(NS.cbc, 'cbc:IdentificationCode').txt(p.countryCode || 'SA');
+  if (p.vatNumber) {
+    const scheme = node.ele(NS.cac, 'cac:PartyTaxScheme');
+    scheme.ele(NS.cbc, 'cbc:CompanyID').txt(p.vatNumber);
+    scheme.ele(NS.cac, 'cac:TaxScheme').ele(NS.cbc, 'cbc:ID').txt('VAT');
+  }
+  node.ele(NS.cac, 'cac:PartyLegalEntity').ele(NS.cbc, 'cbc:RegistrationName').txt(p.legalName);
+}
+
+function taxCategory(parent: any, name: 'cac:TaxCategory' | 'cac:ClassifiedTaxCategory', cat: ZatcaTaxCategory, percent: number, withReason: boolean) {
+  const node = parent.ele(NS.cac, name);
+  node.ele(NS.cbc, 'cbc:ID').txt(cat);
+  node.ele(NS.cbc, 'cbc:Percent').txt(pct(percent));
+  const ex = EXEMPTION[cat];
+  if (withReason && ex) {
+    node.ele(NS.cbc, 'cbc:TaxExemptionReasonCode').txt(ex.code);
+    node.ele(NS.cbc, 'cbc:TaxExemptionReason').txt(ex.reason);
+  }
+  node.ele(NS.cac, 'cac:TaxScheme').ele(NS.cbc, 'cbc:ID').txt('VAT');
+}
+
+function ublExtensions(doc: any, s: ZatcaSignature) {
+  const content = doc.ele(NS.ext, 'ext:UBLExtensions').ele(NS.ext, 'ext:UBLExtension');
+  content.ele(NS.ext, 'ext:ExtensionURI').txt('urn:oasis:names:specification:ubl:dsig:enveloped:xades');
+  const sigs = content.ele(NS.ext, 'ext:ExtensionContent')
+    .ele(NS.sig, 'sig:UBLDocumentSignatures', { 'xmlns:sig': NS.sig, 'xmlns:sac': NS.sac, 'xmlns:sbc': NS.sbc });
+  const info = sigs.ele(NS.sac, 'sac:SignatureInformation');
+  info.ele(NS.cbc, 'cbc:ID').txt('urn:oasis:names:specification:ubl:signature:1');
+  info.ele(NS.sbc, 'sbc:ReferencedSignatureID').txt('urn:oasis:names:specification:ubl:signature:Invoice');
+  const sig = info.ele(NS_DS, 'ds:Signature', { 'xmlns:ds': NS_DS, Id: 'signature' });
+
+  const signedInfo = sig.ele(NS_DS, 'ds:SignedInfo');
+  signedInfo.ele(NS_DS, 'ds:CanonicalizationMethod', { Algorithm: 'http://www.w3.org/2006/12/xml-c14n11' });
+  signedInfo.ele(NS_DS, 'ds:SignatureMethod', { Algorithm: 'http://www.w3.org/2001/04/xmldsig-more#ecdsa-sha256' });
+  const ref = signedInfo.ele(NS_DS, 'ds:Reference', { Id: 'invoiceSignedData', URI: '' });
+  const transforms = ref.ele(NS_DS, 'ds:Transforms');
+  for (const xpath of [
+    'not(//ancestor-or-self::ext:UBLExtensions)',
+    'not(//ancestor-or-self::cac:Signature)',
+    "not(//ancestor-or-self::cac:AdditionalDocumentReference[cbc:ID='QR'])",
+  ]) {
+    transforms.ele(NS_DS, 'ds:Transform', { Algorithm: 'http://www.w3.org/TR/1999/REC-xpath-19991116' }).ele(NS_DS, 'ds:XPath').txt(xpath);
+  }
+  transforms.ele(NS_DS, 'ds:Transform', { Algorithm: 'http://www.w3.org/2006/12/xml-c14n11' });
+  ref.ele(NS_DS, 'ds:DigestMethod', { Algorithm: 'http://www.w3.org/2001/04/xmlenc#sha256' });
+  ref.ele(NS_DS, 'ds:DigestValue').txt(s.invoiceHash);
+  const propsRef = signedInfo.ele(NS_DS, 'ds:Reference', { Type: 'http://www.w3.org/2000/09/xmldsig#SignatureProperties', URI: '#xadesSignedProperties' });
+  propsRef.ele(NS_DS, 'ds:DigestMethod', { Algorithm: 'http://www.w3.org/2001/04/xmlenc#sha256' });
+  propsRef.ele(NS_DS, 'ds:DigestValue').txt(signedPropertiesDigest({ signingTime: s.signingTime, certificate: s.certificate }));
+
+  sig.ele(NS_DS, 'ds:SignatureValue').txt(s.signature);
+  sig.ele(NS_DS, 'ds:KeyInfo').ele(NS_DS, 'ds:X509Data').ele(NS_DS, 'ds:X509Certificate').txt(s.certificate.base64);
+
+  const props = sig.ele(NS_DS, 'ds:Object')
+    .ele(NS_XADES, 'xades:QualifyingProperties', { 'xmlns:xades': NS_XADES, Target: 'signature' })
+    .ele(NS_XADES, 'xades:SignedProperties', { Id: 'xadesSignedProperties' })
+    .ele(NS_XADES, 'xades:SignedSignatureProperties');
+  props.ele(NS_XADES, 'xades:SigningTime').txt(s.signingTime);
+  const cert = props.ele(NS_XADES, 'xades:SigningCertificate').ele(NS_XADES, 'xades:Cert');
+  const digest = cert.ele(NS_XADES, 'xades:CertDigest');
+  digest.ele(NS_DS, 'ds:DigestMethod', { Algorithm: 'http://www.w3.org/2001/04/xmlenc#sha256' });
+  digest.ele(NS_DS, 'ds:DigestValue').txt(s.certificate.digest);
+  const serial = cert.ele(NS_XADES, 'xades:IssuerSerial');
+  serial.ele(NS_DS, 'ds:X509IssuerName').txt(s.certificate.issuerName);
+  serial.ele(NS_DS, 'ds:X509SerialNumber').txt(s.certificate.serialNumber);
+}
+
+/** The document, signed when `signature` is given (unsigned: what the hash is taken over). */
+export function buildZatcaDocument(input: ZatcaDocumentInput, signature?: ZatcaSignature): string {
+  if (!input.lines.length) throw new Error('a ZATCA document needs at least one line');
+  if (input.type !== 'invoice' && (!input.billingReference || !input.reason)) {
+    throw new Error('a credit or debit note needs the original invoice number and a reason');
+  }
+  const totals = zatcaTotals(input.lines);
   const doc = create({ version: '1.0', encoding: 'UTF-8' })
-    .ele(NS.invoice, 'Invoice', {
-      'xmlns:cac': NS.cac,
-      'xmlns:cbc': NS.cbc,
-      'xmlns:ext': NS.ext,
-    });
+    .ele(NS.invoice, 'Invoice', { 'xmlns:cac': NS.cac, 'xmlns:cbc': NS.cbc, 'xmlns:ext': NS.ext });
 
-  // ext:UBLExtensions -- the digital signature envelope. ZATCA-specific
-  // internal structure (sac:UBLDocumentSignatures/.../sig:...); see the
-  // module-level confidence note above. Left mostly empty until a real
-  // signature/certificate exist, so an unsigned "draft" of this invoice is
-  // still well-formed XML on its own.
-  const ext = doc
-    .ele(NS.ext, 'ext:UBLExtensions')
-    .ele(NS.ext, 'ext:UBLExtension')
-    .ele(NS.ext, 'ext:ExtensionURI').txt('urn:oasis:names:specification:ubl:dsig:enveloped:xades').up()
-    .ele(NS.ext, 'ext:ExtensionContent');
-
-  if (input.signatureBase64) {
-    ext
-      .ele(NS.sig, 'sig:UBLDocumentSignatures', { 'xmlns:sig': NS.sig, 'xmlns:sac': NS.sac })
-      .ele(NS.sac, 'sac:SignatureInformation')
-      .ele(NS.sac, 'sac:Signature').txt(input.signatureBase64).up()
-      .up();
+  if (signature) ublExtensions(doc, signature);
+  doc.ele(NS.cbc, 'cbc:ProfileID').txt('reporting:1.0');
+  doc.ele(NS.cbc, 'cbc:ID').txt(input.invoiceNumber);
+  doc.ele(NS.cbc, 'cbc:UUID').txt(input.uuid);
+  doc.ele(NS.cbc, 'cbc:IssueDate').txt(input.issueDate);
+  doc.ele(NS.cbc, 'cbc:IssueTime').txt(input.issueTime);
+  doc.ele(NS.cbc, 'cbc:InvoiceTypeCode', { name: input.simplified ? '0200000' : '0100000' }).txt(TYPE_CODE[input.type]);
+  doc.ele(NS.cbc, 'cbc:DocumentCurrencyCode').txt('SAR');
+  doc.ele(NS.cbc, 'cbc:TaxCurrencyCode').txt('SAR');
+  if (input.billingReference) {
+    doc.ele(NS.cac, 'cac:BillingReference').ele(NS.cac, 'cac:InvoiceDocumentReference').ele(NS.cbc, 'cbc:ID').txt(input.billingReference);
   }
-  ext.up().up(); // back up to Invoice
-
-  doc.ele(NS.cbc, 'cbc:ProfileID').txt('reporting:1.0').up();
-  doc.ele(NS.cbc, 'cbc:ID').txt(input.invoiceNumber).up();
-  doc.ele(NS.cbc, 'cbc:UUID').txt(input.uuid).up();
-  doc.ele(NS.cbc, 'cbc:IssueDate').txt(input.issueDateIso).up();
-  doc.ele(NS.cbc, 'cbc:IssueTime').txt(input.issueTimeIso).up();
-  // See the module-level confidence note; verify this exact digit string
-  // against ZATCA's own guideline once you can. "0200000" = simplified,
-  // "0100000" = standard, no third-party billing/nominal supply/export/
-  // summary/self-billing flags set in either case.
-  doc.ele(NS.cbc, 'cbc:InvoiceTypeCode', { name: invoiceTypeNameFlag }).txt(invoiceTypeCode).up();
-  if (input.reason) {
-    doc.ele(NS.cbc, 'cbc:Note').txt(input.reason).up();
+  const icv = doc.ele(NS.cac, 'cac:AdditionalDocumentReference');
+  icv.ele(NS.cbc, 'cbc:ID').txt('ICV');
+  icv.ele(NS.cbc, 'cbc:UUID').txt(String(input.icv));
+  const pih = doc.ele(NS.cac, 'cac:AdditionalDocumentReference');
+  pih.ele(NS.cbc, 'cbc:ID').txt('PIH');
+  pih.ele(NS.cac, 'cac:Attachment').ele(NS.cbc, 'cbc:EmbeddedDocumentBinaryObject', { mimeCode: 'text/plain' }).txt(input.pih);
+  if (signature?.qr) {
+    const qr = doc.ele(NS.cac, 'cac:AdditionalDocumentReference');
+    qr.ele(NS.cbc, 'cbc:ID').txt('QR');
+    qr.ele(NS.cac, 'cac:Attachment').ele(NS.cbc, 'cbc:EmbeddedDocumentBinaryObject', { mimeCode: 'text/plain' }).txt(signature.qr);
   }
-  doc.ele(NS.cbc, 'cbc:DocumentCurrencyCode').txt('SAR').up();
-  doc.ele(NS.cbc, 'cbc:TaxCurrencyCode').txt('SAR').up();
+  const sigRef = doc.ele(NS.cac, 'cac:Signature');
+  sigRef.ele(NS.cbc, 'cbc:ID').txt('urn:oasis:names:specification:ubl:signature:Invoice');
+  sigRef.ele(NS.cbc, 'cbc:SignatureMethod').txt('urn:oasis:names:specification:ubl:dsig:enveloped:xades');
 
-  // cac:BillingReference -- mandatory for a credit/debit note (381/383):
-  // ZATCA has no concept of one that doesn't reference the invoice it
-  // corrects. Absent for a plain invoice (388), where there's nothing to
-  // reference yet.
-  if (input.billingReferenceInvoiceNumber) {
-    doc
-      .ele(NS.cac, 'cac:BillingReference')
-      .ele(NS.cac, 'cac:InvoiceDocumentReference')
-      .ele(NS.cbc, 'cbc:ID').txt(input.billingReferenceInvoiceNumber).up()
-      .up()
-      .up();
-  }
+  party(doc.ele(NS.cac, 'cac:AccountingSupplierParty'), input.seller, true);
+  if (input.buyer) party(doc.ele(NS.cac, 'cac:AccountingCustomerParty'), input.buyer, false);
+  else doc.ele(NS.cac, 'cac:AccountingCustomerParty');
+  if (!input.simplified) doc.ele(NS.cac, 'cac:Delivery').ele(NS.cbc, 'cbc:ActualDeliveryDate').txt(input.deliveryDate || input.issueDate);
 
-  if (input.previousInvoiceHash) {
-    doc
-      .ele(NS.cac, 'cac:AdditionalDocumentReference')
-      .ele(NS.cbc, 'cbc:ID').txt('PIH').up()
-      .ele(NS.cac, 'cac:Attachment')
-      .ele(NS.cbc, 'cbc:EmbeddedDocumentBinaryObject', { mimeCode: 'text/plain' }).txt(input.previousInvoiceHash).up()
-      .up()
-      .up();
-  }
+  const means = doc.ele(NS.cac, 'cac:PaymentMeans');
+  means.ele(NS.cbc, 'cbc:PaymentMeansCode').txt(input.paymentMeansCode);
+  if (input.type !== 'invoice') means.ele(NS.cbc, 'cbc:InstructionNote').txt(input.reason!);
 
-  const supplierParty = doc.ele(NS.cac, 'cac:AccountingSupplierParty').ele(NS.cac, 'cac:Party');
-  if (input.seller.crn) {
-    supplierParty
-      .ele(NS.cac, 'cac:PartyIdentification')
-      .ele(NS.cbc, 'cbc:ID', { schemeID: 'CRN' }).txt(input.seller.crn).up()
-      .up();
-  }
-  if (input.seller.street || input.seller.city || input.seller.countryCode) {
-    const address = supplierParty.ele(NS.cac, 'cac:PostalAddress');
-    if (input.seller.street) address.ele(NS.cbc, 'cbc:StreetName').txt(input.seller.street).up();
-    if (input.seller.city) address.ele(NS.cbc, 'cbc:CityName').txt(input.seller.city).up();
-    if (input.seller.postalCode) address.ele(NS.cbc, 'cbc:PostalZone').txt(input.seller.postalCode).up();
-    address.ele(NS.cac, 'cac:Country').ele(NS.cbc, 'cbc:IdentificationCode').txt(input.seller.countryCode || 'SA').up().up();
-    address.up();
-  }
-  supplierParty
-    .ele(NS.cac, 'cac:PartyTaxScheme')
-    .ele(NS.cbc, 'cbc:CompanyID').txt(input.seller.vatNumber).up()
-    .ele(NS.cac, 'cac:TaxScheme').ele(NS.cbc, 'cbc:ID').txt('VAT').up().up()
-    .up();
-  supplierParty
-    .ele(NS.cac, 'cac:PartyLegalEntity')
-    .ele(NS.cbc, 'cbc:RegistrationName').txt(input.seller.legalName).up()
-    .up();
-  supplierParty.up().up();
-
-  if (input.buyer) {
-    const buyerParty = doc.ele(NS.cac, 'cac:AccountingCustomerParty').ele(NS.cac, 'cac:Party');
-    if (input.buyer.street || input.buyer.city || input.buyer.countryCode) {
-      const address = buyerParty.ele(NS.cac, 'cac:PostalAddress');
-      if (input.buyer.street) address.ele(NS.cbc, 'cbc:StreetName').txt(input.buyer.street).up();
-      if (input.buyer.city) address.ele(NS.cbc, 'cbc:CityName').txt(input.buyer.city).up();
-      if (input.buyer.postalCode) address.ele(NS.cbc, 'cbc:PostalZone').txt(input.buyer.postalCode).up();
-      address.ele(NS.cac, 'cac:Country').ele(NS.cbc, 'cbc:IdentificationCode').txt(input.buyer.countryCode || 'SA').up().up();
-      address.up();
-    }
-    buyerParty
-      .ele(NS.cac, 'cac:PartyTaxScheme')
-      .ele(NS.cbc, 'cbc:CompanyID').txt(input.buyer.vatNumber).up()
-      .ele(NS.cac, 'cac:TaxScheme').ele(NS.cbc, 'cbc:ID').txt('VAT').up().up()
-      .up();
-    buyerParty
-      .ele(NS.cac, 'cac:PartyLegalEntity')
-      .ele(NS.cbc, 'cbc:RegistrationName').txt(input.buyer.legalName).up()
-      .up();
-    buyerParty.up().up();
-  }
-
-  doc
-    .ele(NS.cac, 'cac:PaymentMeans')
-    .ele(NS.cbc, 'cbc:PaymentMeansCode').txt(input.paymentMeansCode).up()
-    .up();
-
+  doc.ele(NS.cac, 'cac:TaxTotal').ele(NS.cbc, 'cbc:TaxAmount', { currencyID: 'SAR' }).txt(money(totals.tax));
   const taxTotal = doc.ele(NS.cac, 'cac:TaxTotal');
-  taxTotal.ele(NS.cbc, 'cbc:TaxAmount', { currencyID: 'SAR' }).txt(input.taxAmount.toFixed(2)).up();
-  const taxSubtotal = taxTotal.ele(NS.cac, 'cac:TaxSubtotal');
-  taxSubtotal.ele(NS.cbc, 'cbc:TaxableAmount', { currencyID: 'SAR' }).txt(input.subtotal.toFixed(2)).up();
-  taxSubtotal.ele(NS.cbc, 'cbc:TaxAmount', { currencyID: 'SAR' }).txt(input.taxAmount.toFixed(2)).up();
-  const taxCategory = taxSubtotal.ele(NS.cac, 'cac:TaxCategory');
-  taxCategory.ele(NS.cbc, 'cbc:ID').txt('S').up();
-  taxCategory.ele(NS.cbc, 'cbc:Percent').txt(String(input.lines[0]?.taxPercent ?? 15)).up();
-  taxCategory.ele(NS.cac, 'cac:TaxScheme').ele(NS.cbc, 'cbc:ID').txt('VAT').up().up();
-  taxCategory.up();
-  taxSubtotal.up();
-  taxTotal.up();
+  taxTotal.ele(NS.cbc, 'cbc:TaxAmount', { currencyID: 'SAR' }).txt(money(totals.tax));
+  const groups = new Map<string, { cat: ZatcaTaxCategory; percent: number; net: number; tax: number }>();
+  for (const l of input.lines) {
+    const cat = categoryOf(l);
+    const key = `${cat}:${l.taxPercent}`;
+    const g = groups.get(key) ?? { cat, percent: cat === 'S' ? l.taxPercent : 0, net: 0, tax: 0 };
+    g.net = r2(g.net + r2(l.lineExtensionAmount));
+    g.tax = r2(g.tax + r2(l.taxAmount));
+    groups.set(key, g);
+  }
+  for (const g of groups.values()) {
+    const sub = taxTotal.ele(NS.cac, 'cac:TaxSubtotal');
+    sub.ele(NS.cbc, 'cbc:TaxableAmount', { currencyID: 'SAR' }).txt(money(g.net));
+    sub.ele(NS.cbc, 'cbc:TaxAmount', { currencyID: 'SAR' }).txt(money(g.tax));
+    taxCategory(sub, 'cac:TaxCategory', g.cat, g.percent, true);
+  }
 
-  const monetaryTotal = doc.ele(NS.cac, 'cac:LegalMonetaryTotal');
-  monetaryTotal.ele(NS.cbc, 'cbc:LineExtensionAmount', { currencyID: 'SAR' }).txt(input.subtotal.toFixed(2)).up();
-  monetaryTotal.ele(NS.cbc, 'cbc:TaxExclusiveAmount', { currencyID: 'SAR' }).txt(input.subtotal.toFixed(2)).up();
-  monetaryTotal.ele(NS.cbc, 'cbc:TaxInclusiveAmount', { currencyID: 'SAR' }).txt(input.totalWithTax.toFixed(2)).up();
-  monetaryTotal.ele(NS.cbc, 'cbc:PayableAmount', { currencyID: 'SAR' }).txt(input.totalWithTax.toFixed(2)).up();
-  monetaryTotal.up();
+  const total = doc.ele(NS.cac, 'cac:LegalMonetaryTotal');
+  total.ele(NS.cbc, 'cbc:LineExtensionAmount', { currencyID: 'SAR' }).txt(money(totals.lineExtension));
+  total.ele(NS.cbc, 'cbc:TaxExclusiveAmount', { currencyID: 'SAR' }).txt(money(totals.lineExtension));
+  total.ele(NS.cbc, 'cbc:TaxInclusiveAmount', { currencyID: 'SAR' }).txt(money(totals.taxInclusive));
+  total.ele(NS.cbc, 'cbc:AllowanceTotalAmount', { currencyID: 'SAR' }).txt('0.00');
+  total.ele(NS.cbc, 'cbc:PrepaidAmount', { currencyID: 'SAR' }).txt('0.00');
+  total.ele(NS.cbc, 'cbc:PayableAmount', { currencyID: 'SAR' }).txt(money(totals.taxInclusive));
 
-  for (const line of input.lines) {
-    const invoiceLine = doc.ele(NS.cac, 'cac:InvoiceLine');
-    invoiceLine.ele(NS.cbc, 'cbc:ID').txt(line.id).up();
-    invoiceLine.ele(NS.cbc, 'cbc:InvoicedQuantity', line.unitCode ? { unitCode: line.unitCode } : {}).txt(String(line.quantity)).up();
-    invoiceLine.ele(NS.cbc, 'cbc:LineExtensionAmount', { currencyID: 'SAR' }).txt(line.lineExtensionAmount.toFixed(2)).up();
-    const lineTax = invoiceLine.ele(NS.cac, 'cac:TaxTotal');
-    lineTax.ele(NS.cbc, 'cbc:TaxAmount', { currencyID: 'SAR' }).txt(line.taxAmount.toFixed(2)).up();
-    lineTax.up();
-    const item = invoiceLine.ele(NS.cac, 'cac:Item');
-    item.ele(NS.cbc, 'cbc:Name').txt(line.itemName).up();
-    const classifiedTaxCategory = item.ele(NS.cac, 'cac:ClassifiedTaxCategory');
-    classifiedTaxCategory.ele(NS.cbc, 'cbc:ID').txt('S').up();
-    classifiedTaxCategory.ele(NS.cbc, 'cbc:Percent').txt(String(line.taxPercent)).up();
-    classifiedTaxCategory.ele(NS.cac, 'cac:TaxScheme').ele(NS.cbc, 'cbc:ID').txt('VAT').up().up();
-    classifiedTaxCategory.up();
-    item.up();
-    const price = invoiceLine.ele(NS.cac, 'cac:Price');
-    price.ele(NS.cbc, 'cbc:PriceAmount', { currencyID: 'SAR' }).txt(line.unitPrice.toFixed(2)).up();
-    price.up();
-    invoiceLine.up();
+  for (const l of input.lines) {
+    const qty = l.quantity > 0 ? l.quantity : 1;
+    const line = doc.ele(NS.cac, 'cac:InvoiceLine');
+    line.ele(NS.cbc, 'cbc:ID').txt(l.id);
+    line.ele(NS.cbc, 'cbc:InvoicedQuantity', { unitCode: l.unitCode || 'PCE' }).txt(String(qty));
+    line.ele(NS.cbc, 'cbc:LineExtensionAmount', { currencyID: 'SAR' }).txt(money(l.lineExtensionAmount));
+    const lineTax = line.ele(NS.cac, 'cac:TaxTotal');
+    lineTax.ele(NS.cbc, 'cbc:TaxAmount', { currencyID: 'SAR' }).txt(money(l.taxAmount));
+    lineTax.ele(NS.cbc, 'cbc:RoundingAmount', { currencyID: 'SAR' }).txt(money(r2(l.lineExtensionAmount) + r2(l.taxAmount)));
+    const item = line.ele(NS.cac, 'cac:Item');
+    item.ele(NS.cbc, 'cbc:Name').txt(l.itemName);
+    const cat = categoryOf(l);
+    taxCategory(item, 'cac:ClassifiedTaxCategory', cat, cat === 'S' ? l.taxPercent : 0, false);
+    line.ele(NS.cac, 'cac:Price').ele(NS.cbc, 'cbc:PriceAmount', { currencyID: 'SAR' }).txt(unitPrice(r2(l.lineExtensionAmount), qty));
   }
 
   return doc.end({ prettyPrint: false });
 }
 
-/** Builds the UBL Simplified Tax Invoice XML (B2C, Reporting flow) as a string. */
-export function buildSimplifiedInvoiceXml(input: ZatcaSimplifiedInvoiceInput): string {
-  return buildInvoiceXmlCore(input, '0200000');
-}
+export type SignedZatcaDocument = { xml: string; invoiceHash: string; signature: string; qr: string | null };
 
-/** Builds the UBL Standard Tax Invoice XML (B2B, synchronous Clearance flow) as a string. */
-export function buildStandardInvoiceXml(input: ZatcaStandardInvoiceInput): string {
-  return buildInvoiceXmlCore(input, '0100000');
-}
-
-/**
- * Builds a UBL Credit Note XML (type code 381) -- same simplified/standard
- * distinction as an invoice (buyer present => standard/B2B, absent =>
- * simplified/B2C), submitted through the exact same Clearance/Reporting
- * endpoints as a regular invoice (zatcaApiClient.ts's clearInvoice/
- * reportInvoice take any signed UBL document, not specifically an invoice).
- */
-export function buildCreditNoteXml(input: ZatcaCreditNoteInput): string {
-  return buildInvoiceXmlCore(input, input.buyer ? '0100000' : '0200000', '381');
+/** Hash, sign, add the QR (simplified) and the XAdES block; the hash is checked again on the result. */
+export function signZatcaDocument(
+  input: ZatcaDocumentInput,
+  key: { privateKeyPem: string; certificate: ZatcaCertificate; signingTime: string },
+): SignedZatcaDocument {
+  const invoiceHash = zatcaInvoiceHash(buildZatcaDocument(input));
+  const signature = signInvoiceHash(invoiceHash, key.privateKeyPem);
+  const totals = zatcaTotals(input.lines);
+  const qr = input.simplified
+    ? zatcaPhase2Qr({
+      sellerName: input.seller.legalName,
+      vatNumber: input.seller.vatNumber,
+      timestamp: `${input.issueDate}T${input.issueTime}`,
+      total: money(totals.taxInclusive),
+      vatTotal: money(totals.tax),
+      invoiceHash,
+      signature,
+      certificate: key.certificate,
+      simplified: true,
+    })
+    : null;
+  const xml = buildZatcaDocument(input, {
+    certificate: key.certificate, signingTime: key.signingTime, invoiceHash, signature, qr: qr ?? undefined,
+  });
+  if (zatcaInvoiceHash(xml) !== invoiceHash) throw new Error('ZATCA invoice hash changed after signing');
+  return { xml, invoiceHash, signature, qr };
 }

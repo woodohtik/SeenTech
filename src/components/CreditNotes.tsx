@@ -91,7 +91,7 @@ export default function CreditNotes({ tenantId }: { tenantId: string }) {
             isB2B: extNotes.is_b2b !== undefined ? extNotes.is_b2b : (data.is_b2b || data.invoice_type === 'standard_b2b' || !!data.vat_number),
             b2bCompanyName: extNotes.b2b_company_name || data.customer_name,
             b2bTRN: data.vat_number,
-            qrCodeBase64: data.zatca_qr_code || data.qr_payload,
+            qrCodeBase64: data.zatca_qr || data.qr_payload, // P2.5: the Phase 2 QR once signed
             issuedAt: data.issued_at,
             createdBy: extNotes.created_by || data.created_by || 'System',
             status: data.status === 'issued' ? 'valid' : 'cancelled'

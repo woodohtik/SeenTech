@@ -237,11 +237,10 @@ export interface ZatcaCsrResult {
 /**
  * Builds and self-signs a PKCS#10 CSR for ZATCA CSID issuance, using an
  * EC secp256k1 key pair (the curve ZATCA's cryptographic stamp requires --
- * same curve as zatcaSigning.ts). The CSR's own self-signature uses
- * standard ASN.1 DER ECDSA encoding (crypto.sign's default) -- NOT the
- * XML-DSig ieee-p1363 format zatcaSigning.ts uses for invoice signatures;
- * those are two different signature contexts with different required
- * encodings, easy to mix up.
+ * same curve as the invoice signature in zatcaXades.ts). The CSR's own
+ * self-signature uses standard ASN.1 DER ECDSA encoding (crypto.sign's
+ * default) -- the same encoding ZATCA expects in an invoice's
+ * ds:SignatureValue.
  */
 export function generateZatcaCsr(subject: ZatcaCsrSubject, privateKeyPem: string, publicKeyPem: string): ZatcaCsrResult {
   const publicKey = crypto.createPublicKey(publicKeyPem);

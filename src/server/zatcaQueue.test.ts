@@ -19,5 +19,7 @@ describe('classifyZatcaSend', () => {
     expect(classifyZatcaSend({ status: 409, body: { error: 'ZATCA submission already in progress or completed for this invoice' } }).status).toBe('retry');
     expect(classifyZatcaSend({ status: 409, body: { error: 'Tenant tax settings incomplete; cannot submit to ZATCA' } }).status).toBe('failed');
     expect(classifyZatcaSend({ status: 404, body: { error: 'Invoice not found for this order' } }).status).toBe('failed');
+    expect(classifyZatcaSend({ status: 409, body: { error: 'ZATCA signing in progress for this shop' } }).status).toBe('retry');
+    expect(classifyZatcaSend({ status: 409, body: { error: 'Issued before the ZATCA chain -- not sent' } }).status).toBe('failed');
   });
 });

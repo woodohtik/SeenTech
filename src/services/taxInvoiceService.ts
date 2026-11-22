@@ -130,7 +130,7 @@ export async function fetchTaxInvoiceForOrder(
     isB2B: extNotes.is_b2b !== undefined ? extNotes.is_b2b : (invoiceRow.is_b2b || invoiceRow.invoice_type === 'standard_b2b' || !!invoiceRow.vat_number),
     b2bCompanyName: extNotes.b2b_company_name || invoiceRow.customer_name,
     b2bTRN: invoiceRow.vat_number,
-    qrCodeBase64: invoiceRow.zatca_qr_code || invoiceRow.qr_payload,
+    qrCodeBase64: invoiceRow.zatca_qr || invoiceRow.qr_payload, // P2.5: the Phase 2 QR once signed (ZATCA's own for a cleared invoice)
     issuedAt: invoiceRow.issued_at,
     createdBy: extNotes.created_by || creatorName || invoiceRow.created_by || '',
     status: invoiceRow.status === 'issued' ? 'valid' : 'cancelled',

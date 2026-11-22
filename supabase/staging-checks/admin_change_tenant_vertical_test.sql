@@ -31,7 +31,7 @@ BEGIN
   END;
 
   -- As the platform admin.
-  PERFORM set_config('request.jwt.claims', json_build_object('sub', admin_uid, 'role', 'authenticated')::text, true);
+  PERFORM set_config('request.jwt.claims', json_build_object('sub', admin_uid, 'role', 'authenticated', 'aal', 'aal2')::text, true);
   PERFORM set_config('request.jwt.claim.sub', admin_uid, true);
 
   -- 2. A shop with orders is refused.
