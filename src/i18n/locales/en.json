@@ -898,7 +898,10 @@
     "waist": "Waist",
     "measurement_link_message": "Hello {{customerName}}, please fill in your measurements here: {{url}}\n- {{storeName}}",
     "send_measurements_link": "Send Measurements Link",
-    "export_col_measurement": "{{label}} (cm)"
+    "export_col_measurement": "{{label}} (cm)",
+    "measurements_link_failed": "The measurements link could not be prepared",
+    "measurements_link_revoked": "The measurements link was ended",
+    "revoke_measurements_link": "End the measurements link"
   },
   "dashboard": {
     "above_avg": "Above Average",
@@ -3255,7 +3258,8 @@
     "save_button": "Save Measurements",
     "saving": "Saving…",
     "save_success": "Your measurements were saved successfully.",
-    "save_failed": "Couldn't save the measurements, please try again."
+    "save_failed": "Couldn't save the measurements, please try again.",
+    "link_expired": "This link has expired. Ask the shop for a new one."
   },
   "my_orders": {
     "title": "My Orders",

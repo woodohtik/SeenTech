@@ -50,3 +50,11 @@ test('editing a value after a successful save brings the Save button back instea
   expect(screen.getByText('حفظ المقاسات')).toBeInTheDocument();
   expect(fetchMock).toHaveBeenCalledTimes(2); // no extra network call just from editing
 });
+
+// seen-readiness-fixes-task.md P4 (OPERATIONS-16 / SECURITY-10): an expired
+// link says so, instead of "not found".
+test('an expired link tells the customer to ask the shop for a new one', async () => {
+  vi.spyOn(global, 'fetch').mockResolvedValueOnce({ ok: false, status: 410, json: async () => ({}) } as any);
+  render(<CustomerMeasurementsForm token="old-token" />);
+  expect(await screen.findByText('انتهت صلاحية هذا الرابط. اطلب من المحل رابطاً جديداً.')).toBeInTheDocument();
+});

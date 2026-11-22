@@ -613,13 +613,19 @@ app.get("/api/public/measurements/:token", asyncHandler(async (req, res) => {
 
   const { data: customerData } = await supabaseAdmin
     .from('customers')
-    .select('name, measurements, tenant:tenants(name, logo_url, measurement_unit)')
+    .select('name, measurements, measurements_token_expires_at, tenant:tenants(name, logo_url, measurement_unit)')
     .eq('measurements_token', token)
     .maybeSingle();
 
   if (!customerData) {
     await recordFailure();
     return res.status(404).json({ error: 'Customer not found' });
+  }
+  // seen-readiness-fixes-task.md P4 (OPERATIONS-16 / SECURITY-10): a link lasts
+  // 7 days; the shop sends a new one after that.
+  const expiresAt = (customerData as any).measurements_token_expires_at;
+  if (!expiresAt || new Date(expiresAt).getTime() <= Date.now()) {
+    return res.status(410).json({ error: 'Link expired' });
   }
 
   const tenantData = (customerData as any).tenant;
@@ -662,13 +668,16 @@ app.post("/api/public/measurements/:token", asyncHandler(async (req, res) => {
     return res.status(404).json({ error: 'Customer not found' });
   }
 
-  const { error: updateError } = await supabaseAdmin
-    .from('customers')
-    .update({ measurements: result.value })
-    .eq('measurements_token', token);
+  // P4 (OPERATIONS-16 / SECURITY-10): refused after expiry; the previous
+  // measurements are kept and the shop is told.
+  const { data: saved, error: updateError } = await supabaseAdmin
+    .rpc('save_public_measurements', { p_token: token, p_measurements: result.value });
 
   if (updateError) {
     return internalError(res, 'Error saving public measurements', updateError);
+  }
+  if (!saved) {
+    return res.status(410).json({ error: 'Link expired' });
   }
 
   res.json({ ok: true });

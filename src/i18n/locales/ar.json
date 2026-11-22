@@ -898,7 +898,10 @@
     "waist": "الخصر",
     "measurement_link_message": "مرحباً {{customerName}}، يرجى تعبئة مقاساتك من الرابط التالي: {{url}}\n- {{storeName}}",
     "send_measurements_link": "إرسال رابط المقاسات",
-    "export_col_measurement": "{{label}} (سم)"
+    "export_col_measurement": "{{label}} (سم)",
+    "measurements_link_failed": "تعذّر تجهيز رابط المقاسات",
+    "measurements_link_revoked": "أُلغي رابط المقاسات",
+    "revoke_measurements_link": "إلغاء رابط المقاسات"
   },
   "dashboard": {
     "above_avg": "فوق المتوسط",
@@ -3258,7 +3261,8 @@
     "save_button": "حفظ المقاسات",
     "saving": "جارٍ الحفظ…",
     "save_success": "تم حفظ مقاساتك بنجاح.",
-    "save_failed": "تعذّر حفظ المقاسات، حاول مرة أخرى."
+    "save_failed": "تعذّر حفظ المقاسات، حاول مرة أخرى.",
+    "link_expired": "انتهت صلاحية هذا الرابط. اطلب من المحل رابطاً جديداً."
   },
   "my_orders": {
     "title": "طلباتي",

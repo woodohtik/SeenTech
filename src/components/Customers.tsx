@@ -495,9 +495,16 @@ export default function Customers({ tenantId }: CustomersProps) {
   // see docs/superpowers/specs/2026-11-08-customer-measurements-public-form-design.md)
   // over WhatsApp, reusing the exact same direct-send pattern as Orders.tsx's
   // sendTrackingLink.
-  const sendMeasurementsLink = (customer: Customer) => {
-    if (!customer.measurementsToken || !customer.phone) return;
-    const url = `${window.location.origin}/measurements/${customer.measurementsToken}`;
+  // P4 (OPERATIONS-16 / SECURITY-10): every send is a fresh 7-day link (the
+  // previous one stops working).
+  const sendMeasurementsLink = async (customer: Customer) => {
+    if (!customer.phone) return;
+    const { data: link, error: linkError } = await supabase.rpc('issue_measurements_link', { p_customer_id: customer.id });
+    if (linkError || !link?.token) {
+      handleError(linkError as any, t('customers.measurements_link_failed'));
+      return;
+    }
+    const url = `${window.location.origin}/measurements/${link.token}`;
     const message = t('customers.measurement_link_message', {
       customerName: customer.name,
       url,
@@ -1840,6 +1847,19 @@ export default function Customers({ tenantId }: CustomersProps) {
                   >
                     <Ruler size={16} />
                     {t('customers.send_measurements_link')}
+                  </button>
+                )}
+                {hasBodyMeasurements && editingCustomer?.id && (
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      const { error: revokeError } = await supabase.rpc('revoke_measurements_link', { p_customer_id: editingCustomer.id });
+                      if (revokeError) handleError(revokeError as any, t('customers.measurements_link_failed'));
+                      else toastSuccess(t('customers.measurements_link_revoked'));
+                    }}
+                    className="-mt-6 mb-8 px-4 py-2 text-content-muted font-bold text-xs rounded-xl hover:bg-surface-muted transition-all w-fit"
+                  >
+                    {t('customers.revoke_measurements_link')}
                   </button>
                 )}
 

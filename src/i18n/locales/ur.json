@@ -896,7 +896,10 @@
     "visual_round": "گول",
     "visual_square": "چوکور",
     "waist": "کمر",
-    "export_col_measurement": "{{label}} (سم)"
+    "export_col_measurement": "{{label}} (سم)",
+    "measurements_link_failed": "پیمائش کا لنک تیار نہیں ہو سکا",
+    "measurements_link_revoked": "پیمائش کا لنک ختم کر دیا گیا",
+    "revoke_measurements_link": "پیمائش کا لنک ختم کریں"
   },
   "dashboard": {
     "above_avg": "اوسط سے زیادہ",

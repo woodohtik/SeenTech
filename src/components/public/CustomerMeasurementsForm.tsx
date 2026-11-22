@@ -81,6 +81,8 @@ export default function CustomerMeasurementsForm({ token }: { token: string }) {
         if (!alive) return;
         if (response.status === 429) {
           setError(t('public_measurements.rate_limited'));
+        } else if (response.status === 410) {
+          setError(t('public_measurements.link_expired'));
         } else if (!response.ok) {
           setError(t('public_measurements.not_found'));
         } else {
@@ -111,6 +113,8 @@ export default function CustomerMeasurementsForm({ token }: { token: string }) {
       });
       if (response.status === 429) {
         setSaveError(t('public_measurements.rate_limited'));
+      } else if (response.status === 410) {
+        setSaveError(t('public_measurements.link_expired'));
       } else if (!response.ok) {
         setSaveError(t('public_measurements.save_failed'));
       } else {
