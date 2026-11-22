@@ -139,10 +139,14 @@ export default function AdminTenantLicenses() {
     if (!ok) return;
 
     try {
-      const today = new Date().toISOString();
-      const { error } = await supabase.from('tenants').update({ created_at: today }).eq('id', tenantId);
+      // P5 (PLATFORM-07): the server moves trial_ends_at, unlocks the shop and
+      // logs it (this used to rewrite created_at, which extended nothing).
+      const { data, error } = await supabase.rpc('admin_extend_trial', { p_tenant_id: tenantId, p_days: 14 });
       if (error) throw error;
-      setTenants((prev) => prev.map((tenant) => (tenant.id === tenantId ? { ...tenant, createdAt: today } : tenant)));
+      const trialEndsAt = (data as { trial_ends_at?: string } | null)?.trial_ends_at ?? null;
+      setTenants((prev) => prev.map((tenant) => (tenant.id === tenantId
+        ? ({ ...tenant, trial_ends_at: trialEndsAt, subscription_status: 'trial', is_trial: true, locked_at: null, purge_at: null } as unknown as Tenant)
+        : tenant)));
       showSuccess(t('saas.tenants.trial_extended'));
     } catch (err) {
       console.warn('Error extending trial:', err);
