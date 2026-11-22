@@ -112,3 +112,17 @@ export const getFriendlyErrorMessage = (error: any): string => {
   const finalMsg = errorMsg && errorMsg.length < 100 ? `${errorMsg}` : i18n.t('errors.system_generic');
   return finalMsg;
 };
+
+/**
+ * seen-readiness-fixes-task.md P1.3: the server refuses some actions on purpose
+ * and says why in the shop's language ("open a shift before taking a
+ * payment", "no payment on a cancelled order", "more than what is left").
+ * Those messages are for the employee as they are; anything else is not.
+ */
+export function dbRefusalMessage(error: unknown): string | null {
+  const e = error as { code?: string; message?: string } | null;
+  if (!e || typeof e.message !== 'string') return null;
+  if (!['22023', '23514', '42501'].includes(String(e.code ?? ''))) return null;
+  if (e.message === 'forbidden' || !/[\u0600-\u06FF]/.test(e.message)) return null;
+  return e.message;
+}

@@ -55,7 +55,7 @@ import * as XLSX from 'xlsx';
 
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase/client';
-import { handleFirestoreError, OperationType } from '../lib/appErrors';
+import { handleFirestoreError, OperationType, dbRefusalMessage } from '../lib/appErrors';
 import { getCachedCustomers } from '../lib/offline/cacheSync';
 import { isNetworkFailure } from '../lib/offline/outbox';
 import { Customer, Measurements, Styles, Order, ThobeMeasurements } from '../types';
@@ -2362,7 +2362,9 @@ const CustomerStatementModal = ({
       onRefresh();
     } catch (err) {
       console.error('Error updating payment:', err);
-      toastError(t('orders.payment_error_toast'));
+      // The server's own reason when it refuses on purpose (no open shift,
+      // more than what is left, ...), P1.3.
+      toastError(dbRefusalMessage(err) ?? t('orders.payment_error_toast'));
     } finally {
       setIsPaying(false);
     }

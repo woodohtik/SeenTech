@@ -1,0 +1,16 @@
+import { describe, expect, it } from 'vitest';
+
+// seen-readiness-fixes-task.md P1.3: the server's own reasons reach the employee.
+import { dbRefusalMessage } from './appErrors';
+describe('dbRefusalMessage', () => {
+  it('passes on a deliberate refusal in the shop\'s language', () => {
+    expect(dbRefusalMessage({ code: '22023', message: 'افتح وردية قبل استلام أي دفعة' })).toBe('افتح وردية قبل استلام أي دفعة');
+    expect(dbRefusalMessage({ code: '23514', message: 'المبلغ أكبر من المتبقي على الطلب (المتبقي 5)' })).toContain('المتبقي');
+  });
+  it('keeps everything else to the generic path', () => {
+    expect(dbRefusalMessage({ code: '42501', message: 'forbidden' })).toBeNull();
+    expect(dbRefusalMessage({ code: '23505', message: 'duplicate key value' })).toBeNull();
+    expect(dbRefusalMessage({ code: '22023', message: 'invalid input syntax' })).toBeNull();
+    expect(dbRefusalMessage(null)).toBeNull();
+  });
+});

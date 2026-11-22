@@ -53,7 +53,7 @@ import {
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase/client';
 import { resolveTaxSettings } from '../utils/taxSettings';
-import { handleFirestoreError, OperationType } from '../lib/appErrors';
+import { handleFirestoreError, OperationType, dbRefusalMessage } from '../lib/appErrors';
 import { refreshOrdersCache, getCachedOrders } from '../lib/offline/cacheSync';
 import { isNetworkFailure } from '../lib/offline/outbox';
 import { Order, Customer, OrderStatus, OrderHistory, PaymentMethod, Staff, Tenant, TaxInvoice } from '../types';
@@ -1321,7 +1321,9 @@ export default function Orders({ tenantId }: { tenantId: string }) {
       } catch (error) {
         // ORD-07: on failure, do NOT close the payment UI or touch local
         // state as if the payment succeeded -- show the error and let the
-        // merchant retry.
+        // merchant retry. The server's own reason when it refuses on purpose (P1.3).
+        const refusal = dbRefusalMessage(error);
+        if (refusal) { toastError(refusal); return; }
         handleFirestoreError(error as any, OperationType.UPDATE, 'orders');
       } finally {
         setIsProcessing(false);
@@ -1921,6 +1923,10 @@ export default function Orders({ tenantId }: { tenantId: string }) {
         setPendingStatusUpdate(null);
         onComplete();
       } catch (error) {
+        // P1.3: the server's own reason when it refuses on purpose (no open
+        // shift, a cancelled order, more than what is left).
+        const refusal = dbRefusalMessage(error);
+        if (refusal) { toastError(refusal); return; }
         handleFirestoreError(error as any, OperationType.UPDATE, 'orders');
       } finally {
         setIsProcessing(false);
