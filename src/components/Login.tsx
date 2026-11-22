@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef, lazy, Suspense } from 'react';
+import { PRIVACY_VERSION, TERMS_VERSION } from '../legal/legalDocuments';
 import { formatSaudiPhone, validateSaudiPhone } from '../utils/phoneUtils';
 import { supabase } from '../lib/supabase/client';
 import {
@@ -57,6 +58,8 @@ export default function Login() {
   const [regEmail, setRegEmail] = useState('');
   const [regPhone, setRegPhone] = useState('');
   const [regPassword, setRegPassword] = useState('');
+  // P5 (PLATFORM-01): signing up means agreeing to the terms and the privacy policy.
+  const [acceptedLegal, setAcceptedLegal] = useState(false);
   const [googleUser, setGoogleUser] = useState<any>(null);
 
   const languages = [
@@ -380,6 +383,10 @@ export default function Login() {
       setError(t('login.errors.weak_password'));
       return;
     }
+    if (!acceptedLegal) {
+      setError(t('login.errors.accept_terms_required'));
+      return;
+    }
 
     setLoading(true);
     setError(null);
@@ -472,12 +479,20 @@ export default function Login() {
           throw userInsertError;
         }
 
+        // P5 (PLATFORM-01): the agreement, with the versions agreed to and the
+        // time, recorded by the server against this user.
+        const { error: legalError } = await supabase.rpc('accept_legal_terms', {
+          p_terms_version: TERMS_VERSION,
+          p_privacy_version: PRIVACY_VERSION,
+        });
+        if (legalError) console.error('Failed to record the terms agreement:', legalError);
+
         // Atomically create Tenant, Branch, and Initial Staff
         // Step 1: Create Tenant
         const { data: tenantData, error: tenantError } = await supabase
           .from('tenants')
           .insert({
-            name: fullName + ' Store',
+            name: fullName,
             owner_email: regEmail,
             owner_uid: user.id,
             phone: formattedPhone,
@@ -897,6 +912,22 @@ export default function Login() {
                     </div>
                   </>
                 )}
+
+                <label className="flex items-start gap-3 text-sm font-bold text-content mt-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={acceptedLegal}
+                    onChange={(e) => setAcceptedLegal(e.target.checked)}
+                    className="mt-1 w-5 h-5 shrink-0 accent-brand"
+                    required
+                  />
+                  <span>
+                    {t('login.accept_terms_prefix')}{' '}
+                    <a href="/terms" target="_blank" rel="noopener noreferrer" className="text-brand underline">{t('login.terms_link')}</a>
+                    {' '}{t('login.accept_terms_and')}{' '}
+                    <a href="/privacy" target="_blank" rel="noopener noreferrer" className="text-brand underline">{t('login.privacy_link')}</a>
+                  </span>
+                </label>
 
                 <Button type="submit" loading={loading} className="w-full h-14 text-lg mt-4">
                   {!loading && <Send size={20} />}

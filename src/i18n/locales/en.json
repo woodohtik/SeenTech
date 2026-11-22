@@ -1719,7 +1719,8 @@
       "reset_failed": "Could not send the email; check that the address is correct",
       "rls_permission_issue": "Database permission problem (RLS). Please contact support to resolve this.",
       "unknown": "An unknown error occurred",
-      "weak_password": "Password is too weak"
+      "weak_password": "Password is too weak",
+      "accept_terms_required": "You need to agree to the terms of use and the privacy policy to create the account"
     },
     "exit_system": "Exit System",
     "forgot_desc": "Enter your email to send a reset link",
@@ -1800,7 +1801,11 @@
     "vertical_upholstery": "Upholstery",
     "welcome_back": "Welcome Back",
     "pin_locked_offline": "Too many attempts. Wait {{minutes}} minutes and try again.",
-    "pin_offline_no_match": "No internet connection, and the PIN entered does not match the last successful sign-in on this device."
+    "pin_offline_no_match": "No internet connection, and the PIN entered does not match the last successful sign-in on this device.",
+    "accept_terms_prefix": "I agree to the",
+    "terms_link": "terms of use",
+    "accept_terms_and": "and the",
+    "privacy_link": "privacy policy"
   },
   "partner_login": {
     "title": "Referral Partner Portal",

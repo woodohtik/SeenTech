@@ -16,6 +16,8 @@ const OrderTracking = React.lazy(() => import('./components/public/OrderTracking
 const CustomerMeasurementsForm = React.lazy(() => import('./components/public/CustomerMeasurementsForm'));
 const LandingPage = React.lazy(() => import('./components/LandingPage'));
 const PartnerLogin = React.lazy(() => import('./components/public/PartnerLogin'));
+// seen-readiness-fixes-task.md P5 (PLATFORM-01): the privacy policy and the terms of use.
+const LegalPage = React.lazy(() => import('./pages/LegalPage'));
 const PartnerReferrals = React.lazy(() => import('./components/public/PartnerReferrals'));
 
 // صفحة تتبّع الطلب العامة للعميل النهائي (بلا مصادقة) — /track/:token
@@ -42,7 +44,7 @@ const MeasurementsRoute = () => {
 // AppContent لإعفاء هذه المسارات من شاشات اعتراض جلسة الموظف (تعارض جهاز،
 // قفل انتهاء الاشتراك، إعداد/دخول PIN) التي تُفحص قبل الوصول لـ<Routes>
 // إطلاقاً بلا أي شرط على المسار نفسه.
-const PUBLIC_ROUTE_PREFIXES = ['/track/', '/p/inv/', '/measurements/', '/partner/'];
+const PUBLIC_ROUTE_PREFIXES = ['/track/', '/p/inv/', '/measurements/', '/partner/', '/privacy', '/terms'];
 
 // توجيه تلقائي لصفحة الهبوط للزوار غير المسجلين
 const LandingRedirect = () => {
@@ -698,6 +700,8 @@ function AppContent() {
           />
           <Route path="/track/:token" element={<TrackRoute />} />
           <Route path="/measurements/:token" element={<MeasurementsRoute />} />
+          <Route path="/privacy" element={<React.Suspense fallback={<PageSkeleton />}><LegalPage kind="privacy" /></React.Suspense>} />
+          <Route path="/terms" element={<React.Suspense fallback={<PageSkeleton />}><LegalPage kind="terms" /></React.Suspense>} />
           {/* /blog and /blog/:slug are now real static files (scripts/build-blog.ts),
               served directly by Vercel -- see vercel.json's rewrite exclusion.
               No React route needed or reachable for them. */}
