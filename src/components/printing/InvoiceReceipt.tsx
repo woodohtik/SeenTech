@@ -14,6 +14,8 @@ export type PrintSize = '58mm' | '80mm' | 'A5' | 'A4';
 
 export interface InvoiceData {
   invoiceNumber: string;
+  /** P3.2: an offline sale with no reserved number -- a provisional receipt, not a tax invoice. */
+  provisional?: boolean;
   issueDate: string;
   invoiceType?: string;
   paymentMethod?: string;
@@ -189,6 +191,7 @@ export const ThermalInvoice = ({
   return (
     <SimplifiedTaxInvoice
       invoiceNumber={data.invoiceNumber}
+      provisional={data.provisional}
       issueDate={data.issueDate}
       paymentMethod={data.paymentMethod ? payLabels.ar : 'نقداً'}
       paymentMethodEn={data.paymentMethodEn || payLabels.en}

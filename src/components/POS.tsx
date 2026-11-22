@@ -39,6 +39,7 @@ import {
 import { supabase } from '../lib/supabase/client';
 import { resolveTaxSettings } from '../utils/taxSettings';
 import { cachedTaxSettings, rememberTaxSettings } from '../lib/offline/posOfflineState';
+import { saleTimestamp, takeOfflineNumber, topUpOfflineNumbers } from '../lib/offline/offlineNumbers';
 import { refreshCustomersCache, refreshInventoryCache, refreshBranchStockCache, getCachedCustomers, getCachedInventory, getCachedBranchStock } from '../lib/offline/cacheSync';
 import { enqueuePosSale, isNetworkFailure, decidePosSaleFailureAction, SALE_TIMEOUT_MS } from '../lib/offline/outbox';
 import { handleError, OperationType, getFriendlyErrorMessage } from '../lib/appErrors';
@@ -526,6 +527,8 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
         setTaxSettings(resolvedTax);
         setTaxSettingsUnavailable(false);
         rememberTaxSettings(tenantId, resolvedTax);
+        // P3.2: keep a few invoice numbers reserved for a sale made offline.
+        void topUpOfflineNumbers(tenantId);
       } else {
         // P3.1 / RELIABILITY-11: no network -- the settings last read online.
         const cached = cachedTaxSettings(tenantId);
@@ -1284,7 +1287,8 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
         return;
       }
 
-      const timestamp = new Date().toISOString();
+      // P3.2: whole seconds, the way the server writes the time into the QR.
+      const timestamp = saleTimestamp();
       const sellerName = taxSettings?.legalName;
       const trn = taxSettings?.trn;
 
@@ -1398,6 +1402,8 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
       };
 
       let queuedOffline = false;
+      // P3.2: offline with no reserved number left -- a provisional receipt, not a tax invoice.
+      let provisionalReceipt = false;
 
       // Wrapped in its own try/catch: postgrest-js normally resolves with
       // {error} even on a network failure, but that's an implementation
@@ -1424,14 +1430,26 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
         if (failureAction.kind === 'b2b_offline_blocked') {
           throw new Error(t('pos.b2b_requires_connection', 'الفواتير الضريبية القياسية (B2B) تتطلب اتصالاً حياً بالإنترنت — لا يمكن إصدارها أوفلاين.'));
         }
-        await enqueuePosSale(operationId, salePayload);
+        // P3.2 / RELIABILITY-02: the number and the time printed are the ones
+        // the server keeps (a slot reserved for this device, and sold_at).
+        const reserved = tenantId ? takeOfflineNumber(tenantId) : null;
+        await enqueuePosSale(operationId, {
+          ...salePayload,
+          p_order: {
+            ...salePayload.p_order,
+            sold_at: timestamp,
+            ...(reserved ? { offline_number: { block_id: reserved.block_id, slot: reserved.slot } } : {}),
+          },
+        });
         queuedOffline = true;
+        provisionalReceipt = !reserved;
+        if (reserved) invoiceNumber = `INV-${reserved.invoiceNumber}`;
         // No server round-trip has happened yet to get a real QR/total
         // from (see the finalTotal/finalTaxAmount fallback below) -- this
         // is a best-effort estimate from this tab's own cart math purely
         // so the printed receipt isn't blank while offline; the real
         // numbers (and tax reporting) only exist once the queue replays.
-        qrCodeBase64 = (isTaxEnabled || isB2B)
+        qrCodeBase64 = (isTaxEnabled || isB2B) && !provisionalReceipt
           ? generateZatcaQR(sellerName, trn, timestamp, totalAmount.toFixed(2), taxAmount.toFixed(2))
           : '';
       }
@@ -1475,6 +1493,7 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
       let zatcaRejected = false;
       if (!queuedOffline) {
         void notifyNewOrderForStaff(newOrder.id);
+        if (tenantId) void topUpOfflineNumbers(tenantId);
         if (isB2B) {
           // loading (مضبوطة true بالفعل أعلى الدالة) تبقى كما هي خلال هذا
           // الانتظار -- زر الدفع يبقى معطَّلاً/بحالة تحميل، لا حاجة لحالة نص جديدة.
@@ -1533,7 +1552,8 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
            measurements: hasBodyMeasurements ? buildInvoiceMeasurements(item, selectedCustomer, t, measurementUnit) : undefined
          })),
          qrCode: qrCodeBase64,
-         issuedAt: timestamp
+         issuedAt: timestamp,
+         provisional: provisionalReceipt,
       });
       try {
         await fetchCashDrawerBalance();
@@ -1546,7 +1566,9 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
       if (queuedOffline) {
         toastSuccess(
           t('pos.sale_queued_offline_title', 'سُجِّلت الفاتورة محلياً'),
-          t('pos.sale_queued_offline_desc', 'لا يوجد اتصال حالياً — ستُرسَل تلقائياً للخادم فور عودة الإنترنت.')
+          provisionalReceipt
+            ? t('pos.sale_queued_provisional_desc', 'طُبع إيصال مؤقت (لا توجد أرقام فواتير محجوزة على هذا الجهاز). تصدر الفاتورة الضريبية فور عودة الإنترنت.')
+            : t('pos.sale_queued_offline_desc', 'لا يوجد اتصال حالياً — ستُرسَل تلقائياً للخادم فور عودة الإنترنت.')
         );
       } else if (zatcaRejected) {
         // alertModal الحاجبة أعلى الدالة أبلغت الكاشير صراحة بالفعل -- toast
@@ -1914,6 +1936,7 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
 
 const invoiceData: InvoiceData | null = completedOrder ? {
   invoiceNumber: completedOrder.invoiceNumber,
+  provisional: Boolean(completedOrder.provisional),
   issueDate: completedOrder.issuedAt,
   paymentMethod: completedOrder.paymentMethod || 'cash',
   seller: {

@@ -53,6 +53,8 @@ export interface SimplifiedTaxInvoiceProps {
     remainingAmount?: number;
   };
   qrCodeBase64?: string;
+  /** P3.2: a provisional receipt (offline, no reserved invoice number): not a tax invoice, no QR. */
+  provisional?: boolean;
   orderId?: string;
   onPrint?: () => void;
   hidePrintButton?: boolean;
@@ -73,6 +75,7 @@ export default function SimplifiedTaxInvoice({
   paymentMethod,
   paymentMethodEn = 'Cash',
   seller: rawSeller,
+  provisional = false,
   customerName = 'عميل نقدي / Guest Customer',
   items,
   totals,
@@ -292,8 +295,18 @@ export default function SimplifiedTaxInvoice({
 
         {/* Separator line between Seller info and Tax Invoice Title */}
         <div className="text-center my-1 pt-1 border-t border-solid border-slate-300">
-          <h1 className="text-[11.5px] font-black text-slate-900">فاتورة ضريبية مبسطة</h1>
-          <p className="text-[8.5px] font-bold uppercase tracking-wider text-slate-600 font-sans mt-0.5">Simplified Tax Invoice</p>
+          {provisional ? (
+            <>
+              <h1 className="text-[11.5px] font-black text-slate-900">إيصال مؤقت — ليس فاتورة ضريبية</h1>
+              <p className="text-[8.5px] font-bold uppercase tracking-wider text-slate-600 font-sans mt-0.5">Provisional receipt — not a tax invoice</p>
+              <p className="text-[8px] font-bold text-slate-700 mt-0.5">تصدر الفاتورة الضريبية بعد عودة الاتصال</p>
+            </>
+          ) : (
+            <>
+              <h1 className="text-[11.5px] font-black text-slate-900">فاتورة ضريبية مبسطة</h1>
+              <p className="text-[8.5px] font-bold uppercase tracking-wider text-slate-600 font-sans mt-0.5">Simplified Tax Invoice</p>
+            </>
+          )}
         </div>
 
         {/* Tax Registration Number */}
@@ -427,12 +440,14 @@ export default function SimplifiedTaxInvoice({
         </div>
 
         {/* Separator line between Payment Method and QR Code */}
-        {/* ZATCA Compliant QR Code */}
-        <div className="flex flex-col items-center justify-center py-1 mb-1">
-          <div className="p-1">
-            <QRCodeSVG value={finalQr} size={95} level="M" />
+        {/* ZATCA Compliant QR Code -- none on a provisional receipt (P3.2) */}
+        {!provisional && (
+          <div className="flex flex-col items-center justify-center py-1 mb-1">
+            <div className="p-1">
+              <QRCodeSVG value={finalQr} size={95} level="M" />
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Retail Slip Bottom note */}
         <div className="pt-0.5 text-center">

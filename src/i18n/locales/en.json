@@ -2733,7 +2733,8 @@
     "custom_tailor__piece": "New order",
     "type_custom__piece": "Order",
     "tax_settings_offline_title": "Tax settings could not be loaded",
-    "tax_settings_offline_desc": "Connect to the internet once so this device can keep the tax settings; after that you can sell offline."
+    "tax_settings_offline_desc": "Connect to the internet once so this device can keep the tax settings; after that you can sell offline.",
+    "sale_queued_provisional_desc": "A provisional receipt was printed (this device has no reserved invoice numbers). The tax invoice is issued as soon as the connection is back."
   },
   "printing": {
     "agent": {

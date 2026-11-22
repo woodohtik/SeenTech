@@ -5,7 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 // queue against a fake server.
 const server = vi.hoisted(() => ({
   session: { user: { id: 'u1' } } as any,
-  answer: { data: {}, error: null as any, status: 200 },
+  answer: { data: {} as any, error: null as any, status: 200 },
   calls: [] as string[],
 }));
 
