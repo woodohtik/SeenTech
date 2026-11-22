@@ -16,6 +16,7 @@ import { useTranslation } from 'react-i18next';
 import DateTimeDisplay from './DateTimeDisplay';
 
 import { isRtlLang } from '../lib/direction';
+import { taxRatePercent } from '../shared/taxRate';
 
 // seen-ai-assistant-zatca-cr-task.md, ZATCA #1 -- 'not_applicable' (no
 // production CSID yet, true for every tenant today) renders as neutral/
@@ -103,10 +104,9 @@ export default function CreditNotes({ tenantId }: { tenantId: string }) {
         // "القيمة 0 فعلياً" و"القيمة غير موجودة أصلاً" (null/undefined)،
         // اللذين ينتجان كلاهما 0 عبر Number() المجرَّدة.
         const invoiceTaxRateMap = new Map((invoicesData || []).map(inv => {
-          // 0 is a real rate (exempt); missing means 15. Both stored scales
-          // (15 and 0.15) read as a percentage -- a 0.15 used to give a
-          // credit note's VAT as 0.15% of the refund instead of 15%.
-          const rate = ratePercent(inv.tax_rate) ?? 15;
+          // 0 is a real rate (exempt); missing (an old row) means 15. The one
+          // reader of a stored rate: src/shared/taxRate.ts (P1.2).
+          const rate = taxRatePercent(inv.tax_rate) ?? 15;
           return [inv.id, rate];
         }));
         

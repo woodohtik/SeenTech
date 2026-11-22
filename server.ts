@@ -2428,7 +2428,7 @@ app.post("/api/zatca/submit-invoice", authenticate, asyncHandler(async (req: any
 
   const { data: items } = await supabaseAdmin
     .from('order_items')
-    .select('name, garment_type, quantity, price, selected_unit')
+    .select('name, garment_type, quantity, price, selected_unit, tax_type, line_net, line_tax')
     .eq('order_id', orderId)
     .eq('tenant_id', tenantId);
 
@@ -2462,22 +2462,29 @@ app.post("/api/zatca/submit-invoice", authenticate, asyncHandler(async (req: any
   // depending on which write path created this order -- same ambiguity
   // this project already normalizes for on every READ path (POS.tsx,
   // Orders.tsx). Treat anything > 1 as already a percentage.
-  const rawRate = Number(order.tax_rate) || 15;
-  const vatPercent = rawRate > 1 ? rawRate : rawRate * 100;
+  // One reader of a stored rate (P1.2, CODEHEALTH-01): a real 0 stays 0, never 15.
+  const { taxRatePercent } = await import('./src/shared/taxRate.ts');
+  const vatPercent = taxRatePercent(order.tax_rate) ?? 0;
 
   const now = new Date();
   const lines = (items || []).map((item: any, i: number) => {
     const qty = Number(item.quantity) > 0 ? Number(item.quantity) : 1;
-    const unitPrice = Number(item.price) || 0;
-    const lineExtensionAmount = qty * unitPrice;
+    // seen-readiness-fixes-task.md P1.1 (MONEY-16, CODEHEALTH-02): a line sold
+    // through the one tax engine carries the figures it was charged -- net and
+    // tax after its share of the discount, by its own tax type -- so the lines
+    // add up to the invoice header. Older lines fall back to the old reading.
+    const charged = item.line_net !== null && item.line_net !== undefined;
+    const lineExtensionAmount = charged ? Number(item.line_net) : qty * (Number(item.price) || 0);
+    const lineTax = charged ? Number(item.line_tax) || 0 : lineExtensionAmount * (vatPercent / 100);
+    const linePercent = charged && (item.tax_type === 'exempt' || lineTax === 0) ? 0 : vatPercent;
     return {
       id: String(i + 1),
       itemName: item.name || item.garment_type || 'منتج',
       quantity: qty,
-      unitPrice,
+      unitPrice: Math.round((lineExtensionAmount / qty) * 100) / 100,
       lineExtensionAmount,
-      taxPercent: vatPercent,
-      taxAmount: lineExtensionAmount * (vatPercent / 100),
+      taxPercent: linePercent,
+      taxAmount: lineTax,
       // A line sold by length carries its unit (2.5 metres); any other line
       // is written exactly as before (seen-verticals-readiness-task.md Phase 5).
       ...(item.selected_unit === 'meter' ? { unitCode: 'MTR' } : item.selected_unit === 'yard' ? { unitCode: 'YRD' } : {}),
@@ -2710,8 +2717,9 @@ app.post("/api/zatca/submit-credit-note", authenticate, asyncHandler(async (req:
   const secret = decryptZatcaSecret(prodCreds.secret_encrypted);
   const auth = { binarySecurityToken: prodCreds.certificate, secret };
 
-  const rawRate = Number(originalInvoice.tax_rate) || 15;
-  const vatPercent = rawRate > 1 ? rawRate : rawRate * 100;
+  // One reader of a stored rate (P1.2, CODEHEALTH-01): a real 0 stays 0, never 15.
+  const { taxRatePercent } = await import('./src/shared/taxRate.ts');
+  const vatPercent = taxRatePercent(originalInvoice.tax_rate) ?? 0;
   const refundedAmount = Number(note.refunded_amount) || 0;
   // refunded_amount is tax-inclusive (CreditNotes.tsx caps it at the
   // original invoice's own total_amount, which is tax-inclusive) -- back

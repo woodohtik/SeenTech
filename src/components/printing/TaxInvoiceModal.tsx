@@ -14,6 +14,7 @@ import { downloadInvoicePDF, shareOrDownloadInvoicePDF } from '../../utils/pdfGe
 import { useToast } from '../../contexts/ToastContext';
 import { buildWhatsAppMessage, getWhatsAppTemplate } from '../../utils/whatsapp';
 import { isRtlLang } from '../../lib/direction';
+import { taxRatePercent } from '../../shared/taxRate';
 
 // Extracted from TaxInvoices.tsx so the exact same invoice -- same
 // component, same data shape (TaxInvoice, keyed off the tax_invoices
@@ -66,15 +67,9 @@ export function TaxInvoiceDocument({ order, tenant, onClose }: TaxInvoiceModalPr
   const totalExcVat = order.subTotal || (totalIncVat - vatAmount);
   // order.taxRate || 15 كان يستبدل 0% (فاتورة معفاة) بـ15% خطأً لأن 0 قيمة
   // falsy في JS.
-  const rawTaxRate = (order.taxRate !== null && order.taxRate !== undefined && Number.isFinite(Number(order.taxRate)))
-    ? Number(order.taxRate)
-    : 15;
-  // tax_rate is stored inconsistently depending on which code path created
-  // the row: POS.tsx's create_pos_sale hardcodes a fraction (0.15), while
-  // Orders.tsx writes the tenant's configured percentage (e.g. 15) directly.
-  // Normalize to percentage here since the rest of this component already
-  // assumes that scale (see the vatRate/100 usage below).
-  const vatRate = rawTaxRate > 1 ? rawTaxRate : rawTaxRate * 100;
+  // The one reader of a stored rate (src/shared/taxRate.ts, P1.2); a missing
+  // rate on an old row prints as 15%, a real 0 as 0.
+  const vatRate = taxRatePercent(order.taxRate) ?? 15;
 
   const invoiceDate = new Date(order.issuedAt || new Date().toISOString());
 

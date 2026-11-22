@@ -1,0 +1,114 @@
+-- seen-readiness-fixes-task.md P1.1 -- the one tax engine, part 1: the engine.
+--
+-- public.app_tax_document() is the database's copy of src/shared/taxEngine.ts
+-- (the rules are written out there). Both are tested on the same 30 sales in
+-- src/shared/taxEngineCases.json (supabase/tests/tax_engine_test.sql and
+-- src/shared/taxEngine.test.ts). Part 2 (20270102000002) makes the sales use it.
+--
+-- p_lines: [{"price": n, "quantity": n, "taxType": "inclusive"|"exclusive"|"exempt"}]
+-- p_rate: the VAT rate as a fraction (0.15), 0 when tax is off.
+-- Returns the same shape as computeTaxDocument().
+
+CREATE OR REPLACE FUNCTION public.app_tax_document(
+  p_lines jsonb,
+  p_rate numeric,
+  p_discount_type text DEFAULT 'percent',
+  p_discount_value numeric DEFAULT 0,
+  p_max_discount_pct numeric DEFAULT NULL
+)
+RETURNS jsonb
+LANGUAGE plpgsql
+IMMUTABLE
+AS $function$
+DECLARE
+  v_rate      numeric := GREATEST(COALESCE(p_rate, 0), 0);
+  v_value     numeric := GREATEST(COALESCE(p_discount_value, 0), 0);
+  v_n         int := COALESCE(jsonb_array_length(p_lines), 0);
+  v_type      text[] := ARRAY[]::text[];
+  v_net       numeric[] := ARRAY[]::numeric[];
+  v_tax       numeric[] := ARRAY[]::numeric[];
+  v_gross     numeric[] := ARRAY[]::numeric[];
+  v_share     numeric[] := ARRAY[]::numeric[];
+  v_line      jsonb;
+  v_t         text;
+  v_amount    numeric;
+  v_n1        numeric;
+  v_gross_before numeric := 0;
+  v_net_before   numeric := 0;
+  v_discount  numeric;
+  v_sum_share numeric := 0;
+  v_largest   int := 1;
+  v_lines_out jsonb := '[]'::jsonb;
+  v_ga        numeric;
+  v_na        numeric;
+  v_ta        numeric;
+  v_subtotal  numeric := 0;
+  v_tax_total numeric := 0;
+  v_total     numeric := 0;
+  i           int;
+BEGIN
+  FOR i IN 1..v_n LOOP
+    v_line := p_lines -> (i - 1);
+    v_t := CASE WHEN v_line->>'taxType' IN ('inclusive', 'exempt') THEN v_line->>'taxType' ELSE 'exclusive' END;
+    v_amount := round(COALESCE((v_line->>'price')::numeric, 0) * COALESCE((v_line->>'quantity')::numeric, 0), 2);
+    v_type := v_type || v_t;
+    IF v_t = 'exclusive' AND v_rate > 0 THEN
+      v_net := v_net || v_amount;
+      v_tax := v_tax || round(v_amount * v_rate, 2);
+      v_gross := v_gross || (v_amount + round(v_amount * v_rate, 2));
+    ELSIF v_t = 'inclusive' AND v_rate > 0 THEN
+      v_n1 := round(v_amount / (1 + v_rate), 2);
+      v_net := v_net || v_n1;
+      v_tax := v_tax || (v_amount - v_n1);
+      v_gross := v_gross || v_amount;
+    ELSE
+      v_net := v_net || v_amount;
+      v_tax := v_tax || 0::numeric;
+      v_gross := v_gross || v_amount;
+    END IF;
+    v_gross_before := v_gross_before + v_gross[i];
+    v_net_before := v_net_before + v_net[i];
+    IF v_gross[i] > v_gross[v_largest] THEN v_largest := i; END IF;
+  END LOOP;
+
+  IF p_discount_type = 'fixed' THEN
+    v_discount := LEAST(round(v_value, 2), v_gross_before);
+  ELSE
+    v_discount := round(v_gross_before * LEAST(v_value, 100) / 100, 2);
+  END IF;
+  IF p_max_discount_pct IS NOT NULL THEN
+    v_discount := LEAST(v_discount, round(v_gross_before * GREATEST(p_max_discount_pct, 0) / 100, 2));
+  END IF;
+
+  FOR i IN 1..v_n LOOP
+    v_share := v_share || CASE WHEN v_gross_before > 0 THEN round(v_discount * v_gross[i] / v_gross_before, 2) ELSE 0 END;
+    v_sum_share := v_sum_share + v_share[i];
+  END LOOP;
+  IF v_n > 0 THEN
+    v_share[v_largest] := v_share[v_largest] + (v_discount - v_sum_share);
+  END IF;
+
+  FOR i IN 1..v_n LOOP
+    v_ga := v_gross[i] - v_share[i];
+    IF v_type[i] = 'exempt' OR v_rate <= 0 THEN
+      v_na := v_ga; v_ta := 0;
+    ELSE
+      v_na := round(v_ga / (1 + v_rate), 2); v_ta := v_ga - v_na;
+    END IF;
+    v_subtotal := v_subtotal + v_na;
+    v_tax_total := v_tax_total + v_ta;
+    v_total := v_total + v_ga;
+    v_lines_out := v_lines_out || jsonb_build_object(
+      'taxType', v_type[i], 'net', v_net[i], 'tax', v_tax[i], 'gross', v_gross[i],
+      'discount', v_share[i], 'netAfter', v_na, 'taxAfter', v_ta, 'grossAfter', v_ga);
+  END LOOP;
+
+  RETURN jsonb_build_object(
+    'lines', v_lines_out,
+    'netBefore', v_net_before, 'grossBefore', v_gross_before,
+    'discountGross', v_discount, 'discountNet', v_net_before - v_subtotal,
+    'subtotal', v_subtotal, 'tax', v_tax_total, 'total', v_total);
+END;
+$function$;
+
+GRANT EXECUTE ON FUNCTION public.app_tax_document(jsonb, numeric, text, numeric, numeric) TO authenticated, service_role;

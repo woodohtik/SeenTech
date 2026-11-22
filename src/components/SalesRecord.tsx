@@ -23,6 +23,7 @@ import { Pagination } from './ui/Pagination';
 import { riyadhMidnightIso, riyadhDayAfterIso } from '../services/financialSummaryService';
 
 import { isRtlLang } from '../lib/direction';
+import { taxRateFraction } from '../shared/taxRate';
 
 const PAGE_SIZE = 20;
 
@@ -510,22 +511,12 @@ export default function SalesRecord({ tenantId, shiftId, filterStatus }: { tenan
                 logoUrl: '',
               };
 
-              // tax_rate is stored inconsistently depending on which code path
-              // created the order: POS.tsx's create_pos_sale hardcodes a
-              // fraction (0.15), Orders.tsx writes the tenant's configured
-              // percentage (e.g. 15) directly -- normalize defensively rather
-              // than assume either scale.
-              // A stored 0 with no stored tax is an order sold without tax (tax
-              // off / exempt): no VAT line, rather than the 15% fallback it used
-              // to get (team review M-17). tax_rate defaults to 0, so a 0 next
-              // to a stored tax amount is an old row: 15% as before.
-              const rawTaxRate = Number((selectedOrder as any).taxRate);
-              const soldWithoutTax = rawTaxRate === 0 && !(Number((selectedOrder as any).taxAmount) > 0);
-              const vatRateFraction = soldWithoutTax
-                ? 0
-                : Number.isFinite(rawTaxRate) && rawTaxRate > 0
-                  ? (rawTaxRate > 1 ? rawTaxRate / 100 : rawTaxRate)
-                  : 0.15;
+              // The one reader of a stored rate (src/shared/taxRate.ts, P1.2).
+              // A 0 with no stored tax is an order sold without tax; a 0 next to a
+              // stored tax amount is an old row (before the rate was stored): 15%.
+              const storedRate = taxRateFraction((selectedOrder as any).taxRate);
+              const soldWithoutTax = storedRate === 0 && !(Number((selectedOrder as any).taxAmount) > 0);
+              const vatRateFraction = soldWithoutTax ? 0 : storedRate && storedRate > 0 ? storedRate : 0.15;
 
               const formattedItems = (selectedOrder.items || []).map((item: any) => ({
                 name: item.type === 'custom' ? item.garmentType || t('orders.custom_thobe', 'تفصيل ثوب') : item.name || t('orders.ready_made', 'صنف جاهز'),

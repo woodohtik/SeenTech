@@ -1,5 +1,5 @@
-import { calculateItemTax } from './b2bHelper';
 import { resolveTaxSettings } from './taxSettings';
+import { computeTaxDocument } from '../shared/taxEngine';
 import { contentToMeters, metersToContent, type ContentUnit } from './fabricUomConverter';
 
 /** Pure helpers behind the tailoring order form: tax, totals, and each line's fabric. */
@@ -22,9 +22,9 @@ export function resolveTailoringTax(tenantRow: any): TailoringTax {
 }
 
 export interface TailoringTotals {
-  /** Sum of price x pieces, before discount and tax. */
+  /** Sum of price x pieces as entered, before discount (and before tax when prices exclude it). */
   itemsTotal: number;
-  /** Discount actually applied (never more than the items total). */
+  /** Discount actually taken off the total (never more than it). */
   discount: number;
   subtotal: number;
   vat: number;
@@ -38,24 +38,23 @@ export function computeTailoringTotals(
   discountAmount: unknown,
   tax: TailoringTax
 ): TailoringTotals {
-  const itemsTotal = items.reduce(
-    (sum, item) => sum + (Number(item.price) * Number(item.quantity) || 0),
-    0
-  );
-  const discount = Math.min(Math.max(Number(discountAmount) || 0, 0), itemsTotal);
+  // seen-readiness-fixes-task.md P1.1: the one tax engine, the same rules as
+  // create_tailoring_order: every line takes the shop's tailoring tax type,
+  // and the discount comes off what the customer pays (as in the POS).
   const effectiveType = tax.enabled ? tax.taxType : 'exempt';
-  const { basePrice, taxAmount, finalPrice } = calculateItemTax(
-    itemsTotal - discount,
-    effectiveType,
-    tax.vatRatePercentage / 100,
-    1
-  );
+  const rate = effectiveType === 'exempt' ? 0 : tax.vatRatePercentage / 100;
+  const doc = computeTaxDocument({
+    lines: items.map((item) => ({ price: Number(item.price) || 0, quantity: Number(item.quantity) || 0, taxType: effectiveType })),
+    rate,
+    discountType: 'fixed',
+    discountValue: Math.max(Number(discountAmount) || 0, 0),
+  });
   return {
-    itemsTotal,
-    discount,
-    subtotal: basePrice,
-    vat: taxAmount,
-    total: finalPrice,
+    itemsTotal: items.reduce((sum, item) => sum + (Number(item.price) * Number(item.quantity) || 0), 0),
+    discount: doc.discountGross,
+    subtotal: doc.subtotal,
+    vat: doc.tax,
+    total: doc.total,
     taxRate: effectiveType === 'exempt' ? 0 : tax.vatRatePercentage,
   };
 }

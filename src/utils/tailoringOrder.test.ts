@@ -38,9 +38,9 @@ describe('computeTailoringTotals', () => {
     expect(totals).toMatchObject({ itemsTotal: 750, discount: 0, subtotal: 750, vat: 112.5, total: 862.5, taxRate: 15 });
   });
 
-  it('takes the discount off before tax and never below zero', () => {
-    expect(computeTailoringTotals(items, 50, exclusive)).toMatchObject({ discount: 50, subtotal: 700, vat: 105, total: 805 });
-    expect(computeTailoringTotals(items, 9999, exclusive)).toMatchObject({ discount: 750, total: 0 });
+  it('takes the discount off what the customer pays (as the POS does, P1.1) and never below zero', () => {
+    expect(computeTailoringTotals(items, 50, exclusive)).toMatchObject({ discount: 50, subtotal: 706.52, vat: 105.98, total: 812.5 });
+    expect(computeTailoringTotals(items, 9999, exclusive)).toMatchObject({ discount: 862.5, total: 0 });
     expect(computeTailoringTotals(items, -20, exclusive).discount).toBe(0);
   });
 

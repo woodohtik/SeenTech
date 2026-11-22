@@ -1,3 +1,4 @@
+import { taxRatePercent } from '../shared/taxRate';
 import type { TailoringTax } from './tailoringOrder';
 
 /**
@@ -30,13 +31,8 @@ export interface VatSummary {
   netVatDue: number;
 }
 
-/** A stored rate as a percentage: orders.tax_rate holds both 15 and 0.15. */
-export function ratePercent(stored: number | string | null | undefined): number | null {
-  if (stored === null || stored === undefined || stored === '') return null;
-  const n = Number(stored);
-  if (!Number.isFinite(n) || n < 0) return null;
-  return n > 0 && n <= 1 ? n * 100 : n;
-}
+/** A stored rate as a percentage -- the one reader, src/shared/taxRate.ts (P1.2). */
+export const ratePercent = taxRatePercent;
 
 /** The VAT inside a VAT-inclusive amount at `percent`. */
 export function vatInside(amount: number, percent: number): number {

@@ -89,13 +89,13 @@ describe('computeCartTotals', () => {
     expect(totals.totalAmount).toBeCloseTo(207, 2);
   });
 
-  it('applies a fixed discount', () => {
-    const cart: CartTotalsItem[] = [{ price: 100, quantity: 2, taxType: 'exclusive' }]; // subtotal 200, tax 30
+  it('applies a fixed discount to what the customer pays, as the server does (P1.1, MONEY-04)', () => {
+    const cart: CartTotalsItem[] = [{ price: 100, quantity: 2, taxType: 'exclusive' }]; // 200 + 30 = 230
     const totals = computeCartTotals(cart, { enabled: true, vatRate: 15 }, 'fixed', 50);
-    expect(totals.calculatedDiscountAmount).toBe(50);
-    expect(totals.discountedSubtotal).toBe(150);
-    expect(totals.taxAmount).toBeCloseTo(22.5, 2);
-    expect(totals.totalAmount).toBeCloseTo(172.5, 2);
+    expect(totals.totalAmount).toBe(180); // 230 - 50 (was 172.5 here and 180 on the server)
+    expect(totals.discountedSubtotal).toBe(156.52);
+    expect(totals.taxAmount).toBe(23.48);
+    expect(totals.calculatedDiscountAmount).toBe(43.48); // the discount's pre-tax share
   });
 
   it('clamps a discount larger than the subtotal to the subtotal (never a negative total)', () => {

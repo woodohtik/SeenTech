@@ -1,4 +1,4 @@
-import { calculateItemTax } from './b2bHelper';
+import { computeTaxDocument } from '../shared/taxEngine';
 import { ProductTaxType } from '../types';
 
 export interface CartTotalsItem {
@@ -27,55 +27,40 @@ export interface CartTotals {
 }
 
 /**
- * مراجعة-الفريق-التقني-الكامل-2026-10-19.md (QA، حرجة): حساب إجمالي السلة
- * (الضريبة، الخصم، المجموع النهائي) كان مكتوباً مباشرة داخل جسم مكوّن
- * POS.tsx (3026 سطراً) بلا أي اختبار -- تغيير في منطق الخصم أو الضريبة يمر
- * عبر CI أخضر رغم كسر حساب الفاتورة النهائية في الإنتاج. استُخرج هنا بلا أي
- * تغيير في الصيغ أو ترتيب العمليات (مطابق حرفياً لما كان في POS.tsx) ليصبح
- * قابلاً للاختبار بمعزل عن تهيئة React/Supabase الكاملة.
+ * The cart's figures, by the one tax engine (src/shared/taxEngine.ts -- the
+ * same rules the server's create_pos_sale applies through app_tax_document),
+ * so what the cashier sees is what the sale records, to the halala
+ * (seen-readiness-fixes-task.md P1.1: MONEY-01, MONEY-04).
+ *
+ * subTotalAmount: before the discount and before tax; calculatedDiscountAmount:
+ * the discount as it shows before tax (the cashier's discount comes off what
+ * the customer pays, and this is its pre-tax share); discountedSubtotal + taxAmount
+ * = totalAmount.
  */
 export function computeCartTotals(
   cart: CartTotalsItem[],
   taxSettings: CartTaxSettings | null | undefined,
   discountType: DiscountType,
-  discountValue: number
+  discountValue: number,
+  maxDiscountPercent?: number | null
 ): CartTotals {
   const isTaxEnabled = taxSettings?.enabled ?? Boolean(taxSettings?.trn);
-  const effectiveVatRate = isTaxEnabled ? (Number(taxSettings?.vatRate ?? 15) / 100) : 0;
-
-  const subTotalAmount = cart.reduce((sum, item) => {
-    const calc = calculateItemTax(item.price, item.taxType || 'exclusive', effectiveVatRate, item.quantity);
-    return sum + calc.basePrice;
-  }, 0);
-
-  const taxAmountPerItem = cart.reduce((sum, item) => {
-    const calc = calculateItemTax(item.price, item.taxType || 'exclusive', effectiveVatRate, item.quantity);
-    return sum + calc.taxAmount;
-  }, 0);
-
-  let calculatedDiscountAmount = 0;
-  if (discountValue > 0) {
-    calculatedDiscountAmount = discountType === 'percent'
-      ? subTotalAmount * (discountValue / 100)
-      : discountValue;
-  }
-  calculatedDiscountAmount = Math.min(calculatedDiscountAmount, subTotalAmount);
-
-  const discountedSubtotal = subTotalAmount - calculatedDiscountAmount;
-
-  const discountRatio = subTotalAmount > 0 ? (subTotalAmount - calculatedDiscountAmount) / subTotalAmount : 1;
-  const taxAmount = isTaxEnabled ? taxAmountPerItem * discountRatio : 0;
   const vatRate = isTaxEnabled ? Number(taxSettings?.vatRate ?? 15) : 0;
-  const totalAmount = discountedSubtotal + taxAmount;
-
+  const doc = computeTaxDocument({
+    lines: cart.map((item) => ({ price: item.price, quantity: item.quantity, taxType: item.taxType })),
+    rate: vatRate / 100,
+    discountType,
+    discountValue,
+    maxDiscountPercent,
+  });
   return {
     isTaxEnabled,
     vatRate,
-    subTotalAmount,
-    calculatedDiscountAmount,
-    discountedSubtotal,
-    taxAmount,
-    totalAmount,
+    subTotalAmount: doc.netBefore,
+    calculatedDiscountAmount: doc.discountNet,
+    discountedSubtotal: doc.subtotal,
+    taxAmount: doc.tax,
+    totalAmount: doc.total,
   };
 }
 

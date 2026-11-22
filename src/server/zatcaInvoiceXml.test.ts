@@ -174,3 +174,30 @@ describe('a line sold by length', () => {
     expect(xml).toContain('<cbc:InvoicedQuantity>1</cbc:InvoicedQuantity>');
   });
 });
+
+// seen-readiness-fixes-task.md P1.1: the XML of every truth-table sale, built
+// from the figures each line was charged (as server.ts does), has lines that
+// add up to its header -- including discounts, inclusive prices and 0%.
+import taxCases from '../shared/taxEngineCases.json';
+
+describe('the one tax engine in the XML', () => {
+  const amounts = (xml: string, tag: string) =>
+    [...xml.matchAll(new RegExp(`<cbc:${tag} currencyID="SAR">([0-9.]+)</cbc:${tag}>`, 'g'))].map((m) => Number(m[1]));
+  it.each((taxCases as any[]).map((c) => [c.name, c]))('%s', (_n, c: any) => {
+    const d = c.expected;
+    const xml = buildSimplifiedInvoiceXml({
+      ...sampleInput(),
+      lines: d.lines.map((l: any, i: number) => ({
+        id: String(i + 1), itemName: 'x', quantity: 1, unitPrice: l.netAfter,
+        lineExtensionAmount: l.netAfter, taxPercent: l.taxAfter === 0 ? 0 : c.input.rate * 100, taxAmount: l.taxAfter,
+      })),
+      subtotal: d.subtotal, taxAmount: d.tax, totalWithTax: d.total,
+    });
+    const lineNets = amounts(xml, 'LineExtensionAmount');
+    // the first LineExtensionAmount is the document's (LegalMonetaryTotal comes before the lines)
+    const docNet = lineNets.shift()!;
+    expect(Math.round(lineNets.reduce((s, x) => s + x, 0) * 100) / 100).toBe(docNet);
+    expect(docNet).toBe(d.subtotal);
+    expect(amounts(xml, 'TaxInclusiveAmount')).toContain(d.total);
+  });
+});
