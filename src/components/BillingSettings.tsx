@@ -32,6 +32,7 @@ import { createSubscriptionRequest, fetchMySubscriptionRequests, SubscriptionReq
 import { previewCoupon, CouponPreview } from '../services/couponService';
 import { getBankTransferSettings, DEFAULT_BANK_TRANSFER_SETTINGS, BankTransferSettings } from '../services/bankTransferService';
 import { useToast } from '../contexts/ToastContext';
+import { printSubscriptionReceipt, subscriptionReceiptHtml, type SubscriptionPayment } from '../lib/subscriptionReceipt';
 
 import { isRtlLang, localeOf } from '../lib/direction';
 
@@ -44,11 +45,32 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
   const isRtl = isRtlLang(i18n.language);
   const { error: toastError } = useToast();
 
+  const methodLabel = (m: string | null) =>
+    m === 'card' ? t('billing.payment_method_card') : m === 'bank_transfer' ? t('billing.payment_method_bank') : m === 'cash' ? t('billing.payment_method_cash') : t('billing.payment_method_pos');
+
+  // P5 (PLATFORM-06, question 7): a receipt, not a tax invoice -- Seen is not VAT-registered.
+  const openReceipt = (p: SubscriptionPayment) => {
+    const html = subscriptionReceiptHtml(p, {
+      shopName: tenant?.name || '',
+      locale: localeOf(),
+      dir: isRtl ? 'rtl' : 'ltr',
+      methodLabel: methodLabel(p.payment_method),
+      labels: {
+        title: t('billing.receipt.title'), notTaxInvoice: t('billing.receipt.not_tax_invoice'),
+        receiptNo: t('billing.receipt.number'), date: t('billing.receipt.date'), shop: t('billing.receipt.shop'),
+        plan: t('billing.receipt.plan'), period: t('billing.receipt.period'), method: t('billing.receipt.method'),
+        reference: t('billing.receipt.reference'), discount: t('billing.receipt.discount'), total: t('billing.receipt.total'),
+        issuer: t('billing.receipt.issuer'),
+      },
+    });
+    if (!printSubscriptionReceipt(html)) toastError(t('billing.receipt.popup_blocked'));
+  };
+
   const [loading, setLoading] = useState(true);
   const [tenant, setTenant] = useState<any>(null);
   const [plans, setPlans] = useState<any[]>([]);
   const [currentPlan, setCurrentPlan] = useState<any>(null);
-  const [payments, setPayments] = useState<any[]>([]);
+  const [payments, setPayments] = useState<SubscriptionPayment[]>([]);
   const [userRequests, setUserRequests] = useState<SubscriptionRequest[]>([]);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [copiedIban, setCopiedIban] = useState(false);
@@ -103,15 +125,17 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
         );
       }
 
-      // 2. جلب سجل المدفوعات الحقيقية
+      // 2. سجل مدفوعات الاشتراك لسِين وحدها -- P5 (PLATFORM-05): كانت هذه
+      // القائمة تقرأ public.payments، أي كل مبيعات المحل، وتعرضها كفواتير اشتراك.
       const { data: paymentsData } = await supabase
-        .from('payments')
-        .select('*')
+        .from('saas_subscription_payments')
+        .select('id, receipt_number, plan_name, amount, original_amount, discount_amount, payment_method, reference, period_start, period_end, created_at')
         .eq('tenant_id', tenantId)
-        .order('received_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(100);
 
       if (paymentsData) {
-        setPayments(paymentsData);
+        setPayments(paymentsData as SubscriptionPayment[]);
       }
 
       // 3. جلب طلبات الاشتراك الخاصة بهذا المشترك (فلترة server-side)
@@ -526,17 +550,17 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
                   </div>
                   <div>
                     <p className="font-black text-content text-sm sm:text-base">
-                      {inv.notes || t('billing.history_notes_fallback')}
+                      {inv.plan_name || t('billing.history_notes_fallback')}
                     </p>
                     <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 text-xs text-content-muted font-bold mt-1">
-                      <span>{new Date(inv.received_at || inv.created_at).toLocaleDateString(localeOf(), { year: 'numeric', month: 'long', day: 'numeric' })}</span>
+                      <span>{new Date(inv.created_at).toLocaleDateString(localeOf(), { year: 'numeric', month: 'long', day: 'numeric' })}</span>
                       <span>•</span>
                       <span className="font-mono dir-ltr">
-                        #{inv.reference || inv.id.slice(0, 8).toUpperCase()}
+                        {inv.receipt_number}
                       </span>
                       <span>•</span>
                       <span className="bg-brand/10 text-brand px-2 py-0.5 rounded-md text-[10px] font-black">
-                        {inv.method === 'card' ? t('billing.payment_method_card') : inv.method === 'bank_transfer' ? t('billing.payment_method_bank') : inv.method === 'cash' ? t('billing.payment_method_cash') : t('billing.payment_method_pos')}
+                        {methodLabel(inv.payment_method)}
                       </span>
                     </div>
                   </div>
@@ -549,6 +573,14 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
                   <div className="p-2 bg-success/10 text-success rounded-xl text-xs font-black flex items-center gap-1">
                     <span>{t('billing.status_completed')}</span>
                   </div>
+                  <button
+                    type="button"
+                    onClick={() => openReceipt(inv)}
+                    className="p-2 rounded-xl text-xs font-black flex items-center gap-1 border-2 border-border hover:border-brand/40 text-content cursor-pointer"
+                  >
+                    <Download size={14} />
+                    <span>{t('billing.receipt_button')}</span>
+                  </button>
                 </div>
               </div>
             ))}

@@ -1154,6 +1154,8 @@ const PlanFormModal = ({
   const [maxOrders, setMaxOrders] = useState(plan ? String(plan.max_orders) : '0');
   const [features, setFeatures] = useState<string[]>(plan?.features?.length ? plan.features : ['']);
   const [isActive, setIsActive] = useState<boolean>(plan?.is_active ?? true);
+  // P5 (PLATFORM-06): what one approved payment buys -- a month or a year.
+  const [billingPeriod, setBillingPeriod] = useState<'month' | 'year'>(plan?.billing_period === 'month' ? 'month' : 'year');
   const [errors, setErrors] = useState<Partial<Record<PlanFormField, string>>>({});
   const [saving, setSaving] = useState(false);
 
@@ -1193,6 +1195,7 @@ const PlanFormModal = ({
       max_orders: Number(maxOrders),
       features: features.map((f) => f.trim()).filter(Boolean),
       is_active: isActive,
+      billing_period: billingPeriod,
     };
 
     if (mode === 'create') {
@@ -1303,6 +1306,20 @@ const PlanFormModal = ({
               <p className="text-[9px] text-content-muted font-bold">{t('saas.plan_field_max_orders_hint')}</p>
               {errors.maxOrders && <p className="text-[10px] text-danger font-bold">{fieldErrorText(errors.maxOrders)}</p>}
             </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <label htmlFor="plan-billing-period" className="text-[10px] font-black text-content-muted uppercase tracking-widest">{t('saas.plan_field_billing_period')}</label>
+            <select
+              id="plan-billing-period"
+              value={billingPeriod}
+              onChange={(e) => setBillingPeriod(e.target.value === 'month' ? 'month' : 'year')}
+              className="w-full bg-surface border border-border rounded-xl px-3.5 py-2.5 text-sm font-bold outline-none"
+            >
+              <option value="year">{t('saas.plan_billing_period_year')}</option>
+              <option value="month">{t('saas.plan_billing_period_month')}</option>
+            </select>
+            <p className="text-[9px] text-content-muted font-bold">{t('saas.plan_field_billing_period_hint')}</p>
           </div>
 
           <div className="space-y-1.5">

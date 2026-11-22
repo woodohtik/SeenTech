@@ -348,7 +348,23 @@
     "modal_coupon_applied": "رعایت لاگو ہو گئی 🎉",
     "modal_coupon_price_before": "رعایت سے پہلے قیمت",
     "modal_coupon_discount_label": "رعایت",
-    "modal_coupon_price_after": "رعایت کے بعد قیمت"
+    "modal_coupon_price_after": "رعایت کے بعد قیمت",
+    "receipt_button": "رسید",
+    "receipt": {
+      "title": "سبسکرپشن رسید",
+      "not_tax_invoice": "یہ سبسکرپشن فیس کی رسید ہے، ٹیکس انوائس نہیں۔",
+      "number": "رسید نمبر",
+      "date": "تاریخ",
+      "shop": "دکان",
+      "plan": "پلان",
+      "period": "سبسکرپشن کی مدت",
+      "method": "ادائیگی کا طریقہ",
+      "reference": "حوالہ",
+      "discount": "رعایت",
+      "total": "ادا شدہ رقم",
+      "issuer": "سین — دکان مینجمنٹ پلیٹ فارم",
+      "popup_blocked": "رسید نہیں کھل سکی۔ پاپ اپ کی اجازت دیں اور دوبارہ کوشش کریں۔"
+    }
   },
   "branches": {
     "add_location": "مقام / شاخ شامل کریں",

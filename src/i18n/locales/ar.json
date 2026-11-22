@@ -348,7 +348,23 @@
     "modal_coupon_applied": "تم تطبيق الخصم 🎉",
     "modal_coupon_price_before": "السعر قبل الخصم",
     "modal_coupon_discount_label": "الخصم",
-    "modal_coupon_price_after": "السعر بعد الخصم"
+    "modal_coupon_price_after": "السعر بعد الخصم",
+    "receipt_button": "الإيصال",
+    "receipt": {
+      "title": "إيصال اشتراك",
+      "not_tax_invoice": "هذا إيصال استلام لرسوم الاشتراك، وليس فاتورة ضريبية.",
+      "number": "رقم الإيصال",
+      "date": "التاريخ",
+      "shop": "المحل",
+      "plan": "الباقة",
+      "period": "فترة الاشتراك",
+      "method": "طريقة الدفع",
+      "reference": "المرجع",
+      "discount": "الخصم",
+      "total": "المبلغ المدفوع",
+      "issuer": "سِين — منصة إدارة المحلات",
+      "popup_blocked": "تعذر فتح الإيصال. اسمح بالنوافذ المنبثقة ثم حاول مجدداً."
+    }
   },
   "branches": {
     "add_location": "إضافة موقع / فرع",
@@ -4155,7 +4171,11 @@
     "coupon_field_notes": "ملاحظة داخلية (اختياري)",
     "coupon_field_notes_placeholder": "مثال: خصم مكالمة مع فاطمة - عرض رمضان",
     "coupon_save": "إنشاء الكوبون",
-    "tenant_analytics_load_failed": "تعذّر تحميل تحليلات هذا المستأجر"
+    "tenant_analytics_load_failed": "تعذّر تحميل تحليلات هذا المستأجر",
+    "plan_field_billing_period": "مدة الاشتراك",
+    "plan_billing_period_year": "سنوي",
+    "plan_billing_period_month": "شهري",
+    "plan_field_billing_period_hint": "المدة التي يضيفها اعتماد دفعة واحدة لهذه الباقة"
   },
   "sales": {
     "active_shift": "وردية نشطة",

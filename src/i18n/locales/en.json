@@ -348,7 +348,23 @@
     "modal_coupon_applied": "Discount applied 🎉",
     "modal_coupon_price_before": "Price before discount",
     "modal_coupon_discount_label": "Discount",
-    "modal_coupon_price_after": "Price after discount"
+    "modal_coupon_price_after": "Price after discount",
+    "receipt_button": "Receipt",
+    "receipt": {
+      "title": "Subscription receipt",
+      "not_tax_invoice": "This is a receipt for the subscription fee, not a tax invoice.",
+      "number": "Receipt no.",
+      "date": "Date",
+      "shop": "Shop",
+      "plan": "Plan",
+      "period": "Subscription period",
+      "method": "Payment method",
+      "reference": "Reference",
+      "discount": "Discount",
+      "total": "Amount paid",
+      "issuer": "Seen — shop management platform",
+      "popup_blocked": "The receipt could not open. Allow pop-ups and try again."
+    }
   },
   "branches": {
     "add_location": "Add Location / Branch",
