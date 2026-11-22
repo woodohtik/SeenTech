@@ -38,6 +38,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '../lib/supabase/client';
 import { resolveTaxSettings } from '../utils/taxSettings';
+import { cachedTaxSettings, rememberTaxSettings } from '../lib/offline/posOfflineState';
 import { refreshCustomersCache, refreshInventoryCache, refreshBranchStockCache, getCachedCustomers, getCachedInventory, getCachedBranchStock } from '../lib/offline/cacheSync';
 import { enqueuePosSale, isNetworkFailure, decidePosSaleFailureAction } from '../lib/offline/outbox';
 import { handleError, OperationType, getFriendlyErrorMessage } from '../lib/appErrors';
@@ -193,6 +194,9 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
   const searchInputRef = React.useRef<HTMLInputElement>(null);
 
   const [taxSettings, setTaxSettings] = useState<any>(null);
+  // P3.1 / RELIABILITY-11: the shop's tax settings could not be read (offline,
+  // nothing kept on this device) -- selling would mean selling with no VAT.
+  const [taxSettingsUnavailable, setTaxSettingsUnavailable] = useState(false);
 
   const [discountType, setDiscountType] = useState<'percent' | 'fixed'>('fixed');
   const { settings: brandingSettings } = useBranding();
@@ -520,6 +524,17 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
         // One reading of the shop's tax settings (utils/taxSettings.ts).
         const resolvedTax = resolveTaxSettings(tenantData);
         setTaxSettings(resolvedTax);
+        setTaxSettingsUnavailable(false);
+        rememberTaxSettings(tenantId, resolvedTax);
+      } else {
+        // P3.1 / RELIABILITY-11: no network -- the settings last read online.
+        const cached = cachedTaxSettings(tenantId);
+        if (cached) {
+          setTaxSettings(cached);
+          setTaxSettingsUnavailable(false);
+        } else {
+          setTaxSettingsUnavailable(true);
+        }
       }
 
       // Offline (or otherwise unreachable) fallback: reuse whatever
@@ -1249,6 +1264,17 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
       // TRN/legal-name fields in Settings at all, so this used to block
       // every sale, plain B2C included, with no way out of the app's own UI
       // (found live via /qa-test on staging: 2026-09-20).
+      // P3.1 / RELIABILITY-11: never sell without VAT because the settings
+      // could not be loaded (offline, nothing kept on this device yet).
+      if (taxSettingsUnavailable) {
+        toastError(
+          t('pos.tax_settings_offline_title', 'تعذّر تحميل إعدادات الضريبة'),
+          t('pos.tax_settings_offline_desc', 'اتصل بالإنترنت مرة واحدة ليحفظ الجهاز إعدادات الضريبة، ثم يمكنك البيع بدون إنترنت.')
+        );
+        setLoading(false);
+        return;
+      }
+
       if ((isTaxEnabled || isB2B) && !hasValidTaxSettings(taxSettings)) {
         toastError(
           t('pos.tax_settings_required_title', 'أكمل إعدادات الضريبة أولاً'),

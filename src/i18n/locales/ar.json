@@ -2731,7 +2731,9 @@
     "length_unit": "الوحدة",
     "length_quantity_invalid": "أدخل كمية أكبر من صفر",
     "custom_tailor__piece": "طلب جديد",
-    "type_custom__piece": "طلب"
+    "type_custom__piece": "طلب",
+    "tax_settings_offline_title": "تعذّر تحميل إعدادات الضريبة",
+    "tax_settings_offline_desc": "اتصل بالإنترنت مرة واحدة ليحفظ الجهاز إعدادات الضريبة، ثم يمكنك البيع بدون إنترنت."
   },
   "printing": {
     "agent": {

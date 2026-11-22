@@ -2729,7 +2729,9 @@
     "length_unit": "اکائی",
     "length_quantity_invalid": "صفر سے زیادہ مقدار درج کریں",
     "custom_tailor__piece": "نیا آرڈر",
-    "type_custom__piece": "آرڈر"
+    "type_custom__piece": "آرڈر",
+    "tax_settings_offline_title": "ٹیکس سیٹنگز لوڈ نہیں ہو سکیں",
+    "tax_settings_offline_desc": "ایک بار انٹرنیٹ سے جڑیں تاکہ یہ ڈیوائس ٹیکس سیٹنگز محفوظ کر لے؛ اس کے بعد آپ آف لائن فروخت کر سکتے ہیں۔"
   },
   "printing": {
     "agent": {

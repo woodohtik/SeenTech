@@ -22,6 +22,8 @@ import { useTranslation } from 'react-i18next';
 import DateTimeDisplay from './DateTimeDisplay';
 
 import { isRtlLang, localeOf } from '../lib/direction';
+import { cachedOpenShift, rememberOpenShift } from '../lib/offline/posOfflineState';
+import { isNetworkFailure } from '../lib/offline/outbox';
 
 export default function Sales({ tenantId }: { tenantId: string }) {
   const { t, i18n } = useTranslation();
@@ -65,14 +67,32 @@ export default function Sales({ tenantId }: { tenantId: string }) {
             startTime: data.start_time,
             endTime: data.end_time
           } as Shift);
+          // P3.1 / RELIABILITY-01: kept on the device so the POS opens after
+          // a reload with no network.
+          rememberOpenShift(tenantId, currentStaff.id, {
+            id: data.id, tenantId, branchId: data.branch_id, staffId: data.staff_id, staffName: data.staff_name,
+            openingBalance: Number(data.opening_balance) || 0, startTime: data.start_time, status: 'open',
+          });
           setActiveSubTab('pos_main');
         } else {
+          rememberOpenShift(tenantId, currentStaff.id, null);
           // Default to sales_record so they don't see open shift window by default on entry
           setActiveSubTab('sales_record');
         }
       } catch (err) {
         console.error('Error fetching initial active shift in Sales:', err);
-        setActiveSubTab('sales_record');
+        // No network: the shift this device last saw open. The server checks
+        // it again when each sale syncs.
+        const cached = isNetworkFailure(err) ? cachedOpenShift(tenantId, currentStaff.id) : null;
+        if (cached) {
+          setActiveShift({
+            id: cached.id, tenantId: cached.tenantId, staffId: cached.staffId, staffName: cached.staffName || currentStaff.name,
+            openingBalance: cached.openingBalance, startTime: cached.startTime, status: 'open',
+          } as Shift);
+          setActiveSubTab('pos_main');
+        } else {
+          setActiveSubTab('sales_record');
+        }
       } finally {
         setLoadingShift(false);
       }
@@ -82,6 +102,12 @@ export default function Sales({ tenantId }: { tenantId: string }) {
 
   const handleShiftOpen = (shift: Shift) => {
     setActiveShift(shift);
+    if (tenantId && currentStaff) {
+      rememberOpenShift(tenantId, currentStaff.id, {
+        id: shift.id, tenantId, branchId: (shift as any).branchId ?? (shift as any).branch_id ?? null, staffId: shift.staffId || currentStaff.id,
+        staffName: shift.staffName, openingBalance: Number(shift.openingBalance) || 0, startTime: shift.startTime, status: 'open',
+      });
+    }
     setActiveSubTab('pos_main');
   };
   
@@ -279,6 +305,7 @@ export default function Sales({ tenantId }: { tenantId: string }) {
   const handleShiftClosed = () => {
     setIsClosingModalOpen(false);
     setActiveShift(null);
+    if (tenantId && currentStaff) rememberOpenShift(tenantId, currentStaff.id, null);
     setActiveSubTab('sales_record');
   };
 

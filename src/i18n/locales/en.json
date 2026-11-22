@@ -2731,7 +2731,9 @@
     "length_unit": "Unit",
     "length_quantity_invalid": "Enter a quantity above zero",
     "custom_tailor__piece": "New order",
-    "type_custom__piece": "Order"
+    "type_custom__piece": "Order",
+    "tax_settings_offline_title": "Tax settings could not be loaded",
+    "tax_settings_offline_desc": "Connect to the internet once so this device can keep the tax settings; after that you can sell offline."
   },
   "printing": {
     "agent": {
