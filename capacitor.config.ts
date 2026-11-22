@@ -16,6 +16,12 @@ import type { CapacitorConfig } from '@capacitor/cli';
  * the production origin only with the same explicit go-ahead this repo
  * already requires for any production publish.
  */
+// seen-readiness-fixes-task.md P3.4 (RELIABILITY-18): a release build must say
+// which site it opens -- it never falls back to staging silently.
+//   SEEN_ANDROID_RELEASE=1 CAPACITOR_SERVER_URL=https://www.seentech.io npx cap sync android
+if (process.env.SEEN_ANDROID_RELEASE === '1' && !process.env.CAPACITOR_SERVER_URL) {
+  throw new Error('SEEN_ANDROID_RELEASE=1 needs CAPACITOR_SERVER_URL (the site this release opens).');
+}
 const SERVER_ORIGIN = process.env.CAPACITOR_SERVER_URL || 'https://staging.seentech.io';
 
 const config: CapacitorConfig = {

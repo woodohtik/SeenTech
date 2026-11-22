@@ -671,7 +671,8 @@
     "welcome_user": "Welcome",
     "wipe_data": "Wipe All Data",
     "wipe_warning": "About to wipe all records (orders, customers, invoices) for tenant",
-    "write_name_to_confirm": "Type shop name to confirm"
+    "write_name_to_confirm": "Type shop name to confirm",
+    "logout_pending_sync": "{{count}} operation(s) on this device haven't reached the server yet; they are sent only once the person who made them signs in again. Sign out anyway?"
   },
   "compliance": {
     "check_legal_name": "Legal Name of the Business",
@@ -1128,7 +1129,9 @@
     "unexpected": "An unexpected error occurred. Please try again.",
     "unknown": "An unknown error occurred.",
     "updating": "Updating...",
-    "zatca_submission_failed": "Couldn't submit the invoice to ZATCA. Try again, or contact support if this keeps happening."
+    "zatca_submission_failed": "Couldn't submit the invoice to ZATCA. Try again, or contact support if this keeps happening.",
+    "page_offline": "This page is not available offline on this device. It will work once the connection is back.",
+    "back_to_pos": "Back to the point of sale"
   },
   "inventory": {
     "add_failed": "Failed to add product",
@@ -4899,7 +4902,8 @@
     "reason_required": "Please enter a reason for the difference",
     "shortage": "Shortage of",
     "surplus": "Surplus of",
-    "title": "Close Shift"
+    "title": "Close Shift",
+    "unsynced_sales": "The shift can't be closed: {{count}} operation(s) from this shift haven't reached the server yet. Connect, wait for the sync, then close."
   },
   "shift_history": {
     "actions": "Actions",

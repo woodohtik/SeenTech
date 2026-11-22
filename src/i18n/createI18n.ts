@@ -184,6 +184,12 @@ export function createI18n(
     // backend does not fetch the active language at init (it still fetches
     // any fallback language that has no bundle, exactly as before).
     ready = coreLoader(lng)
+      // P3.4 (RELIABILITY-17): offline with this language not cached -- the
+      // Arabic core (always precached) rather than a splash forever.
+      .catch((err) => {
+        console.error('[i18n] core language file failed to load', err);
+        return lng === 'ar' ? {} : coreLoader('ar' as SupportedLang).catch(() => ({}));
+      })
       .then((core) => {
         baseOptions.resources = { [lng]: { translation: unwrap(core) } };
         baseOptions.partialBundledLanguages = true;

@@ -299,6 +299,10 @@ export async function releaseStuckEntries(now = Date.now()): Promise<number> {
 
 let draining = false;
 
+/** P3.4 / RELIABILITY-15: fired on window after each drain, so a re-fetch lands after the queue's writes. */
+export const OUTBOX_DRAINED_EVENT = 'seen-outbox-drained';
+export const isOutboxDraining = () => draining;
+
 /**
  * Drains everything currently queued, oldest first. Safe to call
  * repeatedly/concurrently (a no-op re-entry guard) -- both the connectivity
@@ -339,8 +343,21 @@ export async function drainOutbox(): Promise<{ synced: number; failed: number }>
   } finally {
     await refreshCachedPendingCount().catch(() => {});
     draining = false;
+    if (typeof window !== 'undefined') window.dispatchEvent(new Event(OUTBOX_DRAINED_EVENT));
   }
   return { synced, failed };
+}
+
+/**
+ * P3.4 / RELIABILITY-07: operations made on this shift that have not reached
+ * the server yet. Closing the shift first would make the server refuse them
+ * for good (a sale needs its shift open) and leave the drawer short.
+ */
+export async function getUnsyncedCountForShift(shiftId: string): Promise<number> {
+  return offlineDb.outbox
+    .where('status').anyOf('pending', 'syncing', 'failed')
+    .and(entry => ((entry.payload as any)?.p_order?.shift_id ?? null) === shiftId)
+    .count();
 }
 
 export async function getPendingOutboxCount(): Promise<number> {

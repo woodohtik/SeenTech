@@ -590,7 +590,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
 
   useRealtimeSync('orders', tenantId, () => {
     fetchOrders();
-  });
+  }, () => { void fetchOrders(); }); // P3.4: after a drop, once the queue has synced
 
   useEffect(() => {
     if (!tenantId) return;

@@ -121,3 +121,16 @@ describe('what counts as the network', () => {
     expect(retryDelayMs(20)).toBe(15 * 60_000);
   });
 });
+
+describe('closing a shift with sales still on the device (RELIABILITY-07)', () => {
+  it('counts the operations of that shift not yet on the server', async () => {
+    const { getUnsyncedCountForShift } = await import('./outbox');
+    await offlineDb.outbox.bulkPut([
+      entry('a', { payload: { p_operation_id: 'a', p_order: { shift_id: 's1' } } }),
+      entry('b', { status: 'failed', payload: { p_operation_id: 'b', p_order: { shift_id: 's1' } } }),
+      entry('c', { payload: { p_operation_id: 'c', p_order: { shift_id: 's2' } } }),
+    ]);
+    expect(await getUnsyncedCountForShift('s1')).toBe(2);
+    expect(await getUnsyncedCountForShift('s3')).toBe(0);
+  });
+});

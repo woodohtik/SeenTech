@@ -12,7 +12,9 @@
  */
 
 const STORAGE_KEY_PREFIX = 'offline_identity_snapshot:';
-const MAX_AGE_MS = 24 * 60 * 60 * 1000; // 24h -- generous for a temporary outage, bounded so a permanently offline/decommissioned device doesn't keep rendering a year-old identity forever.
+// P3.4 (RELIABILITY-13): 7 days (was 24h -- a long weekend offline ended on an
+// error screen). Still bounded; and nothing on the server trusts this copy.
+const MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
 
 export interface IdentitySnapshot {
   uid: string;

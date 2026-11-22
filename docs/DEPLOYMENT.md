@@ -55,6 +55,12 @@ cd android && ./gradlew assembleRelease   # أو assembleDebug للتجربة
 
 **التحكم بالوجهة:** متغيّر بيئة `CAPACITOR_SERVER_URL` وقت البناء (وليس `.env`/Vite) يبدّل الوجهة عن الافتراضي (staging) — استخدامه لتوجيه نحو الإنتاج يخضع لنفس قاعدة "لا نشر إنتاج إلا بطلب صريح".
 
+**بناء إصدار للموظفين:** يُبنى دائماً مع `SEEN_ANDROID_RELEASE=1` وعنوان الموقع صراحة، فيفشل البناء إن نُسي العنوان بدل أن يفتح التطبيق موقع staging بصمت (RELIABILITY-18):
+
+```
+SEEN_ANDROID_RELEASE=1 CAPACITOR_SERVER_URL=https://www.seentech.io npx cap sync android
+```
+
 ---
 
 ## 4) تطبيق العملاء Android (`capacitor-customer/`)

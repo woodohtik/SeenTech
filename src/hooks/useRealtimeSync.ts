@@ -1,23 +1,43 @@
 import { useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase/client';
 import { decodeOrderRow } from '../utils/orderHistoryHelper';
+import { getIsOnline, onConnectivityChange } from '../lib/offline/connectivity';
+import { OUTBOX_DRAINED_EVENT, isOutboxDraining } from '../lib/offline/outbox';
 
 /**
  * A custom hook to synchronize Supabase tables in real-time.
- * 
+ *
  * @param table The name of the table to listen to (e.g., 'orders', 'inventory_items').
  * @param tenantId The current user's tenant ID, used to isolate data strictly to their tenant.
  * @param onUpdate The callback function that runs when an INSERT, UPDATE, or DELETE payload arrives.
+ * @param onResync seen-readiness-fixes-task.md P3.4 (RELIABILITY-15): called once
+ *   after the live channel or the connection dropped and came back -- events
+ *   sent meanwhile are lost, so the caller re-fetches. It runs after the
+ *   offline queue has finished sending, so the fresh data already has this
+ *   device's own offline sales and orders.
  */
-export function useRealtimeSync(table: string, tenantId: string | undefined, onUpdate: (payload: any) => void) {
+export function useRealtimeSync(table: string, tenantId: string | undefined, onUpdate: (payload: any) => void, onResync?: () => void) {
   const onUpdateRef = useRef(onUpdate);
+  const onResyncRef = useRef(onResync);
+  const needsResync = useRef(false);
 
   useEffect(() => {
     onUpdateRef.current = onUpdate;
+    onResyncRef.current = onResync;
   });
 
   useEffect(() => {
     if (!tenantId) return;
+
+    const resync = () => {
+      if (!needsResync.current || !getIsOnline() || isOutboxDraining()) return;
+      needsResync.current = false;
+      onResyncRef.current?.();
+    };
+    const offConnectivity = onConnectivityChange((online) => {
+      if (!online) needsResync.current = true;
+    });
+    window.addEventListener(OUTBOX_DRAINED_EVENT, resync);
 
     // Create a uniquely named channel for this table and tenant.
     // Date.now() alone isn't unique enough: if multiple components mount
@@ -61,14 +81,21 @@ export function useRealtimeSync(table: string, tenantId: string | undefined, onU
           onUpdateRef.current(payload);
         }
       })
-      .subscribe((status) => {
+      .subscribe((status, err) => {
         if (status === 'SUBSCRIBED') {
           console.log(`[Realtime Sync] Subscribed to ${table} for tenant ${tenantId}`);
+          resync();
+        } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+          // P3.4: events missed from here on -- re-fetch once it is back.
+          needsResync.current = true;
+          if (status !== 'CLOSED') console.warn(`[Realtime Sync] ${table}: ${status}`, err);
         }
       });
 
     // Cleanup: always remove the channel to prevent memory leaks or duplicate listeners when component unmounts.
     return () => {
+      offConnectivity();
+      window.removeEventListener(OUTBOX_DRAINED_EVENT, resync);
       console.log(`[Realtime Sync] Unsubscribing from ${table} for tenant ${tenantId}`);
       supabase.removeChannel(channel);
     };

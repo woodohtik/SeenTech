@@ -23,6 +23,8 @@ interface ErrorBoundaryState {
   errorInfo: ErrorInfo | null;
   eventId: string | null;
   isLazyLoadError: boolean;
+  /** P3.4 (RELIABILITY-09): the page's code is not on this device and there is no network. */
+  isOfflineChunkError: boolean;
 }
 
 export default class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
@@ -32,6 +34,7 @@ export default class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBo
     errorInfo: null,
     eventId: null,
     isLazyLoadError: false,
+    isOfflineChunkError: false,
   };
 
   static getDerivedStateFromError(error: Error) {
@@ -83,6 +86,21 @@ export default class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBo
       // spike is visible rather than invisible, and show a calm "updating"
       // message instead of the full scary error card for the brief window
       // before the reload actually takes effect.
+      // P3.4 (RELIABILITY-09): offline the code can't be fetched, and a reload
+      // would only fail again -- an endless reload loop. Reload only when
+      // online, and at most once a minute per page.
+      const offline = typeof navigator !== 'undefined' && navigator.onLine === false;
+      const guardKey = `seen_chunk_reload:${window.location.pathname}`;
+      let recentlyReloaded = false;
+      try {
+        recentlyReloaded = Date.now() - Number(sessionStorage.getItem(guardKey) || 0) < 60_000;
+      } catch { /* storage unavailable */ }
+      if (offline || recentlyReloaded) {
+        logError(error, { errorInfo, source: 'ErrorBoundary:lazy-load-offline', offline });
+        this.setState({ isOfflineChunkError: true });
+        return;
+      }
+      try { sessionStorage.setItem(guardKey, String(Date.now())); } catch { /* storage unavailable */ }
       console.log('Detected lazy load error, auto-refreshing page...');
       logError(error, { errorInfo, source: 'ErrorBoundary:lazy-load-reload' });
       this.setState({ isLazyLoadError: true });
@@ -115,7 +133,21 @@ export default class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBo
   };
 
   render() {
-    const { hasError, error, eventId, isLazyLoadError } = this.state;
+    const { hasError, error, eventId, isLazyLoadError, isOfflineChunkError } = this.state;
+
+    if (isOfflineChunkError) {
+      return (
+        <div className={this.props.variant === 'inline'
+          ? 'bg-surface-muted border border-border rounded-2xl p-5 flex flex-col items-center gap-3 text-content'
+          : 'min-h-screen bg-surface-muted flex flex-col items-center justify-center gap-4 p-4 text-content'} dir={dirOf()} role="alert">
+          <p className="font-bold text-sm text-center">{i18n.t('errors.page_offline')}</p>
+          <button type="button" onClick={() => window.location.assign('/sales')}
+            className="min-h-11 px-5 rounded-xl bg-brand text-white font-bold text-sm">
+            {i18n.t('errors.back_to_pos')}
+          </button>
+        </div>
+      );
+    }
 
     if (isLazyLoadError) {
       if (this.props.variant === 'inline') {

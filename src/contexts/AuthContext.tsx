@@ -757,6 +757,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         } catch (err) {
             console.warn('Failed to reset session on logout:', err);
         }
+        // P3.4 / RELIABILITY-19: the shop's customers (phones, measurements),
+        // orders, stock and staff PIN hashes leave the device with the session.
+        // The queue of unsynced operations stays (money was taken for them).
+        try {
+            const { offlineDb } = await import('../lib/offline/db');
+            await Promise.all([
+                offlineDb.cachedCustomers.clear(),
+                offlineDb.cachedOrders.clear(),
+                offlineDb.cachedInventoryItems.clear(),
+                offlineDb.cachedBranchStock.clear(),
+                offlineDb.cachedStaffAuth.clear(),
+            ]);
+        } catch (err) {
+            console.warn('Failed to clear the offline caches on logout:', err);
+        }
         try {
             localStorage.clear();
             sessionStorage.clear();

@@ -21,7 +21,8 @@ installActingSessionFetch(String(import.meta.env.VITE_SUPABASE_URL || ''));
 // loaded (see i18n/config.ts) -- awaited here so the very first render
 // already has real text, not a flash of raw translation keys. Until then
 // the static splash in index.html is on screen.
-i18nReady.then(() => {
+// P3.4 (RELIABILITY-17): render even if the translations failed to load.
+i18nReady.catch((err) => console.error('[i18n] not ready', err)).then(() => {
   createRoot(document.getElementById('root')!).render(
     <StrictMode>
       <ErrorBoundary>

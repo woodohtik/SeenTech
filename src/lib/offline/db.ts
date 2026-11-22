@@ -45,10 +45,11 @@ export interface CachedInventoryItem extends InventoryItem {
 }
 
 export interface CachedBranchStock {
-  /** `${branchId}:${itemId}` */
+  /** `${branchId}:${itemId}:${variantId or ''}` (P3.4 / RELIABILITY-12: variants no longer overwrite each other). */
   key: string;
   branchId: string;
   itemId: string;
+  variantId?: string | null;
   tenantId: string;
   quantity: number;
   cachedAt: number;

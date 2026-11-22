@@ -30,7 +30,12 @@ export default defineConfig(({mode}) => {
       // one, matching Firebase's own documented setup and avoiding coupling
       // push delivery to this SW's own update/precache lifecycle.
       VitePWA({
-        registerType: 'autoUpdate',
+        // seen-readiness-fixes-task.md P3.4 (RELIABILITY-08): 'autoUpdate'
+        // reloaded the page the moment a new deploy activated -- a cart in
+        // progress was lost. The owner's rule (seen-pwa-update-detection-task.md):
+        // an update applies only when the user taps it (src/lib/pwaUpdate.ts,
+        // onNeedRefresh -> applyPendingUpdate).
+        registerType: 'prompt',
         includeAssets: ['favicon.svg'],
         manifest: {
           name: 'سِين — إدارة محلات التفصيل',
@@ -114,24 +119,10 @@ export default defineConfig(({mode}) => {
           // limit, which fails the build entirely rather than just
           // skipping the oversized file. Raised, not disabled.
           maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
-          // A POS terminal realistically stays open on one tab for a whole
-          // shift with no reload. Without these, a new service worker
-          // installs but sits "waiting" until every tab is closed and
-          // reopened -- meanwhile the precache stays pinned to whatever was
-          // live when the tab was first opened, so any route not already
-          // loaded into memory (each is a separately content-hashed lazy
-          // chunk) has no valid offline entry to fall back on once a newer
-          // deploy has shipped. Confirmed live: only the two routes already
-          // open before a test went offline kept working; everything else
-          // failed. skipWaiting + clientsClaim make a new service worker
-          // activate and take over fetch handling for already-open tabs
-          // immediately, without forcing a page reload (the tab's already
-          // -rendered UI and any in-progress state are untouched) -- only
-          // a NEW navigation/lazy-chunk fetch after that point uses the
-          // fresh precache, which is exactly what "opening a tab offline"
-          // needs.
-          skipWaiting: true,
-          clientsClaim: true,
+          // P3.4 (RELIABILITY-08): no skipWaiting/clientsClaim. A new service
+          // worker waits until the user taps "update" (pwaUpdate.ts); until
+          // then the open tab keeps the worker -- and the precache -- of the
+          // build it is running, so its own lazy pages still load offline.
           // globIgnores above only keeps /blog/** out of the precache
           // manifest -- it does NOT stop the SW's navigation-fallback
           // routing from intercepting a navigation to /blog for a visitor
@@ -156,6 +147,11 @@ export default defineConfig(({mode}) => {
           // reuses its cached copy instead of re-downloading React/
           // Supabase/motion/Dexie on every single release.
           manualChunks(id) {
+            // P3.4 (RELIABILITY-17): each language's small core file gets its
+            // own name, so the en-*/ur-* precache exclusions (the full files)
+            // no longer catch it -- every language starts offline.
+            const core = /^\0virtual:i18n-core\/([a-z]{2})$/.exec(id);
+            if (core) return `i18n-core-${core[1]}`;
             if (!id.includes('node_modules')) return undefined;
             if (/[\\/]node_modules[\\/](react|react-dom|scheduler|react-router)[\\/]/.test(id)) return 'vendor-react';
             if (/[\\/]node_modules[\\/]@supabase[\\/]/.test(id)) return 'vendor-supabase';

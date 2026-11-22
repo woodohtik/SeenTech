@@ -38,9 +38,10 @@ import {
 } from 'lucide-react';
 import { supabase } from '../lib/supabase/client';
 import { resolveTaxSettings } from '../utils/taxSettings';
-import { cachedTaxSettings, rememberTaxSettings } from '../lib/offline/posOfflineState';
+import { cachedOpenShift, cachedTaxSettings, rememberTaxSettings } from '../lib/offline/posOfflineState';
 import { saleTimestamp, takeOfflineNumber, topUpOfflineNumbers } from '../lib/offline/offlineNumbers';
-import { refreshCustomersCache, refreshInventoryCache, refreshBranchStockCache, getCachedCustomers, getCachedInventory, getCachedBranchStock } from '../lib/offline/cacheSync';
+import { refreshCustomersCache, refreshInventoryCache, refreshBranchStockCache, getCachedCustomers, getCachedInventory, getCachedBranchStock, getCachedVariantStock } from '../lib/offline/cacheSync';
+import { getLastKnown, saveLastKnown } from '../lib/offline/lastKnownCache';
 import { enqueuePosSale, isNetworkFailure, decidePosSaleFailureAction, SALE_TIMEOUT_MS } from '../lib/offline/outbox';
 import { handleError, OperationType, getFriendlyErrorMessage } from '../lib/appErrors';
 import { Combobox, Transition, Dialog } from '@headlessui/react';
@@ -136,6 +137,9 @@ const isUuidLike = (val: string | undefined | null) =>
 export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?: string }) {
   const router = useRouter();
   const refreshCounter = useRefreshCounter();
+  // P3.4 / RELIABILITY-15: bumped when the live updates were cut off and came back.
+  const [resyncTick, setResyncTick] = useState(0);
+  const bumpResync = useCallback(() => setResyncTick((n) => n + 1), []);
   const { error: toastError, success: toastSuccess, handleError } = useToast();
   const { confirm, alertModal } = useConfirm();
   const { t, i18n } = useTranslation();
@@ -415,7 +419,7 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
         });
       }
     }
-  });
+  }, bumpResync); // P3.4 / RELIABILITY-15: re-read stock, products and customers after a drop
 
   useEffect(() => {
     // Phase 5 of seen-offline-coverage-and-performance-task.md: these four
@@ -491,8 +495,14 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
           (byItem[row.item_id] ||= []).push(variant);
         });
         setItemVariants(byItem);
+        // P3.4 / RELIABILITY-12: sizes and colours are there offline too.
+        saveLastKnown(tenantId, 'pos_variants', byItem);
       } else {
         console.error('Error fetching POS product variants:', variantResult.error);
+        if (isNetworkFailure(variantResult.error)) {
+          const cachedVariants = getLastKnown<Record<string, ProductVariant[]>>(tenantId, 'pos_variants')?.data;
+          if (cachedVariants) setItemVariants(cachedVariants);
+        }
       }
 
       if (customersLoaded && inventoryLoaded && branchStockLoaded) {
@@ -557,13 +567,19 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
         const cached = await getCachedInventory(tenantId).catch(() => []);
         if (cached.length) setInventory(cached);
       }
-      if (!branchStockLoaded && isNetworkFailure(stockResult.error) && currentStaff?.branchId) {
-        const cached = await getCachedBranchStock(tenantId, currentStaff.branchId).catch(() => ({}));
+      // P3.4 / RELIABILITY-12: an employee with no branch of their own sells
+      // from the branch of the shift this device last saw open.
+      const offlineBranch = currentStaff?.branchId
+        || (currentStaff?.id ? cachedOpenShift(tenantId, currentStaff.id)?.branchId : null);
+      if (!branchStockLoaded && isNetworkFailure(stockResult.error) && offlineBranch) {
+        const cached = await getCachedBranchStock(tenantId, offlineBranch).catch(() => ({}));
         if (Object.keys(cached).length) setBranchStock(cached);
+        const cachedVariantStock = await getCachedVariantStock(tenantId, offlineBranch).catch(() => ({}));
+        if (Object.keys(cachedVariantStock).length) setVariantStock(cachedVariantStock);
       }
     };
     fetchData();
-  }, [tenantId, mapCustomer, mapInventoryItem, refreshCounter, currentStaff?.branchId]);
+  }, [tenantId, mapCustomer, mapInventoryItem, refreshCounter, currentStaff?.branchId, resyncTick]);
 
   useEffect(() => {
     if (!selectedCustomer) {

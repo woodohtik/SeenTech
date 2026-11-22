@@ -13,6 +13,7 @@ import { useTranslation } from 'react-i18next';
 import { isRtlLang } from '../lib/direction';
 import { useToast } from '../contexts/ToastContext';
 import { useStaff } from '../contexts/StaffContext';
+import { getUnsyncedCountForShift } from '../lib/offline/outbox';
 
 interface ShiftClosingModalProps {
   shift: Shift;
@@ -212,6 +213,13 @@ export default function ShiftClosingModal({ shift, tenantId, onClose, onClosed }
     // common case.
     if (!canCloseThisShift) {
       toastError(t('shift_closing.not_authorized', 'لا تملك صلاحية إغلاق وردية موظف آخر'));
+      return;
+    }
+    // P3.4 / RELIABILITY-07: sales of this shift still waiting on this device
+    // would be refused once the shift is closed -- sync them first.
+    const unsynced = await getUnsyncedCountForShift(shift.id).catch(() => 0);
+    if (unsynced > 0) {
+      toastError(t('shift_closing.unsynced_sales', { count: unsynced }));
       return;
     }
 

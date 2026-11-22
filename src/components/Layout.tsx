@@ -45,6 +45,7 @@ const SupportConsentModal = React.lazy(() => import('./SupportConsentModal'));
 import StaffTutorialModal from './StaffTutorialModal';
 const SeenAIFab = React.lazy(() => import('./SeenAIFab'));
 import ErrorBoundary from './ErrorBoundary';
+import { useConfirm } from '../contexts/ConfirmContext';
 const OnboardingTour = React.lazy(() => import('./OnboardingTour'));
 import SetupChecklistBar from './SetupChecklistBar';
 import NewOrderAlert from './NewOrderAlert';
@@ -160,7 +161,19 @@ function LayoutShell({ children, role, tenantId, currentStaff, onLock, isLocked 
     }
   };
 
-  const handleLogout = () => logout();
+  const { confirm } = useConfirm();
+  // P3.4 / RELIABILITY-05: operations still waiting to sync are sent only under
+  // the account that made them -- say so before signing out.
+  const handleLogout = async () => {
+    try {
+      const { getPendingOutboxCount } = await import('../lib/offline/outbox');
+      const pending = await getPendingOutboxCount();
+      if (pending > 0 && !(await confirm({ description: t('common.logout_pending_sync', { count: pending }), danger: true }))) return;
+    } catch {
+      // the queue could not be read: sign out as asked
+    }
+    await logout();
+  };
 
   const isSuperAdmin = role === 'super_admin';
   const isSupportTech = role === 'support_tech';

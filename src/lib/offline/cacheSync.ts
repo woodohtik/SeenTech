@@ -40,9 +40,10 @@ export async function refreshBranchStockCache(tenantId: string): Promise<void> {
 
   const now = Date.now();
   const rows: CachedBranchStock[] = data.map((row: any) => ({
-    key: `${row.branch_id}:${row.item_id}`,
+    key: `${row.branch_id}:${row.item_id}:${row.variant_id || ''}`,
     branchId: row.branch_id,
     itemId: row.item_id,
+    variantId: row.variant_id || null,
     tenantId,
     quantity: Number(row.quantity || 0),
     cachedAt: now,
@@ -83,7 +84,18 @@ export async function getCachedBranchStock(tenantId: string, branchId: string): 
     .and(row => row.branchId === branchId)
     .toArray();
   const map: Record<string, number> = {};
-  for (const row of rows) map[row.itemId] = row.quantity;
+  for (const row of rows) if (!row.variantId) map[row.itemId] = row.quantity;
+  return map;
+}
+
+/** P3.4 / RELIABILITY-12: each variant's own stock in a branch, by variant id. */
+export async function getCachedVariantStock(tenantId: string, branchId: string): Promise<Record<string, number>> {
+  const rows = await offlineDb.cachedBranchStock
+    .where('tenantId').equals(tenantId)
+    .and(row => row.branchId === branchId && !!row.variantId)
+    .toArray();
+  const map: Record<string, number> = {};
+  for (const row of rows) map[row.variantId as string] = row.quantity;
   return map;
 }
 
