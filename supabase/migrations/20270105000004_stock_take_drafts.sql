@@ -1,0 +1,225 @@
+-- seen-readiness-fixes-task.md P4 (OPERATIONS-11) -- a stock count saved as
+-- a draft can be approved.
+--
+-- Before: an employee without inventory.reconcile could only save a draft,
+-- and nothing could ever approve that draft -- approve_stock_take always made
+-- a new document.
+--
+-- Now:
+--  * the draft's lines keep their variant (adjustment_items.variant_id);
+--  * approve_stock_take_draft(operation, adjustment), inventory.reconcile:
+--    re-reads each line's live stock (it may have moved since the count),
+--    applies the difference to the counted figure, and marks the document
+--    approved -- in one transaction, once.
+-- Rollback: supabase/rollbacks/20270105_stock_take_drafts.down.sql
+
+ALTER TABLE public.adjustment_items ADD COLUMN IF NOT EXISTS variant_id uuid;
+
+CREATE OR REPLACE FUNCTION public.approve_stock_take(p_operation_id uuid, p_branch_id uuid, p_adjustment_type text, p_notes text, p_lines jsonb, p_status text DEFAULT 'Draft'::text)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+DECLARE
+  v_tenant              uuid;
+  v_staff               uuid;
+  v_staff_name          text;
+  v_role                text;
+  v_op_key              text;
+  v_existing            jsonb;
+
+  v_adjustment_id       uuid;
+  v_reference_number    text;
+
+  v_line                jsonb;
+  v_item_id             uuid;
+  v_variant_id          uuid;
+  v_physical            numeric;
+  v_unit_cost           numeric;
+  v_reason              text;
+  v_system_qty          numeric;
+  v_variance            numeric;
+  v_total_variance_cost numeric;
+  v_product_name        text;
+  v_line_op_key         text;
+  v_line_count          integer;
+BEGIN
+  IF p_operation_id IS NULL THEN
+    RAISE EXCEPTION 'operation_id مطلوب لمنع تكرار الجرد' USING ERRCODE = '22023';
+  END IF;
+
+  IF p_status NOT IN ('Draft', 'Approved') THEN
+    RAISE EXCEPTION 'حالة مستند غير صالحة' USING ERRCODE = '22023';
+  END IF;
+
+  v_line_count := COALESCE(jsonb_array_length(p_lines), 0);
+  IF v_line_count = 0 THEN
+    RAISE EXCEPTION 'لا توجد أي مواد في مستند الجرد' USING ERRCODE = '22023';
+  END IF;
+
+  v_tenant := public.app_current_tenant_id();
+  IF v_tenant IS NULL THEN
+    RAISE EXCEPTION 'forbidden' USING ERRCODE = '42501';
+  END IF;
+
+  v_op_key := 'approve_stock_take:' || p_operation_id::text;
+  SELECT result INTO v_existing FROM public.stock_operations
+   WHERE operation_id = v_op_key AND tenant_id = v_tenant;
+  IF v_existing IS NOT NULL THEN
+    RETURN v_existing || jsonb_build_object('replayed', true);
+  END IF;
+
+  v_staff := public.app_current_staff_id();
+  SELECT name INTO v_staff_name FROM public.staff WHERE id = v_staff;
+  v_role := public.app_current_role();
+
+  IF p_status = 'Approved' AND NOT public.app_has_permission('inventory.reconcile') THEN
+    RAISE EXCEPTION 'لا تملك صلاحية اعتماد الجرد -- يمكنك حفظه كمسودة فقط' USING ERRCODE = '42501';
+  END IF;
+
+  v_reference_number := 'ADJ-' || to_char(now(), 'YYYYMMDDHH24MISS') || '-'
+    || upper(substr(replace(gen_random_uuid()::text, '-', ''), 1, 4));
+
+  INSERT INTO public.inventory_adjustments (
+    tenant_id, branch_id, reference_number, status, adjustment_type,
+    created_by, created_by_name, approved_by, approved_by_name, notes
+  ) VALUES (
+    v_tenant::text, p_branch_id::text, v_reference_number, p_status::adjustment_status,
+    p_adjustment_type::adjustment_reason_type,
+    v_staff::text, COALESCE(v_staff_name, 'Staff'),
+    CASE WHEN p_status = 'Approved' THEN v_staff::text ELSE NULL END,
+    CASE WHEN p_status = 'Approved' THEN COALESCE(v_staff_name, 'Staff') ELSE NULL END,
+    p_notes
+  ) RETURNING id INTO v_adjustment_id;
+
+  FOR v_line IN SELECT * FROM jsonb_array_elements(p_lines) LOOP
+    v_item_id := NULLIF(v_line->>'item_id', '')::uuid;
+    v_variant_id := NULLIF(v_line->>'variant_id', '')::uuid;
+    v_physical := (v_line->>'physical_qty')::numeric;
+    v_unit_cost := COALESCE((v_line->>'unit_cost')::numeric, 0);
+    v_reason := NULLIF(v_line->>'reason', '');
+
+    IF v_item_id IS NULL OR v_physical IS NULL THEN
+      RAISE EXCEPTION 'سطر جرد غير صالح -- item_id و physical_qty مطلوبان' USING ERRCODE = '22023';
+    END IF;
+
+    SELECT name INTO v_product_name FROM public.inventory_items WHERE id = v_item_id;
+
+    -- Live book quantity, scoped to the exact (branch, item, variant)
+    -- triple -- never the client's cached snapshot, and never applied
+    -- across every variant of the item at once.
+    SELECT quantity INTO v_system_qty FROM public.branch_inventory
+     WHERE tenant_id = v_tenant AND branch_id = p_branch_id AND item_id = v_item_id
+       AND variant_id IS NOT DISTINCT FROM v_variant_id
+     FOR UPDATE;
+    v_system_qty := COALESCE(v_system_qty, 0);
+
+    v_variance := round(v_physical - v_system_qty, 4);
+    v_total_variance_cost := round(v_variance * v_unit_cost, 2);
+
+    INSERT INTO public.adjustment_items (
+      tenant_id, adjustment_id, product_id, product_name, system_qty, physical_qty,
+      variance_qty, unit_cost, total_variance_cost, reason, variant_id
+    ) VALUES (
+      v_tenant::text, v_adjustment_id, v_item_id::text, v_product_name,
+      v_system_qty, v_physical, v_variance, v_unit_cost, v_total_variance_cost, v_reason, v_variant_id
+    );
+
+    IF p_status = 'Approved' AND v_variance <> 0 THEN
+      v_line_op_key := p_operation_id::text || ':item:' || v_item_id::text
+        || COALESCE(':variant:' || v_variant_id::text, '');
+      PERFORM public.apply_stock_movement(
+        v_line_op_key, p_branch_id, v_item_id, v_variance, 'reconciliation',
+        v_adjustment_id, 'adjustment', v_variant_id
+      );
+    END IF;
+  END LOOP;
+
+  INSERT INTO public.stock_operations (operation_id, tenant_id, kind, result)
+  VALUES (v_op_key, v_tenant, 'approve_stock_take', jsonb_build_object(
+    'adjustment_id', v_adjustment_id, 'reference_number', v_reference_number, 'status', p_status
+  ));
+
+  RETURN jsonb_build_object(
+    'adjustment_id', v_adjustment_id, 'reference_number', v_reference_number,
+    'status', p_status, 'replayed', false
+  );
+END $function$
+;
+
+
+CREATE OR REPLACE FUNCTION public.approve_stock_take_draft(p_operation_id uuid, p_adjustment_id uuid)
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path TO 'public'
+AS $function$
+DECLARE
+  v_tenant     uuid := public.app_current_tenant_id();
+  v_staff      uuid;
+  v_staff_name text;
+  v_op_key     text;
+  v_existing   jsonb;
+  v_adj        record;
+  v_line       record;
+  v_live       numeric;
+  v_variance   numeric;
+  v_moved      int := 0;
+  v_result     jsonb;
+BEGIN
+  IF v_tenant IS NULL OR NOT public.app_has_permission('inventory.reconcile') THEN
+    RAISE EXCEPTION 'لا تملك صلاحية اعتماد الجرد' USING ERRCODE = '42501';
+  END IF;
+  v_op_key := 'approve_stock_take_draft:' || p_operation_id::text;
+  PERFORM pg_advisory_xact_lock(hashtextextended(v_op_key, 0));
+  SELECT result INTO v_existing FROM public.stock_operations WHERE operation_id = v_op_key AND tenant_id = v_tenant;
+  IF v_existing IS NOT NULL THEN
+    RETURN v_existing || jsonb_build_object('replayed', true);
+  END IF;
+
+  SELECT * INTO v_adj FROM public.inventory_adjustments
+   WHERE id = p_adjustment_id AND tenant_id = v_tenant::text FOR UPDATE;
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'forbidden' USING ERRCODE = '42501';
+  END IF;
+  IF v_adj.status::text <> 'Draft' THEN
+    RAISE EXCEPTION 'يُعتمد الجرد المحفوظ كمسودة فقط' USING ERRCODE = '22023';
+  END IF;
+
+  v_staff := public.app_actor_staff_id();
+  SELECT name INTO v_staff_name FROM public.staff WHERE id = v_staff;
+
+  FOR v_line IN SELECT * FROM public.adjustment_items WHERE adjustment_id = p_adjustment_id ORDER BY id LOOP
+    -- The stock now, not when the count was saved.
+    SELECT quantity INTO v_live FROM public.branch_inventory
+     WHERE tenant_id = v_tenant AND branch_id = v_adj.branch_id::uuid AND item_id = v_line.product_id::uuid
+       AND variant_id IS NOT DISTINCT FROM v_line.variant_id
+     FOR UPDATE;
+    v_live := COALESCE(v_live, 0);
+    v_variance := round(v_line.physical_qty - v_live, 4);
+    UPDATE public.adjustment_items
+       SET system_qty = v_live, variance_qty = v_variance,
+           total_variance_cost = round(v_variance * COALESCE(unit_cost, 0), 2)
+     WHERE id = v_line.id;
+    IF v_variance <> 0 THEN
+      PERFORM public.apply_stock_movement(
+        p_operation_id::text || ':item:' || v_line.product_id || COALESCE(':variant:' || v_line.variant_id::text, ''),
+        v_adj.branch_id::uuid, v_line.product_id::uuid, v_variance, 'reconciliation',
+        p_adjustment_id, 'adjustment', v_line.variant_id);
+      v_moved := v_moved + 1;
+    END IF;
+  END LOOP;
+
+  UPDATE public.inventory_adjustments
+     SET status = 'Approved', approved_by = v_staff::text, approved_by_name = COALESCE(v_staff_name, 'Staff'), updated_at = now()
+   WHERE id = p_adjustment_id;
+
+  v_result := jsonb_build_object('adjustment_id', p_adjustment_id, 'status', 'Approved', 'lines_moved', v_moved);
+  INSERT INTO public.stock_operations (operation_id, tenant_id, kind, result)
+  VALUES (v_op_key, v_tenant, 'approve_stock_take_draft', v_result);
+  RETURN v_result;
+END;
+$function$;
+REVOKE ALL ON FUNCTION public.approve_stock_take_draft(uuid, uuid) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.approve_stock_take_draft(uuid, uuid) TO authenticated;

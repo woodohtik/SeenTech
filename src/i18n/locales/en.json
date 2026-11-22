@@ -1534,7 +1534,10 @@
     "transfer_reject": "Reject the transfer",
     "transfer_cancel": "Cancel the transfer",
     "transfer_cancel_returns_stock": "The shipped stock goes back to the sending branch.",
-    "transfer_reject_reason": "Reason"
+    "transfer_reject_reason": "Reason",
+    "approve_draft": "Approve the count",
+    "draft_approved": "The count was approved; the differences were applied to the current stock",
+    "draft_approve_failed": "The count could not be approved"
   },
   "invoice_print": {
     "address": "Address",

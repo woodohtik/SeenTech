@@ -159,6 +159,27 @@ export const InventoryAdjustment: React.FC<InventoryAdjustmentProps> = ({
   // per-staff permission overrides for 'inventory.reconcile'.
   const hasApprovePermission = hasPermission("inventory.reconcile");
 
+  // P4 (OPERATIONS-11): approve a count that was saved as a draft. The server
+  // re-reads each line's stock as it is now and applies the difference.
+  const [approvingDraft, setApprovingDraft] = useState(false);
+  const approveDraft = async (adjustmentId: string) => {
+    setApprovingDraft(true);
+    try {
+      const { error } = await supabase.rpc("approve_stock_take_draft", {
+        p_operation_id: globalThis.crypto.randomUUID(),
+        p_adjustment_id: adjustmentId,
+      });
+      if (error) throw error;
+      toastSuccess(t("inventory.draft_approved", "اعتُمد الجرد وطُبّقت الفروق على الرصيد الحالي"));
+      setSelectedHistoryItem(null);
+      void fetchAdjustmentHistory();
+    } catch (err) {
+      handleError(err as any, t("inventory.draft_approve_failed", "تعذّر اعتماد الجرد"));
+    } finally {
+      setApprovingDraft(false);
+    }
+  };
+
   // Categories list
   const categories = useMemo(() => {
     const list = new Set<string>();
@@ -1256,6 +1277,18 @@ export const InventoryAdjustment: React.FC<InventoryAdjustmentProps> = ({
                     </div>
                   )}
                 </div>
+
+                {/* P4 (OPERATIONS-11): a draft is approved against today's stock. */}
+                {selectedHistoryItem.status === "Draft" && hasApprovePermission && (
+                  <button
+                    type="button"
+                    disabled={approvingDraft}
+                    onClick={() => void approveDraft(selectedHistoryItem.id)}
+                    className="w-full min-h-11 rounded-xl bg-success text-white font-bold text-sm disabled:opacity-50"
+                  >
+                    {t("inventory.approve_draft", "اعتماد الجرد")}
+                  </button>
+                )}
 
                 {/* Details Table */}
                 <div className="space-y-2">

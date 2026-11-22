@@ -1534,7 +1534,10 @@
     "transfer_reject": "رفض السند",
     "transfer_cancel": "إلغاء النقل",
     "transfer_cancel_returns_stock": "الكمية المشحونة تعود إلى الفرع المرسل.",
-    "transfer_reject_reason": "السبب"
+    "transfer_reject_reason": "السبب",
+    "approve_draft": "اعتماد الجرد",
+    "draft_approved": "اعتُمد الجرد وطُبّقت الفروق على الرصيد الحالي",
+    "draft_approve_failed": "تعذّر اعتماد الجرد"
   },
   "invoice_print": {
     "address": "العنوان",

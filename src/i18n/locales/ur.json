@@ -1532,7 +1532,10 @@
     "transfer_reject": "منتقلی مسترد کریں",
     "transfer_cancel": "منتقلی منسوخ کریں",
     "transfer_cancel_returns_stock": "بھیجا گیا سامان بھیجنے والی شاخ میں واپس جائے گا۔",
-    "transfer_reject_reason": "وجہ"
+    "transfer_reject_reason": "وجہ",
+    "approve_draft": "گنتی منظور کریں",
+    "draft_approved": "گنتی منظور ہوئی؛ فرق موجودہ اسٹاک پر لاگو ہو گئے",
+    "draft_approve_failed": "گنتی منظور نہیں ہو سکی"
   },
   "invoice_print": {
     "address": "پتہ",
