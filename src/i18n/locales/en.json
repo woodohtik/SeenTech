@@ -3223,7 +3223,8 @@
     "invoice_not_found": "Invoice not found",
     "load_error": "Something went wrong while loading the invoice",
     "please_wait": "Please wait a moment",
-    "retrieving": "Retrieving the invoice..."
+    "retrieving": "Retrieving the invoice...",
+    "download_failed": "The invoice could not be downloaded as a PDF. Try again."
   },
   "public_tracking": {
     "brand_mark": "Seen",

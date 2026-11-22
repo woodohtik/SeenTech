@@ -251,7 +251,7 @@ app.get("/api/public/invoices/:id", async (req, res) => {
 
     const { data: orderData, error: orderError } = await supabaseAdmin
       .from('orders')
-      .select('order_number, order_date, total_amount, tax_amount, tenant_id, customer_id')
+      .select('order_number, order_date, total_amount, tax_amount, tax_rate, tenant_id, customer_id')
       .eq('id', id)
       .maybeSingle();
 
@@ -260,17 +260,20 @@ app.get("/api/public/invoices/:id", async (req, res) => {
       return res.status(404).json({ error: 'Invoice not found' });
     }
 
-    const [{ data: tenantData }, { data: customerData }, { data: itemsData }] = await Promise.all([
+    const [{ data: tenantData }, { data: customerData }, { data: itemsData }, { data: invoiceData }] = await Promise.all([
       supabaseAdmin
         .from('tenants')
-        .select('name, vat_number, phone, logo_url')
+        .select('name, vat_number, phone, logo_url, is_tax_enabled')
         .eq('id', orderData.tenant_id)
         .maybeSingle(),
       orderData.customer_id
         ? supabaseAdmin.from('customers').select('name').eq('id', orderData.customer_id).maybeSingle()
         : Promise.resolve({ data: null }),
       supabaseAdmin.from('order_items').select('name, quantity, price').eq('order_id', id),
+      // P4 (UX-14): the invoice's own QR (Phase 2 once signed), not one rebuilt in the browser.
+      supabaseAdmin.from('tax_invoices').select('invoice_number, zatca_qr, qr_payload').eq('order_id', id).maybeSingle(),
     ]);
+    const { taxRatePercent } = await import('./src/shared/taxRate.ts');
 
     res.json({
       order: {
@@ -278,13 +281,20 @@ app.get("/api/public/invoices/:id", async (req, res) => {
         orderDate: orderData.order_date,
         totalAmount: orderData.total_amount,
         vatAmount: orderData.tax_amount,
+        // P4 (UX-14): the order's own rate, not a printed 15%.
+        taxRatePercent: taxRatePercent(orderData.tax_rate) ?? 0,
         items: itemsData || [],
       },
+      invoice: invoiceData ? {
+        invoiceNumber: invoiceData.invoice_number,
+        qr: invoiceData.zatca_qr || invoiceData.qr_payload || null,
+      } : null,
       tenant: tenantData ? {
         storeName: tenantData.name,
         vatNumber: tenantData.vat_number,
         phone: tenantData.phone,
         logoUrl: tenantData.logo_url,
+        isTaxRegistered: Boolean(tenantData.is_tax_enabled && tenantData.vat_number),
       } : null,
       customer: customerData ? { name: customerData.name } : null,
     });

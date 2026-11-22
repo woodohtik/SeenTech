@@ -16,6 +16,8 @@ export default function PublicInvoice() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [downloading, setDownloading] = useState(false);
+  const [invoice, setInvoice] = useState<{ invoiceNumber?: string; qr?: string | null } | null>(null);
+  const [pdfError, setPdfError] = useState(false);
 
   useEffect(() => {
     const fetchInvoice = async () => {
@@ -38,6 +40,7 @@ export default function PublicInvoice() {
         
         setOrder(data.order);
         setTenant(data.tenant);
+        setInvoice(data.invoice ?? null);
         setCustomer(data.customer);
 
       } catch (err: any) {
@@ -76,16 +79,23 @@ export default function PublicInvoice() {
 
   const invoiceDate = new Date(order.orderDate || new Date().toISOString());
   
-  const zatcaQR = generateZatcaQR(
-    tenant?.storeName || 'متجر تفصيل',
-    tenant?.vatNumber || '000000000000000',
-    invoiceDate.toISOString(),
-    Number(order.totalAmount || 0).toFixed(2),
-    Number(order.vatAmount || 0).toFixed(2)
-  );
+  // P4 (UX-14): a shop that is not tax-registered issues a receipt, with no
+  // tax line and no QR; a registered one shows its invoice's own QR, never one
+  // built here with a placeholder VAT number.
+  const isTaxed = Boolean(tenant?.isTaxRegistered) && Number(order.vatAmount || 0) > 0;
+  const zatcaQR: string | null = isTaxed
+    ? (invoice?.qr || (tenant?.vatNumber ? generateZatcaQR(
+      tenant?.storeName || '',
+      tenant.vatNumber,
+      invoiceDate.toISOString(),
+      Number(order.totalAmount || 0).toFixed(2),
+      Number(order.vatAmount || 0).toFixed(2)
+    ) : null))
+    : null;
 
   const handleDownloadPdf = async () => {
     setDownloading(true);
+    setPdfError(false);
     const element = document.getElementById('digital-invoice-content');
     
     if (element) {
@@ -102,6 +112,7 @@ export default function PublicInvoice() {
         await html2pdf().from(element).set(opt).save();
       } catch (err) {
         console.error('Error generating PDF', err);
+        setPdfError(true);
       }
     }
     setDownloading(false);
@@ -120,6 +131,9 @@ export default function PublicInvoice() {
           <span>{downloading ? t('common.loading') : t('public_invoice.download_pdf')}</span>
         </button>
       </div>
+      {pdfError && (
+        <p role="alert" className="max-w-md w-full mx-auto mb-3 text-sm font-bold text-red-600 text-center">{t('public_invoice.download_failed')}</p>
+      )}
 
       <div id="digital-invoice-content" dir="rtl" className="max-w-md w-full mx-auto bg-white border border-slate-200 rounded-3xl shadow-sm p-6">
         {/* Header Block */}
@@ -148,8 +162,8 @@ export default function PublicInvoice() {
           </div>
 
           <div className="mt-4 inline-block bg-slate-100 px-4 py-1.5 rounded-lg border border-slate-200">
-            <h1 className="text-xs font-black text-slate-800">فاتورة ضريبية مبسطة</h1>
-            <p className="text-[9px] font-bold uppercase tracking-wider text-slate-400 font-sans">Simplified Tax Invoice</p>
+            <h1 className="text-xs font-black text-slate-800">{isTaxed ? 'فاتورة ضريبية مبسطة' : 'إيصال'}</h1>
+            <p className="text-[9px] font-bold uppercase tracking-wider text-slate-400 font-sans">{isTaxed ? 'Simplified Tax Invoice' : 'Receipt'}</p>
           </div>
         </div>
 
@@ -208,10 +222,10 @@ export default function PublicInvoice() {
             <span className="font-mono font-bold inline-flex items-center gap-1">{(Number(order.totalAmount) - Number(order.vatAmount || 0)).toFixed(2)} <CurrencySymbol className="h-[1.1em] w-auto shrink-0" /></span>
           </div>
 
-          <div className="flex justify-between text-slate-500">
-            <span>ضريبة القيمة المضافة (15%):</span>
+          {isTaxed && <div className="flex justify-between text-slate-500">
+            <span>ضريبة القيمة المضافة ({Number(order.taxRatePercent ?? 0)}%):</span>
             <span className="font-mono font-bold inline-flex items-center gap-1">{Number(order.vatAmount || 0).toFixed(2)} <CurrencySymbol className="h-[1.1em] w-auto shrink-0" /></span>
-          </div>
+          </div>}
 
           <div className="flex justify-between text-base font-black text-slate-900 pt-1.5 border-t border-dotted border-slate-200">
             <span>الإجمالي المستحق / Total:</span>
@@ -219,12 +233,14 @@ export default function PublicInvoice() {
           </div>
         </div>
 
-        {/* ZATCA QR Code */}
-        <div className="flex flex-col items-center justify-center py-2 mb-4">
-          <div className="bg-slate-50 p-2 rounded-xl border border-slate-100">
-            <QRCodeSVG value={zatcaQR} size={110} level="M" />
+        {/* ZATCA QR Code -- a tax invoice only (P4, UX-14) */}
+        {zatcaQR && (
+          <div className="flex flex-col items-center justify-center py-2 mb-4">
+            <div className="bg-slate-50 p-2 rounded-xl border border-slate-100">
+              <QRCodeSVG value={zatcaQR} size={110} level="M" />
+            </div>
           </div>
-        </div>
+        )}
 
         <div className="pt-4 border-t border-dashed border-slate-300 text-center">
           <p className="font-black text-slate-900 text-[11px] mb-0.5">تم إصدار هذه الفاتورة رقمياً</p>

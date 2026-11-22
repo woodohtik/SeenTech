@@ -1,3 +1,4 @@
+import i18n from 'i18next';
 import React from 'react';
 import { X, CheckCircle2, AlertCircle, Info, AlertTriangle } from 'lucide-react';
 import { cn } from '../lib/utils';
@@ -25,7 +26,8 @@ export interface ToastStackProps {
   dir: 'rtl' | 'ltr';
 }
 
-export const TOAST_STACK_CLASS = 'fixed bottom-6 right-6 z-[9999] flex flex-col gap-3 pointer-events-none';
+// P4 (UX-09): end-4/end-6 follow the reading direction; a phone of 320px fits.
+export const TOAST_STACK_CLASS = 'fixed bottom-6 end-4 sm:end-6 z-[9999] flex flex-col gap-3 pointer-events-none';
 
 const icons = {
   success: <CheckCircle2 className="text-success" size={20} />,
@@ -44,8 +46,11 @@ const bgColors = {
 export function ToastCard({ toast, onClose }: { toast: Toast; onClose: () => void }) {
   return (
     <div
+      // P4 (UX-09): read out by screen readers -- an error at once, the rest politely.
+      role={toast.type === 'error' ? 'alert' : 'status'}
+      aria-live={toast.type === 'error' ? 'assertive' : 'polite'}
       className={cn(
-        "pointer-events-auto flex gap-4 min-w-[320px] max-w-[420px] p-4 rounded-2xl border shadow-xl bg-surface",
+        "pointer-events-auto flex gap-4 w-[calc(100vw-2rem)] sm:w-auto sm:min-w-[320px] max-w-[420px] p-4 rounded-2xl border shadow-xl bg-surface",
         bgColors[toast.type]
       )}
     >
@@ -60,7 +65,8 @@ export function ToastCard({ toast, onClose }: { toast: Toast; onClose: () => voi
       </div>
       <button
         onClick={onClose}
-        className="h-fit p-1 text-content-muted hover:text-content transition-colors rounded-lg hover:bg-black/5"
+        aria-label={i18n.t('common.close')}
+        className="h-fit min-w-8 min-h-8 flex items-center justify-center text-content-muted hover:text-content transition-colors rounded-lg hover:bg-black/5"
       >
         <X size={16} />
       </button>
