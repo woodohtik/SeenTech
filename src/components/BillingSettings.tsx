@@ -227,7 +227,9 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
       showToast(
         result.discount_amount > 0
           ? t('billing.request_sent_success_discounted', {
-              defaultValue: `تم إرسال الطلب -- قبل الخصم: ${formatCurrency(result.original_amount)} ر.س، الخصم: ${formatCurrency(result.discount_amount)} ر.س، بعد الخصم: ${formatCurrency(result.amount)} ر.س`,
+              original: formatCurrency(result.original_amount),
+              discount: formatCurrency(result.discount_amount),
+              amount: formatCurrency(result.amount),
             })
           : t('billing.request_sent_success')
       );

@@ -340,7 +340,15 @@
     "status_completed": "Completed ✓",
     "store_id": "Store ID:",
     "upgrade_btn_action": "Renew or Upgrade Plan Now",
-    "vat_included_hint": "Fees include 15% VAT"
+    "vat_included_hint": "Fees include 15% VAT",
+    "request_sent_success_discounted": "Request sent -- before discount: {{original}} SAR, discount: {{discount}} SAR, after discount: {{amount}} SAR",
+    "modal_coupon_label": "Discount code (optional)",
+    "modal_coupon_placeholder": "e.g. OFF-AB12X7",
+    "modal_coupon_check": "Check",
+    "modal_coupon_applied": "Discount applied 🎉",
+    "modal_coupon_price_before": "Price before discount",
+    "modal_coupon_discount_label": "Discount",
+    "modal_coupon_price_after": "Price after discount"
   },
   "branches": {
     "add_location": "Add Location / Branch",
@@ -681,7 +689,14 @@
       "previous_month": "Previous month",
       "today": "Today",
       "close": "Close"
-    }
+    },
+    "move_up": "Move up",
+    "move_down": "Move down",
+    "dismiss": "Dismiss",
+    "from": "From",
+    "to": "To",
+    "type": "Type",
+    "copied": "Copied"
   },
   "compliance": {
     "check_legal_name": "Legal Name of the Business",
@@ -1549,7 +1564,52 @@
     "transfer_reject_reason": "Reason",
     "approve_draft": "Approve the count",
     "draft_approved": "The count was approved; the differences were applied to the current stock",
-    "draft_approve_failed": "The count could not be approved"
+    "draft_approve_failed": "The count could not be approved",
+    "schema_missing_save_blocked": "The document can't be saved because the tables are not enabled in your database. Please enable them first.",
+    "schema_missing_title": "Notice: stock counts and reconciliation need to be enabled",
+    "schema_missing_desc_merchant": "Stock counts and reconciliation need to be enabled by the admin or support team to connect to your database.",
+    "variants": {
+      "stock_take_not_supported": "Products with variants are not supported on this screen yet -- adjust each variant's stock by hand from the inventory screen.",
+      "badge_suffix": "variants",
+      "at_least_one_required": "Add at least one variant, or switch to a simple product",
+      "duplicate_sku": "The same SKU cannot be used for more than one variant",
+      "bulk_add_partial_failure": "The product was added, but some variants could not be added",
+      "simple_product_tab": "Simple product",
+      "advanced_product_tab": "Advanced product (with variants)",
+      "transfer_not_supported": "Products with variants are not supported in branch transfers yet -- adjust their stock by hand from the inventory screen.",
+      "select_to_adjust": "Choose the variant whose stock to adjust",
+      "name_sku_required": "Name and SKU are required",
+      "updated": "Variant updated",
+      "confirm_delete": "Deleting the variant deletes its stock record in every branch for good. This can't be undone.",
+      "deleted": "Variant deleted",
+      "bulk_added": "{{count}} variants added",
+      "section_title": "Variants (colours, sizes...)",
+      "total_stock": "Total stock",
+      "empty": "This product has no variants yet.",
+      "name_label": "Variant name",
+      "options_label": "Attributes (key : value)",
+      "option_key_placeholder": "e.g. colour",
+      "option_value_placeholder": "e.g. blue",
+      "add_option": "Add an attribute",
+      "price_adjustment": "Price difference",
+      "add_new": "Add a new variant",
+      "add_value": "Add a value",
+      "add_another_attribute": "Add another attribute (e.g. size)",
+      "generate": "Generate variants",
+      "rows_hint": "Review each variant and adjust SKU / price / stock.",
+      "draft_save_hint": "These variants are saved with the product when you press \"Save product\" below -- no need to save them separately.",
+      "draft_confirmed": "✓ Ready. Save the product below to finish.",
+      "stock_via_po_hint": "Stock is added later through a purchase order -- this variant starts at zero.",
+      "all_rows_removed": "No variants left.",
+      "save_all": "Save all",
+      "confirm_rows": "Done ✓",
+      "po_return_not_supported": "Returns of products with variants are not supported yet -- adjust their stock by hand from the inventory screen.",
+      "select_variant_placeholder": "Choose the variant (colour / size)..."
+    },
+    "add_success_with_variants": "The product and {{count}} variants were added",
+    "bulk_import_branch_inventory_failed": "Branch stock could not be set up for some imported products -- check them by hand on the inventory screen",
+    "item_added_success": "The product was added",
+    "save_failed": "Saving failed"
   },
   "invoice_print": {
     "address": "Address",
@@ -1738,7 +1798,9 @@
     "vertical_clothing": "Clothing",
     "vertical_tailoring": "Tailoring",
     "vertical_upholstery": "Upholstery",
-    "welcome_back": "Welcome Back"
+    "welcome_back": "Welcome Back",
+    "pin_locked_offline": "Too many attempts. Wait {{minutes}} minutes and try again.",
+    "pin_offline_no_match": "No internet connection, and the PIN entered does not match the last successful sign-in on this device."
   },
   "partner_login": {
     "title": "Referral Partner Portal",
@@ -2210,7 +2272,8 @@
     "fabric_shortage_reason": "Reason (e.g. the delivery arrived but was not entered)",
     "fabric_shortage_continue": "Go on and record the shortage",
     "fabric_shortage_continued": "The order moved; the fabric shortage was recorded",
-    "fabric_shortage_failed": "Could not go on"
+    "fabric_shortage_failed": "Could not go on",
+    "invoice_not_found": "The original invoice of this order could not be found"
   },
   "permissions": {
     "access_denied_desc": "Not specified",
@@ -2786,7 +2849,17 @@
     "type_custom__piece": "Order",
     "tax_settings_offline_title": "Tax settings could not be loaded",
     "tax_settings_offline_desc": "Connect to the internet once so this device can keep the tax settings; after that you can sell offline.",
-    "sale_queued_provisional_desc": "A provisional receipt was printed (this device has no reserved invoice numbers). The tax invoice is issued as soon as the connection is back."
+    "sale_queued_provisional_desc": "A provisional receipt was printed (this device has no reserved invoice numbers). The tax invoice is issued as soon as the connection is back.",
+    "cash_drawer_balance_failed": "The cash drawer balance could not be worked out",
+    "b2b_requires_connection": "Standard (B2B) tax invoices need a live internet connection -- they cannot be issued offline.",
+    "sale_queued_offline_title": "The invoice was saved on this device",
+    "sale_queued_offline_desc": "No connection right now -- it will be sent to the server as soon as the internet is back.",
+    "stock_conflict_title": "The invoice was issued, but there is a stock conflict",
+    "stock_conflict_desc": "One or more items were sold beyond what was actually in stock (most likely another device sold the same piece). Review the stock.",
+    "attach_invoice_pdf": "Attach the invoice as a PDF too",
+    "variants": {
+      "add_to_cart": "Add to cart"
+    }
   },
   "printing": {
     "agent": {
@@ -3229,7 +3302,18 @@
     "whatsapp_ledger_thanks": "Thank you very much.",
     "whatsapp_modal_desc": "Enter the supplier's phone number to open WhatsApp with the account statement ready to send.",
     "whatsapp_modal_title": "Send Statement via WhatsApp",
-    "whatsapp_pdf": "Send PDF Statement WhatsApp"
+    "whatsapp_pdf": "Send PDF Statement WhatsApp",
+    "pv_submit_failed": "The payment voucher could not be issued",
+    "add_new_item_option": "+ Add a new product",
+    "print_voucher": "Print the voucher",
+    "create_and_add_item": "Create and add to the list",
+    "ledger_load_failed": "The supplier's statement could not be loaded",
+    "supplier_voucher_reprint_title": "Reprint a transaction voucher",
+    "attach_ledger_pdf": "Attach as a PDF too",
+    "print_action": "Print",
+    "bulk_import_opening_balance_note": "Opening balance at import",
+    "supplier_aggregates_failed": "Total purchases / paid could not be worked out for some suppliers -- their figures may not be accurate",
+    "supplier_aggregate_failed_tooltip": "This figure could not be worked out -- it may not be accurate"
   },
   "public_invoice": {
     "digital_access": "Digital Invoice Access",
@@ -3340,7 +3424,9 @@
       "pending": "Under Review"
     },
     "your_link": "Your Referral Link",
-    "your_referrals": "Your Referrals ({{n}})"
+    "your_referrals": "Your Referrals ({{n}})",
+    "load_failed": "The referral programme could not be loaded",
+    "program_disabled_notice": "The referral programme is paused for new referrals -- you can still withdraw your current balance as usual."
   },
   "reports": {
     "access_denied_desc": "Please contact the system administrator to get reports viewing permissions.",
@@ -3434,7 +3520,10 @@
     "vat_payable": "Payable to ZATCA",
     "vat_refundable": "Refundable",
     "view_staff_orders": "View Employee Orders",
-    "tab_tailor_commissions__technician": "Technician commissions"
+    "tab_tailor_commissions__technician": "Technician commissions",
+    "no_shifts_found": "No closed shifts were found for this date to build the combined report",
+    "z_report_success": "The combined financial report was generated",
+    "z_report_error": "Something went wrong while generating the combined financial report"
   },
   "saas": {
     "account_health_score": "Account Health (Health Score)",
@@ -4017,7 +4106,8 @@
     "start_time": "Start Time",
     "tax_invoices": "Tax Invoices",
     "title": "Sales Operation Dashboard",
-    "unknown": "Unknown"
+    "unknown": "Unknown",
+    "cash_drawer_balance_failed": "The cash drawer balance could not be worked out"
   },
   "sales_record": {
     "download_pdf": "Download as PDF",
@@ -4028,7 +4118,8 @@
     "whatsapp_invoice_message": "Hello,\nInvoice details from store:\nInvoice No: #{{invoiceNumber}}\nTotal: {{total}} {{currency}}\nPayment Method: {{method}}\nOrder Status: {{status}}\nThank you for choosing us!",
     "whatsapp_modal_desc": "Enter the customer's phone number to open WhatsApp with the invoice details ready to send.",
     "whatsapp_modal_title": "Send Invoice via WhatsApp",
-    "whatsapp_share_text": "Invoice #{{invoiceNumber}} — Total: {{total}} SR"
+    "whatsapp_share_text": "Invoice #{{invoiceNumber}} — Total: {{total}} SR",
+    "attach_invoice_pdf": "Attach a PDF too"
   },
   "sales_returns": {
     "already_returned": "Invoice already returned",
@@ -4327,7 +4418,11 @@
       "saving": "Saving...",
       "store_identity": "Store Identity",
       "store_identity_desc": "Upload your store logo and modify basic information displayed to your customers in the system and on tax invoices.",
-      "store_name": "Commercial Entity Name"
+      "store_name": "Commercial Entity Name",
+      "address_placeholder": "District, street, building number",
+      "city": "City",
+      "postal_code": "Postal code",
+      "commercial_register": "Commercial registration number (CR)"
     },
     "staff": {
       "activate_pin_confirm": "Activate PIN",
@@ -4936,6 +5031,50 @@
       "waste_cm": "Waste per thobe (cm)",
       "default_width_cm": "Default cloth width (cm)",
       "narrow_width_cm": "Cloth narrower than (cm) needs two sleeve lengths"
+    },
+    "categories": {
+      "inventory_title": "Inventory categories",
+      "inventory_subtitle": "These categories appear in the add / edit inventory item forms",
+      "supplier_title": "Supplier categories",
+      "supplier_subtitle": "These categories appear in the add / edit supplier forms",
+      "added_success": "Category added",
+      "hidden_hint": "Hidden -- will not appear in new selection lists",
+      "new_name_placeholder": "New category name",
+      "add_new": "Add a new category"
+    },
+    "zatca": {
+      "csr_failed": "The CSR could not be generated",
+      "csr_success": "The CSR was generated",
+      "otp_required": "The OTP is required",
+      "compliance_failed": "The Compliance CSID request failed",
+      "tests_failed": "The compliance tests failed",
+      "production_failed": "The Production CSID request failed",
+      "activation_success": "The shop is connected to ZATCA!",
+      "activation_failed": "The activation could not be completed",
+      "title": "ZATCA connection",
+      "connected_subtitle": "Your shop is connected to ZATCA -- every sales invoice is cleared / reported automatically.",
+      "subtitle": "Connect your shop to Saudi Arabia's e-invoicing system.",
+      "connected_badge": "Connected",
+      "done_title": "Your shop is connected to ZATCA",
+      "done_desc": "From now on every real sale is sent to ZATCA automatically for clearance (B2B invoices) or reporting (simplified invoices).",
+      "prereq_title": "Before you start",
+      "prereq_desc": "Your shop must be registered for VAT, and you need your own account on the Fatoora portal.",
+      "open_fatoora": "Open the Fatoora portal",
+      "step_confirm_title": "Confirm the business's details",
+      "fill_in_profile": "Edit in the profile",
+      "profile_incomplete": "Complete these details in the \"Profile\" and \"Tax settings\" tabs before going on.",
+      "step_csr_title": "Generate the CSR",
+      "step_csr_desc": "This button makes a certificate request (CSR) for your shop. Copy it and paste it into your Fatoora portal account when asked.",
+      "generate_csr_button": "Generate the CSR",
+      "csr_already_generated": "The CSR was already generated -- go on to the OTP step below.",
+      "step_activate_title": "Enter the OTP and activate",
+      "step_activate_desc": "Enter the OTP the Fatoora portal gave you after pasting the CSR there. \"Activate\" then runs the remaining steps on its own.",
+      "otp_placeholder": "OTP",
+      "activate_button": "Activate",
+      "substep_compliance": "Compliance CSID request",
+      "substep_tests": "Compliance tests",
+      "substep_production": "Production CSID request",
+      "refresh_status": "Refresh the status"
     }
   },
   "shift_closing": {
@@ -4957,7 +5096,9 @@
     "shortage": "Shortage of",
     "surplus": "Surplus of",
     "title": "Close Shift",
-    "unsynced_sales": "The shift can't be closed: {{count}} operation(s) from this shift haven't reached the server yet. Connect, wait for the sync, then close."
+    "unsynced_sales": "The shift can't be closed: {{count}} operation(s) from this shift haven't reached the server yet. Connect, wait for the sync, then close.",
+    "not_authorized": "You don't have permission to close another employee's shift",
+    "already_closed": "This shift is already closed -- its data was reloaded."
   },
   "shift_history": {
     "actions": "Actions",
@@ -5280,7 +5421,8 @@
     "vat_number_label": "VAT number",
     "view_invoice": "View Invoice",
     "walk_in_customer": "Walk-in Customer",
-    "zatca_compliant": "Compliant with ZATCA (Zakat, Tax and Customs Authority)"
+    "zatca_compliant": "Compliant with ZATCA (Zakat, Tax and Customs Authority)",
+    "attach_pdf": "Attach a PDF too"
   },
   "themes": {
     "dark": "Dark",
@@ -5521,7 +5663,8 @@
     "whatsapp_message_title": "Closing Report",
     "whatsapp_pdf_attached": "Please find the attached report in PDF format.",
     "whatsapp_save_instruction": "The report was saved to your device successfully. Enter the recipient's WhatsApp number below (rep, manager or owner), then send it.",
-    "withdrawals_expenses": "Withdrawals & Expenses"
+    "withdrawals_expenses": "Withdrawals & Expenses",
+    "export_failed": "The end-of-day report could not be exported -- the file was not saved"
   },
   "pwa": {
     "update_available": "A new update is available",
@@ -5553,7 +5696,8 @@
     "review_paid": "Collected",
     "review_reason": "Reason",
     "review_retry": "Send again",
-    "review_hint": "Money was collected for these operations. Send them again; if one is rejected again, create the order by hand with the same details and keep this record."
+    "review_hint": "Money was collected for these operations. Send them again; if one is rejected again, create the order by hand with the same details and keep this record.",
+    "ios_install_banner": "So that Safari does not erase this device's data after a week unused, install the app: Share, then \"Add to Home Screen\"."
   },
   "verticals": {
     "loading_settings": "Loading your activity's settings...",
@@ -5576,5 +5720,12 @@
     "status_failed": "Could not be sent -- needs attention",
     "status_not_applicable": "Not sent (no production certificate)",
     "next_try": "Next try {{when}} ({{attempts}} attempts)"
+  },
+  "blog_admin": {
+    "loading": "Loading..."
+  },
+  "support_consent": {
+    "fetch_requests_failed": "Support access requests could not be loaded",
+    "respond_failed": "Your answer to the support access request could not be recorded -- try again"
   }
 }

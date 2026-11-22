@@ -340,7 +340,15 @@
     "status_completed": "مكتمل ✓",
     "store_id": "معرّف المتجر:",
     "upgrade_btn_action": "تجديد أو ترقية الباقة الآن",
-    "vat_included_hint": "الرسوم شاملة ضريبة القيمة المضافة 15%"
+    "vat_included_hint": "الرسوم شاملة ضريبة القيمة المضافة 15%",
+    "request_sent_success_discounted": "تم إرسال الطلب -- قبل الخصم: {{original}} ر.س، الخصم: {{discount}} ر.س، بعد الخصم: {{amount}} ر.س",
+    "modal_coupon_label": "كود الخصم (اختياري)",
+    "modal_coupon_placeholder": "مثال: OFF-AB12X7",
+    "modal_coupon_check": "تحقق",
+    "modal_coupon_applied": "تم تطبيق الخصم 🎉",
+    "modal_coupon_price_before": "السعر قبل الخصم",
+    "modal_coupon_discount_label": "الخصم",
+    "modal_coupon_price_after": "السعر بعد الخصم"
   },
   "branches": {
     "add_location": "إضافة موقع / فرع",
@@ -681,7 +689,14 @@
       "previous_month": "الشهر السابق",
       "today": "اليوم",
       "close": "إغلاق"
-    }
+    },
+    "move_up": "تحريك للأعلى",
+    "move_down": "تحريك للأسفل",
+    "dismiss": "إغلاق",
+    "from": "من",
+    "to": "إلى",
+    "type": "النوع",
+    "copied": "تم النسخ"
   },
   "compliance": {
     "check_legal_name": "الاسم النظامي للمنشأة",
@@ -1549,7 +1564,52 @@
     "transfer_reject_reason": "السبب",
     "approve_draft": "اعتماد الجرد",
     "draft_approved": "اعتُمد الجرد وطُبّقت الفروق على الرصيد الحالي",
-    "draft_approve_failed": "تعذّر اعتماد الجرد"
+    "draft_approve_failed": "تعذّر اعتماد الجرد",
+    "schema_missing_save_blocked": "لا يمكن حفظ المستند لعدم تفعيل الجداول في قاعدة البيانات الخاصة بك. يرجى تفعيلها أولاً.",
+    "schema_missing_title": "تنبيه: ميزة جرد وتسوية المخزون بحاجة لتفعيل",
+    "schema_missing_desc_merchant": "ميزة جرد وتسوية المخزون بحاجة إلى تفعيل من قبل فريق الإدارة أو الدعم الفني للربط مع قاعدة البيانات الخاصة بمتجرك.",
+    "variants": {
+      "stock_take_not_supported": "المنتجات ذات السمات غير مدعومة بعد في هذه الشاشة -- عدّل مخزون كل سمة يدوياً من شاشة المخزون.",
+      "badge_suffix": "سمات",
+      "at_least_one_required": "أضف سمة واحدة على الأقل، أو بدّل لمنتج بسيط",
+      "duplicate_sku": "لا يمكن تكرار نفس رمز SKU لأكثر من سمة",
+      "bulk_add_partial_failure": "تمت إضافة المنتج، لكن تعذّرت إضافة بعض السمات",
+      "simple_product_tab": "منتج بسيط",
+      "advanced_product_tab": "منتج متقدم (له سمات)",
+      "transfer_not_supported": "المنتجات ذات السمات غير مدعومة بعد في التحويل بين الفروع -- عدّل مخزونها يدوياً من شاشة المخزون.",
+      "select_to_adjust": "اختر السمة المطلوب تعديل مخزونها",
+      "name_sku_required": "الاسم ورمز SKU مطلوبان",
+      "updated": "تم تحديث السمة",
+      "confirm_delete": "حذف السمة سيؤدي لحذف سجل مخزونها نهائياً من كل الفروع. هذا الإجراء لا رجعة فيه.",
+      "deleted": "تم حذف السمة",
+      "bulk_added": "تمت إضافة {{count}} سمة",
+      "section_title": "السمات (الألوان، المقاسات...)",
+      "total_stock": "المخزون الإجمالي",
+      "empty": "لا توجد سمات لهذا المنتج بعد.",
+      "name_label": "اسم السمة",
+      "options_label": "الخصائص (مفتاح : قيمة)",
+      "option_key_placeholder": "مثلاً: لون",
+      "option_value_placeholder": "مثلاً: أزرق",
+      "add_option": "إضافة خاصية",
+      "price_adjustment": "فرق السعر",
+      "add_new": "إضافة سمة جديدة",
+      "add_value": "أضف قيمة",
+      "add_another_attribute": "إضافة سمة أخرى (مثل المقاس)",
+      "generate": "توليد المتغيّرات",
+      "rows_hint": "راجع كل سمة وعدّل SKU/السعر/المخزون.",
+      "draft_save_hint": "هذه السمات ستُحفظ تلقائياً مع المنتج عند الضغط على زر \"حفظ المنتج\" بالأسفل -- لا حاجة لحفظها هنا بشكل منفصل.",
+      "draft_confirmed": "✓ جاهزة. أكمل حفظ المنتج بالأسفل لإتمام الإضافة.",
+      "stock_via_po_hint": "المخزون يُضاف لاحقاً عبر أمر شراء -- هذه السمة تُنشأ برصيد صفر.",
+      "all_rows_removed": "لم يتبقَّ أي سمة.",
+      "save_all": "حفظ الكل",
+      "confirm_rows": "تم ✓",
+      "po_return_not_supported": "مرتجعات المنتجات ذات السمات غير مدعومة بعد -- عدّل مخزونها يدوياً من شاشة المخزون.",
+      "select_variant_placeholder": "اختر السمة (اللون/المقاس)..."
+    },
+    "add_success_with_variants": "تمت إضافة المنتج و{{count}} سمة بنجاح",
+    "bulk_import_branch_inventory_failed": "تعذّر تهيئة مخزون الفروع لبعض المنتجات المستوردة، راجعها يدوياً من شاشة المخزون",
+    "item_added_success": "تمت إضافة المنتج بنجاح",
+    "save_failed": "فشل الحفظ"
   },
   "invoice_print": {
     "address": "العنوان",
@@ -1738,7 +1798,9 @@
     "vertical_clothing": "ملابس",
     "vertical_tailoring": "خياطة",
     "vertical_upholstery": "تنجيد وكنب",
-    "welcome_back": "مرحباً بك مجدداً"
+    "welcome_back": "مرحباً بك مجدداً",
+    "pin_locked_offline": "محاولات كثيرة جداً. انتظر {{minutes}} دقيقة ثم أعد المحاولة.",
+    "pin_offline_no_match": "لا يوجد اتصال بالإنترنت، والرمز المُدخَل غير مطابق لآخر دخول ناجح على هذا الجهاز."
   },
   "partner_login": {
     "title": "بوابة شركاء الإحالة",
@@ -2210,7 +2272,8 @@
     "fabric_shortage_reason": "السبب (مثلاً: وصلت الشحنة ولم تُسجَّل)",
     "fabric_shortage_continue": "تابع وسجّل النقص",
     "fabric_shortage_continued": "نُقل الطلب وسُجّل نقص القماش",
-    "fabric_shortage_failed": "تعذّرت المتابعة"
+    "fabric_shortage_failed": "تعذّرت المتابعة",
+    "invoice_not_found": "تعذر العثور على الفاتورة الأصلية لهذا الطلب"
   },
   "permissions": {
     "access_denied_desc": "غير محدد",
@@ -2786,7 +2849,17 @@
     "type_custom__piece": "طلب",
     "tax_settings_offline_title": "تعذّر تحميل إعدادات الضريبة",
     "tax_settings_offline_desc": "اتصل بالإنترنت مرة واحدة ليحفظ الجهاز إعدادات الضريبة، ثم يمكنك البيع بدون إنترنت.",
-    "sale_queued_provisional_desc": "طُبع إيصال مؤقت (لا توجد أرقام فواتير محجوزة على هذا الجهاز). تصدر الفاتورة الضريبية فور عودة الإنترنت."
+    "sale_queued_provisional_desc": "طُبع إيصال مؤقت (لا توجد أرقام فواتير محجوزة على هذا الجهاز). تصدر الفاتورة الضريبية فور عودة الإنترنت.",
+    "cash_drawer_balance_failed": "تعذّر حساب رصيد الدرج النقدي",
+    "b2b_requires_connection": "الفواتير الضريبية القياسية (B2B) تتطلب اتصالاً حياً بالإنترنت — لا يمكن إصدارها أوفلاين.",
+    "sale_queued_offline_title": "سُجِّلت الفاتورة محلياً",
+    "sale_queued_offline_desc": "لا يوجد اتصال حالياً — ستُرسَل تلقائياً للخادم فور عودة الإنترنت.",
+    "stock_conflict_title": "الفاتورة صدرت، لكن يوجد تعارض مخزون",
+    "stock_conflict_desc": "صنف واحد أو أكثر بِيع أكثر من المتاح فعلياً (على الأرجح جهاز آخر باع نفس القطعة). راجع المخزون يدوياً.",
+    "attach_invoice_pdf": "إرفاق الفاتورة كملف PDF أيضاً",
+    "variants": {
+      "add_to_cart": "إضافة للسلة"
+    }
   },
   "printing": {
     "agent": {
@@ -3229,7 +3302,18 @@
     "whatsapp_ledger_thanks": "وشكراً جزيلاً لكم.",
     "whatsapp_modal_desc": "أدخل رقم جوال المورد لفتح واتساب مع كشف الحساب جاهزاً للإرسال.",
     "whatsapp_modal_title": "إرسال كشف الحساب عبر واتساب",
-    "whatsapp_pdf": "إرسال كشف حساب PDF واتساب"
+    "whatsapp_pdf": "إرسال كشف حساب PDF واتساب",
+    "pv_submit_failed": "تعذّر إصدار سند الصرف",
+    "add_new_item_option": "+ إضافة منتج جديد",
+    "print_voucher": "طباعة السند",
+    "create_and_add_item": "إنشاء وإضافة للقائمة",
+    "ledger_load_failed": "تعذّر تحميل حركات كشف حساب المورد",
+    "supplier_voucher_reprint_title": "إعادة طباعة سند حركة",
+    "attach_ledger_pdf": "إرفاق كملف PDF أيضاً",
+    "print_action": "طباعة",
+    "bulk_import_opening_balance_note": "رصيد افتتاحي عند الاستيراد",
+    "supplier_aggregates_failed": "تعذّر حساب إجمالي المشتريات/المسدَّد لبعض الموردين — الأرقام المعروضة لهم قد لا تكون دقيقة",
+    "supplier_aggregate_failed_tooltip": "تعذّر حساب هذا الرقم — قد لا يكون دقيقاً"
   },
   "public_invoice": {
     "digital_access": "الوصول الرقمي للفاتورة",
@@ -3343,7 +3427,9 @@
       "pending": "قيد المراجعة"
     },
     "your_link": "رابط الإحالة الخاص بك",
-    "your_referrals": "إحالاتك ({{n}})"
+    "your_referrals": "إحالاتك ({{n}})",
+    "load_failed": "تعذّر تحميل بيانات برنامج الإحالة",
+    "program_disabled_notice": "برنامج الإحالة متوقف مؤقتاً عن استقبال إحالات جديدة -- يمكنك متابعة سحب رصيدك الحالي كالمعتاد."
   },
   "reports": {
     "access_denied_desc": "يرجى التواصل مع مدير النظام للحصول على صلاحيات عرض التقارير.",
@@ -3437,7 +3523,10 @@
     "vat_payable": "مستحقة الدفع لهيئة الزكاة والضريبة",
     "vat_refundable": "قابلة للاسترداد",
     "view_staff_orders": "عرض طلبات الموظف",
-    "tab_tailor_commissions__technician": "عمولات الفنيين"
+    "tab_tailor_commissions__technician": "عمولات الفنيين",
+    "no_shifts_found": "لم يتم العثور على ورديات مغلقة لهذا التاريخ لتوليد التقرير المجمع",
+    "z_report_success": "تم توليد التقرير المالي المجمع بنجاح",
+    "z_report_error": "حدث خطأ أثناء توليد التقرير المالي المجمع"
   },
   "saas": {
     "account_health_score": "صحة الحساب (Health Score)",
@@ -3946,7 +4035,26 @@
       "vertical_change_title": "تغيير نشاط المحل",
       "vertical_change_confirm": "تغيير نشاط «{{shop}}» من «{{from}}» إلى «{{to}}»؟",
       "vertical_change_has_orders": "لا يمكن تغيير نشاط محل لديه طلبات.",
-      "vertical_changed": "تم تغيير نشاط المحل"
+      "vertical_changed": "تم تغيير نشاط المحل",
+      "trash_confirm_title": "نقل التاجر لسلة المهملات",
+      "trash_confirm_desc": "سينتقل \"{{name}}\" فوراً لسلة المهملات ويفقد كل وصول لنظامه. يمكنك استعادته لاحقاً من السلة. اكتب اسم التاجر بالضبط للتأكيد:",
+      "name_mismatch": "الاسم المكتوب لا يطابق اسم التاجر بالضبط",
+      "trashed_success": "تم نقل التاجر لسلة المهملات",
+      "trash_failed": "تعذّر نقل التاجر لسلة المهملات",
+      "restore_confirm": "استعادة \"{{name}}\" من سلة المهملات؟ سيستعيد الوصول لنظامه فوراً.",
+      "restored_success": "تمت استعادة التاجر",
+      "restore_failed": "تعذّرت استعادة التاجر",
+      "permanent_delete_title": "حذف نهائي — لا يمكن التراجع",
+      "permanent_delete_desc": "هذا سيمسح كل بيانات \"{{name}}\" نهائياً (الطلبات، الفواتير، المخزون، كل شيء) ولا يمكن التراجع عنه إطلاقاً. اكتب اسم التاجر بالضبط للتأكيد:",
+      "permanent_delete_confirm_label": "حذف نهائي",
+      "permanently_deleted_success": "تم حذف التاجر نهائياً",
+      "permanent_delete_failed": "تعذّر الحذف النهائي",
+      "trash_bin": "سلة المهملات",
+      "trash_empty": "سلة المهملات فارغة",
+      "trashed_at_label": "نُقل للسلة",
+      "restore": "استعادة",
+      "permanent_delete": "حذف نهائي",
+      "move_to_trash": "نقل لسلة المهملات"
     },
     "test_data_delete_error": "حدث خطأ أثناء حذف بيانات الاختبار",
     "test_data_delete_error_with_message": "حدث خطأ أثناء حذف بيانات الاختبار: {{error}}",
@@ -3983,7 +4091,66 @@
       "down": "غير مفيدة",
       "no_question": "(بلا سؤال محفوظ)",
       "load_error": "تعذّر تحميل التقييمات."
-    }
+    },
+    "audit_logs_load_failed": "تعذّر تحميل سجلات التدقيق",
+    "notif_subscription_request_title": "طلب اشتراك جديد",
+    "notif_subscription_request_msg": "{{name}} يطلب تفعيل باقة {{plan}}",
+    "reports_load_failed": "تعذّر تحميل تقارير وتحليلات النظام",
+    "referral_settings_saved_success": "تم حفظ إعدادات برنامج الإحالة",
+    "referral_program_settings": "إعدادات برنامج الإحالة",
+    "referral_reward_per_referral": "العمولة لكل إحالة (ر.س)",
+    "referral_min_withdrawal": "الحد الأدنى للسحب (ر.س)",
+    "referral_program_enabled": "تفعيل برنامج الإحالة",
+    "referral_disabled_hint": "عند التعطيل: تتوقف إحالات جديدة عن التسجيل فقط -- أرصدة التجار المكتسبة فعلاً تبقى قابلة للسحب كالمعتاد.",
+    "password_reset_success": "تمت إعادة تعيين كلمة المرور بنجاح",
+    "delete_member_confirm_title": "حذف الموظف",
+    "delete_member_confirm_desc": "سيتم حذف \"{{name}}\" نهائياً من فريق إدارة المنصة. هل تريد المتابعة؟",
+    "delete_member_success": "تم حذف الموظف بنجاح",
+    "reset_password_btn": "إعادة تعيين كلمة المرور",
+    "reset_password_title": "إعادة تعيين كلمة المرور",
+    "new_password_label": "كلمة المرور الجديدة",
+    "approve_withdrawal_confirm": "سيتم اعتماد هذا السحب كـ\"تم التحويل\" -- تأكَّد أنك حوَّلت المبلغ فعلياً قبل المتابعة، فهذا الإجراء لا رجعة فيه.",
+    "withdrawal_source": "المصدر",
+    "withdrawal_source_partner": "شريك إحالة",
+    "withdrawal_source_tenant": "تاجر",
+    "coupon_toggle_success": "تم تحديث حالة الكوبون",
+    "coupon_toggle_failed": "تعذّر تحديث حالة الكوبون",
+    "coupon_delete_confirm": "حذف كوبون \"{{code}}\" نهائياً؟",
+    "coupon_delete_success": "تم حذف الكوبون",
+    "coupon_delete_failed": "تعذّر حذف الكوبون",
+    "menu_coupons": "كوبونات الخصم",
+    "coupons_tab_title": "كوبونات الخصم",
+    "coupons_tab_subtitle": "أنشئ كود خصم تعطيه لعميل عند الاتفاق على تخفيض سعر اشتراكه",
+    "coupons_new_button": "كوبون جديد",
+    "coupons_col_code": "الكود",
+    "coupons_col_discount": "الخصم",
+    "coupons_col_restriction": "مخصَّص لـ",
+    "coupons_col_usage": "الاستخدام",
+    "coupons_col_expiry": "الانتهاء",
+    "coupons_empty": "لا توجد كوبونات بعد",
+    "coupons_restriction_any_tenant": "أي تاجر",
+    "coupons_no_expiry": "بلا انتهاء",
+    "coupon_field_type_percentage": "نسبة %",
+    "coupon_field_type_fixed": "مبلغ ثابت (ر.س)",
+    "coupon_field_plan_any": "كل الباقات",
+    "coupon_error_value_required": "أدخل قيمة خصم أكبر من صفر",
+    "coupon_error_percentage_max": "نسبة الخصم لا يمكن أن تتجاوز 100%",
+    "coupon_create_success": "تم إنشاء الكوبون",
+    "coupon_create_failed": "تعذّر إنشاء الكوبون",
+    "coupon_modal_title": "كوبون خصم جديد",
+    "coupon_field_code": "الكود",
+    "coupon_field_code_placeholder": "اتركه فارغاً لإنشاء كود تلقائي",
+    "coupon_field_discount_type": "نوع الخصم",
+    "coupon_field_discount_value": "القيمة",
+    "coupon_field_tenant": "مخصَّص لتاجر (اختياري)",
+    "coupon_field_plan": "مخصَّص لباقة (اختياري)",
+    "coupon_field_max_redemptions": "الحد الأقصى للاستخدام",
+    "coupon_field_unlimited": "بلا حد",
+    "coupon_field_expiry": "تاريخ الانتهاء",
+    "coupon_field_notes": "ملاحظة داخلية (اختياري)",
+    "coupon_field_notes_placeholder": "مثال: خصم مكالمة مع فاطمة - عرض رمضان",
+    "coupon_save": "إنشاء الكوبون",
+    "tenant_analytics_load_failed": "تعذّر تحميل تحليلات هذا المستأجر"
   },
   "sales": {
     "active_shift": "وردية نشطة",
@@ -4020,7 +4187,8 @@
     "start_time": "وقت البداية",
     "tax_invoices": "الفواتير الضريبية",
     "title": "لوحة عمليات المبيعات",
-    "unknown": "غير معروف"
+    "unknown": "غير معروف",
+    "cash_drawer_balance_failed": "تعذّر حساب رصيد الدرج النقدي"
   },
   "sales_record": {
     "download_pdf": "تحميل كـ PDF",
@@ -4031,7 +4199,8 @@
     "whatsapp_invoice_message": "السلام عليكم ورحمة الله وبركاته،\nتفاصيل الفاتورة من المتجر:\nرقم الفاتورة: #{{invoiceNumber}}\nالإجمالي: {{total}} {{currency}}\nطريقة الدفع: {{method}}\nحالة الطلب: {{status}}\nشكراً لتواصلك معنا!",
     "whatsapp_modal_desc": "أدخل رقم جوال العميل لفتح واتساب مع تفاصيل الفاتورة جاهزة للإرسال.",
     "whatsapp_modal_title": "إرسال الفاتورة عبر واتساب",
-    "whatsapp_share_text": "فاتورة رقم {{invoiceNumber}} — الإجمالي: {{total}} ﷼"
+    "whatsapp_share_text": "فاتورة رقم {{invoiceNumber}} — الإجمالي: {{total}} ﷼",
+    "attach_invoice_pdf": "إرفاق PDF أيضاً"
   },
   "sales_returns": {
     "already_returned": "الفاتورة مرتجعة مسبقاً",
@@ -4330,7 +4499,11 @@
       "saving": "جاري الحفظ...",
       "store_identity": "هوية المتجر",
       "store_identity_desc": "قم بتحميل شعار متجرك وتعديل المعلومات الأساسية التي تظهر لعملائك في النظام وعلى الفواتير الضريبية.",
-      "store_name": "اسم المنشأة التجاري"
+      "store_name": "اسم المنشأة التجاري",
+      "address_placeholder": "الحي، الشارع، رقم المبنى",
+      "city": "المدينة",
+      "postal_code": "الرمز البريدي",
+      "commercial_register": "رقم السجل التجاري (CR)"
     },
     "staff": {
       "activate_pin_confirm": "تفعيل الرمز",
@@ -4939,6 +5112,50 @@
       "waste_cm": "الهالك لكل ثوب (سم)",
       "default_width_cm": "عرض القماش الافتراضي (سم)",
       "narrow_width_cm": "القماش الأضيق من (سم) يُحسب له كمّان"
+    },
+    "categories": {
+      "inventory_title": "فئات المخزون",
+      "inventory_subtitle": "تظهر هذه الفئات في نماذج إضافة/تعديل عناصر المخزون",
+      "supplier_title": "فئات الموردين",
+      "supplier_subtitle": "تظهر هذه الفئات في نماذج إضافة/تعديل الموردين",
+      "added_success": "تمت إضافة الفئة",
+      "hidden_hint": "مخفاة -- لن تظهر في قوائم الاختيار الجديدة",
+      "new_name_placeholder": "اسم الفئة الجديدة",
+      "add_new": "إضافة فئة جديدة"
+    },
+    "zatca": {
+      "csr_failed": "تعذّر توليد CSR",
+      "csr_success": "تم توليد CSR بنجاح",
+      "otp_required": "رمز OTP مطلوب",
+      "compliance_failed": "فشل طلب Compliance CSID",
+      "tests_failed": "فشلت اختبارات الامتثال",
+      "production_failed": "فشل طلب Production CSID",
+      "activation_success": "تم ربط المتجر بزاتكا بنجاح!",
+      "activation_failed": "تعذّر إكمال التفعيل",
+      "title": "ربط زاتكا (ZATCA)",
+      "connected_subtitle": "متجرك متصل بزاتكا -- كل فاتورة بيع تُخلَّص/تُبلَّغ تلقائياً.",
+      "subtitle": "اربط متجرك فعلياً بمنظومة الفوترة الإلكترونية السعودية.",
+      "connected_badge": "متصل",
+      "done_title": "متجرك متصل بزاتكا فعلياً",
+      "done_desc": "كل عملية بيع حقيقية من الآن تُرسَل تلقائياً لزاتكا للتخليص (فواتير B2B) أو الإبلاغ (فواتير B2C) -- لا حاجة لأي إجراء إضافي.",
+      "prereq_title": "شرط أساسي قبل البدء",
+      "prereq_desc": "يجب أن يكون متجرك مسجَّلاً فعلياً في ضريبة القيمة المضافة، وأن تملك حساباً خاصاً باسمك التجاري على بوابة فاتورة (fatoora.zatca.gov.sa). سِين لا يستطيع إنشاء هذا الحساب أو التسجيل الضريبي نيابةً عنك -- هذا شرط من زاتكا نفسها.",
+      "open_fatoora": "فتح بوابة فاتورة",
+      "step_confirm_title": "تأكيد بيانات المنشأة",
+      "fill_in_profile": "عدّل في الملف الشخصي",
+      "profile_incomplete": "أكمِل هذه البيانات من تبويبَي \"الملف الشخصي\" و\"الإعدادات الضريبية\" قبل المتابعة.",
+      "step_csr_title": "توليد CSR",
+      "step_csr_desc": "يولِّد هذا الزر طلب شهادة (CSR) خاصاً بمتجرك. انسخه وألصقه في حسابك على بوابة فاتورة عند تسجيل \"وحدة إصدار\" جديدة، وستحصل من هناك على رمز OTP.",
+      "generate_csr_button": "توليد CSR",
+      "csr_already_generated": "تم توليد CSR مسبقاً -- تابع لخطوة OTP أدناه.",
+      "step_activate_title": "إدخال OTP والتفعيل",
+      "step_activate_desc": "أدخل رمز OTP الذي حصلت عليه من بوابة فاتورة بعد لصق CSR هناك. سيُشغِّل زر \"تفعيل\" تلقائياً: طلب Compliance CSID، ثم اختبارات الامتثال، ثم طلب Production CSID -- بلا أي خطوة يدوية إضافية.",
+      "otp_placeholder": "رمز OTP",
+      "activate_button": "تفعيل",
+      "substep_compliance": "طلب Compliance CSID",
+      "substep_tests": "اختبارات الامتثال",
+      "substep_production": "طلب Production CSID",
+      "refresh_status": "تحديث الحالة"
     }
   },
   "shift_closing": {
@@ -4960,7 +5177,9 @@
     "shortage": "عجز بقيمة",
     "surplus": "زيادة بقيمة",
     "title": "إغلاق الوردية",
-    "unsynced_sales": "لا يمكن إغلاق الوردية: {{count}} عملية من هذه الوردية لم تصل للخادم بعد. اتصل بالإنترنت وانتظر المزامنة، ثم أغلق."
+    "unsynced_sales": "لا يمكن إغلاق الوردية: {{count}} عملية من هذه الوردية لم تصل للخادم بعد. اتصل بالإنترنت وانتظر المزامنة، ثم أغلق.",
+    "not_authorized": "لا تملك صلاحية إغلاق وردية موظف آخر",
+    "already_closed": "هذه الوردية مُغلَقة مسبقاً -- أُعيد تحميل بياناتها."
   },
   "shift_history": {
     "actions": "إجراءات",
@@ -5283,7 +5502,8 @@
     "vat_number_label": "الرقم الضريبي",
     "view_invoice": "عرض الفاتورة",
     "walk_in_customer": "عميل نقدي",
-    "zatca_compliant": "متوافق مع هيئة الزكاة والضريبة والجمارك"
+    "zatca_compliant": "متوافق مع هيئة الزكاة والضريبة والجمارك",
+    "attach_pdf": "إرفاق PDF أيضاً"
   },
   "themes": {
     "dark": "داكن",
@@ -5524,7 +5744,8 @@
     "whatsapp_message_title": "تقرير إغلاق",
     "whatsapp_pdf_attached": "يرجى الاطلاع على ملف التقرير المرفق بصيغة PDF.",
     "whatsapp_save_instruction": "تم حفظ التقرير بنجاح على جهازك. يرجى كتابة رقم واتساب المستلم بالأسفل (المندوب أو المدير أو المالك) ومن ثم إرساله.",
-    "withdrawals_expenses": "السحوبات والمصاريف"
+    "withdrawals_expenses": "السحوبات والمصاريف",
+    "export_failed": "تعذّر تصدير تقرير إغلاق اليوم — لم يُحفَظ الملف"
   },
   "pwa": {
     "update_available": "يتوفر تحديث جديد",
@@ -5556,7 +5777,8 @@
     "review_paid": "المحصَّل",
     "review_reason": "السبب",
     "review_retry": "إعادة الإرسال",
-    "review_hint": "حُصِّل مبلغ لهذه العمليات. أعد إرسالها؛ وإن رُفضت مرة أخرى فأنشئ الطلب يدوياً بنفس البيانات ولا تحذف هذا السجل."
+    "review_hint": "حُصِّل مبلغ لهذه العمليات. أعد إرسالها؛ وإن رُفضت مرة أخرى فأنشئ الطلب يدوياً بنفس البيانات ولا تحذف هذا السجل.",
+    "ios_install_banner": "لتفادي حذف سفاري لبيانات هذا الجهاز تلقائياً بعد أسبوع من عدم الاستخدام: ثبّت التطبيق عبر زر المشاركة"
   },
   "verticals": {
     "loading_settings": "جارٍ تحميل إعدادات نشاطك...",
@@ -5579,5 +5801,12 @@
     "status_failed": "تعذّر الإرسال — يحتاج متابعة",
     "status_not_applicable": "لا يُرسل (لا شهادة إنتاج)",
     "next_try": "المحاولة التالية {{when}} (المحاولات {{attempts}})"
+  },
+  "blog_admin": {
+    "loading": "جاري التحميل..."
+  },
+  "support_consent": {
+    "fetch_requests_failed": "تعذّر تحميل طلبات صلاحية الدعم",
+    "respond_failed": "تعذّر تسجيل ردّك على طلب صلاحية الدعم — حاول مرة أخرى"
   }
 }

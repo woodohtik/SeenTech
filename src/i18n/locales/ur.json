@@ -340,7 +340,15 @@
     "status_completed": "مکمل ✓",
     "store_id": "اسٹور آئی ڈی:",
     "upgrade_btn_action": "ابھی پلان کی تجدید یا اپ گریڈ کریں",
-    "vat_included_hint": "فیس میں 15% ویلیو ایڈڈ ٹیکس شامل ہے"
+    "vat_included_hint": "فیس میں 15% ویلیو ایڈڈ ٹیکس شامل ہے",
+    "request_sent_success_discounted": "درخواست بھیج دی گئی -- رعایت سے پہلے: {{original}} ریال، رعایت: {{discount}} ریال، رعایت کے بعد: {{amount}} ریال",
+    "modal_coupon_label": "رعایتی کوڈ (اختیاری)",
+    "modal_coupon_placeholder": "مثلاً: OFF-AB12X7",
+    "modal_coupon_check": "چیک کریں",
+    "modal_coupon_applied": "رعایت لاگو ہو گئی 🎉",
+    "modal_coupon_price_before": "رعایت سے پہلے قیمت",
+    "modal_coupon_discount_label": "رعایت",
+    "modal_coupon_price_after": "رعایت کے بعد قیمت"
   },
   "branches": {
     "add_location": "مقام / شاخ شامل کریں",
@@ -681,7 +689,14 @@
       "previous_month": "پچھلا مہینہ",
       "today": "آج",
       "close": "بند کریں"
-    }
+    },
+    "move_up": "اوپر لے جائیں",
+    "move_down": "نیچے لے جائیں",
+    "dismiss": "بند کریں",
+    "from": "سے",
+    "to": "تک",
+    "type": "قسم",
+    "copied": "کاپی ہو گیا"
   },
   "compliance": {
     "check_legal_name": "کاروبار کا قانونی نام",
@@ -1549,7 +1564,52 @@
     "transfer_reject_reason": "وجہ",
     "approve_draft": "گنتی منظور کریں",
     "draft_approved": "گنتی منظور ہوئی؛ فرق موجودہ اسٹاک پر لاگو ہو گئے",
-    "draft_approve_failed": "گنتی منظور نہیں ہو سکی"
+    "draft_approve_failed": "گنتی منظور نہیں ہو سکی",
+    "schema_missing_save_blocked": "دستاویز محفوظ نہیں ہو سکتی کیونکہ ڈیٹا بیس میں جدولیں فعال نہیں۔ پہلے انہیں فعال کریں۔",
+    "schema_missing_title": "نوٹس: اسٹاک گنتی اور تطبیق کو فعال کرنا ضروری ہے",
+    "schema_missing_desc_merchant": "اسٹاک گنتی اور تطبیق کو آپ کے ڈیٹا بیس سے جوڑنے کے لیے ایڈمن یا سپورٹ ٹیم کو فعال کرنا ہوگا۔",
+    "variants": {
+      "stock_take_not_supported": "ویریئنٹس والی مصنوعات ابھی اس اسکرین پر دستیاب نہیں -- ہر ویریئنٹ کا اسٹاک انوینٹری اسکرین سے دستی طور پر درست کریں۔",
+      "badge_suffix": "ویریئنٹس",
+      "at_least_one_required": "کم از کم ایک ویریئنٹ شامل کریں، یا سادہ پروڈکٹ پر جائیں",
+      "duplicate_sku": "ایک ہی SKU ایک سے زیادہ ویریئنٹ کے لیے استعمال نہیں ہو سکتا",
+      "bulk_add_partial_failure": "پروڈکٹ شامل ہو گئی، لیکن کچھ ویریئنٹس شامل نہیں ہو سکے",
+      "simple_product_tab": "سادہ پروڈکٹ",
+      "advanced_product_tab": "ایڈوانسڈ پروڈکٹ (ویریئنٹس کے ساتھ)",
+      "transfer_not_supported": "ویریئنٹس والی مصنوعات ابھی شاخوں کی منتقلی میں دستیاب نہیں -- ان کا اسٹاک انوینٹری اسکرین سے دستی طور پر درست کریں۔",
+      "select_to_adjust": "وہ ویریئنٹ منتخب کریں جس کا اسٹاک درست کرنا ہے",
+      "name_sku_required": "نام اور SKU ضروری ہیں",
+      "updated": "ویریئنٹ اپ ڈیٹ ہو گیا",
+      "confirm_delete": "ویریئنٹ حذف کرنے سے ہر شاخ میں اس کا اسٹاک ریکارڈ مستقل طور پر حذف ہو جائے گا۔ یہ واپس نہیں ہو سکتا۔",
+      "deleted": "ویریئنٹ حذف ہو گیا",
+      "bulk_added": "{{count}} ویریئنٹس شامل ہو گئے",
+      "section_title": "ویریئنٹس (رنگ، سائز...)",
+      "total_stock": "کل اسٹاک",
+      "empty": "اس پروڈکٹ کے ابھی کوئی ویریئنٹس نہیں۔",
+      "name_label": "ویریئنٹ کا نام",
+      "options_label": "خصوصیات (کلید : قدر)",
+      "option_key_placeholder": "مثلاً: رنگ",
+      "option_value_placeholder": "مثلاً: نیلا",
+      "add_option": "خصوصیت شامل کریں",
+      "price_adjustment": "قیمت کا فرق",
+      "add_new": "نیا ویریئنٹ شامل کریں",
+      "add_value": "قدر شامل کریں",
+      "add_another_attribute": "ایک اور خصوصیت شامل کریں (مثلاً سائز)",
+      "generate": "ویریئنٹس بنائیں",
+      "rows_hint": "ہر ویریئنٹ دیکھیں اور SKU / قیمت / اسٹاک درست کریں۔",
+      "draft_save_hint": "یہ ویریئنٹس نیچے \"پروڈکٹ محفوظ کریں\" دبانے پر پروڈکٹ کے ساتھ محفوظ ہوں گے -- الگ سے محفوظ کرنے کی ضرورت نہیں۔",
+      "draft_confirmed": "✓ تیار۔ مکمل کرنے کے لیے نیچے پروڈکٹ محفوظ کریں۔",
+      "stock_via_po_hint": "اسٹاک بعد میں خریداری آرڈر سے شامل ہوگا -- یہ ویریئنٹ صفر سے شروع ہوتا ہے۔",
+      "all_rows_removed": "کوئی ویریئنٹ باقی نہیں۔",
+      "save_all": "سب محفوظ کریں",
+      "confirm_rows": "ہو گیا ✓",
+      "po_return_not_supported": "ویریئنٹس والی مصنوعات کی واپسی ابھی دستیاب نہیں -- ان کا اسٹاک انوینٹری اسکرین سے دستی طور پر درست کریں۔",
+      "select_variant_placeholder": "ویریئنٹ منتخب کریں (رنگ / سائز)..."
+    },
+    "add_success_with_variants": "پروڈکٹ اور {{count}} ویریئنٹس شامل ہو گئے",
+    "bulk_import_branch_inventory_failed": "کچھ درآمد شدہ مصنوعات کا شاخ اسٹاک ترتیب نہیں ہو سکا -- انوینٹری اسکرین پر دستی طور پر دیکھیں",
+    "item_added_success": "پروڈکٹ شامل ہو گئی",
+    "save_failed": "محفوظ نہیں ہو سکا"
   },
   "invoice_print": {
     "address": "پتہ",
@@ -1738,7 +1798,9 @@
     "vertical_clothing": "ملبوسات",
     "vertical_tailoring": "سلائی",
     "vertical_upholstery": "اپہولسٹری",
-    "welcome_back": "دوبارہ خوش آمدید"
+    "welcome_back": "دوبارہ خوش آمدید",
+    "pin_locked_offline": "بہت زیادہ کوششیں۔ {{minutes}} منٹ انتظار کر کے دوبارہ کوشش کریں۔",
+    "pin_offline_no_match": "انٹرنیٹ کنکشن نہیں، اور درج کردہ PIN اس ڈیوائس پر آخری کامیاب لاگ ان سے مطابقت نہیں رکھتا۔"
   },
   "partner_login": {
     "title": "ریفرل پارٹنر پورٹل",
@@ -2210,7 +2272,8 @@
     "fabric_shortage_reason": "وجہ (مثلاً: کھیپ آئی مگر درج نہیں ہوئی)",
     "fabric_shortage_continue": "آگے بڑھیں اور کمی درج کریں",
     "fabric_shortage_continued": "آرڈر آگے بڑھا؛ کپڑے کی کمی درج ہو گئی",
-    "fabric_shortage_failed": "آگے نہیں بڑھ سکے"
+    "fabric_shortage_failed": "آگے نہیں بڑھ سکے",
+    "invoice_not_found": "اس آرڈر کی اصل انوائس نہیں مل سکی"
   },
   "permissions": {
     "access_denied_desc": "غیر متعین",
@@ -2786,7 +2849,17 @@
     "type_custom__piece": "آرڈر",
     "tax_settings_offline_title": "ٹیکس سیٹنگز لوڈ نہیں ہو سکیں",
     "tax_settings_offline_desc": "ایک بار انٹرنیٹ سے جڑیں تاکہ یہ ڈیوائس ٹیکس سیٹنگز محفوظ کر لے؛ اس کے بعد آپ آف لائن فروخت کر سکتے ہیں۔",
-    "sale_queued_provisional_desc": "عارضی رسید پرنٹ ہوئی (اس ڈیوائس پر محفوظ انوائس نمبر نہیں)۔ ٹیکس انوائس انٹرنیٹ واپس آتے ہی جاری ہوگی۔"
+    "sale_queued_provisional_desc": "عارضی رسید پرنٹ ہوئی (اس ڈیوائس پر محفوظ انوائس نمبر نہیں)۔ ٹیکس انوائس انٹرنیٹ واپس آتے ہی جاری ہوگی۔",
+    "cash_drawer_balance_failed": "کیش دراز کا بیلنس معلوم نہیں ہو سکا",
+    "b2b_requires_connection": "معیاری (B2B) ٹیکس انوائسز کے لیے براہ راست انٹرنیٹ ضروری ہے -- آف لائن جاری نہیں ہو سکتیں۔",
+    "sale_queued_offline_title": "انوائس اس ڈیوائس پر محفوظ ہو گئی",
+    "sale_queued_offline_desc": "ابھی کنکشن نہیں -- انٹرنیٹ واپس آتے ہی سرور کو بھیج دی جائے گی۔",
+    "stock_conflict_title": "انوائس جاری ہو گئی، لیکن اسٹاک میں تضاد ہے",
+    "stock_conflict_desc": "ایک یا زیادہ اشیاء دستیاب اسٹاک سے زیادہ فروخت ہوئیں (غالباً کسی دوسرے ڈیوائس نے وہی چیز بیچی)۔ اسٹاک کا جائزہ لیں۔",
+    "attach_invoice_pdf": "انوائس PDF کے طور پر بھی منسلک کریں",
+    "variants": {
+      "add_to_cart": "کارٹ میں شامل کریں"
+    }
   },
   "printing": {
     "agent": {
@@ -3229,7 +3302,18 @@
     "whatsapp_ledger_thanks": "بہت شکریہ۔",
     "whatsapp_modal_desc": "سپلائر کا فون نمبر درج کریں تاکہ اکاؤنٹ اسٹیٹمنٹ کے ساتھ واٹس ایپ کھل جائے۔",
     "whatsapp_modal_title": "اسٹیٹمنٹ واٹس ایپ پر بھیجیں",
-    "whatsapp_pdf": "پی ڈی ایف اسٹیٹمنٹ واٹس ایپ بھیجیں"
+    "whatsapp_pdf": "پی ڈی ایف اسٹیٹمنٹ واٹس ایپ بھیجیں",
+    "pv_submit_failed": "ادائیگی واؤچر جاری نہیں ہو سکا",
+    "add_new_item_option": "+ نئی پروڈکٹ شامل کریں",
+    "print_voucher": "واؤچر پرنٹ کریں",
+    "create_and_add_item": "بنائیں اور فہرست میں شامل کریں",
+    "ledger_load_failed": "سپلائر کا کھاتہ لوڈ نہیں ہو سکا",
+    "supplier_voucher_reprint_title": "لین دین کا واؤچر دوبارہ پرنٹ کریں",
+    "attach_ledger_pdf": "PDF کے طور پر بھی منسلک کریں",
+    "print_action": "پرنٹ",
+    "bulk_import_opening_balance_note": "درآمد کے وقت ابتدائی بیلنس",
+    "supplier_aggregates_failed": "کچھ سپلائرز کے کل خریداری / ادائیگی کا حساب نہیں ہو سکا -- ان کے اعداد درست نہ ہوں",
+    "supplier_aggregate_failed_tooltip": "اس عدد کا حساب نہیں ہو سکا -- یہ درست نہ ہو"
   },
   "public_invoice": {
     "digital_access": "انوائس تک ڈیجیٹل رسائی",
@@ -3329,7 +3413,9 @@
       "pending": "زیر جائزہ"
     },
     "your_link": "آپ کا ریفرل لنک",
-    "your_referrals": "آپ کے ریفرلز ({{n}})"
+    "your_referrals": "آپ کے ریفرلز ({{n}})",
+    "load_failed": "ریفرل پروگرام لوڈ نہیں ہو سکا",
+    "program_disabled_notice": "ریفرل پروگرام نئی ریفرلز کے لیے عارضی طور پر بند ہے -- آپ اپنا موجودہ بیلنس معمول کے مطابق نکال سکتے ہیں۔"
   },
   "reports": {
     "access_denied_desc": "رپورٹس دیکھنے کی اجازت حاصل کرنے کے لیے براہ کرم سسٹم ایڈمنسٹریٹر سے رابطہ کریں۔",
@@ -3423,7 +3509,10 @@
     "vat_payable": "زکوٰۃ و ٹیکس اتھارٹی کو قابل ادائیگی",
     "vat_refundable": "قابل واپسی",
     "view_staff_orders": "ملازم کے آرڈرز دیکھیں",
-    "tab_tailor_commissions__technician": "ٹیکنیشن کمیشن"
+    "tab_tailor_commissions__technician": "ٹیکنیشن کمیشن",
+    "no_shifts_found": "اس تاریخ کے لیے مشترکہ رپورٹ بنانے کو کوئی بند شفٹ نہیں ملی",
+    "z_report_success": "مشترکہ مالی رپورٹ تیار ہو گئی",
+    "z_report_error": "مشترکہ مالی رپورٹ تیار کرتے وقت خرابی پیش آئی"
   },
   "saas": {
     "account_health_score": "اکاؤنٹ کی صحت (Health Score)",
@@ -4006,7 +4095,8 @@
     "start_time": "آغاز کا وقت",
     "tax_invoices": "ٹیکس انوائسز",
     "title": "فروخت آپریشنز پینل",
-    "unknown": "نامعلوم"
+    "unknown": "نامعلوم",
+    "cash_drawer_balance_failed": "کیش دراز کا بیلنس معلوم نہیں ہو سکا"
   },
   "sales_record": {
     "download_pdf": "پی ڈی ایف کے طور پر ڈاؤن لوڈ کریں",
@@ -4017,7 +4107,8 @@
     "whatsapp_invoice_message": "السلام علیکم،\nاسٹور سے انوائس کی تفصیلات:\nانوائس نمبر: #{{invoiceNumber}}\nکل: {{total}} {{currency}}\nادائیگی کا طریقہ: {{method}}\nآرڈر کی حالت: {{status}}\nہم سے رابطہ کرنے کا شکریہ!",
     "whatsapp_modal_desc": "کسٹمر کا فون نمبر درج کریں تاکہ انوائس کی تفصیلات کے ساتھ واٹس ایپ کھل جائے۔",
     "whatsapp_modal_title": "انوائس واٹس ایپ پر بھیجیں",
-    "whatsapp_share_text": "انوائس نمبر {{invoiceNumber}} — کل: {{total}} ﷼"
+    "whatsapp_share_text": "انوائس نمبر {{invoiceNumber}} — کل: {{total}} ﷼",
+    "attach_invoice_pdf": "PDF بھی منسلک کریں"
   },
   "sales_returns": {
     "already_returned": "انوائس پہلے ہی واپس کی جا چکی ہے",
@@ -4316,7 +4407,11 @@
       "saving": "محفوظ ہو رہا ہے...",
       "store_identity": "اسٹور کی شناخت",
       "store_identity_desc": "اپنے اسٹور کا لوگو اپ لوڈ کریں اور سسٹم اور ٹیکس رسیدوں پر صارفین کو دکھائی جانے والی بنیادی معلومات میں ترمیم کریں۔",
-      "store_name": "تجارتی ادارے کا نام"
+      "store_name": "تجارتی ادارے کا نام",
+      "address_placeholder": "محلہ، گلی، عمارت نمبر",
+      "city": "شہر",
+      "postal_code": "پوسٹل کوڈ",
+      "commercial_register": "کمرشل رجسٹریشن نمبر (CR)"
     },
     "staff": {
       "activate_pin_confirm": "پن فعال کریں",
@@ -4925,6 +5020,50 @@
       "waste_cm": "فی ثوب ضیاع (سم)",
       "default_width_cm": "کپڑے کی پہلے سے طے چوڑائی (سم)",
       "narrow_width_cm": "اس سے تنگ کپڑے (سم) پر دو آستینیں شمار ہوں گی"
+    },
+    "categories": {
+      "inventory_title": "انوینٹری کی اقسام",
+      "inventory_subtitle": "یہ اقسام انوینٹری آئٹم شامل / ترمیم کرنے کے فارم میں نظر آتی ہیں",
+      "supplier_title": "سپلائرز کی اقسام",
+      "supplier_subtitle": "یہ اقسام سپلائر شامل / ترمیم کرنے کے فارم میں نظر آتی ہیں",
+      "added_success": "قسم شامل ہو گئی",
+      "hidden_hint": "چھپی ہوئی -- نئی فہرستوں میں نظر نہیں آئے گی",
+      "new_name_placeholder": "نئی قسم کا نام",
+      "add_new": "نئی قسم شامل کریں"
+    },
+    "zatca": {
+      "csr_failed": "CSR تیار نہیں ہو سکا",
+      "csr_success": "CSR تیار ہو گیا",
+      "otp_required": "OTP ضروری ہے",
+      "compliance_failed": "Compliance CSID کی درخواست ناکام ہو گئی",
+      "tests_failed": "تعمیل کے ٹیسٹ ناکام ہو گئے",
+      "production_failed": "Production CSID کی درخواست ناکام ہو گئی",
+      "activation_success": "دکان ZATCA سے منسلک ہو گئی!",
+      "activation_failed": "ایکٹیویشن مکمل نہیں ہو سکی",
+      "title": "ZATCA سے رابطہ",
+      "connected_subtitle": "آپ کی دکان ZATCA سے منسلک ہے -- ہر فروخت کی انوائس خود بخود کلیئر / رپورٹ ہوتی ہے۔",
+      "subtitle": "اپنی دکان کو سعودی ای انوائسنگ نظام سے جوڑیں۔",
+      "connected_badge": "منسلک",
+      "done_title": "آپ کی دکان ZATCA سے منسلک ہے",
+      "done_desc": "اب سے ہر حقیقی فروخت خود بخود ZATCA کو کلیئرنس (B2B انوائسز) یا رپورٹنگ (سادہ انوائسز) کے لیے بھیجی جاتی ہے۔",
+      "prereq_title": "شروع کرنے سے پہلے",
+      "prereq_desc": "آپ کی دکان VAT میں رجسٹرڈ ہونی چاہیے، اور فاتورہ پورٹل پر آپ کا اپنا اکاؤنٹ ہونا چاہیے۔",
+      "open_fatoora": "فاتورہ پورٹل کھولیں",
+      "step_confirm_title": "کاروبار کی تفصیلات کی تصدیق کریں",
+      "fill_in_profile": "پروفائل میں ترمیم کریں",
+      "profile_incomplete": "آگے بڑھنے سے پہلے یہ تفصیلات \"پروفائل\" اور \"ٹیکس سیٹنگز\" ٹیبز میں مکمل کریں۔",
+      "step_csr_title": "CSR تیار کریں",
+      "step_csr_desc": "یہ بٹن آپ کی دکان کے لیے سرٹیفکیٹ کی درخواست (CSR) بناتا ہے۔ اسے کاپی کر کے فاتورہ پورٹل اکاؤنٹ میں پیسٹ کریں۔",
+      "generate_csr_button": "CSR تیار کریں",
+      "csr_already_generated": "CSR پہلے ہی تیار ہو چکا -- نیچے OTP کے مرحلے پر جائیں۔",
+      "step_activate_title": "OTP درج کریں اور فعال کریں",
+      "step_activate_desc": "CSR پیسٹ کرنے کے بعد فاتورہ پورٹل سے ملنے والا OTP درج کریں۔ \"فعال کریں\" باقی مراحل خود چلائے گا۔",
+      "otp_placeholder": "OTP",
+      "activate_button": "فعال کریں",
+      "substep_compliance": "Compliance CSID کی درخواست",
+      "substep_tests": "تعمیل کے ٹیسٹ",
+      "substep_production": "Production CSID کی درخواست",
+      "refresh_status": "حالت تازہ کریں"
     }
   },
   "shift_closing": {
@@ -4946,7 +5085,9 @@
     "shortage": "کمی بقدر",
     "surplus": "اضافہ بقدر",
     "title": "شفٹ بند کریں",
-    "unsynced_sales": "شفٹ بند نہیں ہو سکتی: اس شفٹ کی {{count}} کارروائیاں ابھی سرور تک نہیں پہنچیں۔ انٹرنیٹ سے جڑیں، مطابقت کا انتظار کریں، پھر بند کریں۔"
+    "unsynced_sales": "شفٹ بند نہیں ہو سکتی: اس شفٹ کی {{count}} کارروائیاں ابھی سرور تک نہیں پہنچیں۔ انٹرنیٹ سے جڑیں، مطابقت کا انتظار کریں، پھر بند کریں۔",
+    "not_authorized": "آپ کو کسی دوسرے ملازم کی شفٹ بند کرنے کی اجازت نہیں",
+    "already_closed": "یہ شفٹ پہلے ہی بند ہے -- اس کا ڈیٹا دوبارہ لوڈ ہو گیا۔"
   },
   "shift_history": {
     "actions": "اقدامات",
@@ -5269,7 +5410,8 @@
     "vat_number_label": "ویٹ نمبر",
     "view_invoice": "انوائس دیکھیں",
     "walk_in_customer": "نقد گاہک",
-    "zatca_compliant": "زکاۃ، ٹیکس اور کسٹمز اتھارٹی (ZATCA) کے مطابق"
+    "zatca_compliant": "زکاۃ، ٹیکس اور کسٹمز اتھارٹی (ZATCA) کے مطابق",
+    "attach_pdf": "PDF بھی منسلک کریں"
   },
   "themes": {
     "dark": "ڈارک",
@@ -5510,7 +5652,8 @@
     "whatsapp_message_title": "اختتامی رپورٹ",
     "whatsapp_pdf_attached": "براہ کرم منسلک PDF رپورٹ ملاحظہ کریں۔",
     "whatsapp_save_instruction": "رپورٹ آپ کے ڈیوائس پر کامیابی سے محفوظ ہو گئی۔ براہ کرم نیچے وصول کنندہ کا واٹس ایپ نمبر لکھیں (نمائندہ، مینیجر یا مالک) اور پھر بھیج دیں۔",
-    "withdrawals_expenses": "نکاسی اور اخراجات"
+    "withdrawals_expenses": "نکاسی اور اخراجات",
+    "export_failed": "دن کے اختتام کی رپورٹ برآمد نہیں ہو سکی -- فائل محفوظ نہیں ہوئی"
   },
   "pwa": {
     "update_available": "ایک نیا اپڈیٹ دستیاب ہے",
@@ -5542,7 +5685,8 @@
     "review_paid": "وصول شدہ",
     "review_reason": "وجہ",
     "review_retry": "دوبارہ بھیجیں",
-    "review_hint": "ان عملوں کے لیے رقم وصول کی گئی تھی۔ انہیں دوبارہ بھیجیں؛ اگر دوبارہ مسترد ہو تو انہی تفصیلات سے آرڈر دستی طور پر بنائیں اور یہ ریکارڈ حذف نہ کریں۔"
+    "review_hint": "ان عملوں کے لیے رقم وصول کی گئی تھی۔ انہیں دوبارہ بھیجیں؛ اگر دوبارہ مسترد ہو تو انہی تفصیلات سے آرڈر دستی طور پر بنائیں اور یہ ریکارڈ حذف نہ کریں۔",
+    "ios_install_banner": "تاکہ سفاری ایک ہفتہ استعمال نہ ہونے پر اس ڈیوائس کا ڈیٹا حذف نہ کرے، ایپ انسٹال کریں: شیئر، پھر \"ہوم اسکرین پر شامل کریں\"۔"
   },
   "verticals": {
     "loading_settings": "آپ کی سرگرمی کی ترتیبات لوڈ ہو رہی ہیں...",
@@ -5576,5 +5720,12 @@
     "save_success": "آپ کی پیمائش کامیابی سے محفوظ ہو گئی۔",
     "save_failed": "پیمائش محفوظ نہیں ہو سکی، دوبارہ کوشش کریں۔",
     "link_expired": "اس لنک کی میعاد ختم ہو گئی۔ دکان سے نیا لنک مانگیں۔"
+  },
+  "blog_admin": {
+    "loading": "لوڈ ہو رہا ہے..."
+  },
+  "support_consent": {
+    "fetch_requests_failed": "سپورٹ رسائی کی درخواستیں لوڈ نہیں ہو سکیں",
+    "respond_failed": "سپورٹ رسائی کی درخواست پر آپ کا جواب درج نہیں ہو سکا -- دوبارہ کوشش کریں"
   }
 }
