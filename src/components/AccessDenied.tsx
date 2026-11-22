@@ -83,7 +83,7 @@ export default function AccessDenied({ userRole, requiredRoles, redirectPath }: 
       </div>
 
       {/* Backend Security Assurance Notice */}
-      <div className="mt-12 text-[11px] text-content-muted/60 max-w-sm border-t border-border/50 pt-4">
+      <div className="mt-12 text-[11px] text-content-muted/80 max-w-sm border-t border-border/50 pt-4">
         🔒 {t('permissions.server_side_enforcement_notice')}
       </div>
     </div>

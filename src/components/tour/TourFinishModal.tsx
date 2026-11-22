@@ -208,7 +208,7 @@ export default function TourFinishModal({
                         ? 'text-success/50 group-hover:text-success'
                         : isActive
                         ? 'text-brand'
-                        : 'text-content-muted/50 group-hover:text-brand'
+                        : 'text-content-muted/80 group-hover:text-brand'
                     )}
                   />
                 </motion.button>

@@ -206,7 +206,7 @@ function CategorySection({
                 onChange={(e) => setNewLabel(e.target.value)}
                 onKeyDown={(e) => { if (e.key === 'Enter') handleAdd(); if (e.key === 'Escape') { setAdding(false); setNewLabel(''); } }}
                 placeholder={t('settings_page.categories.new_name_placeholder', 'اسم الفئة الجديدة')}
-                className="flex-1 bg-transparent outline-none font-bold text-content placeholder:text-content-muted/60"
+                className="flex-1 bg-transparent outline-none font-bold text-content placeholder:text-content-muted/80"
               />
               <button
                 type="button"

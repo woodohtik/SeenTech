@@ -202,7 +202,7 @@ export default function TaxInvoice({
                 crossOrigin="anonymous"
               />
             ) : (
-              <div className="w-20 h-20 rounded-xl bg-slate-100 flex items-center justify-center text-slate-400">
+              <div className="w-20 h-20 rounded-xl bg-slate-100 flex items-center justify-center text-slate-500">
                 <FileText size={32} />
               </div>
             )}
@@ -211,7 +211,7 @@ export default function TaxInvoice({
               {seller.nameEn && <h3 className="text-sm font-semibold text-slate-500 font-sans tracking-wide">{seller.nameEn}</h3>}
               <div className="text-xs text-slate-500 mt-1 flex flex-col gap-0.5">
                 <p>الرقم الضريبي للبائع: <span className="font-mono font-bold text-slate-700">{seller.vatNumber}</span></p>
-                <p className="text-[10px] text-slate-400">Seller VAT Registration Number</p>
+                <p className="text-[10px] text-slate-500">Seller VAT Registration Number</p>
                 {seller.crNumber && (
                   <p>رقم السجل التجاري: <span className="font-mono text-slate-600">{seller.crNumber}</span></p>
                 )}
@@ -242,7 +242,7 @@ export default function TaxInvoice({
             <div className="flex justify-between border-b border-dashed border-slate-200 pb-2">
               <div className="text-right">
                 <span className="text-xs font-black text-slate-800">رقم الفاتورة</span>
-                <span className="block text-[9px] text-slate-400 uppercase font-sans font-bold">Invoice Number</span>
+                <span className="block text-[9px] text-slate-500 uppercase font-sans font-bold">Invoice Number</span>
               </div>
               <span className="font-mono font-black text-slate-900 text-lg uppercase">#{invoiceNumber}</span>
             </div>
@@ -250,7 +250,7 @@ export default function TaxInvoice({
             <div className="flex justify-between border-b border-dashed border-slate-200 pb-2">
               <div className="text-right">
                 <span className="text-xs font-black text-slate-800">تاريخ الإصدار</span>
-                <span className="block text-[9px] text-slate-400 uppercase font-sans font-bold">Date of Issue</span>
+                <span className="block text-[9px] text-slate-500 uppercase font-sans font-bold">Date of Issue</span>
               </div>
               <div className="text-left font-bold text-slate-800 text-sm flex items-center gap-2">
                 <span className="font-mono text-slate-900" dir="ltr">
@@ -265,7 +265,7 @@ export default function TaxInvoice({
             <div className="flex justify-between pb-1">
               <div className="text-right">
                 <span className="text-xs font-black text-slate-800">تاريخ التوريد</span>
-                <span className="block text-[9px] text-slate-400 uppercase font-sans font-bold">Date of Supply</span>
+                <span className="block text-[9px] text-slate-500 uppercase font-sans font-bold">Date of Supply</span>
               </div>
               <span className="font-bold text-slate-800 text-sm" dir="ltr">{new Date(supplyDate || issueDate).toLocaleDateString(localeOf())}</span>
             </div>
@@ -275,7 +275,7 @@ export default function TaxInvoice({
             <div className="flex justify-between border-b border-dashed border-slate-200 pb-2">
               <div className="text-right">
                 <span className="text-xs font-black text-slate-800">طريقة الدفع</span>
-                <span className="block text-[9px] text-slate-400 uppercase font-sans font-bold">Payment Method</span>
+                <span className="block text-[9px] text-slate-500 uppercase font-sans font-bold">Payment Method</span>
               </div>
               <span className="font-extrabold text-slate-800 text-sm">{paymentMethod} / {paymentMethodEn}</span>
             </div>
@@ -283,7 +283,7 @@ export default function TaxInvoice({
             <div className="flex justify-between pb-1">
               <div className="text-right">
                 <span className="text-xs font-black text-slate-800">حالة الفاتورة</span>
-                <span className="block text-[9px] text-slate-400 uppercase font-sans font-bold">Invoice Status</span>
+                <span className="block text-[9px] text-slate-500 uppercase font-sans font-bold">Invoice Status</span>
               </div>
               <span className="text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-lg">خاضعة للضريبة / Taxable</span>
             </div>
@@ -311,7 +311,7 @@ export default function TaxInvoice({
                 ) : (
                   <div className="flex justify-between border-b border-slate-100 pb-1.5">
                     <span className="text-slate-500 font-medium font-sans">الرقم الضريبي للعميل / Customer VAT:</span>
-                    <span className="text-slate-400 font-medium font-sans italic">غير متوفر / Not Provided</span>
+                    <span className="text-slate-500 font-medium font-sans italic">غير متوفر / Not Provided</span>
                   </div>
                 )}
               </div>
@@ -360,7 +360,7 @@ export default function TaxInvoice({
                 return (
                   <React.Fragment key={index}>
                     <tr className="hover:bg-slate-50 transition-colors text-slate-700">
-                      <td className="p-2.5 font-mono text-[10px] text-slate-400 text-center">{index + 1}</td>
+                      <td className="p-2.5 font-mono text-[10px] text-slate-500 text-center">{index + 1}</td>
                       <td className="p-2.5">
                         {/*
                           No "N ×" prefix on this template, unlike the thermal
@@ -420,7 +420,7 @@ export default function TaxInvoice({
             <div className="p-4 border-b border-slate-100 flex justify-between items-center text-xs font-bold text-slate-500 bg-slate-50/20">
               <div className="text-right leading-tight">
                 <span className="font-black text-slate-700">الإجمالي غير شامل ضريبة القيمة المضافة</span>
-                <span className="block text-[9px] text-slate-400 uppercase font-sans">Total (Excluding VAT)</span>
+                <span className="block text-[9px] text-slate-500 uppercase font-sans">Total (Excluding VAT)</span>
               </div>
               <span className="font-mono font-extrabold text-slate-800 text-sm flex items-center gap-1">
                 {computedTotals.subtotal.toFixed(2)} <CurrencySymbol className="h-[1.1em] w-auto inline-block" />
@@ -431,7 +431,7 @@ export default function TaxInvoice({
               <div className="p-4 border-b border-slate-100 flex justify-between items-center text-xs font-bold text-slate-500 bg-red-50/10">
                 <div className="text-right leading-tight">
                   <span className="font-black text-red-700">الخصم المستقطع</span>
-                  <span className="block text-[9px] text-slate-400 uppercase font-sans">Discount</span>
+                  <span className="block text-[9px] text-slate-500 uppercase font-sans">Discount</span>
                 </div>
                 <span className="font-mono font-extrabold text-red-600 text-sm flex items-center gap-1">
                   -{computedTotals.discount.toFixed(2)} <CurrencySymbol className="h-[1.1em] w-auto inline-block" />
@@ -442,7 +442,7 @@ export default function TaxInvoice({
             <div className="p-4 border-b border-slate-100 flex justify-between items-center text-xs font-bold text-slate-500 bg-slate-50/20">
               <div className="text-right leading-tight">
                 <span className="font-black text-slate-700">المبلغ الخاضع للضريبة</span>
-                <span className="block text-[9px] text-slate-400 uppercase font-sans">Total Taxable Amount</span>
+                <span className="block text-[9px] text-slate-500 uppercase font-sans">Total Taxable Amount</span>
               </div>
               <span className="font-mono font-extrabold text-slate-800 text-sm flex items-center gap-1">
                 {computedTotals.taxableAmount.toFixed(2)} <CurrencySymbol className="h-[1.1em] w-auto inline-block" />
@@ -452,7 +452,7 @@ export default function TaxInvoice({
             <div className="p-4 border-b border-slate-100 flex justify-between items-center text-xs font-bold text-slate-500 bg-slate-50/20">
               <div className="text-right leading-tight">
                 <span className="font-black text-slate-700">إجمالي ضريبة القيمة المضافة (15%)</span>
-                <span className="block text-[9px] text-slate-400 uppercase font-sans">Total VAT (15%)</span>
+                <span className="block text-[9px] text-slate-500 uppercase font-sans">Total VAT (15%)</span>
               </div>
               <span className="font-mono font-extrabold text-slate-800 text-sm flex items-center gap-1">
                 {computedTotals.vatAmount.toFixed(2)} <CurrencySymbol className="h-[1.1em] w-auto inline-block" />
@@ -475,7 +475,7 @@ export default function TaxInvoice({
             <div className="p-4 border-b border-slate-100 flex justify-between items-center text-xs font-bold text-slate-500 bg-slate-50/20">
               <div className="text-right leading-tight">
                 <span className="font-black text-slate-700">المبلغ المدفوع</span>
-                <span className="block text-[9px] text-slate-400 uppercase font-sans">Paid Amount</span>
+                <span className="block text-[9px] text-slate-500 uppercase font-sans">Paid Amount</span>
               </div>
               <span className="font-mono font-extrabold text-slate-800 text-sm flex items-center gap-1">
                 {paidAmount.toFixed(2)} <CurrencySymbol className="h-[1.1em] w-auto inline-block" />
@@ -484,7 +484,7 @@ export default function TaxInvoice({
             <div className="p-4 flex justify-between items-center text-xs font-bold">
               <div className="text-right leading-tight">
                 <span className={`font-black ${remainingAmount > 0 ? 'text-red-700' : 'text-slate-700'}`}>المبلغ المتبقي</span>
-                <span className="block text-[9px] text-slate-400 uppercase font-sans">Remaining Amount</span>
+                <span className="block text-[9px] text-slate-500 uppercase font-sans">Remaining Amount</span>
               </div>
               <span className={`font-mono font-extrabold text-sm flex items-center gap-1 ${remainingAmount > 0 ? 'text-red-600' : 'text-slate-800'}`}>
                 {remainingAmount.toFixed(2)} <CurrencySymbol className="h-[1.1em] w-auto inline-block" />

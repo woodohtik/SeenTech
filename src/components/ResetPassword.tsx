@@ -244,7 +244,7 @@ export default function ResetPassword() {
                   <h3 className="text-xl font-black text-content">{t('login.reset_password_invalid_link')}</h3>
                   <p className="text-content-muted font-medium mt-2">{t('login.reset_password_invalid_link_desc')}</p>
                   {linkError && (
-                    <p className="text-content-muted/60 text-xs font-mono mt-3 break-all">{linkError}</p>
+                    <p className="text-content-muted/80 text-xs font-mono mt-3 break-all">{linkError}</p>
                   )}
                 </div>
                 <button

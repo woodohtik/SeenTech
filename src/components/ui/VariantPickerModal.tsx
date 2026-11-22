@@ -68,7 +68,7 @@ export default function VariantPickerModal({ isOpen, onClose, item, variants, va
               className={cn(
                 "flex flex-col items-center justify-center p-4 rounded-2xl border-2 transition-all relative text-center min-h-[96px]",
                 isOut
-                  ? "border-border bg-surface-muted/40 text-content-muted/50 cursor-not-allowed"
+                  ? "border-border bg-surface-muted/40 text-content-muted/80 cursor-not-allowed"
                   : isSelected
                   ? "border-brand bg-brand/5 text-brand shadow-sm shadow-brand/10"
                   : "border-border bg-surface text-content hover:border-brand/30 hover:bg-brand/5"

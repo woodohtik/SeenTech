@@ -174,7 +174,7 @@ const OrderStepper = ({ currentStatus, stages }: { currentStatus: string; stages
               </div>
               <div className="flex flex-col items-center">
                 <span className={cn(
-                  "text-[10px] font-black text-center whitespace-nowrap px-2 py-1 rounded-lg transition-colors",
+                  "text-[11px] font-black text-center whitespace-nowrap px-2 py-1 rounded-lg transition-colors",
                   isActive ? "text-brand bg-brand/5" : isCompleted ? "text-brand" : "text-content-muted"
                 )}>
                   {t(config.labelKey)}
@@ -762,7 +762,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
             )}>
               {opt.icon}
             </div>
-            <span className="text-[10px] font-black">{opt.label}</span>
+            <span className="text-[11px] font-black">{opt.label}</span>
           </button>
         ))}
       </div>
@@ -1632,9 +1632,9 @@ export default function Orders({ tenantId }: { tenantId: string }) {
               <div className="flex justify-between items-center mb-4">
                 <h3 className="font-black text-content">{t('orders.payment_status')}</h3>
                 {order.remainingAmount > 0 ? (
-                  <span className="bg-danger text-white text-[10px] px-2 py-1 rounded-full font-bold">{t('orders.partial_balance')}</span>
+                  <span className="bg-danger text-white text-[11px] px-2 py-1 rounded-full font-bold">{t('orders.partial_balance')}</span>
                 ) : (
-                  <span className="bg-success text-white text-[10px] px-2 py-1 rounded-full font-bold">{t('orders.fully_paid')}</span>
+                  <span className="bg-success text-white text-[11px] px-2 py-1 rounded-full font-bold">{t('orders.fully_paid')}</span>
                 )}
               </div>
               <div className="space-y-2">
@@ -1667,7 +1667,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
               {isPaying && (
                 <div className="mt-4 p-4 bg-surface rounded-2xl border border-danger/20 space-y-4 animate-in fade-in slide-in-from-top-2">
                   <div className="space-y-1">
-                    <label className="text-[10px] font-black text-content-muted uppercase">{t('orders.pay_amount_now')}</label>
+                    <label className="text-[11px] font-black text-content-muted uppercase">{t('orders.pay_amount_now')}</label>
                     <input
                       type="number"
                       value={payAmount}
@@ -1681,7 +1681,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                         key={m.id}
                         onClick={() => setPayMethod(m.id as PaymentMethod)}
                         className={cn(
-                          "p-2 rounded-xl border text-[10px] font-bold flex flex-col items-center gap-1 transition-all",
+                          "p-2 rounded-xl border text-[11px] font-bold flex flex-col items-center gap-1 transition-all",
                           payMethod === m.id ? "bg-brand border-brand text-white shadow-md" : "bg-surface border-border text-content-muted hover:bg-surface-muted"
                         )}
                       >
@@ -1747,7 +1747,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                               <div className="w-5 h-5 rounded-full bg-surface flex items-center justify-center border border-border">
                                 <User size={10} className="text-content-muted" />
                               </div>
-                              <span className="text-[10px] text-content-muted font-bold">
+                              <span className="text-[11px] text-content-muted font-bold">
                                 {updaterName}
                                 {updaterRole && <span className="text-content-muted font-medium ms-1">({updaterRole})</span>}
                               </span>
@@ -1778,8 +1778,8 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                       const displayValue = typeof m.value === 'number' ? cmToDisplayUnit(m.value, measurementUnit) : m.value;
                       return (
                         <div key={i} className="text-center">
-                          <span className="block text-[10px] text-content-muted font-bold mb-1">{m.label}</span>
-                          <span className="text-lg font-black text-brand">{displayValue} <span className="text-[10px] text-content-muted font-bold">{t(unitLabelKey(measurementUnit))}</span></span>
+                          <span className="block text-[11px] text-content-muted font-bold mb-1">{m.label}</span>
+                          <span className="text-lg font-black text-brand">{displayValue} <span className="text-[11px] text-content-muted font-bold">{t(unitLabelKey(measurementUnit))}</span></span>
                         </div>
                       );
                     })}
@@ -2294,7 +2294,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
       <div className="grid grid-cols-1 gap-4">
         {filteredOrders.length === 0 ? (
           <div className="p-12 text-center bg-surface border border-border rounded-2xl shadow-sm flex flex-col items-center justify-center">
-            <div className="w-16 h-16 rounded-2xl bg-surface-muted border border-border flex items-center justify-center mb-4 text-content-muted/50">
+            <div className="w-16 h-16 rounded-2xl bg-surface-muted border border-border flex items-center justify-center mb-4 text-content-muted/80">
               <ShoppingBag size={32} />
             </div>
             <h3 className="text-lg font-black text-content mb-1">
@@ -2355,7 +2355,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                           <h3 className="text-sm font-black text-content truncate hover:text-brand transition-colors">
                             {order.customerName}
                           </h3>
-                          <span className="text-[10px] bg-surface-muted text-content-muted px-2 py-0.5 rounded-md font-bold shrink-0 border border-border/60">
+                          <span className="text-[11px] bg-surface-muted text-content-muted px-2 py-0.5 rounded-md font-bold shrink-0 border border-border/60">
                             #{order.orderNumber || order.id.slice(-6).toUpperCase()}
                           </span>
                         </div>
@@ -2373,14 +2373,14 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                                 } as Customer;
                                 setDueDetailsCustomer(matchingCustomer);
                               }}
-                              className="flex items-center gap-1 bg-danger/10 text-danger border border-danger/20 px-1.5 py-0.5 rounded-md text-[9px] font-black shrink-0 animate-pulse"
+                              className="flex items-center gap-1 bg-danger/10 text-danger border border-danger/20 px-1.5 py-0.5 rounded-md text-[11px] font-black shrink-0 animate-pulse"
                             >
                               <AlertCircle size={10} />
                               {money(totalUnpaid)}
                             </button>
                           )}
                           {order.isTest && (
-                            <span className="text-[9px] bg-danger/10 text-danger px-1.5 py-0.5 rounded-md font-black flex items-center gap-0.5 shrink-0">
+                            <span className="text-[11px] bg-danger/10 text-danger px-1.5 py-0.5 rounded-md font-black flex items-center gap-0.5 shrink-0">
                               <Zap size={8} />
                               {t('orders.test_data_badge')}
                             </span>
@@ -2447,7 +2447,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
                     {/* Box 1: Order Date */}
                     <div className="bg-surface-muted/60 p-2.5 rounded-xl border border-border/40 flex flex-col gap-1 justify-center">
-                      <span className="text-[10px] font-bold text-content-muted flex items-center gap-1">
+                      <span className="text-[11px] font-bold text-content-muted flex items-center gap-1">
                         <Calendar size={10} className="text-brand shrink-0" />
                         {t('common.date')}
                       </span>
@@ -2456,7 +2456,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
 
                     {/* Box 2: Payment Method */}
                     <div className="bg-surface-muted/60 p-2.5 rounded-xl border border-border/40 flex flex-col gap-1 justify-center">
-                      <span className="text-[10px] font-bold text-content-muted flex items-center gap-1">
+                      <span className="text-[11px] font-bold text-content-muted flex items-center gap-1">
                         <CreditCard size={10} className="text-brand shrink-0" />
                         {t('orders.payment_method')}
                       </span>
@@ -2470,7 +2470,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
 
                     {/* Box 3: Total Amount */}
                     <div className="bg-surface-muted/60 p-2.5 rounded-xl border border-border/40 flex flex-col gap-1 justify-center">
-                      <span className="text-[10px] font-bold text-content-muted flex items-center gap-1">
+                      <span className="text-[11px] font-bold text-content-muted flex items-center gap-1">
                         <ShoppingBag size={10} className="text-brand shrink-0" />
                         {t('common.total')}
                       </span>
@@ -2481,17 +2481,17 @@ export default function Orders({ tenantId }: { tenantId: string }) {
 
                     {/* Box 4: Balance / Remaining */}
                     <div className="bg-surface-muted/60 p-2.5 rounded-xl border border-border/40 flex flex-col gap-1 justify-center">
-                      <span className="text-[10px] font-bold text-content-muted">
+                      <span className="text-[11px] font-bold text-content-muted">
                         {t('orders.remaining_label')}
                       </span>
                       <div>
                         {order.remainingAmount > 0 ? (
-                          <span className="bg-danger/10 text-danger border border-danger/20 px-2 py-0.5 rounded-md text-[10px] font-black inline-flex items-center gap-1 truncate">
+                          <span className="bg-danger/10 text-danger border border-danger/20 px-2 py-0.5 rounded-md text-[11px] font-black inline-flex items-center gap-1 truncate">
                             <span className="w-1.5 h-1.5 bg-danger rounded-full animate-pulse shrink-0" />
                             {money(order.remainingAmount)}
                           </span>
                         ) : (
-                          <span className="bg-success/10 text-success border border-success/20 px-2 py-0.5 rounded-md text-[10px] font-black inline-flex items-center gap-1 truncate">
+                          <span className="bg-success/10 text-success border border-success/20 px-2 py-0.5 rounded-md text-[11px] font-black inline-flex items-center gap-1 truncate">
                             <span className="w-1.5 h-1.5 bg-success rounded-full shrink-0" />
                             {t('orders.fully_paid')}
                           </span>
@@ -2599,11 +2599,11 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                             <span>{money(totalUnpaid)}</span>
                           </button>
                         )}
-                        <span className="text-[10px] bg-surface-muted text-content-muted px-3 py-1 rounded-full font-black uppercase tracking-widest border border-border">
+                        <span className="text-[11px] bg-surface-muted text-content-muted px-3 py-1 rounded-full font-black uppercase tracking-widest border border-border">
                           #{order.orderNumber || order.id.slice(-6).toUpperCase()}
                         </span>
                         {order.isTest && (
-                          <span className="text-[10px] bg-danger/10 text-danger px-2 py-0.5 rounded-full font-black uppercase tracking-widest flex items-center gap-1">
+                          <span className="text-[11px] bg-danger/10 text-danger px-2 py-0.5 rounded-full font-black uppercase tracking-widest flex items-center gap-1">
                             <Zap size={10} />
                             {t('orders.test_data_badge')}
                           </span>
@@ -2704,7 +2704,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                           isRtlLang(i18n.language) ? "right-0" : "left-0"
                         )}>
                           <div className="px-4 py-2 mb-2 border-b border-border/50">
-                            <span className="text-[10px] font-black text-content-muted uppercase tracking-widest">{t('orders.update_status')}</span>
+                            <span className="text-[11px] font-black text-content-muted uppercase tracking-widest">{t('orders.update_status')}</span>
                           </div>
                           {statusOptions.map((status) => {
                             const cfg = getOrderStatusDisplay(status, workflowStages);
@@ -2719,7 +2719,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                                 )}
                               >
                                 <div className="flex items-center gap-3">
-                                  <cfg.icon size={14} className={cn("transition-transform group-hover/item:scale-110", order.status === status ? cfg.color : "text-content-muted/50")} />
+                                  <cfg.icon size={14} className={cn("transition-transform group-hover/item:scale-110", order.status === status ? cfg.color : "text-content-muted/80")} />
                                   {t(cfg.labelKey)}
                                 </div>
                                 {order.status === status && <CheckCircle2 size={12} />}
@@ -2939,7 +2939,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                             <span className="font-black text-sm text-content">
                               #{o.orderNumber || o.id.slice(-6).toUpperCase()}
                             </span>
-                            <span className="text-[10px] bg-brand/10 text-brand px-2 py-0.5 rounded-full font-bold">
+                            <span className="text-[11px] bg-brand/10 text-brand px-2 py-0.5 rounded-full font-bold">
                               {t(getOrderStatusDisplay(o.status, workflowStages).labelKey)}
                             </span>
                           </div>
@@ -2955,7 +2955,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                           <div className="font-mono font-black text-base text-danger">
                             {money(o.remainingAmount)}
                           </div>
-                          <div className="text-[10px] text-content-muted font-bold">
+                          <div className="text-[11px] text-content-muted font-bold">
                             {t('common.total')}: {money(o.totalAmount)}
                           </div>
                         </div>

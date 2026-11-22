@@ -47,7 +47,9 @@ const dir = entry[0].includes('/') ? entry[0].slice(0, entry[0].lastIndexOf('/')
 const full = new Set(
   [...entrySrc.matchAll(/"\.\/locales\/[a-z]+\.json":\(\)=>[^,]*?import\("\.\/([a-z]{2}-[\w-]+\.js)"\)/g)].map((m) => m[1]),
 );
-const core = [...new Set([...entrySrc.matchAll(/import\("\.\/((?:ar|en|ur)-[\w-]+\.js)"\)/g)].map((m) => m[1]))]
+// seen-readiness-fixes-task.md P3.4 named them i18n-core-<lang>-<hash>.js (so the
+// en-*/ur-* precache exclusions miss them); the older <lang>-<hash>.js still counts.
+const core = [...new Set([...entrySrc.matchAll(/import\("\.\/((?:i18n-core-)?(?:ar|en|ur)-[\w-]+\.js)"\)/g)].map((m) => m[1]))]
   .filter((f) => !full.has(f))
   .map((f) => ({ file: dir + f, gzip: gz(dir + f) }));
 

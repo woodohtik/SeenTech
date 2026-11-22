@@ -773,7 +773,7 @@ export default function Suppliers({ tenantId }: { tenantId: string }) {
                           if (e.key === 'Escape') categoryPicker.cancelAdd();
                         }}
                         placeholder={t('settings_page.categories.new_name_placeholder', 'اسم الفئة الجديدة')}
-                        className="flex-1 bg-transparent outline-none font-bold text-content text-sm placeholder:text-content-muted/60"
+                        className="flex-1 bg-transparent outline-none font-bold text-content text-sm placeholder:text-content-muted/80"
                       />
                       <button
                         type="button"

@@ -102,7 +102,7 @@ export function SmartSelect({
       htmlFor={id}
       className={cn(
         'block text-xs font-black uppercase tracking-widest px-1 transition-colors select-none',
-        disabled ? 'text-content-muted/50' : 'text-content-muted hover:text-content',
+        disabled ? 'text-content-muted/80' : 'text-content-muted hover:text-content',
         error ? 'text-danger' : ''
       )}
     >
@@ -162,7 +162,7 @@ export function SmartSelect({
                       className={({ active }) =>
                         cn(
                           'relative cursor-default select-none py-2 px-3 rounded-lg transition-all mb-0.5 group/item flex items-center justify-between',
-                          option.disabled ? 'text-content-muted/60 cursor-not-allowed' : active ? 'bg-brand/10 text-brand' : 'text-content hover:bg-surface-muted'
+                          option.disabled ? 'text-content-muted/80 cursor-not-allowed' : active ? 'bg-brand/10 text-brand' : 'text-content hover:bg-surface-muted'
                         )
                       }
                       value={option}
@@ -249,7 +249,7 @@ export function SmartSelect({
                    className={({ active }) =>
                      cn(
                        'relative cursor-default select-none py-2 px-3 rounded-lg transition-all mb-0.5 group/item flex items-center justify-between',
-                       option.disabled ? 'text-content-muted/60 cursor-not-allowed' : active ? 'bg-brand/10 text-brand' : 'text-content hover:bg-surface-muted'
+                       option.disabled ? 'text-content-muted/80 cursor-not-allowed' : active ? 'bg-brand/10 text-brand' : 'text-content hover:bg-surface-muted'
                      )
                    }
                    value={option.value}

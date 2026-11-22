@@ -163,6 +163,13 @@ h1, h2, h3, h4, h5, h6 {
   --info: #60A5FA;
 }
 
+/* seen-readiness-fixes-task.md P4 (UX-10): in dark mode white on the bright
+   warning / success colours is ~2:1 -- text on those solid backgrounds is dark. */
+.dark .bg-warning.text-white,
+.dark .bg-success.text-white {
+  color: #0F172A;
+}
+
 body {
   background-color: var(--surface);
   color: var(--content);

@@ -425,7 +425,7 @@ export default function AdminBlogEditor(): React.JSX.Element {
           <div className="p-12 text-center text-sm text-content-muted font-bold">...جارٍ التحميل</div>
         ) : articles.length === 0 ? (
           <div className="p-12 text-center space-y-3">
-            <FileText className="mx-auto text-content-muted/40" size={40} />
+            <FileText className="mx-auto text-content-muted/80" size={40} />
             <p className="text-sm text-content-muted font-bold">لا توجد مقالات بعد</p>
             <Button type="button" variant="secondary" size="sm" onClick={openCreateForm}>
               <Plus size={16} />

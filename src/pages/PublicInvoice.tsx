@@ -149,7 +149,7 @@ export default function PublicInvoice() {
               crossOrigin="anonymous"
             />
           ) : (
-            <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 mx-auto mb-3">
+            <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 mx-auto mb-3">
               <ShoppingBag size={24} />
             </div>
           )}
@@ -165,7 +165,7 @@ export default function PublicInvoice() {
 
           <div className="mt-4 inline-block bg-slate-100 px-4 py-1.5 rounded-lg border border-slate-200">
             <h1 className="text-xs font-black text-slate-800">{isTaxed ? 'فاتورة ضريبية مبسطة' : 'إيصال'}</h1>
-            <p className="text-[9px] font-bold uppercase tracking-wider text-slate-400 font-sans">{isTaxed ? 'Simplified Tax Invoice' : 'Receipt'}</p>
+            <p className="text-[9px] font-bold uppercase tracking-wider text-slate-500 font-sans">{isTaxed ? 'Simplified Tax Invoice' : 'Receipt'}</p>
           </div>
         </div>
 
@@ -190,7 +190,7 @@ export default function PublicInvoice() {
         {/* Items Line — quantity is folded into the name as "2 × المنتج"
             instead of occupying its own column. */}
         <div className="mb-5 border-b border-dashed border-slate-200 pb-4 space-y-1.5">
-          <div className="flex justify-between items-end text-[9px] font-black text-slate-400 uppercase tracking-wide border-b pb-1.5 gap-1">
+          <div className="flex justify-between items-end text-[9px] font-black text-slate-500 uppercase tracking-wide border-b pb-1.5 gap-1">
             <span className="flex-1 min-w-0 text-right">الصنف / Item</span>
             <span className="w-14 shrink-0 text-center">السعر</span>
             <span className="w-16 shrink-0 text-left">المجموع</span>
@@ -246,7 +246,7 @@ export default function PublicInvoice() {
 
         <div className="pt-4 border-t border-dashed border-slate-300 text-center">
           <p className="font-black text-slate-900 text-[11px] mb-0.5">تم إصدار هذه الفاتورة رقمياً</p>
-          <p className="text-[10px] text-slate-400 font-sans uppercase tracking-wider">Digital Invoice</p>
+          <p className="text-[10px] text-slate-500 font-sans uppercase tracking-wider">Digital Invoice</p>
         </div>
       </div>
     </div>

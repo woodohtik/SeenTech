@@ -52,7 +52,7 @@ export const IconInput = forwardRef<HTMLInputElement, IconInputProps>(({
           htmlFor={id} 
           className={cn(
             "block text-xs font-black uppercase tracking-widest px-1 transition-colors select-none",
-            disabled ? "text-content-muted/50" : "text-content-muted hover:text-content",
+            disabled ? "text-content-muted/80" : "text-content-muted hover:text-content",
             error ? "text-danger" : ""
           )}
         >
@@ -94,7 +94,7 @@ export const IconInput = forwardRef<HTMLInputElement, IconInputProps>(({
           aria-invalid={error ? true : undefined}
           aria-describedby={error && id ? `${id}-error` : undefined}
           className={cn(
-            "flex-1 h-full min-w-0 bg-transparent px-3 text-sm text-content outline-none border-none placeholder:text-content-muted/40 font-semibold focus:ring-0 focus:border-none",
+            "flex-1 h-full min-w-0 bg-transparent px-3 text-sm text-content outline-none border-none placeholder:text-content-muted/80 font-semibold focus:ring-0 focus:border-none",
             disabled && "cursor-not-allowed",
             className
           )}

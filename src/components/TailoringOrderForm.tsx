@@ -76,7 +76,7 @@ const EXTERNAL_FABRIC = 'custom';
 
 const inputClass =
   "w-full bg-surface border border-border rounded-xl p-3 text-sm font-semibold text-content outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand";
-const smallLabelClass = "text-[10px] text-content-muted font-bold uppercase tracking-wider";
+const smallLabelClass = "text-[11px] text-content-muted font-bold uppercase tracking-wider";
 const sectionLabelClass = "text-sm font-black text-content-muted uppercase tracking-widest";
 
 export default function TailoringOrderForm(props: TailoringOrderFormProps) {
@@ -333,7 +333,7 @@ function QuickAddCustomerModal({
             <div className="space-y-1">
               <label htmlFor="quick-customer-name" className="text-xs font-bold text-content-muted">{t('login.full_name')}</label>
               <input id="quick-customer-name" {...register('name' as any)} className={inputClass} />
-              {errors.name && <p className="text-[10px] text-danger font-bold">{String(errors.name.message)}</p>}
+              {errors.name && <p className="text-[11px] text-danger font-bold">{String(errors.name.message)}</p>}
             </div>
             <div className="space-y-1">
               <label htmlFor="quick-customer-phone" className="text-xs font-bold text-content-muted">{t('onboarding.fields.phone')}</label>
@@ -343,7 +343,7 @@ function QuickAddCustomerModal({
                 onBlur={(e) => setValue('phone' as any, formatSaudiPhone(e.target.value))}
                 className={inputClass}
               />
-              {errors.phone && <p className="text-[10px] text-danger font-bold">{String(errors.phone.message)}</p>}
+              {errors.phone && <p className="text-[11px] text-danger font-bold">{String(errors.phone.message)}</p>}
             </div>
           </div>
 
@@ -939,10 +939,10 @@ function TailoringOrderFormBody({
                   <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
                     {measurementRows(selectedCustomer.measurements, true).map((row) => (
                       <div key={row.key} className="bg-surface p-2 rounded-xl border border-brand/10 text-center">
-                        <p className="text-[10px] text-content-muted font-bold truncate">{t(row.labelKey)}</p>
+                        <p className="text-[11px] text-content-muted font-bold truncate">{t(row.labelKey)}</p>
                         <p className="text-sm font-black text-brand">
                           {row.value
-                            ? <>{cmToDisplayUnit(row.value, measurementUnit)} <span className="text-[9px] text-content-muted font-bold">{t(unitLabelKey(measurementUnit))}</span></>
+                            ? <>{cmToDisplayUnit(row.value, measurementUnit)} <span className="text-[11px] text-content-muted font-bold">{t(unitLabelKey(measurementUnit))}</span></>
                             : '-'}
                         </p>
                       </div>

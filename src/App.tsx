@@ -613,7 +613,7 @@ function AppContent() {
           <h2 className="text-3xl font-black text-white text-center mb-4 tracking-tight leading-tight">
             {isSubscriptionExpired ? t('subscription.expired_account_title') : t('subscription.trial_expired_account_title')}
           </h2>
-          <p className="text-slate-400 text-center font-medium leading-relaxed mb-10 px-4 text-sm md:text-base">
+          <p className="text-slate-500 text-center font-medium leading-relaxed mb-10 px-4 text-sm md:text-base">
             {isSubscriptionExpired 
               ? t('subscription.expired_account_desc')
               : t('subscription.trial_expired_account_desc')}
@@ -621,15 +621,15 @@ function AppContent() {
           
           <div className="bg-slate-950/50 rounded-2xl p-5 border border-slate-800/65 mb-10 text-sm space-y-2.5">
             <div className="flex justify-between items-center text-slate-300">
-              <span className="text-slate-400 font-medium">{t('billing.modal_bank_holder_label')}</span>
+              <span className="text-slate-500 font-medium">{t('billing.modal_bank_holder_label')}</span>
               <span className="font-bold text-white">{(currentUserStaff as any)?.tenant?.name || t('subscription.workspace_fallback_name')}</span>
             </div>
             <div className="flex justify-between items-center text-slate-300">
-              <span className="text-slate-400 font-medium">{t('subscription.account_email_label')}</span>
+              <span className="text-slate-500 font-medium">{t('subscription.account_email_label')}</span>
               <span className="font-mono text-white text-[12px]">{user.email}</span>
             </div>
             <div className="flex justify-between items-center text-slate-300 mb-0.5">
-              <span className="text-slate-400 font-medium">{t('subscription.start_date_label')}</span>
+              <span className="text-slate-500 font-medium">{t('subscription.start_date_label')}</span>
               <span className="font-mono text-white">
                 {tenantCreatedAt ? new Date(tenantCreatedAt).toLocaleDateString(localeOf(i18n.language), { dateStyle: 'long' }) : '-'}
               </span>

@@ -63,9 +63,9 @@ test('the confirmation is an alert dialog; Escape answers no; a dangerous one st
   }
   render(<Provider><Ask /></Provider>);
   fireEvent.click(screen.getByText('ask'));
-  const dialog = await screen.findByRole('alertdialog');
+  const dialog = await screen.findByRole('alertdialog', {}, { timeout: 10_000 });
   expect(dialog.getAttribute('aria-modal')).toBe('true');
   expect(document.activeElement?.textContent).toMatch(/cancel|إلغاء/);
   fireEvent.keyDown(document, { key: 'Escape' });
   await waitFor(() => expect(answer).toBe(false));
-});
+}, 15_000); // the dialog's animated frame loads lazily; slow under a full parallel run

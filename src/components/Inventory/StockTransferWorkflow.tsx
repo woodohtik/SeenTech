@@ -178,7 +178,7 @@ const StockTransferWorkflow: React.FC<StockTransferWorkflowProps> = ({ tenantId 
       </div>
 
       <div className="bg-surface p-4 rounded-2xl border border-border shadow-sm flex items-center gap-4">
-        <Filter className="text-content-muted/40" size={20} />
+        <Filter className="text-content-muted/80" size={20} />
         <div className="flex gap-2">
           {['all', 'pending', 'in_transit', 'completed'].map(status => (
             <button

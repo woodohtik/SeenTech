@@ -655,7 +655,7 @@ export default function Settings({ tenantId }: SettingsProps) {
                     <div className="space-y-1.5">
                       <div className="flex items-center justify-between px-1">
                         <label className="text-[10px] font-black text-content-muted uppercase tracking-normal sm:tracking-[0.2em]">{t('settings_page.profile.store_name', 'اسم المنشأة التجاري')} <span className="text-danger">*</span></label>
-                        <HelpCircle size={14} className="text-content-muted/40 cursor-help" />
+                        <HelpCircle size={14} className="text-content-muted/80 cursor-help" />
                       </div>
                       <IconInput 
                         type="text" 
@@ -667,7 +667,7 @@ export default function Settings({ tenantId }: SettingsProps) {
                     <div className="space-y-1.5">
                       <div className="flex items-center justify-between px-1">
                         <label className="text-[10px] font-black text-content-muted uppercase tracking-normal sm:tracking-[0.2em]">{t('settings_page.profile.phone', 'رقم التواصل الموحد')}</label>
-                        <HelpCircle size={14} className="text-content-muted/40 cursor-help" />
+                        <HelpCircle size={14} className="text-content-muted/80 cursor-help" />
                       </div>
                       <IconInput 
                         type="text" 
@@ -694,7 +694,7 @@ export default function Settings({ tenantId }: SettingsProps) {
                     <div className="sm:col-span-2 space-y-1.5">
                       <div className="flex items-center justify-between px-1">
                         <label className="text-[10px] font-black text-content-muted uppercase tracking-normal sm:tracking-[0.2em]">{t('settings_page.profile.address', 'العنوان التفصيلي')} <span className="text-danger">*</span></label>
-                        <HelpCircle size={14} className="text-content-muted/40 cursor-help" />
+                        <HelpCircle size={14} className="text-content-muted/80 cursor-help" />
                       </div>
                       <IconInput
                         type="text"
@@ -715,7 +715,7 @@ export default function Settings({ tenantId }: SettingsProps) {
                     <div className="space-y-1.5">
                       <div className="flex items-center justify-between px-1">
                         <label className="text-[10px] font-black text-content-muted uppercase tracking-normal sm:tracking-[0.2em]">{t('settings_page.profile.city', 'المدينة')}</label>
-                        <HelpCircle size={14} className="text-content-muted/40 cursor-help" />
+                        <HelpCircle size={14} className="text-content-muted/80 cursor-help" />
                       </div>
                       <IconInput
                         type="text"
@@ -727,7 +727,7 @@ export default function Settings({ tenantId }: SettingsProps) {
                     <div className="space-y-1.5">
                       <div className="flex items-center justify-between px-1">
                         <label className="text-[10px] font-black text-content-muted uppercase tracking-normal sm:tracking-[0.2em]">{t('settings_page.profile.postal_code', 'الرمز البريدي')}</label>
-                        <HelpCircle size={14} className="text-content-muted/40 cursor-help" />
+                        <HelpCircle size={14} className="text-content-muted/80 cursor-help" />
                       </div>
                       <IconInput
                         type="text"
@@ -740,7 +740,7 @@ export default function Settings({ tenantId }: SettingsProps) {
                     <div className="sm:col-span-2 space-y-1.5">
                       <div className="flex items-center justify-between px-1">
                         <label className="text-[10px] font-black text-content-muted uppercase tracking-normal sm:tracking-[0.2em]">{t('settings_page.profile.commercial_register', 'رقم السجل التجاري (CR)')} <span className="text-danger">*</span></label>
-                        <HelpCircle size={14} className="text-content-muted/40 cursor-help" />
+                        <HelpCircle size={14} className="text-content-muted/80 cursor-help" />
                       </div>
                       <IconInput
                         type="text"
@@ -757,7 +757,7 @@ export default function Settings({ tenantId }: SettingsProps) {
                     <div className="space-y-1.5">
                       <div className="flex items-center justify-between px-1">
                         <label className="text-[10px] font-black text-content-muted uppercase tracking-normal sm:tracking-[0.2em]">{t('settings_page.profile.measurement_unit', 'وحدة القياس الافتراضية للمقاسات')}</label>
-                        <HelpCircle size={14} className="text-content-muted/40 cursor-help" />
+                        <HelpCircle size={14} className="text-content-muted/80 cursor-help" />
                       </div>
                       <select
                         {...register('measurementUnit')}

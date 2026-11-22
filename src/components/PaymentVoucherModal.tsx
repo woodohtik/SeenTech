@@ -359,30 +359,30 @@ export default function PaymentVoucherModal({
             {/* Stamp Stamp */}
             <div className="text-center py-4 border-b border-dashed border-slate-300">
               <h2 className="text-base font-black text-slate-950 tracking-tight leading-none">{tenantName}</h2>
-              <p className="text-[10px] text-slate-400 font-bold uppercase mt-1">{t('procurement.pv_receipt_subtitle')}</p>
+              <p className="text-[10px] text-slate-500 font-bold uppercase mt-1">{t('procurement.pv_receipt_subtitle')}</p>
               <h1 className="text-lg font-black text-red-600 mt-2.5">{t('procurement.pv_receipt_title')}</h1>
-              <p className="text-[9px] text-slate-400 font-sans tracking-widest font-black uppercase">PAYMENT VOUCHER</p>
+              <p className="text-[9px] text-slate-500 font-sans tracking-widest font-black uppercase">PAYMENT VOUCHER</p>
             </div>
 
             {/* Metadata Body info */}
             <div className="py-4 border-b border-dashed border-slate-200 space-y-2 text-[11px]">
               <div className="flex justify-between">
-                <span className="text-slate-400">{t('procurement.pv_voucher_no')}</span>
+                <span className="text-slate-500">{t('procurement.pv_voucher_no')}</span>
                 <span className="font-mono font-black text-slate-950">#{issuedVoucher.voucherNo}</span>
               </div>
               
               <div className="flex justify-between">
-                <span className="text-slate-400">{t('procurement.pv_voucher_date_label')}</span>
+                <span className="text-slate-500">{t('procurement.pv_voucher_date_label')}</span>
                 <span className="font-bold text-slate-800">{new Date(issuedVoucher.date).toLocaleDateString(locale)}</span>
               </div>
 
               <div className="flex justify-between">
-                <span className="text-slate-400">{t('procurement.pv_method_source')}</span>
+                <span className="text-slate-500">{t('procurement.pv_method_source')}</span>
                 <span className="font-bold text-slate-800">{issuedVoucher.method}</span>
               </div>
 
               <div className="flex justify-between">
-                <span className="text-slate-400">{t('procurement.pv_responsible_staff')}</span>
+                <span className="text-slate-500">{t('procurement.pv_responsible_staff')}</span>
                 <span className="font-bold text-slate-800">{issuedVoucher.currentStaffName}</span>
               </div>
             </div>
@@ -393,18 +393,18 @@ export default function PaymentVoucherModal({
               <h3 className="text-2xl font-black text-red-600 font-mono tracking-tight text-center flex items-center justify-center gap-1.5">
                 <PriceDisplay amount={issuedVoucher.amount} />
               </h3>
-              <p className="text-[10px] font-bold text-slate-400 mt-1">{t('procurement.pv_paid_note')}</p>
+              <p className="text-[10px] font-bold text-slate-500 mt-1">{t('procurement.pv_paid_note')}</p>
             </div>
 
             {/* Recipient Details */}
             <div className="py-4 border-b border-dashed border-slate-200 space-y-2 text-[11px]">
               <div className="flex justify-between">
-                <span className="text-slate-400">{t('procurement.pv_receiving_party')}</span>
+                <span className="text-slate-500">{t('procurement.pv_receiving_party')}</span>
                 <span className="font-black text-slate-900">{issuedVoucher.supplierName}</span>
               </div>
 
               <div className="flex justify-between items-start">
-                <span className="text-slate-400 shrink-0">{t('procurement.pv_payment_description')}</span>
+                <span className="text-slate-500 shrink-0">{t('procurement.pv_payment_description')}</span>
                 <span className="font-semibold text-slate-700 text-left pl-1 leading-relaxed max-w-[200px]">
                   {issuedVoucher.notes}
                 </span>
@@ -412,7 +412,7 @@ export default function PaymentVoucherModal({
 
               {supplier.taxNumber && (
                 <div className="flex justify-between">
-                  <span className="text-slate-400">{t('procurement.pv_recipient_vat')}</span>
+                  <span className="text-slate-500">{t('procurement.pv_recipient_vat')}</span>
                   <span className="font-mono font-bold text-slate-900">{supplier.taxNumber}</span>
                 </div>
               )}
@@ -438,19 +438,19 @@ export default function PaymentVoucherModal({
             {/* Hand-signature slots */}
             <div className="grid grid-cols-2 gap-4 pt-8 text-center text-[10px] border-t border-dotted border-slate-200 mt-6">
               <div>
-                <p className="text-slate-400 font-bold">{t('procurement.pv_recipient_signature')}</p>
+                <p className="text-slate-500 font-bold">{t('procurement.pv_recipient_signature')}</p>
                 <div className="h-10 mt-2 border-b border-dashed border-slate-200" />
                 <p className="text-slate-950 font-black mt-1">{issuedVoucher.supplierName}</p>
               </div>
               <div>
-                <p className="text-slate-400 font-bold">{t('procurement.pv_cashier_approval')}</p>
+                <p className="text-slate-500 font-bold">{t('procurement.pv_cashier_approval')}</p>
                 <div className="h-10 mt-2 border-b border-dashed border-slate-200" />
                 <p className="text-slate-950 font-black mt-1">{issuedVoucher.currentStaffName}</p>
               </div>
             </div>
 
             {/* footer signature line */}
-            <div className="text-center text-[9px] text-slate-400 font-bold mt-8 border-t border-slate-100 pt-3">
+            <div className="text-center text-[9px] text-slate-500 font-bold mt-8 border-t border-slate-100 pt-3">
               {t('procurement.pv_footer')}
             </div>
 

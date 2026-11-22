@@ -1878,7 +1878,7 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
                 {focusedItemId === item.id && item.type === 'ready_made' && (
                   <div className="mt-3 pt-3 border-t border-border flex flex-wrap gap-2 animate-in fade-in slide-in-from-top-1">
                     <button 
-                      className="text-[10px] font-black text-brand bg-brand/5 px-2 py-1 rounded-md uppercase tracking-wider cursor-pointer"
+                      className="text-[11px] font-black text-brand bg-brand/5 px-2 py-1 rounded-md uppercase tracking-wider cursor-pointer"
                       onClick={() => {
                         const input = document.createElement('input');
                         input.type = 'file';
@@ -2210,7 +2210,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                     <span className="text-xs sm:text-sm font-bold text-content text-center line-clamp-2 min-h-[2.25rem] mb-1 w-full">
                       {i18n.language === 'en' && item.nameEn ? item.nameEn : item.name}
                       {(itemVariants[item.id]?.length ?? 0) > 0 && (
-                        <span className="block text-[9px] font-bold text-brand mt-0.5">
+                        <span className="block text-[11px] font-bold text-brand mt-0.5">
                           {itemVariants[item.id].length} {t('inventory.variants.badge_suffix', 'سمات')}
                         </span>
                       )}
@@ -2218,7 +2218,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                     <div className="flex flex-col items-center justify-center gap-0.5 mb-1 w-full">
                       <span className="text-brand font-black text-sm sm:text-base"><PriceDisplay amount={item.pricePerUnit} /></span>
                       <span className={cn(
-                        "text-[10px] font-bold px-2 py-0.5 rounded-full",
+                        "text-[11px] font-bold px-2 py-0.5 rounded-full",
                         getItemDisplayStock(item) <= 0
                           ? "bg-danger/10 text-danger"
                           : "bg-success/10 text-success"
@@ -2273,12 +2273,12 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                       </span>
                       <div className="flex items-center gap-1.5 flex-wrap">
                         {(item.category_key || item.category) && (
-                          <span className="text-[10px] sm:text-xs text-content-muted bg-surface-muted px-2.5 py-0.5 rounded-full font-bold">
+                          <span className="text-[11px] sm:text-xs text-content-muted bg-surface-muted px-2.5 py-0.5 rounded-full font-bold">
                             {getCategoryLabel(item.category_key || item.category)}
                           </span>
                         )}
                         <span className={cn(
-                          "text-[10px] font-bold px-2 py-0.5 rounded-full",
+                          "text-[11px] font-bold px-2 py-0.5 rounded-full",
                           getItemDisplayStock(item) <= 0
                             ? "bg-danger/10 text-danger"
                             : "bg-success/10 text-success"
@@ -2286,7 +2286,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                           {t('inventory.available')}: {getItemDisplayStock(item)}
                         </span>
                         {(itemVariants[item.id]?.length ?? 0) > 0 && (
-                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-brand/10 text-brand">
+                          <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-brand/10 text-brand">
                             {itemVariants[item.id].length} {t('inventory.variants.badge_suffix', 'سمات')}
                           </span>
                         )}
@@ -2358,12 +2358,12 @@ const invoiceData: InvoiceData | null = completedOrder ? {
         >
           <div className="relative">
             <ShoppingCart size={28} />
-            <span className="absolute -top-3 -right-3 bg-danger text-white text-[10px] font-black w-7 h-7 rounded-full flex items-center justify-center ring-4 ring-white shadow-lg">
+            <span className="absolute -top-3 -right-3 bg-danger text-white text-[11px] font-black w-7 h-7 rounded-full flex items-center justify-center ring-4 ring-white shadow-lg">
               {cart.length}
             </span>
           </div>
           <div className="flex flex-col items-start ps-1">
-             <span className="text-[10px] font-bold uppercase opacity-80 leading-none mb-1">{t('common.total')}</span>
+             <span className="text-[11px] font-bold uppercase opacity-80 leading-none mb-1">{t('common.total')}</span>
              <PriceDisplay amount={totalAmount} className="text-sm font-black leading-none" />
           </div>
         </motion.button>
@@ -2687,12 +2687,12 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                     
                     <div className="md:hidden flex justify-between items-center mb-4">
                         <div className="flex flex-col">
-                            <span className="text-[10px] text-content-muted font-bold uppercase">{t('pos.net_payable')}</span>
+                            <span className="text-[11px] text-content-muted font-bold uppercase">{t('pos.net_payable')}</span>
                             <span className="text-xl font-black text-brand"><PriceDisplay amount={totalAmount} /></span>
                         </div>
                         {totalAmount - paidAmount > 0 && (
                             <div className="flex flex-col items-end">
-                                <span className="text-[10px] text-danger font-bold uppercase">{t('pos.remaining_amount')}</span>
+                                <span className="text-[11px] text-danger font-bold uppercase">{t('pos.remaining_amount')}</span>
                                 <span className="text-lg font-bold text-danger"><PriceDisplay amount={totalAmount - paidAmount} /></span>
                             </div>
                         )}
@@ -3020,7 +3020,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                   <div className="text-3xl font-black text-success tracking-tight">
                     <PriceDisplay amount={cashDrawerBalance} />
                   </div>
-                  <p className="text-[10px] text-content-muted">
+                  <p className="text-[11px] text-content-muted">
                     {t('sales.expected_cash_desc')}
                   </p>
                 </div>

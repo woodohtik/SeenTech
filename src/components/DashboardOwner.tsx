@@ -1859,7 +1859,7 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
                   ) : (
                     <tr>
                       <td colSpan={4} className="px-8 py-16 text-center">
-                        <div className="bg-surface-muted w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 border border-border text-content-muted/40">
+                        <div className="bg-surface-muted w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 border border-border text-content-muted/80">
                           <ShoppingBag size={32} />
                         </div>
                         <h4 className="text-base font-black text-content mb-1">{t('dashboard.no_orders_yet', 'لا توجد طلبات بعد')}</h4>
@@ -1909,7 +1909,7 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
                         )}
                       </div>
                       <p className="text-xs text-content-muted mt-1 leading-relaxed">{notif.message}</p>
-                      <p className="text-[9px] text-content-muted/60 mt-2 font-bold">
+                      <p className="text-[9px] text-content-muted/80 mt-2 font-bold">
                         {new Date(notif.createdAt).toLocaleDateString(localeOf(i18n.language), { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                       </p>
                     </div>

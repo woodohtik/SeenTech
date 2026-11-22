@@ -1735,7 +1735,7 @@ export default function Customers({ tenantId }: CustomersProps) {
 
               <button
                 onClick={() => setSelectedCustomerIds([])}
-                className="p-2 hover:bg-white/10 rounded-xl text-slate-400 hover:text-white transition-colors cursor-pointer"
+                className="p-2 hover:bg-white/10 rounded-xl text-slate-500 hover:text-white transition-colors cursor-pointer"
                 title={t('credit_notes.cancel_selection')}
               >
                 <X size={16} />
