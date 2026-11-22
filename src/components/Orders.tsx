@@ -286,6 +286,11 @@ export default function Orders({ tenantId }: { tenantId: string }) {
   const [endDate, setEndDate] = useState('');
   const [activeTab, setActiveTab] = useState<'active' | 'completed'>('active');
   const [isConfirmDeliveryOpen, setIsConfirmDeliveryOpen] = useState(false);
+  // seen-readiness-fixes-task.md P1.4 / OPERATIONS-03: cancelling is confirmed,
+  // carries a reason, and gives back any money paid (cancel_order).
+  const [cancelTarget, setCancelTarget] = useState<Order | null>(null);
+  const [cancelReason, setCancelReason] = useState('');
+  const [isCancelling, setIsCancelling] = useState(false);
   const [openStatusDropdownId, setOpenStatusDropdownId] = useState<string | null>(null);
 
   const [whatsappModalOpen, setWhatsappModalOpen] = useState(false);
@@ -774,6 +779,29 @@ export default function Orders({ tenantId }: { tenantId: string }) {
     if (!queuedOffline) router.refresh();
   };
 
+  const confirmCancel = async () => {
+    if (!cancelTarget || cancelReason.trim().length < 3) return;
+    setIsCancelling(true);
+    try {
+      const { data, error } = await supabase.rpc('cancel_order', {
+        p_operation_id: globalThis.crypto.randomUUID(),
+        p_order_id: cancelTarget.id,
+        p_reason: cancelReason.trim(),
+      });
+      if (error) throw error;
+      const patch = (o: Order) => (o.id === cancelTarget.id ? { ...o, status: 'cancelled' as any } : o);
+      setOrders(prev => prev.map(patch));
+      toastSuccess(Number(data?.refunded) > 0
+        ? t('orders.cancel_done_refunded', { amount: Number(data.refunded).toFixed(2) })
+        : t('orders.cancel_done'));
+      setCancelTarget(null);
+    } catch (error) {
+      toastError(dbRefusalMessage(error) ?? t('orders.cancel_failed'));
+    } finally {
+      setIsCancelling(false);
+    }
+  };
+
   const updateStatus = async (id: string, status: string, notes?: string) => {
     setOpenStatusDropdownId(null);
     const order = orders.find(o => o.id === id);
@@ -786,6 +814,14 @@ export default function Orders({ tenantId }: { tenantId: string }) {
     // Prevent any changes if order is already delivered (locked)
     if (order.status === 'delivered') {
       toastError(t('orders.cannot_edit_delivered'));
+      return;
+    }
+
+    // Cancelling is never one tap: it is confirmed, with a reason, and any
+    // money paid is given back from a shift (P1.4, OPERATIONS-03).
+    if (legacyOrderStatusFor(status, workflowStages) === 'cancelled') {
+      setCancelReason('');
+      setCancelTarget(order);
       return;
     }
 
@@ -2696,6 +2732,49 @@ export default function Orders({ tenantId }: { tenantId: string }) {
             }
           }}
         />
+      )}
+      {cancelTarget && (
+        <div className="fixed inset-0 z-[170] flex items-center justify-center bg-black/40 p-4" role="dialog" aria-modal="true" aria-labelledby="cancel-order-title">
+          <div className="w-full max-w-md rounded-3xl bg-surface p-6 shadow-2xl border border-border space-y-4" dir={isRtlLang(i18n.language) ? 'rtl' : 'ltr'}>
+            <h3 id="cancel-order-title" className="text-lg font-black text-content">
+              {t('orders.cancel_title', { number: cancelTarget.orderNumber || cancelTarget.id.slice(-6).toUpperCase() })}
+            </h3>
+            {Number(cancelTarget.paidAmount) > 0 && (
+              <p className="rounded-2xl bg-warning/10 border border-warning/20 p-3 text-sm font-bold text-content">
+                {t('orders.cancel_refund_note', { amount: Number(cancelTarget.paidAmount).toFixed(2) })}
+              </p>
+            )}
+            <label className="block space-y-2">
+              <span className="text-sm font-bold text-content">{t('orders.cancel_reason_label')}</span>
+              <textarea
+                value={cancelReason}
+                onChange={(e) => setCancelReason(e.target.value)}
+                rows={3}
+                className="w-full rounded-2xl border border-border bg-surface-muted p-3 text-sm"
+                placeholder={t('orders.cancel_reason_placeholder')}
+                autoFocus
+              />
+            </label>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => void confirmCancel()}
+                disabled={isCancelling || cancelReason.trim().length < 3}
+                className="flex-1 min-h-12 rounded-2xl bg-danger text-white font-bold disabled:opacity-50"
+              >
+                {t('orders.cancel_confirm')}
+              </button>
+              <button
+                type="button"
+                onClick={() => setCancelTarget(null)}
+                disabled={isCancelling}
+                className="flex-1 min-h-12 rounded-2xl border border-border font-bold text-content"
+              >
+                {t('orders.cancel_back')}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
       {isPaymentModalOpen && selectedOrder && (
         <PaymentModal 

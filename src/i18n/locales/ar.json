@@ -2149,7 +2149,16 @@
     "thobe_custom__piece": "طلب خاص",
     "receipt_title__piece": "إيصال طلب",
     "no_invoice_permission": "لا تملك صلاحية عرض الفاتورة",
-    "no_status_permission": "لا تملك صلاحية تغيير حالة الطلب"
+    "no_status_permission": "لا تملك صلاحية تغيير حالة الطلب",
+    "cancel_title": "إلغاء الطلب #{{number}}",
+    "cancel_refund_note": "على هذا الطلب {{amount}} مدفوعة، وستُرد نقداً من ورديتك المفتوحة.",
+    "cancel_reason_label": "سبب الإلغاء",
+    "cancel_reason_placeholder": "مثلاً: العميل عدل عن الطلب",
+    "cancel_confirm": "إلغاء الطلب",
+    "cancel_back": "رجوع",
+    "cancel_done": "أُلغي الطلب",
+    "cancel_done_refunded": "أُلغي الطلب ورُدّ {{amount}} نقداً",
+    "cancel_failed": "تعذّر إلغاء الطلب"
   },
   "permissions": {
     "access_denied_desc": "غير محدد",

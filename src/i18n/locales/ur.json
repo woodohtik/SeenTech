@@ -2147,7 +2147,16 @@
     "thobe_custom__piece": "خصوصی آرڈر",
     "receipt_title__piece": "آرڈر رسید",
     "no_invoice_permission": "آپ کو انوائس دیکھنے کی اجازت نہیں ہے",
-    "no_status_permission": "آپ کو آرڈر کی حالت تبدیل کرنے کی اجازت نہیں ہے"
+    "no_status_permission": "آپ کو آرڈر کی حالت تبدیل کرنے کی اجازت نہیں ہے",
+    "cancel_title": "آرڈر #{{number}} منسوخ کریں",
+    "cancel_refund_note": "اس آرڈر پر {{amount}} ادا ہوئے ہیں؛ یہ آپ کی کھلی شفٹ سے نقد واپس ہوں گے۔",
+    "cancel_reason_label": "منسوخی کی وجہ",
+    "cancel_reason_placeholder": "مثلاً: گاہک نے ارادہ بدل دیا",
+    "cancel_confirm": "آرڈر منسوخ کریں",
+    "cancel_back": "واپس",
+    "cancel_done": "آرڈر منسوخ ہو گیا",
+    "cancel_done_refunded": "آرڈر منسوخ ہوا اور {{amount}} نقد واپس ہوئے",
+    "cancel_failed": "آرڈر منسوخ نہیں ہو سکا"
   },
   "permissions": {
     "access_denied_desc": "غیر متعین",

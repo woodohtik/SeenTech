@@ -2149,7 +2149,16 @@
     "thobe_custom__piece": "Custom order",
     "receipt_title__piece": "Order receipt",
     "no_invoice_permission": "You don't have permission to view the invoice",
-    "no_status_permission": "You don't have permission to change the order's status"
+    "no_status_permission": "You don't have permission to change the order's status",
+    "cancel_title": "Cancel order #{{number}}",
+    "cancel_refund_note": "{{amount}} was paid on this order; it will be refunded in cash from your open shift.",
+    "cancel_reason_label": "Reason for cancelling",
+    "cancel_reason_placeholder": "e.g. the customer changed their mind",
+    "cancel_confirm": "Cancel the order",
+    "cancel_back": "Back",
+    "cancel_done": "The order was cancelled",
+    "cancel_done_refunded": "The order was cancelled and {{amount}} refunded in cash",
+    "cancel_failed": "The order could not be cancelled"
   },
   "permissions": {
     "access_denied_desc": "Not specified",
