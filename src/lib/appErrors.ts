@@ -90,6 +90,10 @@ export const handleError = handleFirestoreError;
 
 export const getFriendlyErrorMessage = (error: any): string => {
   if (!error) return i18n.t('errors.unknown');
+  // P4: the server's own refusal (in Arabic, with its reason) says more than
+  // any generic message -- e.g. "لا يُحذف عميل له طلبات مفتوحة".
+  const refusal = dbRefusalMessage(error);
+  if (refusal) return refusal;
 
   const errorMsg = typeof error === 'string' ? error : (error.error || error.message || '');
   const code = error.code || '';

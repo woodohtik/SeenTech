@@ -47,7 +47,7 @@ import { handleError, OperationType, getFriendlyErrorMessage } from '../lib/appE
 import { Combobox, Transition, Dialog } from '@headlessui/react';
 import { Customer, InventoryItem, OrderItem, Order, PaymentMethod, OrderStatus, ProductVariant, TaxInvoice, Tenant } from '../types';
 import { TaxInvoiceDocument } from './printing/TaxInvoiceModal';
-import { fetchTaxInvoiceForOrder, issueTaxInvoiceForOrder, syncTaxInvoicePaidAmount } from '../services/taxInvoiceService';
+import { fetchTaxInvoiceForOrder, issueTaxInvoiceForOrder } from '../services/taxInvoiceService';
 import { cn, generateOrderNumber } from '../lib/utils';
 import { SmartSelect } from './ui/SmartSelect';
 import { IconInput } from './ui/IconInput';
@@ -715,7 +715,7 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
       if (error) throw error;
       const newPaidAmount = Number(result.paid_amount);
       const newRemaining = Number(result.remaining_amount);
-      await syncTaxInvoicePaidAmount(order.id, newPaidAmount);
+      // The tax invoice follows the order's paid amount in the database (P4, OPERATIONS-08).
       setDebtOrders(prev => newRemaining <= 0
         ? prev.filter(o => o.id !== order.id)
         : prev.map(o => o.id === order.id ? { ...o, paidAmount: newPaidAmount, remainingAmount: newRemaining } : o));
@@ -750,7 +750,6 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
             p_shift_id: resolvedShiftId,
           });
           if (error) throw error;
-          await syncTaxInvoicePaidAmount(order.id, Number(result.paid_amount));
         })
       );
       const failed = results.filter(r => r.status === 'rejected').length;

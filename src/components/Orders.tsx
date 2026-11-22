@@ -59,7 +59,7 @@ import OrderEditDialog from './OrderEditDialog';
 import { isNetworkFailure } from '../lib/offline/outbox';
 import { Order, Customer, OrderStatus, OrderHistory, PaymentMethod, Staff, Tenant, TaxInvoice } from '../types';
 import { TaxInvoiceDocument } from './printing/TaxInvoiceModal';
-import { fetchTaxInvoiceForOrder, issueTaxInvoiceForOrder, syncTaxInvoicePaidAmount } from '../services/taxInvoiceService';
+import { fetchTaxInvoiceForOrder, issueTaxInvoiceForOrder } from '../services/taxInvoiceService';
 import { cn } from '../lib/utils';
 import { PriceDisplay } from './PriceDisplay';
 import { logEmployeeAction } from '../services/employeeAuditService';
@@ -1019,6 +1019,10 @@ export default function Orders({ tenantId }: { tenantId: string }) {
         router.refresh();
         toastSuccess(t('orders.order_deleted_success'));
       } catch (error) {
+        // P4 (OPERATIONS-07): an order with money, cut cloth or an invoice is
+        // not deleted -- the server says why; point to cancelling instead.
+        const refusal = dbRefusalMessage(error);
+        if (refusal) { toastError(refusal); return; }
         handleFirestoreError(error as any, OperationType.DELETE, 'orders');
       }
     }
@@ -1335,11 +1339,8 @@ export default function Orders({ tenantId }: { tenantId: string }) {
         const newPaidAmount = Number(result.paid_amount);
         const newRemainingAmount = Number(result.remaining_amount);
 
-        // Keeps the order's original tax invoice (a separate row/column,
-        // no DB trigger between them) showing the real current paid/
-        // remaining amount instead of staying stuck at whatever it was
-        // when the invoice was first issued.
-        await syncTaxInvoicePaidAmount(order.id, newPaidAmount);
+        // The order's tax invoice follows its paid amount in the database
+        // now (P4, OPERATIONS-08: orders_sync_invoice_paid).
 
         // Realtime local update -- only reached once the write above is confirmed
         setOrders(prev => prev.map(o => o.id === order.id ? { ...o, paidAmount: newPaidAmount, remainingAmount: newRemainingAmount } : o));

@@ -14,3 +14,12 @@ describe('dbRefusalMessage', () => {
     expect(dbRefusalMessage(null)).toBeNull();
   });
 });
+
+describe('getFriendlyErrorMessage (P4)', () => {
+  it("shows the server's own refusal, with its reason, instead of a generic message", async () => {
+    const { getFriendlyErrorMessage } = await import('./appErrors');
+    expect(getFriendlyErrorMessage({ code: '22023', message: 'لا يُحذف عميل له طلبات مفتوحة أو مبلغ متبقٍ' }))
+      .toBe('لا يُحذف عميل له طلبات مفتوحة أو مبلغ متبقٍ');
+    expect(getFriendlyErrorMessage({ code: '42501', message: 'forbidden' })).not.toBe('forbidden');
+  });
+});
