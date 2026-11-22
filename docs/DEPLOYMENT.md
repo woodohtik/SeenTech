@@ -76,7 +76,7 @@ npx cap sync android --project capacitor-customer
 cd capacitor-customer/android && ./gradlew bundleRelease   # .aab لرفعه على Play Console
 ```
 
-**متغيّر بيئة حرِج — `VITE_CUSTOMER_API_ORIGIN`:** التطبيق مُجمَّع بلا أصل صفحة حي، فيحتاج أصل API مطلق صريح وقت البناء (`src/lib/apiBase.ts`) ليعمل. **القيمة الافتراضية عند غيابه هي `staging.seentech.io`** — أي بناء إنتاجي فعلي (للرفع على Play Store) **يجب** أن يضبط هذا المتغيّر صراحة على `https://www.seentech.io` وقت `npm run build:customer`، وإلا سيتصل التطبيق المنشور فعلياً بـstaging بصمت بلا أي خطأ ظاهر.
+**متغيّر بيئة حرِج — `VITE_CUSTOMER_API_ORIGIN`:** التطبيق مُجمَّع بلا أصل صفحة حي، فيحتاج أصل API مطلق صريح وقت البناء (`src/lib/apiBase.ts`) ليعمل. **بدونه يفشل البناء** (`vite.customer.config.ts`، OPERATIONS-15) بدل أن يتصل التطبيق بـstaging بصمت: اضبطه صراحة على `https://www.seentech.io` للإصدار، أو على `https://staging.seentech.io` لنسخة تجربة.
 ```bash
 VITE_CUSTOMER_API_ORIGIN="https://www.seentech.io" npm run build:customer
 ```

@@ -54,6 +54,9 @@ jobs:
 
       - name: Build (customer app)
         run: npm run build:customer
+        # P4 (OPERATIONS-15): the build needs the site the app calls; a CI check build uses staging.
+        env:
+          VITE_CUSTOMER_API_ORIGIN: https://staging.seentech.io
 
   e2e:
     runs-on: ubuntu-latest
@@ -151,6 +154,8 @@ jobs:
 
       - name: Build customer app web assets
         run: npm run build:customer
+        env:
+          VITE_CUSTOMER_API_ORIGIN: https://staging.seentech.io
 
       - name: Sync Capacitor Android project
         working-directory: capacitor-customer
