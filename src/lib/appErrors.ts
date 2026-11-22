@@ -126,8 +126,13 @@ export const getFriendlyErrorMessage = (error: any): string => {
     return i18n.t('errors.zatca_submission_failed');
   }
 
-  const finalMsg = errorMsg && errorMsg.length < 100 ? `${errorMsg}` : i18n.t('errors.system_generic');
-  return finalMsg;
+  // P4 (UX-05): a short message used to be shown as it came -- technical
+  // English from the database ("supplier not found", "already_processed: …")
+  // included. Only a message written for people (it has Arabic text: the
+  // server's deliberate refusals) is shown as is; anything else is the
+  // generic message in the interface's language (the original goes to the log).
+  if (errorMsg && errorMsg.length < 200 && /[\u0600-\u06FF]/.test(errorMsg)) return errorMsg;
+  return i18n.t('errors.system_generic');
 };
 
 /**

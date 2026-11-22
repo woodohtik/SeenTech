@@ -23,3 +23,12 @@ describe('getFriendlyErrorMessage (P4)', () => {
     expect(getFriendlyErrorMessage({ code: '42501', message: 'forbidden' })).not.toBe('forbidden');
   });
 });
+
+describe('getFriendlyErrorMessage (P4, UX-05)', () => {
+  it('never shows technical English from the database as it is', async () => {
+    const { getFriendlyErrorMessage } = await import('./appErrors');
+    const generic = getFriendlyErrorMessage({ message: 'supplier not found' });
+    expect(generic).not.toBe('supplier not found');
+    expect(getFriendlyErrorMessage({ message: 'already_processed: request is already approved' })).toBe(generic);
+  });
+});
