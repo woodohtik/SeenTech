@@ -4,6 +4,7 @@ import { SupportSession } from '../types/supabase';
 import { Shield, Clock } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
+import { localeOf } from '../lib/direction';
 interface Props {
   tenantId: string;
 }
@@ -77,7 +78,7 @@ export default function TenantSupportHistory({ tenantId }: Props) {
                     </h3>
                     <p className="text-xs text-content-muted font-bold flex items-center gap-1 mt-1">
                       <Clock size={12} />
-                      {new Date(session.started_at).toLocaleDateString('ar-SA-u-nu-latn')} - {new Date(session.started_at).toLocaleTimeString('ar-SA-u-nu-latn', { hour: '2-digit', minute: '2-digit' })}
+                      {new Date(session.started_at).toLocaleDateString(localeOf())} - {new Date(session.started_at).toLocaleTimeString(localeOf(), { hour: '2-digit', minute: '2-digit' })}
                     </p>
                   </div>
                 </div>

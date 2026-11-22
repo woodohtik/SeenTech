@@ -17,7 +17,7 @@ import { cn } from '../lib/utils';
 import { useTranslation } from 'react-i18next';
 import { useToast } from '../contexts/ToastContext';
 
-import { isRtlLang } from '../lib/direction';
+import { isRtlLang, localeOf } from '../lib/direction';
 
 interface AuditLog {
   id: string;
@@ -247,7 +247,7 @@ export default function SaaSAuditLogs() {
                       <Clock size={14} />
                       <span>
                         {new Date(log.timestamp).toLocaleString(
-                          i18n.language === 'en' ? 'en-US' : i18n.language === 'ur' ? 'ur-PK-u-nu-latn' : 'ar-SA-u-nu-latn'
+                          localeOf(i18n.language)
                         )}
                       </span>
                     </div>

@@ -49,7 +49,7 @@ import EmployeeActivityLogTab from './EmployeeActivityLog';
 import AddEmployeeModal from './AddEmployeeModal';
 import AdminTailorCommissions from './AdminTailorCommissions';
 
-import { isRtlLang } from '../lib/direction';
+import { isRtlLang, localeOf } from '../lib/direction';
 import { useConfirm } from '../contexts/ConfirmContext';
 
 /** Permission `categoryKey` -> the stable slug used by the settings_page.* translation keys. */
@@ -2285,7 +2285,7 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
                             </div>
                             <div>
                               <p className="font-bold text-content">{t('staff.order_number', { number: order.orderNumber })}</p>
-                              <p className="text-[10px] text-content-muted font-bold">{new Date(order.updatedAt || '').toLocaleDateString('ar-SA-u-nu-latn')}</p>
+                              <p className="text-[10px] text-content-muted font-bold">{new Date(order.updatedAt || '').toLocaleDateString(localeOf())}</p>
                             </div>
                           </div>
                           <div className="flex items-center gap-3">

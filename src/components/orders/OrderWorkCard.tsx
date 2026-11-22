@@ -15,6 +15,7 @@ import type { FieldSchema, WorkflowStage } from '../../types/expansion';
 import { attributeEntries } from './OrderItemAttributes';
 import { getStageLabel } from '../../utils/orderStage';
 
+import { localeOf } from '../../lib/direction';
 export const WORK_CARD_ELEMENT_ID = 'order-work-card-print-area';
 
 export interface WorkCardOrder {
@@ -51,7 +52,7 @@ export default function OrderWorkCard({
       </div>
       <div style={{ display: 'grid', gap: 2, marginBottom: 6 }}>
         {order.customerName && <div><b>{t('common.customer', 'العميل')}:</b> {order.customerName}</div>}
-        {order.deliveryDate && <div><b>{t('orders.work_card_delivery', 'تاريخ التسليم')}:</b> {new Date(order.deliveryDate).toLocaleDateString(lang === 'en' ? 'en-GB' : 'ar-SA-u-nu-latn')}</div>}
+        {order.deliveryDate && <div><b>{t('orders.work_card_delivery', 'تاريخ التسليم')}:</b> {new Date(order.deliveryDate).toLocaleDateString(localeOf(lang))}</div>}
         {order.status && <div><b>{t('common.status', 'الحالة')}:</b> {getStageLabel(order.status, stages, lang)}</div>}
       </div>
       {order.items.map((item, idx) => {

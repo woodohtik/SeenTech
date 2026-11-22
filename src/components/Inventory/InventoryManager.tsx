@@ -66,7 +66,7 @@ import { usePermissions } from "../../hooks/usePermissions";
 import { useStaff } from "../../contexts/StaffContext";
 import { useTranslation } from "react-i18next";
 import { getFriendlyErrorMessage } from "../../lib/appErrors";
-import { useDirection } from "../../lib/direction";
+import { localeOf, useDirection } from "../../lib/direction";
 import { motion, AnimatePresence } from "motion/react";
 import { cn } from "../../lib/utils";
 import { ResponsiveTable } from "../ui/ResponsiveTable";
@@ -3450,7 +3450,7 @@ const InventoryReports = ({ tenantId, items, branches, branchStock }: any) => {
 
     // Format for Recharts
     return dates.map((date) => ({
-      date: new Date(date).toLocaleDateString(isRtl ? "ar-EG" : "en-US", {
+      date: new Date(date).toLocaleDateString(localeOf(), {
         day: "numeric",
         month: "short",
       }),
@@ -3709,7 +3709,7 @@ const InventoryReports = ({ tenantId, items, branches, branchStock }: any) => {
                         {ledger.staff_name || "—"}
                       </span>
                       <span>
-                        {new Date(ledger.created_at).toLocaleString(isRtl ? "ar-EG" : "en-US", {
+                        {new Date(ledger.created_at).toLocaleString(localeOf(), {
                           day: "numeric",
                           month: "short",
                           hour: "2-digit",
@@ -3739,7 +3739,7 @@ const InventoryReports = ({ tenantId, items, branches, branchStock }: any) => {
                       return (
                         <tr key={ledger.id} className="hover:bg-surface-muted transition-colors group">
                           <td className="px-6 py-4 text-sm text-content-muted font-medium">
-                            {new Date(ledger.created_at).toLocaleString(isRtl ? "ar-EG" : "en-US", {
+                            {new Date(ledger.created_at).toLocaleString(localeOf(), {
                               day: "numeric",
                               month: "short",
                               hour: "2-digit",

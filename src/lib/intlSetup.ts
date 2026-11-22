@@ -11,14 +11,23 @@ export function toLatinDigits(str: string | number | null | undefined): string {
     .replace(/[۰-۹]/g, (d) => String(d.charCodeAt(0) - 0x06F0));
 }
 
+/**
+ * Latin digits on any locale. A locale that already has a -u- extension (e.g.
+ * 'ar-SA-u-ca-gregory-nu-latn', seen-readiness-fixes-task.md P4 UX-15) gets
+ * nu-latn inside that extension, never a second -u- (an invalid tag that
+ * throws RangeError).
+ */
+export function withLatinDigits(locale: string): string {
+  if (/-u-(?:[a-z0-9]{2,8}-)*nu-/i.test(locale)) return locale;
+  if (/-u-/i.test(locale)) return `${locale}-nu-latn`;
+  return `${locale}-u-nu-latn`;
+}
+
 function normalizeLocale(locales?: string | string[]): string | string[] | undefined {
   if (!locales) return 'en-US';
-  if (typeof locales === 'string') {
-    if (locales.includes('-u-nu-')) return locales;
-    return `${locales}-u-nu-latn`;
-  }
+  if (typeof locales === 'string') return withLatinDigits(locales);
   if (Array.isArray(locales)) {
-    return locales.map((l) => (typeof l === 'string' && !l.includes('-u-nu-') ? `${l}-u-nu-latn` : l));
+    return locales.map((l) => (typeof l === 'string' ? withLatinDigits(l) : l));
   }
   return locales;
 }

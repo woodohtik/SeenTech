@@ -26,7 +26,7 @@ import {
 } from "lucide-react";
 import { supabase } from "../../lib/supabase/client";
 import { useTranslation } from "react-i18next";
-import { useDirection } from "../../lib/direction";
+import { localeOf, useDirection } from "../../lib/direction";
 import { useStaff } from "../../contexts/StaffContext";
 import { useToast } from "../../contexts/ToastContext";
 import { usePermissions } from "../../hooks/usePermissions";
@@ -542,7 +542,7 @@ export const InventoryAdjustment: React.FC<InventoryAdjustmentProps> = ({
 
   // Format currencies beautifully
   const formatCurrency = (val: number) => {
-    return new Intl.NumberFormat(isRtl ? "ar-SA" : "en-US", {
+    return new Intl.NumberFormat(localeOf(), {
       style: "currency",
       currency: isRtl ? "SAR" : "USD",
       minimumFractionDigits: 2,
@@ -1194,7 +1194,7 @@ export const InventoryAdjustment: React.FC<InventoryAdjustmentProps> = ({
                             </span>
                           </td>
                           <td className="px-4 py-3 text-start text-xs text-content-muted">
-                            {new Date(record.created_at).toLocaleString(isRtl ? "ar-EG" : "en-US", {
+                            {new Date(record.created_at).toLocaleString(localeOf(), {
                               day: "numeric",
                               month: "short",
                               hour: "2-digit",

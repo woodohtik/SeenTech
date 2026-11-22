@@ -10,7 +10,7 @@ import { SmartSelect } from './ui/SmartSelect';
 import { PriceDisplay } from './PriceDisplay';
 import { useTranslation } from 'react-i18next';
 import { getFriendlyErrorMessage } from '../lib/appErrors';
-import { useDirection } from '../lib/direction';
+import { useDirection, localeOf } from '../lib/direction';
 import { useToast } from '../contexts/ToastContext';
 import { useConfirm } from '../contexts/ConfirmContext';
 import { useVerticalConfig } from '../hooks/useVerticalConfig';
@@ -693,7 +693,7 @@ export default function PurchaseOrders({
                     <td className="px-6 py-4 font-mono font-bold text-sm text-content-muted">{po.poNumber || (po as any).po_number || po.id.slice(0, 8)}</td>
                     <td className="px-6 py-4 font-black text-sm text-content">{po.supplierName}</td>
                     <td className="px-6 py-4 font-black text-sm text-brand"><PriceDisplay amount={po.totalAmount} /></td>
-                    <td className="px-6 py-4 text-xs font-bold text-content-muted">{new Date(po.orderDate).toLocaleDateString('ar-SA-u-nu-latn')}</td>
+                    <td className="px-6 py-4 text-xs font-bold text-content-muted">{new Date(po.orderDate).toLocaleDateString(localeOf())}</td>
                     <td className="px-6 py-4">
                       {poStatus === 'confirmed' || poStatus === 'received' || poStatus === 'returned' ? (
                         <div className="flex items-center gap-1.5 text-success bg-success/10 px-3 py-1 rounded-full w-fit border border-success/10">
@@ -751,7 +751,7 @@ export default function PurchaseOrders({
               <div key={po.id} className="p-4 space-y-3 hover:bg-surface-muted/10 transition-colors">
                 <div className="flex items-center justify-between gap-2">
                   <span className="text-[10px] text-content-muted font-bold">
-                    {new Date(po.orderDate).toLocaleDateString('ar-SA-u-nu-latn')}
+                    {new Date(po.orderDate).toLocaleDateString(localeOf())}
                   </span>
                   <div>
                     {poType === 'purchase' ? (
@@ -863,7 +863,7 @@ export default function PurchaseOrders({
                 </div>
                 <div className="p-4 bg-surface-muted/50 rounded-2xl border border-border">
                   <span className="text-[10px] font-black uppercase text-content-muted">{t('procurement.po_date', 'التاريخ')}</span>
-                  <p className="text-sm font-black text-content mt-1">{new Date(selectedOrder.orderDate).toLocaleDateString('ar-SA-u-nu-latn')}</p>
+                  <p className="text-sm font-black text-content mt-1">{new Date(selectedOrder.orderDate).toLocaleDateString(localeOf())}</p>
                 </div>
                 <div className="p-4 bg-surface-muted/50 rounded-2xl border border-border">
                   <span className="text-[10px] font-black uppercase text-content-muted">{t('procurement.po_status_lbl', 'حالة السند')}</span>

@@ -1,4 +1,5 @@
 import React from 'react';
+import { localeOf } from '../lib/direction';
 
 interface DateTimeDisplayProps {
   date: string | Date | number | null | undefined;
@@ -24,13 +25,9 @@ export function DateTimeDisplay({
   const year = d.getFullYear();
   const dateStr = `${day}/${month}/${year}`;
 
-  let hours = d.getHours();
-  const minutes = String(d.getMinutes()).padStart(2, '0');
-  const ampm = hours >= 12 ? 'PM' : 'AM';
-  hours = hours % 12;
-  hours = hours ? hours : 12;
-  const hoursStr = String(hours).padStart(2, '0');
-  const timeStr = `${hoursStr}:${minutes} ${ampm}`;
+  // P4 (UX-15): the time in the interface's language (ص/م in Arabic), not a
+  // fixed English AM/PM.
+  const timeStr = d.toLocaleTimeString(localeOf(), { hour: '2-digit', minute: '2-digit', hour12: true });
 
   const sizeClasses = {
     xs: 'text-[10px]',

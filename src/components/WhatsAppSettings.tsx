@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { cn } from '../lib/utils';
 import { MessageSquare, Zap, CheckCircle2, RotateCcw, Send, Sparkles, Copy, Info } from 'lucide-react';
-import { isRtlLang } from '../lib/direction';
+import { isRtlLang, localeOf } from '../lib/direction';
 import { useConfirm } from '../contexts/ConfirmContext';
 
 import { 
@@ -246,7 +246,7 @@ export default function WhatsAppSettings() {
                 {sampleMessage}
               </p>
               <div className={cn("flex items-center gap-1 text-[10px] text-content-muted dark:text-success font-bold pt-1", isRtl ? "justify-end" : "justify-start")}>
-                <span>{new Date().toLocaleTimeString(isRtl ? 'ar-SA-u-nu-latn' : 'en-US', { hour: '2-digit', minute: '2-digit' })}</span>
+                <span>{new Date().toLocaleTimeString(localeOf(), { hour: '2-digit', minute: '2-digit' })}</span>
                 <span className="text-success">✓✓</span>
               </div>
             </div>

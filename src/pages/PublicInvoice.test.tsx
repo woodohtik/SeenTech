@@ -9,7 +9,7 @@ import { afterEach, expect, test, vi } from 'vitest';
 vi.mock('react-router-dom', () => ({ useParams: () => ({ id: 'o1' }) }));
 vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: (k: string) => k, i18n: { language: 'ar' } }) }));
 vi.mock('../lib/supabase/client', () => ({ supabase: {} }));
-vi.mock('../lib/direction', () => ({ useDirection: () => ({ t: (k: string) => k, dir: 'rtl' }) }));
+vi.mock('../lib/direction', () => ({ useDirection: () => ({ t: (k: string) => k, dir: 'rtl' }), localeOf: () => 'ar-SA-u-ca-gregory-nu-latn' }));
 vi.mock('../components/CurrencySymbol', () => ({ CurrencySymbol: () => null }));
 
 import PublicInvoice from './PublicInvoice';

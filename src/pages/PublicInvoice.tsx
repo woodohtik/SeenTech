@@ -5,7 +5,7 @@ import { Download, ShoppingBag, Loader2 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { generateZatcaQR } from '../services/zatcaService';
 import { CurrencySymbol } from '../components/CurrencySymbol';
-import { useDirection } from '../lib/direction';
+import { useDirection, localeOf } from '../lib/direction';
 
 export default function PublicInvoice() {
   const { t, dir } = useDirection();
@@ -176,7 +176,7 @@ export default function PublicInvoice() {
 
           <div className="flex justify-between">
             <span className="text-slate-500">تاريخ الإصدار / Issue Date:</span>
-            <span className="font-bold text-slate-800" dir="ltr">{invoiceDate.toLocaleString('ar-SA-u-nu-latn')}</span>
+            <span className="font-bold text-slate-800" dir="ltr">{invoiceDate.toLocaleString(localeOf())}</span>
           </div>
 
           <div className="flex justify-between">

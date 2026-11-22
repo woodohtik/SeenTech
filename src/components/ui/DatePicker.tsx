@@ -3,6 +3,7 @@ import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, X } from 'lucide-r
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../../lib/utils';
+import { isRtlLang, localeOf } from '../../lib/direction';
 
 interface DatePickerProps {
   value: string; // YYYY-MM-DD
@@ -17,7 +18,10 @@ interface DatePickerProps {
 
 export function DatePicker({ value, onChange, id, className, placeholder, triggerClassName }: DatePickerProps) {
   const { t, i18n } = useTranslation();
-  const isRtl = i18n.language === 'ar';
+  // seen-readiness-fixes-task.md P4 (UX-07): Urdu is right-to-left too, and
+  // the names of months and days come from the language, not two fixed lists.
+  const isRtl = isRtlLang(i18n.language);
+  const locale = localeOf(i18n.language);
   const [isOpen, setIsOpen] = useState(false);
   
   // Parse initial date or default to today
@@ -48,26 +52,15 @@ export function DatePicker({ value, onChange, id, className, placeholder, trigge
     return () => document.removeEventListener('keydown', handleEscape);
   }, [isOpen]);
 
-  // Helper arrays for months and weekdays in both Arabic and English
-  const arabicMonths = [
-    'يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو',
-    'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'
-  ];
-  
-  const englishMonths = [
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December'
-  ];
-
-  const arabicWeekDays = ['أح', 'اث', 'ثل', 'أر', 'خم', 'جم', 'سب'];
-  const englishWeekDays = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
-
-  const months = isRtl ? arabicMonths : englishMonths;
-  const weekDays = isRtl ? arabicWeekDays : englishWeekDays;
+  const months = Array.from({ length: 12 }, (_, m) =>
+    new Intl.DateTimeFormat(locale, { month: 'long', timeZone: 'UTC' }).format(new Date(Date.UTC(2026, m, 1))));
+  // 2026-11-01 is a Sunday: the week starts on Sunday, as before.
+  const weekDays = Array.from({ length: 7 }, (_, d) =>
+    new Intl.DateTimeFormat(locale, { weekday: 'short', timeZone: 'UTC' }).format(new Date(Date.UTC(2026, 10, 1 + d))));
 
   // Format selected date for display button
   const formatDisplayDate = (dateStr: string) => {
-    if (!dateStr) return placeholder || (isRtl ? 'اختر التاريخ' : 'Select Date');
+    if (!dateStr) return placeholder || t('common.date_picker.select_date');
     const date = new Date(dateStr);
     if (isNaN(date.getTime())) return dateStr;
     
@@ -75,7 +68,7 @@ export function DatePicker({ value, onChange, id, className, placeholder, trigge
     const month = months[date.getMonth()];
     const year = date.getFullYear();
     
-    return isRtl ? `${day} ${month} ${year}` : `${month} ${day}, ${year}`;
+    return new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'long', year: 'numeric' }).format(date);
   };
 
   // Calendar generation helpers
@@ -196,15 +189,15 @@ export function DatePicker({ value, onChange, id, className, placeholder, trigge
                   onChange('');
                 }
               }}
-              title={isRtl ? 'مسح التاريخ' : 'Clear date'}
-              aria-label={isRtl ? 'مسح التاريخ' : 'Clear date'}
+              title={t('common.date_picker.clear')}
+              aria-label={t('common.date_picker.clear')}
               className="p-1 text-content-muted hover:text-danger hover:bg-danger/10 rounded-full transition-all cursor-pointer"
             >
               <X size={14} />
             </span>
           )}
           <span className="text-[10px] text-brand bg-brand/10 hover:bg-brand/20 transition-all rounded-lg px-2 py-0.5">
-            {isRtl ? 'تغيير' : 'Change'}
+            {t('common.date_picker.change')}
           </span>
         </div>
       </button>
@@ -229,7 +222,7 @@ export function DatePicker({ value, onChange, id, className, placeholder, trigge
               <button
                 type="button"
                 onClick={isRtl ? handleNextMonth : handlePrevMonth}
-                aria-label={isRtl ? 'الشهر التالي' : 'Next month'}
+                aria-label={t('common.date_picker.next_month')}
                 className="p-1.5 hover:bg-surface-muted rounded-xl text-content-muted hover:text-content transition-all outline-none focus-visible:ring-2 focus-visible:ring-brand"
               >
                 <ChevronRight size={16} />
@@ -242,7 +235,7 @@ export function DatePicker({ value, onChange, id, className, placeholder, trigge
               <button
                 type="button"
                 onClick={isRtl ? handlePrevMonth : handleNextMonth}
-                aria-label={isRtl ? 'الشهر السابق' : 'Previous month'}
+                aria-label={t('common.date_picker.previous_month')}
                 className="p-1.5 hover:bg-surface-muted rounded-xl text-content-muted hover:text-content transition-all outline-none focus-visible:ring-2 focus-visible:ring-brand"
               >
                 <ChevronLeft size={16} />
@@ -296,14 +289,14 @@ export function DatePicker({ value, onChange, id, className, placeholder, trigge
                 onClick={() => handleSelectDay(formatDateString(new Date()))}
                 className="text-[10px] font-black text-brand hover:underline"
               >
-                {isRtl ? 'اليوم' : 'Today'}
+                {t('common.date_picker.today')}
               </button>
               <button
                 type="button"
                 onClick={() => setIsOpen(false)}
                 className="text-[10px] font-black text-content-muted hover:text-content"
               >
-                {isRtl ? 'إغلاق' : 'Close'}
+                {t('common.date_picker.close')}
               </button>
             </div>
           </motion.div>

@@ -4,6 +4,7 @@ import { MessageSquareWarning, ThumbsDown, ThumbsUp } from 'lucide-react';
 import { supabase } from '../lib/supabase/client';
 import { cn } from '../lib/utils';
 
+import { localeOf } from '../lib/direction';
 interface FeedbackItem {
   id: string;
   rating: 'up' | 'down';
@@ -50,7 +51,7 @@ export default function SaaSAssistantFeedback() {
 
   useEffect(() => { void load(); }, [load]);
 
-  const locale = i18n.language === 'en' ? 'en-US' : i18n.language === 'ur' ? 'ur-PK-u-nu-latn' : 'ar-SA-u-nu-latn';
+  const locale = localeOf(i18n.language);
 
   return (
     <div className="bg-surface p-8 rounded-[12px] border border-border space-y-4">

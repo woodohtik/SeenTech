@@ -34,7 +34,7 @@ import { saveLastKnown, getLastKnown } from '../lib/offline/lastKnownCache';
 import { isNetworkFailure } from '../lib/offline/outbox';
 import { Supplier, PurchaseOrder, PurchaseReturn, InventoryItem } from '../types';
 import { decodeInventoryDescription } from '../utils/b2bHelper';
-import { useDirection } from '../lib/direction';
+import { useDirection, localeOf } from '../lib/direction';
 import { addSupplierTransaction } from '../services/supplierAccountsService';
 import {
   SUPPLIER_IMPORT_COLUMN_FIELDS,
@@ -1068,7 +1068,7 @@ export default function Suppliers({ tenantId }: { tenantId: string }) {
                                     {(po.status === 'confirmed' || po.status === 'received' || po.status === 'returned') ? t('procurement.status_approved_received', 'معتمد ومستلم') : po.status === 'draft' ? t('procurement.status_draft', 'مسودة') : t('procurement.status_pending', 'معلق')}
                                   </span>
                                 </div>
-                                <div className="text-xs text-content-muted mt-1">{t('procurement.order_date_prefix', 'تاريخ الطلب:')} {new Date(po.orderDate).toLocaleDateString('ar-EG-u-nu-latn')}</div>
+                                <div className="text-xs text-content-muted mt-1">{t('procurement.order_date_prefix', 'تاريخ الطلب:')} {new Date(po.orderDate).toLocaleDateString(localeOf())}</div>
                               </div>
                               <div className="text-left">
                                 <div className="font-extrabold text-content"><PriceDisplay amount={po.totalAmount} /></div>

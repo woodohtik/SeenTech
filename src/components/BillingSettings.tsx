@@ -33,7 +33,7 @@ import { previewCoupon, CouponPreview } from '../services/couponService';
 import { getBankTransferSettings, DEFAULT_BANK_TRANSFER_SETTINGS, BankTransferSettings } from '../services/bankTransferService';
 import { useToast } from '../contexts/ToastContext';
 
-import { isRtlLang } from '../lib/direction';
+import { isRtlLang, localeOf } from '../lib/direction';
 
 interface BillingSettingsProps {
   tenantId: string;
@@ -269,7 +269,7 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
   };
 
   const getNextBillingDate = () => {
-    const locale = isRtl ? 'ar-SA-u-nu-latn' : 'en-US';
+    const locale = localeOf();
     if (tenant?.subscription_end_date) {
       return new Date(tenant.subscription_end_date).toLocaleDateString(locale, { year: 'numeric', month: 'long', day: 'numeric' });
     }
@@ -318,7 +318,7 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
               <p className="text-xs text-content-muted font-bold mt-0.5">
                 {t('billing.pending_request_desc', {
                   planName: pendingRequests[0].plan_name,
-                  date: new Date(pendingRequests[0].created_at).toLocaleDateString(isRtl ? 'ar-SA-u-nu-latn' : 'en-US')
+                  date: new Date(pendingRequests[0].created_at).toLocaleDateString(localeOf())
                 })}
               </p>
               {pendingRequests[0].discount_amount ? (
@@ -527,7 +527,7 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
                       {inv.notes || t('billing.history_notes_fallback')}
                     </p>
                     <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 text-xs text-content-muted font-bold mt-1">
-                      <span>{new Date(inv.received_at || inv.created_at).toLocaleDateString('ar-SA-u-nu-latn', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
+                      <span>{new Date(inv.received_at || inv.created_at).toLocaleDateString(localeOf(), { year: 'numeric', month: 'long', day: 'numeric' })}</span>
                       <span>•</span>
                       <span className="font-mono dir-ltr">
                         #{inv.reference || inv.id.slice(0, 8).toUpperCase()}

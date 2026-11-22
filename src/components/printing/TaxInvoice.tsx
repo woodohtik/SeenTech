@@ -9,6 +9,7 @@ import { FileText, Printer, Mail, Phone, MapPin, Layers, Globe } from 'lucide-re
 import { CurrencySymbol } from '../CurrencySymbol';
 import type { ProductTaxType } from '../../types';
 
+import { localeOf } from '../../lib/direction';
 export interface InvoiceItem {
   id?: string;
   name: string;
@@ -266,7 +267,7 @@ export default function TaxInvoice({
                 <span className="text-xs font-black text-slate-800">تاريخ التوريد</span>
                 <span className="block text-[9px] text-slate-400 uppercase font-sans font-bold">Date of Supply</span>
               </div>
-              <span className="font-bold text-slate-800 text-sm" dir="ltr">{new Date(supplyDate || issueDate).toLocaleDateString('ar-SA-u-nu-latn')}</span>
+              <span className="font-bold text-slate-800 text-sm" dir="ltr">{new Date(supplyDate || issueDate).toLocaleDateString(localeOf())}</span>
             </div>
           </div>
 

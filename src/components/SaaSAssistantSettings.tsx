@@ -7,7 +7,7 @@ import {
 import { motion } from 'motion/react';
 import { useTranslation } from 'react-i18next';
 import { getFriendlyErrorMessage } from '../lib/appErrors';
-import { isRtlLang } from '../lib/direction';
+import { isRtlLang, localeOf } from '../lib/direction';
 import { useToast } from '../contexts/ToastContext';
 import { useConfirm } from '../contexts/ConfirmContext';
 import { SmartSelect } from './ui/SmartSelect';
@@ -435,7 +435,7 @@ export default function SaaSAssistantSettings() {
                       <p className="text-[11px] text-content-muted font-medium">
                         {t('saas.assistant_settings.provider_last_tested', {
                           date: new Date(p.lastTestedAt).toLocaleString(
-                            i18n.language === 'en' ? 'en-US' : i18n.language === 'ur' ? 'ur-PK-u-nu-latn' : 'ar-SA-u-nu-latn'
+                            localeOf(i18n.language)
                           ),
                         })}
                       </p>
@@ -674,7 +674,7 @@ export default function SaaSAssistantSettings() {
                   {t('saas.assistant_settings.last_updated_by', {
                     name: settings.updatedBy || '—',
                     date: new Date(settings.updatedAt).toLocaleString(
-                      i18n.language === 'en' ? 'en-US' : i18n.language === 'ur' ? 'ur-PK-u-nu-latn' : 'ar-SA-u-nu-latn'
+                      localeOf(i18n.language)
                     ),
                   })}
                 </p>

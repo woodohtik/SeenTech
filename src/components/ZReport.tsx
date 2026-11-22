@@ -112,7 +112,7 @@ export default function ZReport({ data, onClose }: ZReportProps) {
       localStorage.setItem('last_zreport_whatsapp_phone', recipientPhone);
     }
 
-    const today = new Date().toLocaleDateString('ar-EG-u-nu-latn', { year: 'numeric', month: 'long', day: 'numeric' });
+    const today = new Date().toLocaleDateString(localeOf(i18n.language), { year: 'numeric', month: 'long', day: 'numeric' });
     let message = `*${t('z_report.whatsapp_message_title', 'تقرير إغلاق')} ${isDaily ? t('z_report.daily_z_report', 'تقرير المبيعات اليومي (Z-Report)') : t('z_report.shift_z_report', 'تقرير إغلاق الوردية')}*\n`;
     message += `*${t('z_report.reference_number', 'الرقم المرجعي')}:* #${data.id.slice(0, 8).toUpperCase()}\n`;
     message += `*${t('z_report.responsible_employee', 'الموظف المسئول')}:* ${data.staffName}\n`;

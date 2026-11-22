@@ -15,7 +15,7 @@ import type { TooltipValueType } from 'recharts';
 import { useTranslation } from 'react-i18next';
 import { useToast } from '../contexts/ToastContext';
 
-import { isRtlLang } from '../lib/direction';
+import { isRtlLang, localeOf } from '../lib/direction';
 
 export default function SaaSReports() {
   const { t, i18n } = useTranslation();
@@ -74,7 +74,7 @@ export default function SaaSReports() {
 
       const monthly: { month_start: string; revenue: number }[] = revenueReport.monthly || [];
       const chartData = monthly.map(m => ({
-        month: new Date(m.month_start).toLocaleDateString(i18n.language === 'en' ? 'en-US' : isRtl ? 'ar-SA-u-nu-latn' : 'en-US', { month: 'short' }),
+        month: new Date(m.month_start).toLocaleDateString(localeOf(i18n.language), { month: 'short' }),
         revenue: Number(m.revenue) || 0
       })).slice(-6);
 

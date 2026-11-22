@@ -45,15 +45,19 @@ export function currentLang(): AppLang {
   return normalizeLang(i18n.language);
 }
 
-/** BCP-47 locale for Intl / toLocaleString, always with Latin digits. */
+/**
+ * BCP-47 locale for Intl / toLocaleString, always with Latin digits and the
+ * Gregorian calendar -- seen-readiness-fixes-task.md P4 (UX-15): plain ar-SA
+ * gives the Hijri (Umm al-Qura) calendar on older ICU (old Android WebViews).
+ */
 export function localeOf(lang?: string | null): string {
   switch (normalizeLang(lang ?? i18n.language)) {
     case 'ar':
-      return 'ar-SA-u-nu-latn';
+      return 'ar-SA-u-ca-gregory-nu-latn';
     case 'ur':
-      return 'ur-PK-u-nu-latn';
+      return 'ur-PK-u-ca-gregory-nu-latn';
     default:
-      return 'en-US';
+      return 'en-US-u-ca-gregory';
   }
 }
 

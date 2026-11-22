@@ -22,7 +22,7 @@ import {
   Download,
 } from 'lucide-react';
 import { cn } from '../lib/utils';
-import { isRtlLang } from '../lib/direction';
+import { isRtlLang, localeOf } from '../lib/direction';
 import { getFriendlyErrorMessage } from '../lib/appErrors';
 import { SmartSelect } from './ui/SmartSelect';
 
@@ -860,7 +860,7 @@ export default function PrinterSettings() {
         <div className="text-center pb-2 border-b border-black mb-3">
           <h2 className="text-base font-bold">{t('settings_page.printer.test_print_title')}</h2>
           <p className="text-[10px]">{t('settings_page.printer.system_name')}</p>
-          <p className="text-[10px] mt-1">{new Date().toLocaleString(isRtl ? 'ar-SA-u-nu-latn' : 'en-US')}</p>
+          <p className="text-[10px] mt-1">{new Date().toLocaleString(localeOf())}</p>
         </div>
         <div className="space-y-1 mb-3">
           <p><strong>{t('settings_page.printer.printer_name_label')}</strong> {currentTestPrinter ? printerDisplayName(currentTestPrinter) : t('settings_page.printer.system_default_name')}</p>

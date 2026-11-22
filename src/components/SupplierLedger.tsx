@@ -28,7 +28,7 @@ import DateTimeDisplay from './DateTimeDisplay';
 import PaymentVoucherModal from './PaymentVoucherModal';
 import { PriceDisplay } from './PriceDisplay';
 import { cn } from '../lib/utils';
-import { useDirection } from '../lib/direction';
+import { useDirection, localeOf } from '../lib/direction';
 import WhatsAppPhoneModal from './ui/WhatsAppPhoneModal';
 import { DatePicker } from './ui/DatePicker';
 import { SmartSelect } from './ui/SmartSelect';
@@ -196,7 +196,7 @@ export default function SupplierLedger({
         <h2 style="margin:0 0 2px;">${escapeHtml(tenantName)}</h2>
         <p style="margin:0 0 16px;color:#888;font-size:11px;">${t('procurement.supplier_voucher_reprint_title', 'إعادة طباعة سند حركة')}</p>
         <table style="width:100%;border-collapse:collapse;">
-          ${row(t('common.date', 'التاريخ'), txDate.toLocaleDateString('ar-SA-u-nu-latn'))}
+          ${row(t('common.date', 'التاريخ'), txDate.toLocaleDateString(localeOf()))}
           ${row(t('procurement.reference_doc', 'المرجع / السند'), escapeHtml(tx.reference_number))}
           ${row(t('procurement.po_supplier', 'المورد'), escapeHtml(supplier.name))}
           ${row(t('procurement.doc_description', 'الوصف'), escapeHtml(tx.notes || '—'))}
@@ -221,7 +221,7 @@ export default function SupplierLedger({
   };
 
   const buildLedgerWhatsAppMessage = () => {
-    const today = new Date().toLocaleDateString('ar-EG-u-nu-latn', { year: 'numeric', month: 'long', day: 'numeric' });
+    const today = new Date().toLocaleDateString(localeOf(), { year: 'numeric', month: 'long', day: 'numeric' });
 
     let message = `*${t('procurement.ledger_of_supplier_at', 'كشف حساب المورد لدى')} ${tenantName}*\n`;
     message += `*${t('procurement.supplier_name', 'المورد')}:* ${supplier.name}\n`;
@@ -327,7 +327,7 @@ export default function SupplierLedger({
             <p className="text-xs font-bold text-content-muted mt-1">{t('procurement.detailed_statement_partners', 'كشف حركـات الحساب التفصيلي للشركاء والموردين')}</p>
           </div>
           <div className="text-left font-mono text-[9px] text-content-muted">
-            <p>{t('procurement.printed_on', 'Printed on')}: {new Date().toLocaleString('ar-SA-u-nu-latn')}</p>
+            <p>{t('procurement.printed_on', 'Printed on')}: {new Date().toLocaleString(localeOf())}</p>
             <p>System Ref: Seen-POS-Ledger</p>
           </div>
         </div>
@@ -481,7 +481,7 @@ export default function SupplierLedger({
                   return (
                     <tr key={tx.id} className="hover:bg-surface-muted/40 transition-colors">
                       <td className="p-4 text-content-muted font-medium">
-                        <div>{txDate.toLocaleDateString('ar-SA-u-nu-latn')}</div>
+                        <div>{txDate.toLocaleDateString(localeOf())}</div>
                         <div className="text-[10px] text-content-muted font-mono mt-0.5">{txDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</div>
                       </td>
                       <td className="p-4 font-mono font-black text-content uppercase">

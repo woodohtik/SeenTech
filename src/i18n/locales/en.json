@@ -672,7 +672,16 @@
     "wipe_data": "Wipe All Data",
     "wipe_warning": "About to wipe all records (orders, customers, invoices) for tenant",
     "write_name_to_confirm": "Type shop name to confirm",
-    "logout_pending_sync": "{{count}} operation(s) on this device haven't reached the server yet; they are sent only once the person who made them signs in again. Sign out anyway?"
+    "logout_pending_sync": "{{count}} operation(s) on this device haven't reached the server yet; they are sent only once the person who made them signs in again. Sign out anyway?",
+    "date_picker": {
+      "select_date": "Select date",
+      "clear": "Clear date",
+      "change": "Change",
+      "next_month": "Next month",
+      "previous_month": "Previous month",
+      "today": "Today",
+      "close": "Close"
+    }
   },
   "compliance": {
     "check_legal_name": "Legal Name of the Business",
