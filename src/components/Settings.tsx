@@ -560,7 +560,7 @@ export default function Settings({ tenantId }: SettingsProps) {
    * padding-bottom, which would otherwise drop the bottom breathing room.
    */
   return (
-    <div className={cn(
+    <div id="tour-settings-panel" className={cn(
       "p-3 sm:p-5 lg:p-8 pb-20 sm:pb-20 lg:pb-20 max-w-7xl mx-auto space-y-6 lg:space-y-8 w-full min-w-0",
       isRtl ? "text-right" : "text-left"
     )} dir={isRtl ? "rtl" : "ltr"}>

@@ -1012,7 +1012,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
             currentStaff.id,
             currentStaff.name,
             'delete_invoice',
-            `قوم بحذف الفاتورة / الطلب رقم ${orderNumber}`
+            `قام بحذف الفاتورة / الطلب رقم ${orderNumber}`
           );
         }
 

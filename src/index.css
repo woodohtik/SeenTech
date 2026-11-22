@@ -133,6 +133,13 @@ h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-heading);
 }
 
+/* seen-readiness-fixes-task.md P4 (UX-17): numbers, IBANs and phone numbers
+   read left to right inside Arabic text. Used across the app; never defined. */
+@utility dir-ltr {
+  direction: ltr;
+  unicode-bidi: isolate;
+}
+
 @utility scrollbar-hide {
   -ms-overflow-style: none;
   scrollbar-width: none;

@@ -457,7 +457,7 @@
     "days": "أيام",
     "default_store_name": "تطبيق سين",
     "delete": "حذف",
-    "delete_success": "Item deleted successfully",
+    "delete_success": "تم الحذف بنجاح",
     "delete_test_data": "حذف بيانات الاختبار فقط",
     "delete_test_data_disabled": "هذه الميزة معطَّلة مؤقتاً حالياً لإعادة تصميمها بشكل أكثر أماناً",
     "delete_test_data_failed": "فشل حذف البيانات التجريبية",
@@ -3735,7 +3735,7 @@
     "plans_toggle_failed": "فشل تحديث حالة الباقة",
     "plans_toggle_success": "تم تحديث حالة الباقة",
     "platform_dashboard_title": "لوحة تحكم المنصة 🚀",
-    "platform_sales": "Platform Sales",
+    "platform_sales": "مبيعات المنصة",
     "platform_settings_saved_success": "تم تحديث إعدادات المنصة بنجاح",
     "quick_search": "بحث سريع...",
     "recurring_revenue_growth": "نمو الإيرادات المتكررة",
@@ -4056,7 +4056,7 @@
     "total": "الإجمالي"
   },
   "settings": {
-    "appearance": "Appearance",
+    "appearance": "المظهر",
     "staff": {
       "permissions": {
         "all_roles": "الكل",
@@ -5267,8 +5267,8 @@
     "zatca_compliant": "متوافق مع هيئة الزكاة والضريبة والجمارك"
   },
   "themes": {
-    "dark": "Dark",
-    "light": "Light"
+    "dark": "داكن",
+    "light": "فاتح"
   },
   "tour": {
     "controls": {

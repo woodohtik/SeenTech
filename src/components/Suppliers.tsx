@@ -60,7 +60,6 @@ import { LEGACY_SUPPLIER_CATEGORY_SEED } from '../services/categoryService';
 import Branding from './Branding';
 import { PriceDisplay } from './PriceDisplay';
 import PurchaseOrders from './PurchaseOrders';
-import PurchaseReturns from './PurchaseReturns';
 import SuppliersRegistry from './SuppliersRegistry';
 import SupplierLedger from './SupplierLedger';
 import PaymentVoucherModal from './PaymentVoucherModal';

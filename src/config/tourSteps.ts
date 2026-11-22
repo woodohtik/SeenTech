@@ -235,9 +235,11 @@ export const TOUR_STEPS: TourStepDef[] = [
   {
     id: 'settings',
     route: '/settings',
+    // P4 (UX-13): '#tour-settings-nav-mobile' existed nowhere; the settings page
+    // and its nav item (Layout.tsx) are the real targets.
     element: '#tour-settings-panel',
-    mobileElement: '#tour-settings-nav-mobile',
-    fallbacks: ['#tour-settings-nav-mobile', '#tour-settings-panel'],
+    mobileElement: '#tour-settings-nav',
+    fallbacks: ['#tour-settings-nav', '#tour-settings-panel'],
     side: 'right',
     align: 'start',
     permission: 'settings.view',
