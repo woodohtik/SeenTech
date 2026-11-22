@@ -19,7 +19,7 @@ seen-readiness-fixes-task.md P2.6. This file records what has actually been chec
 | The 30 truth-table sales: lines add up to the header | same | 30/30 |
 | Ordered signer: PIH chain, fixed date/UUID, a broken document stops the chain | `src/server/zatcaChain.test.ts` | PASS |
 
-The tests sign with a **test-only** self-signed key (`src/server/__fixtures__`). ZATCA has never seen these documents.
+The tests sign with a **test-only** key and self-signed certificate made in memory on every run (`src/server/zatcaTestCertificate.ts`; no key file in the repository). ZATCA has never seen these documents.
 
 ## Not yet run (needs ZATCA's tools or account)
 

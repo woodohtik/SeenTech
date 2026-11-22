@@ -1,16 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import fs from 'fs';
-import path from 'path';
 import { linesFromSnapshot, paymentMeansCode, riyadhDateTime, signPendingDocuments, type Db } from './zatcaChain';
+import { makeTestCertificate } from './zatcaTestCertificate';
 import { ZATCA_FIRST_PIH, readZatcaCertificate, verifyInvoiceHashSignature, zatcaInvoiceHash } from './zatcaXades';
 
-// seen-readiness-fixes-task.md P2.1/P2.2. Test-only key and certificate.
-const FIX = path.join(__dirname, '__fixtures__');
-const key = {
-  privateKeyPem: fs.readFileSync(path.join(FIX, 'zatca-test-key.pem'), 'utf8'),
-  certificate: fs.readFileSync(path.join(FIX, 'zatca-test-cert.pem'), 'utf8'),
-  since: '2026-11-01T00:00:00Z',
-};
+// seen-readiness-fixes-task.md P2.1/P2.2. A test-only key and certificate, made in memory.
+const testCert = makeTestCertificate();
+const key = { privateKeyPem: testCert.privateKeyPem, certificate: testCert.certificatePem, since: '2026-11-01T00:00:00Z' };
 const seller = { legalName: 'مشغل', vatNumber: '399999999900003' };
 const T = 'tenant-1';
 

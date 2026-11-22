@@ -1,6 +1,4 @@
 import { describe, expect, it } from 'vitest';
-import fs from 'fs';
-import path from 'path';
 import crypto from 'crypto';
 import { create } from 'xmlbuilder2';
 import { buildZatcaDocument, signZatcaDocument, zatcaTotals, type ZatcaDocumentInput } from './zatcaInvoiceXml';
@@ -9,12 +7,13 @@ import {
   verifyInvoiceHashSignature, zatcaHashInput, zatcaInvoiceHash, qrFromDocument,
 } from './zatcaXades';
 import taxCases from '../shared/taxEngineCases.json';
+import { makeTestCertificate, TEST_CERT_ISSUER, TEST_CERT_SERIAL_HEX } from './zatcaTestCertificate';
 
-// seen-readiness-fixes-task.md P2.1. Test-only key and self-signed
-// certificate (src/server/__fixtures__) -- never issued by ZATCA.
-const FIX = path.join(__dirname, '__fixtures__');
-const privateKeyPem = fs.readFileSync(path.join(FIX, 'zatca-test-key.pem'), 'utf8');
-const certificate = readZatcaCertificate(fs.readFileSync(path.join(FIX, 'zatca-test-cert.pem'), 'utf8'));
+// seen-readiness-fixes-task.md P2.1. A test-only key and self-signed
+// certificate, made in memory (zatcaTestCertificate.ts) -- never issued by ZATCA.
+const testCert = makeTestCertificate();
+const privateKeyPem = testCert.privateKeyPem;
+const certificate = readZatcaCertificate(testCert.certificatePem);
 const key = { privateKeyPem, certificate, signingTime: '2026-11-22T10:15:00' };
 
 const seller = { legalName: 'مشغل سين للخياطة', vatNumber: '399999999900003', crn: '1010010000', street: 'شارع الملك فهد', buildingNumber: '1234', district: 'العليا', city: 'الرياض', postalCode: '12345' };
@@ -132,8 +131,8 @@ describe('the hash and the signature', () => {
     const xml = signZatcaDocument(input(), key).xml;
     expect(signedPropertiesInDocument(xml)).toBe(signedPropertiesForDigest({ signingTime: key.signingTime, certificate }));
     expect(text(xml, 'ds:X509Certificate')[0]).toBe(certificate.base64);
-    expect(text(xml, 'ds:X509SerialNumber')[0]).toBe(BigInt('0x1234567890abcdef').toString(10));
-    expect(text(xml, 'ds:X509IssuerName')[0]).toBe('CN=TSZEINVOICE-SubCA-1-TEST, DC=extgazt, DC=gov, DC=local');
+    expect(text(xml, 'ds:X509SerialNumber')[0]).toBe(BigInt(`0x${TEST_CERT_SERIAL_HEX}`).toString(10));
+    expect(text(xml, 'ds:X509IssuerName')[0]).toBe(TEST_CERT_ISSUER);
   });
 
   it("the certificate is read the same from a PEM and from ZATCA's binarySecurityToken", () => {
