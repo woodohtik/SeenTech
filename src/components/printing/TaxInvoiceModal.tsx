@@ -12,7 +12,7 @@ import StandardTaxInvoice from './TaxInvoice';
 import SimplifiedTaxInvoice from './SimplifiedTaxInvoice';
 import { downloadInvoicePDF, shareOrDownloadInvoicePDF } from '../../utils/pdfGenerator';
 import { useToast } from '../../contexts/ToastContext';
-import { buildWhatsAppMessage, getWhatsAppTemplate } from '../../utils/whatsapp';
+import { buildWhatsAppMessage, getWhatsAppTemplate, sendWhatsAppMessage } from '../../utils/whatsapp';
 import { isRtlLang } from '../../lib/direction';
 import { taxRatePercent } from '../../shared/taxRate';
 
@@ -146,7 +146,7 @@ export function TaxInvoiceDocument({ order, tenant, onClose }: TaxInvoiceModalPr
   // actual PDF file is a separate, explicit, optional action now
   // (handleAttachInvoicePdf below).
   const handleShareWhatsApp = () => {
-    window.open(`https://wa.me/?text=${encodeURIComponent(buildTaxInvoiceWhatsAppText())}`, '_blank');
+    sendWhatsAppMessage('', buildTaxInvoiceWhatsAppText());
   };
 
   // The optional "attach as PDF too" step split out of handleShareWhatsApp

@@ -4918,7 +4918,9 @@
       "toggle_title": "Smart Invoices & Notifications",
       "variable_added_toast": "Variable added",
       "variable_inserted_toast": "Variable inserted",
-      "vars_selector_label": "Click any variable below to insert it at the cursor position:"
+      "vars_selector_label": "Click any variable below to insert it at the cursor position:",
+      "save_failed": "WhatsApp settings could not be saved",
+      "disabled_notice": "WhatsApp sending is turned off in the shop settings"
     },
     "fabric_estimate": {
       "title": "Fabric per thobe",

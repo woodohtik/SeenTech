@@ -4921,7 +4921,9 @@
       "toggle_title": "الفواتير والإشعارات الذكية",
       "variable_added_toast": "تمت إضافة المتغير",
       "variable_inserted_toast": "تم إدراج المتغير",
-      "vars_selector_label": "انقر على أي متغير بالأسفل لإضافته لموقع المؤشر في النص:"
+      "vars_selector_label": "انقر على أي متغير بالأسفل لإضافته لموقع المؤشر في النص:",
+      "save_failed": "تعذّر حفظ إعدادات واتساب",
+      "disabled_notice": "إرسال واتساب متوقف في إعدادات المحل"
     },
     "fabric_estimate": {
       "title": "حساب قماش الثوب",

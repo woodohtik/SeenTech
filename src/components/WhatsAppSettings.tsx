@@ -9,9 +9,8 @@ import {
   DEFAULT_WHATSAPP_TEMPLATE, 
   WHATSAPP_VARIABLES, 
   getWhatsAppTemplate, 
-  saveWhatsAppTemplate, 
   isWhatsAppEnabled, 
-  setWhatsAppEnabled, 
+  saveShopWhatsAppSettings,
   buildWhatsAppMessage, 
   sendWhatsAppMessage 
 } from '../utils/whatsapp';
@@ -39,24 +38,34 @@ export default function WhatsAppSettings() {
     setTimeout(() => setToastMessage(null), 2500);
   };
 
-  const handleToggle = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // P4 (OPERATIONS-13): saved for the whole shop, not this browser.
+  const handleToggle = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.checked;
     setEnabled(val);
-    setWhatsAppEnabled(val);
-    showToast(val ? t('settings_page.whatsapp.enabled_toast') : t('settings_page.whatsapp.disabled_toast'));
+    try {
+      await saveShopWhatsAppSettings({ enabled: val });
+      showToast(val ? t('settings_page.whatsapp.enabled_toast') : t('settings_page.whatsapp.disabled_toast'));
+    } catch {
+      setEnabled(!val);
+      showToast(t('settings_page.whatsapp.save_failed'));
+    }
   };
 
-  const handleSave = () => {
-    saveWhatsAppTemplate(template);
-    setSavedSuccess(true);
-    showToast(t('settings_page.whatsapp.saved_toast'));
-    setTimeout(() => setSavedSuccess(false), 3000);
+  const handleSave = async () => {
+    try {
+      await saveShopWhatsAppSettings({ template });
+      setSavedSuccess(true);
+      showToast(t('settings_page.whatsapp.saved_toast'));
+      setTimeout(() => setSavedSuccess(false), 3000);
+    } catch {
+      showToast(t('settings_page.whatsapp.save_failed'));
+    }
   };
 
   const handleReset = async () => {
     if (await confirm(t('settings_page.whatsapp.reset_confirm'))) {
       setTemplate(DEFAULT_WHATSAPP_TEMPLATE);
-      saveWhatsAppTemplate(DEFAULT_WHATSAPP_TEMPLATE);
+      await saveShopWhatsAppSettings({ template: DEFAULT_WHATSAPP_TEMPLATE }).catch(() => {});
       showToast(t('settings_page.whatsapp.reset_toast'));
     }
   };

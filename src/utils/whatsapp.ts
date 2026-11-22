@@ -34,26 +34,44 @@ export const WHATSAPP_VARIABLES = [
   },
 }));
 
-export function getWhatsAppTemplate(): string {
-  if (typeof localStorage === 'undefined') return getDefaultWhatsAppTemplate();
-  return localStorage.getItem('seen_whatsapp_template') || getDefaultWhatsAppTemplate();
+/* seen-readiness-fixes-task.md P4 (OPERATIONS-13): the template and the
+   switch are the shop's (tenants.whatsapp_settings), shared by every device.
+   Layout loads them with the shop row (useShopWhatsAppSettings); until then,
+   and for a value never saved for the shop, the old per-device value or the
+   default applies. */
+type ShopWhatsApp = { enabled?: boolean; template?: string };
+let shopSettings: ShopWhatsApp | null = null;
+
+export function setShopWhatsAppSettings(settings: ShopWhatsApp | null | undefined): void {
+  shopSettings = settings && typeof settings === 'object' ? settings : null;
 }
 
-export function saveWhatsAppTemplate(template: string): void {
-  if (typeof localStorage === 'undefined') return;
-  localStorage.setItem('seen_whatsapp_template', template);
+const local = (key: string): string | null => {
+  try { return typeof localStorage === 'undefined' ? null : localStorage.getItem(key); } catch { return null; }
+};
+
+export function getWhatsAppTemplate(): string {
+  return shopSettings?.template || local('seen_whatsapp_template') || getDefaultWhatsAppTemplate();
 }
 
 export function isWhatsAppEnabled(): boolean {
-  if (typeof localStorage === 'undefined') return true;
-  const val = localStorage.getItem('seen_whatsapp_enabled');
+  if (typeof shopSettings?.enabled === 'boolean') return shopSettings.enabled;
+  const val = local('seen_whatsapp_enabled');
   return val === null ? true : val === 'true';
 }
 
-export function setWhatsAppEnabled(enabled: boolean): void {
-  if (typeof localStorage === 'undefined') return;
-  localStorage.setItem('seen_whatsapp_enabled', String(enabled));
+/** Saves for the whole shop; resolves to the saved settings. */
+export async function saveShopWhatsAppSettings(next: ShopWhatsApp): Promise<ShopWhatsApp> {
+  const { supabase } = await import('../lib/supabase/client');
+  const merged = { enabled: isWhatsAppEnabled(), template: getWhatsAppTemplate(), ...next };
+  const { data, error } = await supabase.rpc('save_whatsapp_settings', { p_enabled: merged.enabled, p_template: merged.template });
+  if (error) throw error;
+  setShopWhatsAppSettings(data as ShopWhatsApp);
+  return data as ShopWhatsApp;
 }
+
+/** The event the toast stack shows when a send is refused because WhatsApp is off. */
+export const WHATSAPP_DISABLED_EVENT = 'seen-whatsapp-disabled';
 
 /**
  * استبدال المتغيرات في القالب بقيم حقيقية
@@ -89,6 +107,11 @@ export function buildWhatsAppMessage(
 }
 
 export function sendWhatsAppMessage(phone: string, message: string): void {
+  // P4 (OPERATIONS-13): the shop turned WhatsApp off -- say so, open nothing.
+  if (!isWhatsAppEnabled()) {
+    if (typeof window !== 'undefined') window.dispatchEvent(new Event(WHATSAPP_DISABLED_EVENT));
+    return;
+  }
   const cleanPhone = (phone || '').replace(/\D/g, '');
   const encodedText = encodeURIComponent(message);
   const whatsappUrl = cleanPhone 

@@ -86,7 +86,13 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       showToast('error', getFriendlyErrorMessage(info), t('errors.write_failed'));
     };
     window.addEventListener(APP_WRITE_ERROR_EVENT, onWriteError);
-    return () => window.removeEventListener(APP_WRITE_ERROR_EVENT, onWriteError);
+    // P4 (OPERATIONS-13): a send refused because the shop turned WhatsApp off.
+    const onWhatsAppOff = () => showToast('info', t('settings_page.whatsapp.disabled_notice'));
+    window.addEventListener('seen-whatsapp-disabled', onWhatsAppOff);
+    return () => {
+      window.removeEventListener(APP_WRITE_ERROR_EVENT, onWriteError);
+      window.removeEventListener('seen-whatsapp-disabled', onWhatsAppOff);
+    };
   }, [showToast, t]);
 
   return (

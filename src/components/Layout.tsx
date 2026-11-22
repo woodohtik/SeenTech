@@ -1,4 +1,5 @@
 import React from 'react';
+import { setShopWhatsAppSettings } from '../utils/whatsapp';
 import { NavLink, useNavigate } from 'react-router-dom';
 import {
   LogOut,
@@ -111,6 +112,8 @@ function LayoutShell({ children, role, tenantId, currentStaff, onLock, isLocked 
           const { data, error } = await readTenantRow(tenantId);
 
           if (data && !error) {
+            // P4 (OPERATIONS-13): the shop's WhatsApp settings, for every send button.
+            setShopWhatsAppSettings(data.whatsapp_settings);
             setTenantLogo(data.logo_url || null);
             setTenantName(data.name || t('common.tailor_system'));
             
