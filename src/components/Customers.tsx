@@ -1118,7 +1118,7 @@ export default function Customers({ tenantId }: CustomersProps) {
             <div className="col-span-1">{t('dashboard.orders_count')}</div>
             <div className="col-span-2">{t('customers.total_purchases')}</div>
             <div className="col-span-2">{t('customers.balance')}</div>
-            <div className="col-span-1 text-left"></div>
+            <div className="col-span-1 text-end"></div>
           </div>
         )}
 
@@ -1225,7 +1225,7 @@ export default function Customers({ tenantId }: CustomersProps) {
                                 )}
                                 onClick={(e) => e.stopPropagation()}
                               >
-                                <div className="px-2.5 py-1 text-[10px] font-black text-content-muted/80 uppercase tracking-wider text-right border-b border-border/40 mb-1">
+                                <div className="px-2.5 py-1 text-[10px] font-black text-content-muted/80 uppercase tracking-wider text-start border-b border-border/40 mb-1">
                                   {t('customers.customer_options')}
                                 </div>
 
@@ -1235,7 +1235,7 @@ export default function Customers({ tenantId }: CustomersProps) {
                                     setActiveMenuId(null);
                                     openDetails(customer);
                                   }}
-                                  className="w-full flex items-center justify-between px-2.5 py-2 text-right rounded-xl text-xs font-bold text-content-muted hover:text-brand hover:bg-brand/5 transition-all cursor-pointer group"
+                                  className="w-full flex items-center justify-between px-2.5 py-2 text-start rounded-xl text-xs font-bold text-content-muted hover:text-brand hover:bg-brand/5 transition-all cursor-pointer group"
                                 >
                                   <span className="truncate">{t('customers.view_full_profile')}</span>
                                   <div className="w-6 h-6 rounded-lg bg-brand/5 flex items-center justify-center shrink-0 group-hover:bg-brand/15 text-brand transition-all">
@@ -1249,7 +1249,7 @@ export default function Customers({ tenantId }: CustomersProps) {
                                     setActiveMenuId(null);
                                     openStatement(customer);
                                   }}
-                                  className="w-full flex items-center justify-between px-2.5 py-2 text-right rounded-xl text-xs font-bold text-content-muted hover:text-brand hover:bg-brand/5 transition-all cursor-pointer group"
+                                  className="w-full flex items-center justify-between px-2.5 py-2 text-start rounded-xl text-xs font-bold text-content-muted hover:text-brand hover:bg-brand/5 transition-all cursor-pointer group"
                                 >
                                   <span className="truncate">{t('customers.account_statement')}</span>
                                   <div className="w-6 h-6 rounded-lg bg-brand/5 flex items-center justify-center shrink-0 group-hover:bg-brand/15 text-brand transition-all">
@@ -1263,7 +1263,7 @@ export default function Customers({ tenantId }: CustomersProps) {
                                     setActiveMenuId(null);
                                     navigate(`/orders?customerId=${customer.id}`);
                                   }}
-                                  className="w-full flex items-center justify-between px-2.5 py-2 text-right rounded-xl text-xs font-bold text-content-muted hover:text-brand hover:bg-brand/5 transition-all cursor-pointer group"
+                                  className="w-full flex items-center justify-between px-2.5 py-2 text-start rounded-xl text-xs font-bold text-content-muted hover:text-brand hover:bg-brand/5 transition-all cursor-pointer group"
                                 >
                                   <span className="truncate">{t('orders.create_new_order')}</span>
                                   <div className="w-6 h-6 rounded-lg bg-brand/5 flex items-center justify-center shrink-0 group-hover:bg-brand/15 text-brand transition-all">
@@ -1279,7 +1279,7 @@ export default function Customers({ tenantId }: CustomersProps) {
                                     setActiveMenuId(null);
                                     sendMeasurementsLink(customer);
                                   }}
-                                  className="w-full flex items-center justify-between px-2.5 py-2 text-right rounded-xl text-xs font-bold text-content-muted hover:text-brand hover:bg-brand/5 transition-all cursor-pointer group"
+                                  className="w-full flex items-center justify-between px-2.5 py-2 text-start rounded-xl text-xs font-bold text-content-muted hover:text-brand hover:bg-brand/5 transition-all cursor-pointer group"
                                 >
                                   <span className="truncate">{t('customers.send_measurements_link')}</span>
                                   <div className="w-6 h-6 rounded-lg bg-brand/5 flex items-center justify-center shrink-0 group-hover:bg-brand/15 text-brand transition-all">
@@ -1297,7 +1297,7 @@ export default function Customers({ tenantId }: CustomersProps) {
                                         setActiveMenuId(null);
                                         openEditModal(customer);
                                       }}
-                                      className="w-full flex items-center justify-between px-2.5 py-2 text-right rounded-xl text-xs font-bold text-content-muted hover:text-brand hover:bg-brand/5 transition-all cursor-pointer group"
+                                      className="w-full flex items-center justify-between px-2.5 py-2 text-start rounded-xl text-xs font-bold text-content-muted hover:text-brand hover:bg-brand/5 transition-all cursor-pointer group"
                                     >
                                       <span className="truncate">{t('common.edit')}</span>
                                       <div className="w-6 h-6 rounded-lg bg-brand/5 flex items-center justify-center shrink-0 group-hover:bg-brand/15 text-brand/80 transition-all">
@@ -1314,7 +1314,7 @@ export default function Customers({ tenantId }: CustomersProps) {
                                       setActiveMenuId(null);
                                       handleDelete(customer.id);
                                     }}
-                                    className="w-full flex items-center justify-between px-2.5 py-2 text-right rounded-xl text-xs font-bold text-danger hover:text-danger/90 hover:bg-danger/5 transition-all cursor-pointer group"
+                                    className="w-full flex items-center justify-between px-2.5 py-2 text-start rounded-xl text-xs font-bold text-danger hover:text-danger/90 hover:bg-danger/5 transition-all cursor-pointer group"
                                   >
                                     <span className="truncate">{t('common.delete')}</span>
                                     <div className="w-6 h-6 rounded-lg bg-danger/5 flex items-center justify-center shrink-0 group-hover:bg-danger/15 text-danger transition-all">
@@ -1545,7 +1545,7 @@ export default function Customers({ tenantId }: CustomersProps) {
                               )}
                               onClick={(e) => e.stopPropagation()}
                             >
-                              <div className="px-2.5 py-1 text-[10px] font-black text-content-muted/80 uppercase tracking-wider text-right border-b border-border/40 mb-1">
+                              <div className="px-2.5 py-1 text-[10px] font-black text-content-muted/80 uppercase tracking-wider text-start border-b border-border/40 mb-1">
                                 {t('customers.customer_options')}
                               </div>
 
@@ -1556,7 +1556,7 @@ export default function Customers({ tenantId }: CustomersProps) {
                                   setActiveMenuId(null);
                                   openDetails(customer);
                                 }}
-                                className="w-full flex items-center justify-between px-2.5 py-2 text-right rounded-xl text-xs font-bold text-content-muted hover:text-brand hover:bg-brand/5 transition-all cursor-pointer group"
+                                className="w-full flex items-center justify-between px-2.5 py-2 text-start rounded-xl text-xs font-bold text-content-muted hover:text-brand hover:bg-brand/5 transition-all cursor-pointer group"
                               >
                                 <span className="truncate">{t('customers.view_full_profile')}</span>
                                 <div className="w-6 h-6 rounded-lg bg-brand/5 flex items-center justify-center shrink-0 group-hover:bg-brand/15 text-brand transition-all">
@@ -1571,7 +1571,7 @@ export default function Customers({ tenantId }: CustomersProps) {
                                   setActiveMenuId(null);
                                   openStatement(customer);
                                 }}
-                                className="w-full flex items-center justify-between px-2.5 py-2 text-right rounded-xl text-xs font-bold text-content-muted hover:text-brand hover:bg-brand/5 transition-all cursor-pointer group"
+                                className="w-full flex items-center justify-between px-2.5 py-2 text-start rounded-xl text-xs font-bold text-content-muted hover:text-brand hover:bg-brand/5 transition-all cursor-pointer group"
                               >
                                 <span className="truncate">{t('customers.account_statement')}</span>
                                 <div className="w-6 h-6 rounded-lg bg-brand/5 flex items-center justify-center shrink-0 group-hover:bg-brand/15 text-brand transition-all">
@@ -1586,7 +1586,7 @@ export default function Customers({ tenantId }: CustomersProps) {
                                   setActiveMenuId(null);
                                   navigate(`/orders?customerId=${customer.id}`);
                                 }}
-                                className="w-full flex items-center justify-between px-2.5 py-2 text-right rounded-xl text-xs font-bold text-content-muted hover:text-brand hover:bg-brand/5 transition-all cursor-pointer group"
+                                className="w-full flex items-center justify-between px-2.5 py-2 text-start rounded-xl text-xs font-bold text-content-muted hover:text-brand hover:bg-brand/5 transition-all cursor-pointer group"
                               >
                                 <span className="truncate">{t('orders.create_new_order')}</span>
                                 <div className="w-6 h-6 rounded-lg bg-brand/5 flex items-center justify-center shrink-0 group-hover:bg-brand/15 text-brand transition-all">
@@ -1603,7 +1603,7 @@ export default function Customers({ tenantId }: CustomersProps) {
                                   setActiveMenuId(null);
                                   sendMeasurementsLink(customer);
                                 }}
-                                className="w-full flex items-center justify-between px-2.5 py-2 text-right rounded-xl text-xs font-bold text-content-muted hover:text-brand hover:bg-brand/5 transition-all cursor-pointer group"
+                                className="w-full flex items-center justify-between px-2.5 py-2 text-start rounded-xl text-xs font-bold text-content-muted hover:text-brand hover:bg-brand/5 transition-all cursor-pointer group"
                               >
                                 <span className="truncate">{t('customers.send_measurements_link')}</span>
                                 <div className="w-6 h-6 rounded-lg bg-brand/5 flex items-center justify-center shrink-0 group-hover:bg-brand/15 text-brand transition-all">
@@ -1621,7 +1621,7 @@ export default function Customers({ tenantId }: CustomersProps) {
                                       setActiveMenuId(null);
                                       openEditModal(customer);
                                     }}
-                                    className="w-full flex items-center justify-between px-2.5 py-2 text-right rounded-xl text-xs font-bold text-content-muted hover:text-brand hover:bg-brand/5 transition-all cursor-pointer group"
+                                    className="w-full flex items-center justify-between px-2.5 py-2 text-start rounded-xl text-xs font-bold text-content-muted hover:text-brand hover:bg-brand/5 transition-all cursor-pointer group"
                                   >
                                     <span className="truncate">{t('common.edit')}</span>
                                     <div className="w-6 h-6 rounded-lg bg-brand/5 flex items-center justify-center shrink-0 group-hover:bg-brand/15 text-brand/80 transition-all">
@@ -1638,7 +1638,7 @@ export default function Customers({ tenantId }: CustomersProps) {
                                     setActiveMenuId(null);
                                     handleDelete(customer.id);
                                   }}
-                                  className="w-full flex items-center justify-between px-2.5 py-2 text-right rounded-xl text-xs font-bold text-danger hover:text-danger/90 hover:bg-danger/5 transition-all cursor-pointer group"
+                                  className="w-full flex items-center justify-between px-2.5 py-2 text-start rounded-xl text-xs font-bold text-danger hover:text-danger/90 hover:bg-danger/5 transition-all cursor-pointer group"
                                 >
                                   <span className="truncate">{t('common.delete')}</span>
                                   <div className="w-6 h-6 rounded-lg bg-danger/5 flex items-center justify-center shrink-0 group-hover:bg-danger/15 text-danger transition-all">
@@ -1753,7 +1753,7 @@ export default function Customers({ tenantId }: CustomersProps) {
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="bg-surface p-6 sm:p-8 rounded-3xl border border-border shadow-2xl max-w-md w-full text-right space-y-6"
+              className="bg-surface p-6 sm:p-8 rounded-3xl border border-border shadow-2xl max-w-md w-full text-start space-y-6"
               dir={isRtl ? "rtl" : "ltr"}
             >
               <div className="flex items-center gap-4 text-danger">
@@ -2576,7 +2576,7 @@ const CustomerStatementModal = ({
                   <DateTimeDisplay date={new Date()} showTime={true} size="xs" />
                 </div>
               </div>
-              <div className="text-left">
+              <div className="text-end">
                 <p className="text-sm font-bold text-black">{customer.name}</p>
                 <p className="text-xs text-black">{customer.phone}</p>
                 {customer.isB2B && customer.trn && (
@@ -2708,12 +2708,12 @@ const CustomerStatementModal = ({
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="bg-surface-muted border-b border-border text-content-muted font-black text-xs print:bg-gray-100 print:text-black print:border-b-2 print:border-black">
-                        <th className="p-3 text-right">{t('orders.order_id')}</th>
-                        <th className="p-3 text-right">{t('common.date')}</th>
-                        <th className="p-3 text-right">{t('orders.total')}</th>
-                        <th className="p-3 text-right">{t('orders.paid')}</th>
-                        <th className="p-3 text-right">{t('common.remaining')}</th>
-                        <th className="p-3 text-right">{t('common.status')}</th>
+                        <th className="p-3 text-start">{t('orders.order_id')}</th>
+                        <th className="p-3 text-start">{t('common.date')}</th>
+                        <th className="p-3 text-start">{t('orders.total')}</th>
+                        <th className="p-3 text-start">{t('orders.paid')}</th>
+                        <th className="p-3 text-start">{t('common.remaining')}</th>
+                        <th className="p-3 text-start">{t('common.status')}</th>
                         <th className="p-3 text-center print:hidden">{t('saas.details')}</th>
                       </tr>
                     </thead>
@@ -2800,12 +2800,12 @@ const CustomerStatementModal = ({
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="bg-gray-100 text-black font-black text-xs border-b-2 border-black">
-                      <th className="p-3 text-right">{t('orders.order_id')}</th>
-                      <th className="p-3 text-right">{t('common.date')}</th>
-                      <th className="p-3 text-right">{t('orders.total')}</th>
-                      <th className="p-3 text-right">{t('orders.paid')}</th>
-                      <th className="p-3 text-right">{t('common.remaining')}</th>
-                      <th className="p-3 text-right">{t('common.status')}</th>
+                      <th className="p-3 text-start">{t('orders.order_id')}</th>
+                      <th className="p-3 text-start">{t('common.date')}</th>
+                      <th className="p-3 text-start">{t('orders.total')}</th>
+                      <th className="p-3 text-start">{t('orders.paid')}</th>
+                      <th className="p-3 text-start">{t('common.remaining')}</th>
+                      <th className="p-3 text-start">{t('common.status')}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-black">

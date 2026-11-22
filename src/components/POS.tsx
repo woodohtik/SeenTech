@@ -1913,7 +1913,7 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
               <div className="flex justify-between items-center text-xs sm:text-sm text-brand font-bold">
                 <span>{t('pos.discount_applied')}</span>
                 <span className="font-black relative flex items-center">
-                  -<PriceDisplay amount={calculatedDiscountAmount} className="inline-flex mr-1" />
+                  -<PriceDisplay amount={calculatedDiscountAmount} className="inline-flex ms-1" />
                 </span>
               </div>
             )}
@@ -2234,7 +2234,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                 {ordersModuleOn && (
                 <button
                   onClick={() => setIsCustomOrderModalOpen(true)}
-                  className="flex items-center p-3 sm:p-3.5 bg-brand/5 border border-brand/40 hover:border-brand rounded-xl transition-all duration-200 group active:scale-[0.99] cursor-pointer w-full text-right"
+                  className="flex items-center p-3 sm:p-3.5 bg-brand/5 border border-brand/40 hover:border-brand rounded-xl transition-all duration-200 group active:scale-[0.99] cursor-pointer w-full text-start"
                 >
                   <div className="w-14 h-14 sm:w-16 sm:h-16 bg-brand/10 rounded-xl flex items-center justify-center shrink-0 overflow-hidden border border-brand/20 ms-0 me-3.5">
                     <Scissors size={22} className="text-brand" />
@@ -2250,7 +2250,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                   <button
                     key={item.id}
                     onClick={() => handleProductTileClick(item)}
-                    className="flex items-center p-3 sm:p-3.5 bg-surface border border-border/70 hover:border-brand/50 rounded-xl transition-all duration-200 group active:scale-[0.99] cursor-pointer w-full text-right"
+                    className="flex items-center p-3 sm:p-3.5 bg-surface border border-border/70 hover:border-brand/50 rounded-xl transition-all duration-200 group active:scale-[0.99] cursor-pointer w-full text-start"
                   >
                     {/* Item Image */}
                     <div className="w-14 h-14 sm:w-16 sm:h-16 bg-surface-muted/60 rounded-xl flex items-center justify-center shrink-0 overflow-hidden border border-border/40 ms-0 me-3.5">
@@ -2362,7 +2362,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
               {cart.length}
             </span>
           </div>
-          <div className="flex flex-col items-start pr-1">
+          <div className="flex flex-col items-start ps-1">
              <span className="text-[10px] font-bold uppercase opacity-80 leading-none mb-1">{t('common.total')}</span>
              <PriceDisplay amount={totalAmount} className="text-sm font-black leading-none" />
           </div>
@@ -2747,7 +2747,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={shouldReduceMotion ? undefined : { scale: 0.95, opacity: 0, y: 20 }}
               transition={shouldReduceMotion ? { duration: 0 } : { type: 'spring', damping: 25, stiffness: 200 }}
-              className="relative w-full max-w-lg rounded-3xl bg-surface shadow-2xl flex flex-col my-auto border border-border overflow-hidden text-right max-h-[85vh]"
+              className="relative w-full max-w-lg rounded-3xl bg-surface shadow-2xl flex flex-col my-auto border border-border overflow-hidden text-start max-h-[85vh]"
               dir={isRtl ? 'rtl' : 'ltr'}
             >
               {/* Header */}
@@ -2846,7 +2846,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={shouldReduceMotion ? undefined : { scale: 0.95, opacity: 0, y: 20 }}
               transition={shouldReduceMotion ? { duration: 0 } : { type: 'spring', damping: 25, stiffness: 200 }}
-              className="relative w-full max-w-sm rounded-3xl bg-surface shadow-2xl flex flex-col my-auto border border-border overflow-hidden text-right"
+              className="relative w-full max-w-sm rounded-3xl bg-surface shadow-2xl flex flex-col my-auto border border-border overflow-hidden text-start"
               dir={isRtl ? 'rtl' : 'ltr'}
             >
               <div className="flex items-center justify-between p-6 border-b border-border bg-success/5 shrink-0">
@@ -2936,7 +2936,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={shouldReduceMotion ? undefined : { scale: 0.95, opacity: 0, y: 20 }}
               transition={shouldReduceMotion ? { duration: 0 } : { type: 'spring', damping: 25, stiffness: 200 }}
-              className="relative w-full max-w-sm rounded-3xl bg-surface shadow-2xl flex flex-col my-auto border border-border overflow-hidden text-right"
+              className="relative w-full max-w-sm rounded-3xl bg-surface shadow-2xl flex flex-col my-auto border border-border overflow-hidden text-start"
               dir={isRtl ? 'rtl' : 'ltr'}
             >
               <div className="flex items-center justify-between p-6 border-b border-border bg-success/5 shrink-0">
@@ -2981,7 +2981,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={shouldReduceMotion ? undefined : { scale: 0.95, opacity: 0, y: 20 }}
               transition={shouldReduceMotion ? { duration: 0 } : { type: 'spring', damping: 25, stiffness: 200 }}
-              className="relative w-full max-w-md rounded-3xl bg-surface shadow-2xl flex flex-col my-auto border border-border overflow-hidden text-right"
+              className="relative w-full max-w-md rounded-3xl bg-surface shadow-2xl flex flex-col my-auto border border-border overflow-hidden text-start"
               dir={isRtl ? 'rtl' : 'ltr'}
             >
               {/* Header */}
@@ -3165,7 +3165,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                 leaveFrom="opacity-100 translate-y-0 sm:scale-100"
                 leaveTo="opacity-0 translate-y-full sm:translate-y-0 sm:scale-95"
               >
-                <Dialog.Panel className="w-full max-w-md transform overflow-hidden rounded-t-3xl sm:rounded-3xl bg-surface p-6 text-right align-middle shadow-2xl transition-all border border-border">
+                <Dialog.Panel className="w-full max-w-md transform overflow-hidden rounded-t-3xl sm:rounded-3xl bg-surface p-6 text-start align-middle shadow-2xl transition-all border border-border">
                   <Dialog.Title
                     as="h3"
                     className="text-lg font-bold leading-6 text-content mb-4 flex items-center justify-between"
@@ -3195,7 +3195,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                         onBlur={(e) => setNewCustomerPhone(formatSaudiPhone(e.target.value))}
                         placeholder="05XXXXXXXX"
                         dir="ltr"
-                        className="text-right"
+                        className="text-start"
                       />
                     </div>
                     <div>

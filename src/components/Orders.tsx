@@ -144,7 +144,7 @@ const OrderStepper = ({ currentStatus, stages }: { currentStatus: string; stages
         {/* Progress Line */}
         <div className="absolute top-5 right-10 left-10 h-0.5 bg-surface-muted -z-0" />
         <div
-          className="absolute top-5 right-10 h-0.5 bg-brand transition-all duration-700 ease-in-out -z-0"
+          className="absolute top-5 start-10 h-0.5 bg-brand transition-all duration-700 ease-in-out -z-0"
           style={{ width: `${Math.max(0, (currentIdx / (activeStages.length - 1)) * 100)}%` }}
         />
 
@@ -166,7 +166,7 @@ const OrderStepper = ({ currentStatus, stages }: { currentStatus: string; stages
                   <motion.div 
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
-                    className="absolute -top-1 -right-1 bg-success text-white rounded-full p-0.5 border-2 border-surface"
+                    className="absolute -top-1 -start-1 bg-success text-white rounded-full p-0.5 border-2 border-surface"
                   >
                     <CheckCircle2 size={10} />
                   </motion.div>
@@ -1451,7 +1451,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
               initial={{ scale: 0.95, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.95, opacity: 0, y: 20 }}
-              className="relative w-full max-w-sm rounded-3xl bg-surface shadow-2xl flex flex-col my-auto border border-border overflow-hidden text-right"
+              className="relative w-full max-w-sm rounded-3xl bg-surface shadow-2xl flex flex-col my-auto border border-border overflow-hidden text-start"
               dir={isRtlLang(i18n.language) ? 'rtl' : 'ltr'}
             >
               <div className="flex items-center justify-between p-6 border-b border-border bg-brand/5 shrink-0">
@@ -1715,7 +1715,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                 <History size={14} />
                 {t('orders.status_history')}
               </h3>
-              <div className="space-y-4 relative before:absolute before:right-4 before:top-2 before:bottom-2 before:w-0.5 before:bg-border">
+              <div className="space-y-4 relative before:absolute before:start-4 before:top-2 before:bottom-2 before:w-0.5 before:bg-border">
                 {order.history?.slice().reverse().map((h, idx) => {
                   const updater = staff.find(s => s.id === h.updatedByUid);
                   const isOwner = tenant && (tenant.id === h.updatedByUid || tenant.ownerEmail === h.updatedBy);
@@ -1732,9 +1732,9 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                   }
 
                   return (
-                    <div key={h.updatedAt + h.status + idx} className="relative pr-10">
+                    <div key={h.updatedAt + h.status + idx} className="relative ps-10">
                       <div className={cn(
-                        "absolute right-2 top-1 w-4 h-4 rounded-full border-4 border-surface shadow-sm z-10",
+                        "absolute start-2 top-1 w-4 h-4 rounded-full border-4 border-surface shadow-sm z-10",
                         idx === 0 ? "bg-brand animate-pulse" : "bg-content-muted/30"
                       )} />
                       <div className="bg-surface-muted p-4 rounded-2xl border border-border">
@@ -1749,7 +1749,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                               </div>
                               <span className="text-[10px] text-content-muted font-bold">
                                 {updaterName}
-                                {updaterRole && <span className="text-content-muted font-medium mr-1">({updaterRole})</span>}
+                                {updaterRole && <span className="text-content-muted font-medium ms-1">({updaterRole})</span>}
                               </span>
                             </div>
                           </div>
