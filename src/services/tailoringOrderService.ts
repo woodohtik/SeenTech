@@ -1,6 +1,6 @@
 import i18n from 'i18next';
 import { supabase } from '../lib/supabase/client';
-import { isNetworkFailure, enqueueTailoringOrder } from '../lib/offline/outbox';
+import { isNetworkFailure, enqueueTailoringOrder, SALE_TIMEOUT_MS } from '../lib/offline/outbox';
 import { checkConnectivityNow } from '../lib/offline/connectivity';
 import { notifyNewOrderForStaff } from '../utils/orderNotify';
 import { analytics, AnalyticsEvent } from './analyticsService';
@@ -127,8 +127,9 @@ export async function createTailoringOrder(input: CreateTailoringOrderInput): Pr
   let order: Record<string, any>;
 
   try {
-    const { data, error } = await supabase.rpc('create_tailoring_order', payload);
-    if (error) throw error;
+    // P3.3 / RELIABILITY-10: 15 seconds, then it is offline (the operation id makes the replay safe).
+    const { data, error, status } = await supabase.rpc('create_tailoring_order', payload).abortSignal(AbortSignal.timeout(SALE_TIMEOUT_MS));
+    if (error) throw Object.assign(error, { status });
     depositSkipped = Boolean(data?.deposit_skipped);
     // A deposit just landed on the open shift. The till figure in the sales
     // header listens for this; it cannot rely on a realtime event for it.

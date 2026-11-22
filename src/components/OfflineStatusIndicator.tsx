@@ -6,6 +6,7 @@ import { offlineDb } from '../lib/offline/db';
 import {
   getZatcaApproachingEntries,
   getExhaustedOutboxEntries,
+  getEntriesNeedingAttention,
   describeOutboxEntry,
   requeueOutboxEntry,
   drainOutbox,
@@ -49,7 +50,10 @@ export default function OfflineStatusIndicator({ tenantId }: { tenantId?: string
       const zatcaEntries = await getZatcaApproachingEntries();
       if (!cancelled) setZatcaWarningCount(zatcaEntries.length);
       const exhaustedEntries = await getExhaustedOutboxEntries();
-      const described = await Promise.all(exhaustedEntries.map(describeOutboxEntry));
+      // P3.3 / RELIABILITY-04: the list (with its send-again button) covers every
+      // failed or stuck entry, not only those that ran out of attempts.
+      const attention = await getEntriesNeedingAttention();
+      const described = await Promise.all(attention.map(describeOutboxEntry));
       if (!cancelled) {
         setExhaustedCount(exhaustedEntries.length);
         setExhausted(described.sort((a, b) => a.createdAt - b.createdAt));

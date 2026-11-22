@@ -4,6 +4,7 @@ import { offlineDb, type OutboxEntry } from './db';
 import { requestPersistentStorage } from './persistentStorage';
 import { onConnectivityChange, checkConnectivityNow } from './connectivity';
 import { getActorStaffId, OFFLINE_ACTOR_HEADER } from '../actingSession';
+import { logError } from '../logger';
 
 /**
  * The outbox queue (seen-offline-sync-architecture-task.md Phase 3).
@@ -16,6 +17,37 @@ import { getActorStaffId, OFFLINE_ACTOR_HEADER } from '../actingSession';
  */
 
 const MAX_AUTO_RETRIES = 5;
+/** P3.3 / RELIABILITY-04: an entry left "syncing" this long (a closed tab, a crash) is sent again. */
+export const STUCK_SYNCING_MS = 2 * 60 * 1000;
+/** P3.3: how long a sale waits for the server before it is treated as offline. */
+export const SALE_TIMEOUT_MS = 15_000;
+
+/**
+ * P3.3 / RELIABILITY-06: the network, a timeout, the server or its gateway
+ * being down, rate limiting or an expired session -- worth trying again later,
+ * and not counted against the attempts. Anything else is the server turning
+ * the operation down and is counted.
+ */
+export function isTransientSyncError(err: any): boolean {
+  if (isNetworkFailure(err)) return true;
+  const status = Number(err?.status);
+  if (status === 429 || status === 401 || status >= 500) return true;
+  return err?.code === 'PGRST301' || /JWT expired/i.test(String(err?.message || ''));
+}
+
+/** Delay before the next try after `failures` network/server failures: 30 s doubling, at most 15 minutes. */
+export function retryDelayMs(failures: number): number {
+  return Math.min(30_000 * 2 ** Math.max(0, failures - 1), 15 * 60_000);
+}
+
+async function currentAuthUid(): Promise<string | null> {
+  try {
+    const { data } = await supabase.auth.getSession();
+    return data.session?.user?.id ?? null;
+  } catch {
+    return null;
+  }
+}
 
 /* --------------------------------------------------------------------------
    Phase 4 needs a synchronous "how many are pending right now" read for the
@@ -50,6 +82,13 @@ export function getCachedPendingCount(): number {
  *  `err instanceof TypeError` never actually matches it in practice). */
 export function isNetworkFailure(err: any): boolean {
   if (typeof navigator !== 'undefined' && navigator.onLine === false) return true;
+  // P3.3 / RELIABILITY-10: a request that timed out, a gateway error (the
+  // server or its proxy is down) or an HTML error page in place of JSON is
+  // the network's failure too -- safe to queue, every operation is idempotent.
+  if (err?.name === 'AbortError' || err?.name === 'TimeoutError') return true;
+  const status = Number(err?.status);
+  if ([502, 503, 504, 520, 521, 522, 523, 524].includes(status)) return true;
+  if (/timed? ?out|aborted|Unexpected token '<'|is not valid JSON/i.test(String(err?.message || ''))) return true;
   return (
     (err instanceof TypeError && (err.message?.includes('fetch') || err.message?.includes('Network'))) ||
     !!err?.message?.includes('Failed to fetch') ||
@@ -98,6 +137,7 @@ export async function enqueuePosSale(operationId: string, payload: {
     status: 'pending',
     retries: 0,
     actorStaffId: getActorStaffId(),
+    authUid: await currentAuthUid(),
   });
 
   if (isFirstEver) {
@@ -128,6 +168,7 @@ export async function enqueueOrderCreate(orderId: string, orderData: Record<stri
     createdAt: Date.now(),
     status: 'pending',
     retries: 0,
+    authUid: await currentAuthUid(),
   });
 
   if (isFirstEver) {
@@ -156,6 +197,7 @@ export async function enqueueTailoringOrder(operationId: string, payload: {
     status: 'pending',
     retries: 0,
     actorStaffId: getActorStaffId(),
+    authUid: await currentAuthUid(),
   });
 
   if (isFirstEver) {
@@ -176,17 +218,20 @@ function withActor<T extends { setHeader: (name: string, value: string) => T }>(
   return entry.actorStaffId ? call.setHeader(OFFLINE_ACTOR_HEADER, entry.actorStaffId) : call;
 }
 
+/** The HTTP status rides on the error, so a 5xx can be told from a rejection. */
+const withStatus = (error: any, status?: number) => (error && status ? Object.assign(error, { status }) : error);
+
 async function syncEntry(entry: OutboxEntry): Promise<'synced' | 'failed'> {
-  await offlineDb.outbox.update(entry.id, { status: 'syncing' });
+  await offlineDb.outbox.update(entry.id, { status: 'syncing', syncingAt: Date.now() });
   try {
     if (entry.type === 'pos_sale') {
       const payload = entry.payload as { p_operation_id: string; p_order: unknown; p_items: unknown; p_invoice: unknown };
-      const { error } = await withActor(supabase.rpc('create_pos_sale', payload), entry);
-      if (error) throw error;
+      const { error, status } = await withActor(supabase.rpc('create_pos_sale', payload), entry).abortSignal(AbortSignal.timeout(SALE_TIMEOUT_MS * 2));
+      if (error) throw withStatus(error, status);
     } else if (entry.type === 'tailoring_order') {
       const payload = entry.payload as { p_operation_id: string; p_order: unknown; p_items: unknown };
-      const { data, error } = await withActor(supabase.rpc('create_tailoring_order', payload), entry);
-      if (error) throw error;
+      const { data, error, status } = await withActor(supabase.rpc('create_tailoring_order', payload), entry).abortSignal(AbortSignal.timeout(SALE_TIMEOUT_MS * 2));
+      if (error) throw withStatus(error, status);
       // The staff member took a deposit while offline, but by the time this
       // synced they had no open shift, so the server saved the order without
       // it. Nobody is looking at a form now: leave a notification on the shop.
@@ -212,23 +257,44 @@ async function syncEntry(entry: OutboxEntry): Promise<'synced' | 'failed'> {
       // Legacy: queued by the direct-insert path before create_tailoring_order.
       // Nothing enqueues this type any more; it stays so old entries still drain.
       const payload = entry.payload as { orderData: Record<string, unknown> };
-      const { error } = await supabase.from('orders').insert(payload.orderData);
+      const { error, status } = await supabase.from('orders').insert(payload.orderData);
       // 23505 = unique_violation on the client-generated id -- an earlier
       // sync attempt already succeeded server-side even though its response
       // never made it back here (e.g. the connection dropped mid-response).
       // That's a success, not a failure to retry.
-      if (error && (error as any).code !== '23505') throw error;
+      if (error && (error as any).code !== '23505') throw withStatus(error, status);
     }
     await offlineDb.outbox.delete(entry.id);
     return 'synced';
   } catch (err: any) {
-    await offlineDb.outbox.update(entry.id, {
-      status: 'failed',
-      retries: entry.retries + 1,
-      lastError: err?.message || String(err),
-    });
+    const lastError = err?.message || String(err);
+    if (isTransientSyncError(err)) {
+      // The network or the server, not a rejection: wait longer each time, keep the attempts.
+      const transientFailures = (entry.transientFailures ?? 0) + 1;
+      await offlineDb.outbox.update(entry.id, {
+        status: 'failed', lastError, transientFailures, nextAttemptAt: Date.now() + retryDelayMs(transientFailures),
+      });
+    } else {
+      const retries = entry.retries + 1;
+      await offlineDb.outbox.update(entry.id, { status: 'failed', retries, lastError, nextAttemptAt: Date.now() + 60_000 });
+      // RELIABILITY-16: a rejected sync reaches the support team, without personal data.
+      logError(err, {
+        context: 'offline_sync_rejected', operation: entry.type, entryId: entry.id, code: err?.code ?? null,
+        retries, exhausted: retries >= MAX_AUTO_RETRIES,
+      });
+    }
     return 'failed';
   }
+}
+
+/** P3.3 / RELIABILITY-04: entries left "syncing" too long go back to pending (the server never makes one twice). */
+export async function releaseStuckEntries(now = Date.now()): Promise<number> {
+  const stuck = await offlineDb.outbox
+    .where('status').equals('syncing')
+    .and(entry => (entry.syncingAt ?? 0) < now - STUCK_SYNCING_MS)
+    .toArray();
+  for (const entry of stuck) await offlineDb.outbox.update(entry.id, { status: 'pending' });
+  return stuck.length;
 }
 
 let draining = false;
@@ -246,10 +312,17 @@ export async function drainOutbox(): Promise<{ synced: number; failed: number }>
   try {
     const online = await checkConnectivityNow();
     if (!online) return { synced, failed };
+    // RELIABILITY-05: never without a session, and only this account's entries
+    // (another account's wait untouched, attempts and all). Entries from before
+    // P3 carry no account and go with whoever is signed in, as before.
+    const uid = await currentAuthUid();
+    if (!uid) return { synced, failed };
+    await releaseStuckEntries();
 
+    const now = Date.now();
     const pending = await offlineDb.outbox
       .where('status').anyOf('pending', 'failed')
-      .and(entry => entry.retries < MAX_AUTO_RETRIES)
+      .and(entry => entry.retries < MAX_AUTO_RETRIES && (entry.nextAttemptAt ?? 0) <= now && (!entry.authUid || entry.authUid === uid))
       .sortBy('createdAt');
 
     for (const entry of pending) {
@@ -282,6 +355,17 @@ export async function getPendingOutboxCount(): Promise<number> {
  * needs a human to look at it, not just another automatic retry that will
  * never come.
  */
+/**
+ * P3.3 / RELIABILITY-04: every entry a person may want to send again now --
+ * failed (whether or not it is still retrying on its own) or left "syncing".
+ */
+export async function getEntriesNeedingAttention(now = Date.now()): Promise<OutboxEntry[]> {
+  return offlineDb.outbox
+    .where('status').anyOf('failed', 'syncing')
+    .and(entry => entry.status === 'failed' || (entry.syncingAt ?? 0) < now - STUCK_SYNCING_MS)
+    .toArray();
+}
+
 export async function getExhaustedOutboxEntries(): Promise<OutboxEntry[]> {
   return offlineDb.outbox
     .where('status').equals('failed')
@@ -335,7 +419,7 @@ export async function describeOutboxEntry(entry: OutboxEntry): Promise<OutboxEnt
  * operation's id and never create it twice. Nothing is ever deleted here.
  */
 export async function requeueOutboxEntry(id: string): Promise<void> {
-  await offlineDb.outbox.update(id, { status: 'pending', retries: 0 });
+  await offlineDb.outbox.update(id, { status: 'pending', retries: 0, transientFailures: 0, nextAttemptAt: 0 });
   await refreshCachedPendingCount();
 }
 
@@ -365,6 +449,11 @@ export function initOutboxSync(): void {
     if (online) void drainOutbox();
   });
   void drainOutbox();
+  // P3.3 / RELIABILITY-06: also every minute while the page is in front --
+  // a failed entry used to wait for the connection to drop and come back.
+  window.setInterval(() => {
+    if (document.visibilityState === 'visible') void drainOutbox();
+  }, 60_000);
 
   /* --------------------------------------------------------------------
      Phase 4: warn before closing/reloading the tab while sales are still

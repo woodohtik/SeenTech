@@ -40,7 +40,7 @@ import { supabase } from '../lib/supabase/client';
 import { resolveTaxSettings } from '../utils/taxSettings';
 import { cachedTaxSettings, rememberTaxSettings } from '../lib/offline/posOfflineState';
 import { refreshCustomersCache, refreshInventoryCache, refreshBranchStockCache, getCachedCustomers, getCachedInventory, getCachedBranchStock } from '../lib/offline/cacheSync';
-import { enqueuePosSale, isNetworkFailure, decidePosSaleFailureAction } from '../lib/offline/outbox';
+import { enqueuePosSale, isNetworkFailure, decidePosSaleFailureAction, SALE_TIMEOUT_MS } from '../lib/offline/outbox';
 import { handleError, OperationType, getFriendlyErrorMessage } from '../lib/appErrors';
 import { Combobox, Transition, Dialog } from '@headlessui/react';
 import { Customer, InventoryItem, OrderItem, Order, PaymentMethod, OrderStatus, ProductVariant, TaxInvoice, Tenant } from '../types';
@@ -1409,9 +1409,11 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
       let saleResult: any = null;
       let saleError: any = null;
       try {
-        const res = await supabase.rpc('create_pos_sale', salePayload);
+        // P3.3 / RELIABILITY-10: a slow or stuck server is treated as offline after
+        // 15 seconds -- the sale goes to the queue (create_pos_sale is idempotent).
+        const res = await supabase.rpc('create_pos_sale', salePayload).abortSignal(AbortSignal.timeout(SALE_TIMEOUT_MS));
         saleResult = res.data;
-        saleError = res.error;
+        saleError = res.error ? Object.assign(res.error, { status: res.status }) : null;
       } catch (rpcThrow) {
         saleError = rpcThrow;
       }

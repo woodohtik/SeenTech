@@ -30,6 +30,14 @@ export interface OutboxEntry {
   lastError?: string;
   /** seen-permissions-fix-task.md Phase 2: the employee who made it (sent as x-seen-offline-actor, attribution only). */
   actorStaffId?: string | null;
+  /** P3.3 / RELIABILITY-05: the signed-in account that made it -- only that account's session sends it. */
+  authUid?: string | null;
+  /** P3.3 / RELIABILITY-06: not before this time (a growing delay after a network or server failure). */
+  nextAttemptAt?: number;
+  /** P3.3: failures that were the network's or the server's, not a rejection (not counted against the attempts). */
+  transientFailures?: number;
+  /** P3.3 / RELIABILITY-04: when it was last marked syncing (an entry left there is picked up again). */
+  syncingAt?: number;
 }
 
 export interface CachedInventoryItem extends InventoryItem {
