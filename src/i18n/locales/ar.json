@@ -1131,7 +1131,8 @@
     "updating": "جاري التحديث...",
     "zatca_submission_failed": "تعذّر إرسال الفاتورة لمنصة زاتكا. حاول مرة أخرى أو تواصل مع الدعم إذا استمرت المشكلة.",
     "page_offline": "هذه الصفحة غير متاحة بدون إنترنت على هذا الجهاز. ستعمل بعد عودة الاتصال.",
-    "back_to_pos": "العودة إلى نقطة البيع"
+    "back_to_pos": "العودة إلى نقطة البيع",
+    "write_failed": "لم يُحفظ التغيير. حاول مرة أخرى، وإن تكرر فأبلغ الدعم."
   },
   "inventory": {
     "add_failed": "فشل في إضافة الصنف",
@@ -2161,7 +2162,29 @@
     "cancel_back": "رجوع",
     "cancel_done": "أُلغي الطلب",
     "cancel_done_refunded": "أُلغي الطلب ورُدّ {{amount}} نقداً",
-    "cancel_failed": "تعذّر إلغاء الطلب"
+    "cancel_failed": "تعذّر إلغاء الطلب",
+    "edit_order": "تعديل الطلب",
+    "edit_title": "تعديل الطلب",
+    "edit_delivery_date": "موعد التسليم",
+    "edit_tailor": "الخياط",
+    "edit_no_tailor": "بلا خياط",
+    "edit_notes": "ملاحظات",
+    "edit_lines": "الأصناف",
+    "edit_lines_locked_cut": "قُصّ القماش — لا تتغير الأصناف ولا السعر بعد القص.",
+    "edit_lines_locked_invoice": "للطلب فاتورة ضريبية — يُعدَّل مبلغه بإشعار دائن.",
+    "edit_quantity": "الكمية",
+    "edit_price": "السعر",
+    "edit_remove_line": "حذف",
+    "edit_restore_line": "إرجاع",
+    "edit_reason": "سبب التعديل",
+    "edit_reason_placeholder": "مثلاً: العميل أضاف ثوباً",
+    "edit_reason_required": "تغيير الأصناف أو السعر يحتاج سبباً",
+    "edit_needs_a_line": "الطلب يحتاج صنفاً واحداً على الأقل",
+    "edit_save": "حفظ التعديل",
+    "edit_saved": "حُفظ التعديل",
+    "edit_nothing_changed": "لم يتغير شيء",
+    "edit_failed": "تعذّر حفظ التعديل",
+    "edit_load_failed": "تعذّر تحميل الطلب"
   },
   "permissions": {
     "access_denied_desc": "غير محدد",

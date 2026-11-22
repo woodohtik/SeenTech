@@ -1131,7 +1131,8 @@
     "updating": "Updating...",
     "zatca_submission_failed": "Couldn't submit the invoice to ZATCA. Try again, or contact support if this keeps happening.",
     "page_offline": "This page is not available offline on this device. It will work once the connection is back.",
-    "back_to_pos": "Back to the point of sale"
+    "back_to_pos": "Back to the point of sale",
+    "write_failed": "The change wasn't saved. Try again; if it keeps happening, contact support."
   },
   "inventory": {
     "add_failed": "Failed to add product",
@@ -2161,7 +2162,29 @@
     "cancel_back": "Back",
     "cancel_done": "The order was cancelled",
     "cancel_done_refunded": "The order was cancelled and {{amount}} refunded in cash",
-    "cancel_failed": "The order could not be cancelled"
+    "cancel_failed": "The order could not be cancelled",
+    "edit_order": "Edit the order",
+    "edit_title": "Edit the order",
+    "edit_delivery_date": "Delivery date",
+    "edit_tailor": "Tailor",
+    "edit_no_tailor": "No tailor",
+    "edit_notes": "Notes",
+    "edit_lines": "Items",
+    "edit_lines_locked_cut": "The cloth is cut -- items and price no longer change.",
+    "edit_lines_locked_invoice": "The order has a tax invoice -- its amount changes by a credit note.",
+    "edit_quantity": "Quantity",
+    "edit_price": "Price",
+    "edit_remove_line": "Remove",
+    "edit_restore_line": "Restore",
+    "edit_reason": "Reason for the change",
+    "edit_reason_placeholder": "e.g. the customer added a garment",
+    "edit_reason_required": "Changing items or price needs a reason",
+    "edit_needs_a_line": "The order needs at least one item",
+    "edit_save": "Save the change",
+    "edit_saved": "The change was saved",
+    "edit_nothing_changed": "Nothing changed",
+    "edit_failed": "The change could not be saved",
+    "edit_load_failed": "The order could not be loaded"
   },
   "permissions": {
     "access_denied_desc": "Not specified",

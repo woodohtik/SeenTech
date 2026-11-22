@@ -55,6 +55,7 @@ import { supabase } from '../lib/supabase/client';
 import { resolveTaxSettings } from '../utils/taxSettings';
 import { handleFirestoreError, OperationType, dbRefusalMessage } from '../lib/appErrors';
 import { refreshOrdersCache, getCachedOrders } from '../lib/offline/cacheSync';
+import OrderEditDialog from './OrderEditDialog';
 import { isNetworkFailure } from '../lib/offline/outbox';
 import { Order, Customer, OrderStatus, OrderHistory, PaymentMethod, Staff, Tenant, TaxInvoice } from '../types';
 import { TaxInvoiceDocument } from './printing/TaxInvoiceModal';
@@ -325,7 +326,9 @@ export default function Orders({ tenantId }: { tenantId: string }) {
   // the permission the settings screen shows (the server checks the same).
   // canRefund/canDiscount have no control on this page: returns live in
   // Sales > Returns and discounts in the order form/POS, each gated there.
-  void canRefund; void canDiscount; void canEdit;
+  void canRefund; void canDiscount;
+  // P4 (OPERATIONS-06): the order being changed after it was saved.
+  const [editOrderId, setEditOrderId] = useState<string | null>(null);
   const canUpdateStatus = hasPermission('orders.update_status');
   const canCollect = hasPermission('payments.collect');
   const canViewDetails = hasPermission('orders.view_details');
@@ -1822,6 +1825,14 @@ export default function Orders({ tenantId }: { tenantId: string }) {
 
           {/* Two rows of 48px buttons at most, so the details keep the room. */}
           <div className="px-4 py-3 bg-surface-muted border-t border-border grid grid-cols-2 gap-2">
+            {canEdit && (order as any).kind === 'tailoring' && !['delivered', 'cancelled'].includes(legacyOrderStatusFor(order.status, workflowStages)) && (
+              <button
+                onClick={() => setEditOrderId(order.id)}
+                className="col-span-2 min-h-12 flex items-center justify-center gap-2 bg-surface text-content rounded-xl font-bold border border-border hover:bg-surface-muted transition-all text-sm"
+              >
+                <span>{t('orders.edit_order')}</span>
+              </button>
+            )}
             {!isLegacyVertical && (
               <button
                 onClick={() => void printWorkCard(order)}
@@ -2731,6 +2742,14 @@ export default function Orders({ tenantId }: { tenantId: string }) {
               setIsCuttingBusy(false);
             }
           }}
+        />
+      )}
+      {editOrderId && tenantId && (
+        <OrderEditDialog
+          orderId={editOrderId}
+          tenantId={tenantId}
+          onClose={() => setEditOrderId(null)}
+          onSaved={() => { void fetchOrders(); setIsDetailsOpen(false); }}
         />
       )}
       {cancelTarget && (

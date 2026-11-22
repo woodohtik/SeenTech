@@ -1,0 +1,224 @@
+-- seen-readiness-fixes-task.md P4 (OPERATIONS-06; founder question 5,
+-- default) -- an order can be changed after it is saved.
+--
+-- Before: nothing could change a saved order -- not its lines, its price,
+-- its delivery date, its tailor or its notes (the only write was delete).
+--
+-- update_tailoring_order(operation, order, changes, items, reason):
+--  * needs orders.edit; a tailoring order that is neither delivered nor
+--    cancelled;
+--  * changes: delivery_date, assigned_tailor_id (null to clear), notes --
+--    always allowed;
+--  * items (the full new list of lines, as create_tailoring_order takes
+--    them) -- only BEFORE CUTTING (orders.fabric_deducted_at is null) and
+--    only while the order has no tax invoice (an invoice is changed by a
+--    credit note, not by editing). The order is re-priced by the one tax
+--    engine (P1.1) with its discount, and may not end below what was paid.
+--    A change of price needs a reason (question 5); a change of discount
+--    needs action.discount;
+--  * the change, and the reason, go into the order's history.
+-- Rollback: supabase/rollbacks/20270105_edit_tailoring_order.down.sql
+
+CREATE OR REPLACE FUNCTION public.update_tailoring_order(
+  p_operation_id uuid, p_order_id uuid, p_changes jsonb, p_items jsonb, p_reason text)
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path TO 'public'
+AS $function$
+DECLARE
+  v_tenant      uuid := public.app_current_tenant_id();
+  v_staff       uuid;
+  v_staff_name  text;
+  v_op_key      text;
+  v_existing    jsonb;
+  v_order       record;
+  v_changes     jsonb := COALESCE(p_changes, '{}'::jsonb);
+  v_reason      text := NULLIF(btrim(COALESCE(p_reason, '')), '');
+  v_notes       text[] := '{}';
+  v_delivery    timestamptz;
+  v_tailor      uuid;
+  v_new_notes   text;
+  v_tax_enabled boolean;
+  v_tax_type    text;
+  v_rate_pct    numeric;
+  v_rate        numeric;
+  v_discount    numeric;
+  v_doc         jsonb;
+  v_total       numeric;
+  v_measure     jsonb;
+  v_item        jsonb;
+  v_idx         int := 0;
+  v_fabric_id   uuid;
+  v_result      jsonb;
+BEGIN
+  IF v_tenant IS NULL THEN
+    RAISE EXCEPTION 'forbidden' USING ERRCODE = '42501';
+  END IF;
+  IF NOT public.app_has_permission('orders.edit') THEN
+    RAISE EXCEPTION 'لا تملك صلاحية تعديل الطلبات' USING ERRCODE = '42501';
+  END IF;
+
+  v_op_key := 'update_tailoring_order:' || p_operation_id::text;
+  PERFORM pg_advisory_xact_lock(hashtextextended(v_op_key, 0));
+  SELECT result INTO v_existing FROM public.stock_operations WHERE operation_id = v_op_key AND tenant_id = v_tenant;
+  IF v_existing IS NOT NULL THEN
+    RETURN v_existing || jsonb_build_object('replayed', true);
+  END IF;
+
+  v_staff := public.app_actor_staff_id();
+  SELECT name INTO v_staff_name FROM public.staff WHERE id = v_staff;
+
+  SELECT * INTO v_order FROM public.orders WHERE id = p_order_id AND tenant_id = v_tenant FOR UPDATE;
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'forbidden' USING ERRCODE = '42501';
+  END IF;
+  IF v_order.kind IS DISTINCT FROM 'tailoring' THEN
+    RAISE EXCEPTION 'يُعدَّل من هنا طلب التفصيل فقط' USING ERRCODE = '22023';
+  END IF;
+  IF v_order.status IN ('delivered', 'cancelled') THEN
+    RAISE EXCEPTION 'لا يُعدَّل طلب تم تسليمه أو إلغاؤه' USING ERRCODE = '22023';
+  END IF;
+
+  -- Always allowed: delivery date, tailor, notes.
+  IF v_changes ? 'delivery_date' THEN
+    BEGIN
+      v_delivery := NULLIF(v_changes->>'delivery_date', '')::timestamptz;
+    EXCEPTION WHEN others THEN
+      RAISE EXCEPTION 'موعد التسليم غير صالح' USING ERRCODE = '22023';
+    END;
+    IF v_delivery IS NULL THEN
+      RAISE EXCEPTION 'موعد التسليم مطلوب' USING ERRCODE = '22023';
+    END IF;
+    IF v_delivery IS DISTINCT FROM v_order.delivery_date THEN
+      UPDATE public.orders SET delivery_date = v_delivery WHERE id = p_order_id;
+      v_notes := v_notes || ('موعد التسليم: ' || to_char(v_delivery AT TIME ZONE 'Asia/Riyadh', 'YYYY-MM-DD'));
+    END IF;
+  END IF;
+
+  IF v_changes ? 'assigned_tailor_id' THEN
+    v_tailor := NULLIF(v_changes->>'assigned_tailor_id', '')::uuid;
+    IF v_tailor IS NOT NULL AND NOT EXISTS (
+      SELECT 1 FROM public.staff WHERE id = v_tailor AND tenant_id = v_tenant AND status = 'active') THEN
+      RAISE EXCEPTION 'الخياط غير موجود في هذا المحل' USING ERRCODE = '22023';
+    END IF;
+    IF v_tailor IS DISTINCT FROM v_order.assigned_tailor_id THEN
+      UPDATE public.orders SET assigned_tailor_id = v_tailor WHERE id = p_order_id;
+      v_notes := v_notes || ('الخياط: ' || COALESCE((SELECT name FROM public.staff WHERE id = v_tailor), 'بلا خياط'));
+    END IF;
+  END IF;
+
+  IF v_changes ? 'notes' THEN
+    v_new_notes := NULLIF(btrim(COALESCE(v_changes->>'notes', '')), '');
+    -- A B2B order keeps its metadata; only the free text inside it changes.
+    IF v_order.notes LIKE '__B2B_METADATA__:%' THEN
+      v_new_notes := '__B2B_METADATA__:' || jsonb_set(
+        substr(v_order.notes, length('__B2B_METADATA__:') + 1)::jsonb, '{originalNotes}', to_jsonb(COALESCE(v_new_notes, '')))::text;
+    END IF;
+    IF v_new_notes IS DISTINCT FROM v_order.notes THEN
+      UPDATE public.orders SET notes = v_new_notes WHERE id = p_order_id;
+      v_notes := v_notes || 'الملاحظات'::text;
+    END IF;
+  END IF;
+
+  -- The lines: before cutting, and before any tax invoice.
+  IF p_items IS NOT NULL THEN
+    IF v_order.fabric_deducted_at IS NOT NULL THEN
+      RAISE EXCEPTION 'بعد القص يمكن تعديل موعد التسليم والخياط والملاحظات فقط' USING ERRCODE = '22023';
+    END IF;
+    IF EXISTS (SELECT 1 FROM public.tax_invoices WHERE order_id = p_order_id) THEN
+      RAISE EXCEPTION 'للطلب فاتورة ضريبية -- يُعدَّل مبلغه بإشعار دائن لا بالتعديل' USING ERRCODE = '22023';
+    END IF;
+    IF jsonb_typeof(p_items) <> 'array' OR jsonb_array_length(p_items) = 0 THEN
+      RAISE EXCEPTION 'الطلب يحتاج صنفاً واحداً على الأقل' USING ERRCODE = '22023';
+    END IF;
+
+    v_discount := v_order.discount_amount;
+    IF v_changes ? 'discount_amount' THEN
+      v_discount := GREATEST(COALESCE(NULLIF(v_changes->>'discount_amount', '')::numeric, 0), 0);
+      IF v_discount IS DISTINCT FROM COALESCE(v_order.discount_amount, 0) AND NOT public.app_has_permission('action.discount') THEN
+        RAISE EXCEPTION 'لا تملك صلاحية الخصم' USING ERRCODE = '42501';
+      END IF;
+    END IF;
+
+    SELECT r.enabled, r.tax_type, r.rate_pct INTO v_tax_enabled, v_tax_type, v_rate_pct
+      FROM public.tenant_tax_rules(v_tenant) r;
+    v_rate := CASE WHEN v_tax_enabled AND v_tax_type <> 'exempt' THEN v_rate_pct / 100 ELSE 0 END;
+    v_doc := public.app_tax_document(
+      (SELECT coalesce(jsonb_agg(jsonb_build_object(
+                'price', COALESCE(NULLIF(x->>'price', '')::numeric, 0),
+                'quantity', COALESCE(NULLIF(x->>'quantity', '')::numeric, 0),
+                'taxType', v_tax_type) ORDER BY o), '[]'::jsonb)
+         FROM jsonb_array_elements(p_items) WITH ORDINALITY AS t(x, o)),
+      v_rate, 'fixed', COALESCE(v_discount, 0), public.app_max_discount_percent());
+    v_total := (v_doc->>'total')::numeric;
+
+    IF v_total < COALESCE(v_order.paid_amount, 0) THEN
+      RAISE EXCEPTION 'الإجمالي الجديد (%) أقل مما دُفع (%)', v_total, v_order.paid_amount USING ERRCODE = '22023';
+    END IF;
+    IF v_total IS DISTINCT FROM v_order.total_amount AND (v_reason IS NULL OR length(v_reason) < 3) THEN
+      RAISE EXCEPTION 'تغيير مبلغ الطلب يحتاج سبباً' USING ERRCODE = '22023';
+    END IF;
+
+    -- The order's measurements as they were taken (not the customer's current ones).
+    SELECT measurements INTO v_measure FROM public.order_items WHERE order_id = p_order_id ORDER BY created_at, id LIMIT 1;
+    DELETE FROM public.order_items WHERE order_id = p_order_id;
+    FOR v_item IN SELECT * FROM jsonb_array_elements(p_items) LOOP
+      v_idx := v_idx + 1;
+      v_fabric_id := NULLIF(v_item->>'fabric_id', '')::uuid;
+      INSERT INTO public.order_items (
+        tenant_id, order_id, type, name, garment_type, fabric, fabric_id,
+        quantity, price, consumed_meters, status, status_key,
+        collar_type, cuff_type, pocket_type, chest_style, shoulder_style, cutting_type,
+        collar_padding, closure_type, closure_visibility,
+        additions, embroidery, attributes, measurements,
+        tax_type, line_net, line_tax, line_discount
+      ) VALUES (
+        v_tenant, p_order_id, 'custom', v_item->>'garment_type', v_item->>'garment_type',
+        NULLIF(v_item->>'fabric', ''), v_fabric_id,
+        (v_item->>'quantity')::numeric, COALESCE(NULLIF(v_item->>'price', '')::numeric, 0),
+        CASE WHEN v_fabric_id IS NULL THEN 0 ELSE COALESCE(NULLIF(v_item->>'consumed_meters', '')::numeric, 0) END,
+        v_order.status, v_order.status_key,
+        NULLIF(v_item->>'collar_type', ''), NULLIF(v_item->>'cuff_type', ''),
+        NULLIF(v_item->>'pocket_type', ''), NULLIF(v_item->>'chest_style', ''),
+        NULLIF(v_item->>'shoulder_style', ''), NULLIF(v_item->>'cutting_type', ''),
+        NULLIF(v_item->>'collar_padding', '')::collar_padding,
+        NULLIF(v_item->>'closure_type', '')::closure_type,
+        NULLIF(v_item->>'closure_visibility', '')::closure_visibility,
+        NULLIF(v_item->>'additions', ''), NULLIF(v_item->>'embroidery', ''),
+        CASE WHEN jsonb_typeof(v_item->'attributes') = 'object' THEN v_item->'attributes' ELSE '{}'::jsonb END,
+        COALESCE(CASE WHEN jsonb_typeof(v_item->'measurements') = 'object' THEN v_item->'measurements' END, v_measure, '{}'::jsonb),
+        v_doc->'lines'->(v_idx - 1)->>'taxType',
+        (v_doc->'lines'->(v_idx - 1)->>'netAfter')::numeric,
+        (v_doc->'lines'->(v_idx - 1)->>'taxAfter')::numeric,
+        (v_doc->'lines'->(v_idx - 1)->>'discount')::numeric
+      );
+    END LOOP;
+
+    UPDATE public.orders
+       SET total_amount = v_total, tax_amount = (v_doc->>'tax')::numeric,
+           discount_amount = (v_doc->>'discountGross')::numeric, tax_rate = v_rate
+     WHERE id = p_order_id;
+    v_notes := v_notes || ('الأصناف' || CASE WHEN v_total IS DISTINCT FROM v_order.total_amount
+                             THEN ' — الإجمالي من ' || v_order.total_amount::text || ' إلى ' || v_total::text ELSE '' END);
+  END IF;
+
+  IF array_length(v_notes, 1) IS NULL THEN
+    RETURN jsonb_build_object('order_id', p_order_id, 'changed', '[]'::jsonb);
+  END IF;
+
+  INSERT INTO public.order_history (tenant_id, order_id, status, notes, updated_by_staff, updated_by_name)
+  VALUES (v_tenant, p_order_id, v_order.status,
+          'تعديل: ' || array_to_string(v_notes, '، ') || COALESCE(' — السبب: ' || v_reason, ''),
+          v_staff, COALESCE(v_staff_name, 'System'));
+
+  v_result := jsonb_build_object('order_id', p_order_id, 'changed', to_jsonb(v_notes),
+    'total', (SELECT total_amount FROM public.orders WHERE id = p_order_id));
+  INSERT INTO public.stock_operations (operation_id, tenant_id, kind, result)
+  VALUES (v_op_key, v_tenant, 'update_tailoring_order', v_result);
+  RETURN v_result;
+END;
+$function$;
+
+REVOKE ALL ON FUNCTION public.update_tailoring_order(uuid, uuid, jsonb, jsonb, text) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.update_tailoring_order(uuid, uuid, jsonb, jsonb, text) TO authenticated;

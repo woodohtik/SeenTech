@@ -1129,7 +1129,8 @@
     "updating": "اپ ڈیٹ ہو رہا ہے...",
     "zatca_submission_failed": "زاتکا کو انوائس بھیجا نہیں جا سکا۔ دوبارہ کوشش کریں، یا اگر مسئلہ برقرار رہے تو سپورٹ سے رابطہ کریں۔",
     "page_offline": "یہ صفحہ اس ڈیوائس پر انٹرنیٹ کے بغیر دستیاب نہیں۔ کنکشن واپس آنے پر چلے گا۔",
-    "back_to_pos": "پوائنٹ آف سیل پر واپس"
+    "back_to_pos": "پوائنٹ آف سیل پر واپس",
+    "write_failed": "تبدیلی محفوظ نہیں ہوئی۔ دوبارہ کوشش کریں؛ بار بار ہو تو سپورٹ کو بتائیں۔"
   },
   "inventory": {
     "add_failed": "پروڈکٹ شامل کرنے میں ناکامی",
@@ -2159,7 +2160,29 @@
     "cancel_back": "واپس",
     "cancel_done": "آرڈر منسوخ ہو گیا",
     "cancel_done_refunded": "آرڈر منسوخ ہوا اور {{amount}} نقد واپس ہوئے",
-    "cancel_failed": "آرڈر منسوخ نہیں ہو سکا"
+    "cancel_failed": "آرڈر منسوخ نہیں ہو سکا",
+    "edit_order": "آرڈر میں ترمیم",
+    "edit_title": "آرڈر میں ترمیم",
+    "edit_delivery_date": "ڈیلیوری کی تاریخ",
+    "edit_tailor": "درزی",
+    "edit_no_tailor": "کوئی درزی نہیں",
+    "edit_notes": "نوٹس",
+    "edit_lines": "اشیاء",
+    "edit_lines_locked_cut": "کپڑا کٹ چکا ہے -- اشیاء اور قیمت اب نہیں بدلتیں۔",
+    "edit_lines_locked_invoice": "آرڈر کی ٹیکس انوائس ہے -- رقم کریڈٹ نوٹ سے بدلے گی۔",
+    "edit_quantity": "مقدار",
+    "edit_price": "قیمت",
+    "edit_remove_line": "ہٹائیں",
+    "edit_restore_line": "واپس لائیں",
+    "edit_reason": "تبدیلی کی وجہ",
+    "edit_reason_placeholder": "مثلاً: گاہک نے ایک لباس شامل کیا",
+    "edit_reason_required": "اشیاء یا قیمت بدلنے کے لیے وجہ درکار ہے",
+    "edit_needs_a_line": "آرڈر میں کم از کم ایک چیز ہونی چاہیے",
+    "edit_save": "تبدیلی محفوظ کریں",
+    "edit_saved": "تبدیلی محفوظ ہو گئی",
+    "edit_nothing_changed": "کچھ نہیں بدلا",
+    "edit_failed": "تبدیلی محفوظ نہیں ہو سکی",
+    "edit_load_failed": "آرڈر لوڈ نہیں ہو سکا"
   },
   "permissions": {
     "access_denied_desc": "غیر متعین",

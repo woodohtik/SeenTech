@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useCallback, useEffect, lazy, Suspense, ReactNode } from 'react';
 import { ToastStaticStack, type Toast, type ToastType } from './ToastStack';
 import { whenIdle } from '../lib/whenIdle';
-import { getFriendlyErrorMessage } from '../lib/appErrors';
+import { APP_WRITE_ERROR_EVENT, getFriendlyErrorMessage, type FirestoreErrorInfo } from '../lib/appErrors';
 import { logError } from '../lib/logger';
 import { useTranslation } from 'react-i18next';
 import { useDirection } from '../lib/direction';
@@ -51,6 +51,11 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   const warning = (message: string, description?: string) => showToast('warning', message, description);
 
   const handleError = useCallback((err: any, contextStr?: string) => {
+    // P4 (UX-01): already shown when appErrors raised it -- once is enough.
+    if (err && (err as any).__shownToUser) {
+      logError(err, { source: contextStr || 'handleError' });
+      return;
+    }
     // Determine friendly message
     let friendlyMessage = t('errors.unexpected');
     let description = '';
@@ -72,6 +77,16 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     } catch {
       showToast('error', contextStr || t('common.error'), friendlyMessage);
     }
+  }, [showToast, t]);
+
+  // P4 (UX-01): every failed save, status change or delete is shown.
+  useEffect(() => {
+    const onWriteError = (e: Event) => {
+      const info = (e as CustomEvent<FirestoreErrorInfo>).detail;
+      showToast('error', getFriendlyErrorMessage(info), t('errors.write_failed'));
+    };
+    window.addEventListener(APP_WRITE_ERROR_EVENT, onWriteError);
+    return () => window.removeEventListener(APP_WRITE_ERROR_EVENT, onWriteError);
   }, [showToast, t]);
 
   return (
