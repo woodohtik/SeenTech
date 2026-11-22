@@ -2110,9 +2110,9 @@ const AddItemModal = ({ onClose, tenantId, branches }: any) => {
               </p>
             </div>
           </div>
-          <button
+          <button aria-label={t('common.close')}
             onClick={onClose}
-            className="p-2 hover:bg-surface rounded-full transition-colors shadow-sm"
+            className="p-2 hover:bg-surface rounded-full transition-colors shadow-sm min-w-11 min-h-11 inline-flex items-center justify-center"
           >
             <X size={20} className="text-content-muted sm:size-6" />
           </button>
@@ -2333,9 +2333,9 @@ const StockTransferModal = ({
               </p>
             </div>
           </div>
-          <button
+          <button aria-label={t('common.close')}
             onClick={onClose}
-            className="p-2 hover:bg-surface rounded-full transition-colors shadow-sm"
+            className="p-2 hover:bg-surface rounded-full transition-colors shadow-sm min-w-11 min-h-11 inline-flex items-center justify-center"
           >
             <X size={24} className="text-content-muted" />
           </button>
@@ -2655,9 +2655,9 @@ const StockAdjustmentModal = ({ onClose, tenantId, item, branch: initialBranch, 
               </p>
             </div>
           </div>
-          <button
+          <button aria-label={t('common.close')}
             onClick={onClose}
-            className="p-2 hover:bg-surface rounded-full transition-colors"
+            className="p-2 hover:bg-surface rounded-full transition-colors min-w-11 min-h-11 inline-flex items-center justify-center"
           >
             <X size={20} className="text-content-muted" />
           </button>
@@ -2957,9 +2957,9 @@ const ManualConversionModal = ({ onClose, tenantId, item, branch: initialBranch,
         exit={{ scale: 0.9, opacity: 0, y: 20 }}
         className="bg-surface w-full max-w-md rounded-3xl shadow-2xl relative z-10 overflow-hidden border border-border p-4 sm:p-8"
       >
-        <button
+        <button aria-label={t('common.close')}
           onClick={onClose}
-          className="absolute top-6 right-6 p-2 hover:bg-surface-muted rounded-full text-content-muted transition-all"
+          className="absolute top-6 right-6 p-2 hover:bg-surface-muted rounded-full text-content-muted transition-all min-w-11 min-h-11 inline-flex items-center justify-center"
         >
           <X size={20} />
         </button>
@@ -3286,7 +3286,7 @@ const ProductImportModal = ({
             </div>
           </div>
           {step !== 'result' && (
-            <button onClick={onClose} className="p-2 hover:bg-surface rounded-full transition-colors">
+            <button aria-label={t('common.close')} onClick={onClose} className="p-2 hover:bg-surface rounded-full transition-colors min-w-11 min-h-11 inline-flex items-center justify-center">
               <X size={24} className="text-content-muted" />
             </button>
           )}
@@ -3940,9 +3940,9 @@ const EditItemModal = ({ onClose, tenantId, item, branches }: any) => {
               </p>
             </div>
           </div>
-          <button
+          <button aria-label={t('common.close')}
             onClick={onClose}
-            className="p-2 hover:bg-surface rounded-full transition-colors shadow-sm"
+            className="p-2 hover:bg-surface rounded-full transition-colors shadow-sm min-w-11 min-h-11 inline-flex items-center justify-center"
           >
             <X size={20} className="text-content-muted sm:size-6" />
           </button>

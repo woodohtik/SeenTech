@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import React from 'react';
-import { render, screen, fireEvent, cleanup, act } from '@testing-library/react';
+import { render, screen, fireEvent, cleanup, act, waitFor } from '@testing-library/react';
 import { test, expect, vi, afterEach } from 'vitest';
 
 vi.mock('../lib/direction', () => ({
@@ -51,4 +51,21 @@ test('if the animation cannot load, the dialog still works', async () => {
   expect(await screen.findByText('حذف الطلب؟')).toBeTruthy();
   fireEvent.click(screen.getByText('common.cancel'));
   await expect(answer).resolves.toBe(false);
+});
+
+// seen-readiness-fixes-task.md P4 (UX-08).
+test('the confirmation is an alert dialog; Escape answers no; a dangerous one starts on cancel', async () => {
+  const { ConfirmProvider: Provider, useConfirm: use } = await import('./ConfirmContext');
+  let answer: boolean | undefined;
+  function Ask() {
+    const { confirm } = use();
+    return <button onClick={async () => { answer = await confirm({ description: 'حذف؟', danger: true }); }}>ask</button>;
+  }
+  render(<Provider><Ask /></Provider>);
+  fireEvent.click(screen.getByText('ask'));
+  const dialog = await screen.findByRole('alertdialog');
+  expect(dialog.getAttribute('aria-modal')).toBe('true');
+  expect(document.activeElement?.textContent).toMatch(/cancel|إلغاء/);
+  fireEvent.keyDown(document, { key: 'Escape' });
+  await waitFor(() => expect(answer).toBe(false));
 });

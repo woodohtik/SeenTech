@@ -88,6 +88,17 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
     setDialog(null);
   };
 
+  // P4 (UX-08): Escape answers "no" (cancel / close), whichever dialog is open.
+  useEffect(() => {
+    if (!dialog) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') close(dialog.kind === 'confirm' ? false : null);
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dialog]);
+
   const onBackdrop = () => {
     if (!dialog) return;
     close(dialog.kind === 'confirm' ? false : dialog.kind === 'prompt' ? null : undefined);
@@ -145,6 +156,8 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
                 </button>
                 <button
                   onClick={() => close(false)}
+                  // P4 (UX-08): on a dangerous confirmation, Enter does not delete by accident.
+                  autoFocus={Boolean(dialog.danger)}
                   className="px-5 py-3 bg-surface-muted text-content-muted rounded-2xl font-black text-sm hover:bg-surface-muted/70 transition-all"
                 >
                   {dialog.cancelLabel || t('common.cancel')}

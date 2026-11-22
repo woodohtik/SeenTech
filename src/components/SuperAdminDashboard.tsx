@@ -1235,7 +1235,7 @@ const PlanFormModal = ({
           <h2 className="text-lg font-black text-content">
             {t(mode === 'create' ? 'saas.plan_modal_title_create' : 'saas.plan_modal_title_edit')}
           </h2>
-          <button onClick={onClose} className="p-2 hover:bg-surface rounded-full transition-colors">
+          <button aria-label={t('common.close')} onClick={onClose} className="p-2 hover:bg-surface rounded-full transition-colors min-w-11 min-h-11 inline-flex items-center justify-center">
             <X size={20} className="text-content-muted" />
           </button>
         </div>
@@ -1457,7 +1457,7 @@ const CouponFormModal = ({
       >
         <div className="p-4 sm:p-6 border-b border-border flex justify-between items-center bg-surface-muted/50">
           <h2 className="text-lg font-black text-content">{t('saas.coupon_modal_title', 'كوبون خصم جديد')}</h2>
-          <button onClick={onClose} className="p-2 hover:bg-surface rounded-full transition-colors">
+          <button aria-label={t('common.close')} onClick={onClose} className="p-2 hover:bg-surface rounded-full transition-colors min-w-11 min-h-11 inline-flex items-center justify-center">
             <X size={20} className="text-content-muted" />
           </button>
         </div>

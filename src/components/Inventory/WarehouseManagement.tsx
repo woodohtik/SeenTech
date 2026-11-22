@@ -254,7 +254,7 @@ const BranchModal = ({ onClose, onSave, initialData }: any) => {
               <p className="text-[10px] sm:text-xs text-content-muted font-bold uppercase tracking-wide sm:tracking-widest truncate">{t('branches.location_details')}</p>
             </div>
           </div>
-          <button onClick={onClose} className="p-2 hover:bg-surface rounded-full transition-colors shadow-sm shrink-0">
+          <button aria-label={t('common.close')} onClick={onClose} className="p-2 hover:bg-surface rounded-full transition-colors shadow-sm shrink-0 min-w-11 min-h-11 inline-flex items-center justify-center">
             <X size={22} className="text-content-muted" />
           </button>
         </div>

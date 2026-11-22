@@ -1,3 +1,4 @@
+import i18n from 'i18next';
 import React from 'react';
 import { Dialog, Transition } from '@headlessui/react';
 import { X } from 'lucide-react';
@@ -74,7 +75,7 @@ export function Modal({ isOpen, onClose, title, children, footer, maxWidth = 'md
                     <button
                       type="button"
                       onClick={onClose}
-                      aria-label="close"
+                      aria-label={i18n.t('common.close')}
                       className="p-2 -m-2 text-content-muted hover:text-content hover:bg-surface-muted rounded-full transition-colors shrink-0"
                     >
                       <X size={20} />

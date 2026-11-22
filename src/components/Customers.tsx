@@ -1208,7 +1208,7 @@ export default function Customers({ tenantId }: CustomersProps) {
                         <AnimatePresence>
                           {activeMenuId === customer.id && (
                             <>
-                              <div 
+                              <div role="dialog" aria-modal="true" 
                                 className="fixed inset-0 z-30 cursor-default" 
                                 onClick={(e) => {
                                   e.stopPropagation();
@@ -1527,7 +1527,7 @@ export default function Customers({ tenantId }: CustomersProps) {
                         {activeMenuId === customer.id && (
                           <>
                             {/* Overlay specifically to catch close clicks */}
-                            <div 
+                            <div role="dialog" aria-modal="true" 
                               className="fixed inset-0 z-30 cursor-default" 
                               onClick={(e) => {
                                 e.stopPropagation();
@@ -1748,7 +1748,7 @@ export default function Customers({ tenantId }: CustomersProps) {
       {/* Bulk Delete Modal */}
       <AnimatePresence>
         {isBulkDeleteModalOpen && (
-          <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div role="dialog" aria-modal="true" className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
             <motion.div
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
@@ -1792,7 +1792,7 @@ export default function Customers({ tenantId }: CustomersProps) {
       {/* Modals */}
       <AnimatePresence>
         {isModalOpen && (
-          <div className="fixed inset-0 z-[150] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/50 backdrop-blur-sm overflow-y-auto">
+          <div role="dialog" aria-modal="true" className="fixed inset-0 z-[150] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/50 backdrop-blur-sm overflow-y-auto">
             <motion.div
               initial={{ scale: 0.95, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
@@ -2096,7 +2096,7 @@ const CustomerDetailsModal = ({
   const isRtl = isRtlLang(i18n.language);
 
   return (
-    <div className="fixed inset-0 z-[150] flex items-end sm:items-center justify-center p-0 sm:p-6 overflow-y-auto">
+    <div role="dialog" aria-modal="true" className="fixed inset-0 z-[150] flex items-end sm:items-center justify-center p-0 sm:p-6 overflow-y-auto">
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -2125,7 +2125,7 @@ const CustomerDetailsModal = ({
               <p className="text-[11px] sm:text-xs text-content-muted font-bold">{customer.phone}</p>
             </div>
           </div>
-          <button onClick={onClose} className="p-1.5 sm:p-2 hover:bg-surface rounded-full transition-colors shadow-sm">
+          <button aria-label={t('common.close')} onClick={onClose} className="p-1.5 sm:p-2 hover:bg-surface rounded-full transition-colors shadow-sm min-w-11 min-h-11 inline-flex items-center justify-center">
             <X size={20} className="text-content-muted sm:w-6 sm:h-6" />
           </button>
         </div>
@@ -2513,7 +2513,7 @@ const CustomerStatementModal = ({
   );
 
   return (
-    <div className="fixed inset-0 z-[150] flex items-end sm:items-center justify-center p-0 sm:p-6 overflow-y-auto print:absolute print:inset-0 print:z-[200] print:p-0 print:bg-white print:overflow-visible">
+    <div role="dialog" aria-modal="true" className="fixed inset-0 z-[150] flex items-end sm:items-center justify-center p-0 sm:p-6 overflow-y-auto print:absolute print:inset-0 print:z-[200] print:p-0 print:bg-white print:overflow-visible">
       {/* Background Overlay */}
       <motion.div 
         initial={{ opacity: 0 }}
@@ -2558,7 +2558,7 @@ const CustomerStatementModal = ({
               <Printer size={16} />
               <span>{t('tax_invoices.print')}</span>
             </button>
-            <button onClick={onClose} className="p-1.5 hover:bg-surface rounded-full transition-colors shadow-sm cursor-pointer">
+            <button aria-label={t('common.close')} onClick={onClose} className="p-1.5 hover:bg-surface rounded-full transition-colors shadow-sm cursor-pointer min-w-11 min-h-11 inline-flex items-center justify-center">
               <X size={20} className="text-content-muted sm:w-6 sm:h-6" />
             </button>
           </div>
@@ -2976,7 +2976,7 @@ const CustomerImportModal = ({
   );
 
   return (
-    <div className="fixed inset-0 z-[110] flex items-center justify-center p-2 sm:p-4">
+    <div role="dialog" aria-modal="true" className="fixed inset-0 z-[110] flex items-center justify-center p-2 sm:p-4">
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -3002,7 +3002,7 @@ const CustomerImportModal = ({
             </div>
           </div>
           {step !== 'result' && (
-            <button onClick={onClose} className="p-2 hover:bg-surface rounded-full transition-colors">
+            <button aria-label={t('common.close')} onClick={onClose} className="p-2 hover:bg-surface rounded-full transition-colors min-w-11 min-h-11 inline-flex items-center justify-center">
               <X size={24} className="text-content-muted" />
             </button>
           )}

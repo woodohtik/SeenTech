@@ -1118,7 +1118,7 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
         )}
 
         {pinDisableTarget && (
-          <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div role="dialog" aria-modal="true" className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 10 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -1158,7 +1158,7 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
         )}
 
         {pinModalTarget && (
-          <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div role="dialog" aria-modal="true" className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 10 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -1406,7 +1406,7 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
 
                     {/* Transparent overlay to close dropdown when clicking outside */}
                     {isDropdownOpen && (
-                      <div 
+                      <div role="dialog" aria-modal="true" 
                         className="fixed inset-0 z-30 cursor-default"
                         onClick={(e) => {
                           e.stopPropagation();
@@ -2097,7 +2097,7 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
           {/* Create/Edit Role Modal */}
           <AnimatePresence>
             {(showCreateRole || editingRole) && (
-              <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 sm:p-6">
+              <div role="dialog" aria-modal="true" className="fixed inset-0 z-[150] flex items-center justify-center p-4 sm:p-6">
                 <motion.div
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
@@ -2171,7 +2171,7 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
             )}
 
             {roleToDelete && (
-              <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 sm:p-6">
+              <div role="dialog" aria-modal="true" className="fixed inset-0 z-[150] flex items-center justify-center p-4 sm:p-6">
                 <motion.div
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
@@ -2220,7 +2220,7 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
       {/* Details Modal */}
       <AnimatePresence>
         {selectedStaffForDetails && (
-          <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 sm:p-6">
+          <div role="dialog" aria-modal="true" className="fixed inset-0 z-[150] flex items-center justify-center p-4 sm:p-6">
             <motion.div 
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -2323,7 +2323,7 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
       {/* Modal */}
       <AnimatePresence>
         {isModalOpen && (
-          <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 sm:p-6">
+          <div role="dialog" aria-modal="true" className="fixed inset-0 z-[150] flex items-center justify-center p-4 sm:p-6">
             <motion.div 
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -2514,7 +2514,7 @@ const RolePermissionsModal = ({ role, onClose }: { role: Role; onClose: () => vo
   };
 
   return (
-    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 sm:p-6">
+    <div role="dialog" aria-modal="true" className="fixed inset-0 z-[200] flex items-center justify-center p-4 sm:p-6">
       <motion.div 
         initial={{ opacity: 0 }} 
         animate={{ opacity: 1 }} 
@@ -2545,7 +2545,7 @@ const RolePermissionsModal = ({ role, onClose }: { role: Role; onClose: () => vo
             >
               {expandedCategories.length === categories.length ? t('settings_page.staff.permissions.collapse_all') : t('settings_page.staff.permissions.expand_all')}
             </button>
-            <button onClick={onClose} className="p-2 hover:bg-surface rounded-full transition-colors shadow-sm bg-surface">
+            <button aria-label={t('common.close')} onClick={onClose} className="p-2 hover:bg-surface rounded-full transition-colors shadow-sm bg-surface min-w-11 min-h-11 inline-flex items-center justify-center">
               <X size={24} className="text-content-muted" />
             </button>
           </div>

@@ -22,7 +22,7 @@ export function ConfirmStaticFrame({ open, dir, onBackdrop, children }: ConfirmF
   if (!open) return null;
   return (
     <div className={`seen-enter-fade ${CONFIRM_BACKDROP_CLASS}`} dir={dir} onClick={onBackdrop}>
-      <div className={`seen-enter-dialog ${CONFIRM_PANEL_CLASS}`} onClick={(e) => e.stopPropagation()}>
+      <div role="alertdialog" aria-modal="true" className={`seen-enter-dialog ${CONFIRM_PANEL_CLASS}`} onClick={(e) => e.stopPropagation()}>
         {children}
       </div>
     </div>

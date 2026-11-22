@@ -37,9 +37,9 @@ export default function StaffTutorialModal({ role }: { role?: string | null }) {
             <h2 className="text-xl font-bold text-content flex items-center gap-2">
               <CheckCircle className="text-brand" /> {t('staff.tutorial_title')}
             </h2>
-            <button
+            <button aria-label={t('common.close')}
               onClick={handleDismiss}
-              className="p-2 hover:bg-surface-muted/50 rounded-full text-content-muted transition-colors"
+              className="p-2 hover:bg-surface-muted/50 rounded-full text-content-muted transition-colors min-w-11 min-h-11 inline-flex items-center justify-center"
             >
               <X size={20} />
             </button>

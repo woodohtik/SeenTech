@@ -102,10 +102,10 @@ export default function ImageUpload({ tenantId, onImageUploaded, onImageRemoved,
         <div className="relative w-32 h-32 rounded-xl border border-border overflow-hidden shadow-sm group">
           <img src={preview} alt="Preview" className="w-full h-full object-cover" />
           <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-            <button
+            <button aria-label={t('common.delete')}
               type="button"
               onClick={handleRemove}
-              className="bg-white/20 hover:bg-danger text-white rounded-full p-1.5 transition-colors"
+              className="bg-white/20 hover:bg-danger text-white rounded-full p-1.5 transition-colors min-w-11 min-h-11 inline-flex items-center justify-center"
             >
               <X size={18} />
             </button>

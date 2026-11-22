@@ -222,7 +222,7 @@ export default function AddEmployeeModal({
       >
         <div className="p-6 border-b border-border flex justify-between items-center bg-surface-muted">
           <h2 className="text-xl font-black text-content">{t('saas.add_member_new')}</h2>
-          <button onClick={onClose} className="p-2 hover:bg-surface rounded-full transition-colors shadow-sm">
+          <button aria-label={t('common.close')} onClick={onClose} className="p-2 hover:bg-surface rounded-full transition-colors shadow-sm min-w-11 min-h-11 inline-flex items-center justify-center">
             <X size={24} className="text-content-muted" />
           </button>
         </div>

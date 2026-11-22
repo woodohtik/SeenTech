@@ -343,7 +343,7 @@ const TransferDetailsModal = ({ transfer, onClose, onReceive, getBranchName }: a
               <p className="text-xs text-content-muted font-bold uppercase tracking-widest">ID: {transfer.id.substring(0, 8)}</p>
             </div>
           </div>
-          <button onClick={onClose} className="p-2 hover:bg-surface rounded-full transition-colors shadow-sm">
+          <button aria-label={t('common.close')} onClick={onClose} className="p-2 hover:bg-surface rounded-full transition-colors shadow-sm min-w-11 min-h-11 inline-flex items-center justify-center">
             <X size={24} className="text-content-muted" />
           </button>
         </div>

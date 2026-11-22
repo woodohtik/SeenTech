@@ -144,9 +144,9 @@ export default function ProductImageUploader({
               className="max-h-[140px] rounded-xl object-contain shadow-sm"
             />
             {!isUploading && (
-              <button
+              <button aria-label={t('common.delete')}
                 onClick={clearImage}
-                className="absolute -top-2 -right-2 p-1.5 bg-danger text-white rounded-full shadow-lg hover:scale-110 transition-transform z-10"
+                className="absolute -top-2 -right-2 p-1.5 bg-danger text-white rounded-full shadow-lg hover:scale-110 transition-transform z-10 min-w-11 min-h-11 inline-flex items-center justify-center"
               >
                 <X size={16} />
               </button>

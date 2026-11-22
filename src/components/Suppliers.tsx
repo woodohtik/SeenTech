@@ -1339,7 +1339,7 @@ const SupplierImportModal = ({
             </div>
           </div>
           {step !== 'result' && (
-            <button onClick={onClose} className="p-2 hover:bg-surface rounded-full transition-colors">
+            <button aria-label={t('common.close')} onClick={onClose} className="p-2 hover:bg-surface rounded-full transition-colors min-w-11 min-h-11 inline-flex items-center justify-center">
               <X size={24} className="text-content-muted" />
             </button>
           )}
