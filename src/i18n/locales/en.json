@@ -2918,7 +2918,8 @@
     "webusb_unsupported": "WebUSB is not supported in this browser.",
     "whatsapp_modal_desc": "Enter the customer's phone number to open WhatsApp with the invoice details ready to send.",
     "whatsapp_modal_title": "Send Invoice via WhatsApp",
-    "window_printed": "The current window was printed."
+    "window_printed": "The current window was printed.",
+    "pair_agent_for_network": "Pair the Seen print agent to print to a network printer (Settings → Printers)."
   },
   "procurement": {
     "account_status": "Account Status",

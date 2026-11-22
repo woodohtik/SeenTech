@@ -633,6 +633,12 @@ const sendToBluetooth = async (id: string, data: Uint8Array): Promise<void> => {
   }
 };
 
+/** The app is served from the shop's own machine or network (a local install), not the cloud. */
+export function isLocalServer(hostname: string = typeof window !== 'undefined' ? window.location.hostname : ''): boolean {
+  return /^(localhost|127\.\d+\.\d+\.\d+|\[::1\]|10\.\d+\.\d+\.\d+|192\.168\.\d+\.\d+|172\.(1[6-9]|2\d|3[01])\.\d+\.\d+)$/.test(hostname)
+    || hostname.endsWith('.local');
+}
+
 const bytesToBase64 = (data: Uint8Array): string => {
   let binary = '';
   const CHUNK = 8192;
@@ -665,7 +671,8 @@ const sendToNetwork = async (conn: ConnectionOptions, data: Uint8Array): Promise
     try {
       res = await fetch('/api/print/raw', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        // P4 (OPERATIONS-12): the route needs the login token like any other.
+        headers: await (await import('./printRelayClient')).authedJsonHeaders(),
         body: JSON.stringify({ host: ip, port, dataBase64 }),
       });
     } catch (e: any) {
@@ -741,6 +748,12 @@ export const sendRawToPrinter = async (
           console.warn('[printerDiscovery] فشل مسار الوسيط لطابعة الشبكة:', e?.message || e);
         }
       }
+      // P4 (OPERATIONS-12): the cloud server cannot reach the shop's network --
+      // only a server installed in the shop can. Say what to do instead of
+      // failing with a network error.
+      if (!relay.isRelayPaired() && !isLocalServer()) {
+        throw new Error(i18n.t('printing.pair_agent_for_network'));
+      }
       return sendToNetwork(conn, data);
     }
 
@@ -772,9 +785,14 @@ export const probeNetworkPrinter = async (
   port: string | number = 9100
 ): Promise<{ ok: boolean; message: string }> => {
   try {
+    // P4 (OPERATIONS-12): with no paired agent, the cloud cannot reach the printer.
+    const relayClient = await import('./printRelayClient');
+    if (!relayClient.isRelayPaired() && !isLocalServer()) {
+      return { ok: false, message: i18n.t('printing.pair_agent_for_network') };
+    }
     const res = await fetch('/api/print/probe', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: await relayClient.authedJsonHeaders(),
       body: JSON.stringify({ host: ipAddress, port: Number(port) || 9100 }),
     });
     const payload = await res.json().catch(() => null);

@@ -107,7 +107,7 @@ const jsonHeaders = { 'Content-Type': 'application/json' };
  * بـ401 فور نشر هذا الخادم. دالة واحدة تجلب الجلسة الحالية وتبني الرؤوس،
  * بنفس أسلوب pairStation.
  */
-async function authedJsonHeaders(): Promise<Record<string, string>> {
+export async function authedJsonHeaders(): Promise<Record<string, string>> {
   const { data: { session } } = await supabase.auth.getSession();
   return session?.access_token
     ? { ...jsonHeaders, Authorization: `Bearer ${session.access_token}` }

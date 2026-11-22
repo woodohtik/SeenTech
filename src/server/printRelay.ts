@@ -976,6 +976,14 @@ export function registerPrintRelay(app: Express): void {
   }
 
   app.post('/api/print/raw', authenticate, async (req: AuthRequest, res: Response) => {
+    // seen-readiness-fixes-task.md P4 (OPERATIONS-12, SECURITY-14): the cloud
+    // server is not on any shop's network -- a private address never answers
+    // from here, and the platform-wide (host, port) claim blocked every other
+    // shop with the same 192.168.x.x. On Vercel this path is off; printing to
+    // a network printer goes through the paired Seen print agent.
+    if (process.env.VERCEL) {
+      return res.status(501).json({ ok: false, code: 'pair_print_agent', error: 'اقرن وسيط سين للطباعة لطباعة الفواتير على طابعة الشبكة.' });
+    }
     try {
       const { host, port, dataBase64 } = req.body || {};
 
@@ -1016,6 +1024,14 @@ export function registerPrintRelay(app: Express): void {
   });
 
   app.post('/api/print/probe', authenticate, async (req: AuthRequest, res: Response) => {
+    // seen-readiness-fixes-task.md P4 (OPERATIONS-12, SECURITY-14): the cloud
+    // server is not on any shop's network -- a private address never answers
+    // from here, and the platform-wide (host, port) claim blocked every other
+    // shop with the same 192.168.x.x. On Vercel this path is off; printing to
+    // a network printer goes through the paired Seen print agent.
+    if (process.env.VERCEL) {
+      return res.status(501).json({ ok: false, code: 'pair_print_agent', error: 'اقرن وسيط سين للطباعة لطباعة الفواتير على طابعة الشبكة.' });
+    }
     const { host, port } = req.body || {};
 
     if (!isPrivateHost(host)) {
