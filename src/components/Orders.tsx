@@ -867,6 +867,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
 
   const performStatusUpdate = async (order: Order, status: string, notes?: string, fabricLines?: CuttingFabricLine[]) => {
     const id = order.id;
+    let sentArgs: Record<string, unknown> | null = null;
     try {
       const historyEntry: OrderHistory = {
         status,
@@ -896,6 +897,10 @@ export default function Orders({ tenantId }: { tenantId: string }) {
         p_notes: encodedNotes,
         p_op_id: globalThis.crypto.randomUUID(),
         p_history_note: historyEntry.notes
+      };
+      sentArgs = {
+        ...statusArgs,
+        p_fabric_lines: fabricLines ? fabricLines.map((line) => ({ line_key: line.lineKey, fabric_id: line.fabricId, meters: line.meters })) : null,
       };
       // With reviewed fabric lines the deduction and the status change are one
       // server transaction: short stock fails both.
@@ -930,7 +935,35 @@ export default function Orders({ tenantId }: { tenantId: string }) {
       router.refresh();
       toastSuccess(t('orders.status_updated_success'));
     } catch (error) {
+      // P4 (OPERATIONS-09): short fabric -- say what is short and offer a way on.
+      if ((error as any)?.hint === 'fabric_shortage' && sentArgs) {
+        setFabricShortage({ args: sentArgs, message: String((error as any).message || '') });
+        setShortageReason('');
+        return;
+      }
       handleFirestoreError(error as any, OperationType.UPDATE, 'orders');
+    }
+  };
+
+  // P4 (OPERATIONS-09): the stage move refused for short fabric.
+  const [fabricShortage, setFabricShortage] = useState<{ args: Record<string, unknown>; message: string } | null>(null);
+  const [shortageReason, setShortageReason] = useState('');
+  const [shortageBusy, setShortageBusy] = useState(false);
+  const canReconcileStock = hasPermission('inventory.reconcile');
+  const continueWithShortage = async () => {
+    if (!fabricShortage || shortageReason.trim().length < 3) return;
+    setShortageBusy(true);
+    try {
+      const { error } = await supabase.rpc('continue_with_fabric_shortage', { ...fabricShortage.args, p_reason: shortageReason.trim() });
+      if (error) throw error;
+      setFabricShortage(null);
+      setCuttingPrompt(null);
+      toastSuccess(t('orders.fabric_shortage_continued'));
+      void fetchOrders();
+    } catch (error) {
+      toastError(dbRefusalMessage(error) ?? t('orders.fabric_shortage_failed'));
+    } finally {
+      setShortageBusy(false);
     }
   };
 
@@ -2744,6 +2777,33 @@ export default function Orders({ tenantId }: { tenantId: string }) {
             }
           }}
         />
+      )}
+      {fabricShortage && (
+        <div className="fixed inset-0 z-[170] flex items-center justify-center bg-black/40 p-4" role="dialog" aria-modal="true" aria-labelledby="fabric-shortage-title">
+          <div className="w-full max-w-md rounded-3xl bg-surface p-6 shadow-2xl border border-border space-y-4" dir={isRtlLang(i18n.language) ? 'rtl' : 'ltr'}>
+            <h3 id="fabric-shortage-title" className="text-lg font-black text-content">{t('orders.fabric_shortage_title')}</h3>
+            <p className="text-sm font-bold text-content">{fabricShortage.message}</p>
+            <button type="button" onClick={() => { setFabricShortage(null); router.push('/inventory'); }}
+              className="w-full min-h-12 rounded-2xl bg-brand text-white font-bold">
+              {t('orders.fabric_shortage_receive')}
+            </button>
+            {canReconcileStock && (
+              <div className="space-y-2 border-t border-border pt-4">
+                <p className="text-xs font-bold text-content-muted">{t('orders.fabric_shortage_continue_hint')}</p>
+                <input value={shortageReason} onChange={(e) => setShortageReason(e.target.value)}
+                  placeholder={t('orders.fabric_shortage_reason')} aria-label={t('orders.fabric_shortage_reason')}
+                  className="w-full min-h-11 rounded-xl border border-border bg-surface-muted px-3 text-sm" />
+                <button type="button" onClick={() => void continueWithShortage()} disabled={shortageBusy || shortageReason.trim().length < 3}
+                  className="w-full min-h-12 rounded-2xl border border-warning text-warning font-bold disabled:opacity-50">
+                  {t('orders.fabric_shortage_continue')}
+                </button>
+              </div>
+            )}
+            <button type="button" onClick={() => setFabricShortage(null)} className="w-full min-h-11 rounded-2xl font-bold text-content-muted">
+              {t('orders.cancel_back')}
+            </button>
+          </div>
+        </div>
       )}
       {editOrderId && tenantId && (
         <OrderEditDialog

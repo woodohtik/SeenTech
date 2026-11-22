@@ -2203,7 +2203,14 @@
     "edit_saved": "تبدیلی محفوظ ہو گئی",
     "edit_nothing_changed": "کچھ نہیں بدلا",
     "edit_failed": "تبدیلی محفوظ نہیں ہو سکی",
-    "edit_load_failed": "آرڈر لوڈ نہیں ہو سکا"
+    "edit_load_failed": "آرڈر لوڈ نہیں ہو سکا",
+    "fabric_shortage_title": "کپڑا کافی نہیں",
+    "fabric_shortage_receive": "پہلے کپڑے کی وصولی درج کریں",
+    "fabric_shortage_continue_hint": "یا ابھی آگے بڑھیں: موجود کپڑا کٹے گا اور باقی زیرِ التوا کمی کے طور پر درج ہوگا۔",
+    "fabric_shortage_reason": "وجہ (مثلاً: کھیپ آئی مگر درج نہیں ہوئی)",
+    "fabric_shortage_continue": "آگے بڑھیں اور کمی درج کریں",
+    "fabric_shortage_continued": "آرڈر آگے بڑھا؛ کپڑے کی کمی درج ہو گئی",
+    "fabric_shortage_failed": "آگے نہیں بڑھ سکے"
   },
   "permissions": {
     "access_denied_desc": "غیر متعین",

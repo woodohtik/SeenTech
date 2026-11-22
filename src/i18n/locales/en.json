@@ -2203,7 +2203,14 @@
     "edit_saved": "The change was saved",
     "edit_nothing_changed": "Nothing changed",
     "edit_failed": "The change could not be saved",
-    "edit_load_failed": "The order could not be loaded"
+    "edit_load_failed": "The order could not be loaded",
+    "fabric_shortage_title": "Not enough fabric",
+    "fabric_shortage_receive": "Record the fabric delivery first",
+    "fabric_shortage_continue_hint": "Or go on now: what is in stock is deducted and the rest is kept as a pending shortage.",
+    "fabric_shortage_reason": "Reason (e.g. the delivery arrived but was not entered)",
+    "fabric_shortage_continue": "Go on and record the shortage",
+    "fabric_shortage_continued": "The order moved; the fabric shortage was recorded",
+    "fabric_shortage_failed": "Could not go on"
   },
   "permissions": {
     "access_denied_desc": "Not specified",

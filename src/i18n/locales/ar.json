@@ -2203,7 +2203,14 @@
     "edit_saved": "حُفظ التعديل",
     "edit_nothing_changed": "لم يتغير شيء",
     "edit_failed": "تعذّر حفظ التعديل",
-    "edit_load_failed": "تعذّر تحميل الطلب"
+    "edit_load_failed": "تعذّر تحميل الطلب",
+    "fabric_shortage_title": "القماش غير كافٍ",
+    "fabric_shortage_receive": "سجّل استلام القماش أولاً",
+    "fabric_shortage_continue_hint": "أو تابع الآن: يُخصم المتوفر ويُسجَّل الباقي نقصاً معلّقاً يظهر في المخزون.",
+    "fabric_shortage_reason": "السبب (مثلاً: وصلت الشحنة ولم تُسجَّل)",
+    "fabric_shortage_continue": "تابع وسجّل النقص",
+    "fabric_shortage_continued": "نُقل الطلب وسُجّل نقص القماش",
+    "fabric_shortage_failed": "تعذّرت المتابعة"
   },
   "permissions": {
     "access_denied_desc": "غير محدد",
