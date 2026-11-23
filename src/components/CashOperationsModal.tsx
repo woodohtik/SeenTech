@@ -96,22 +96,15 @@ export default function CashOperationsModal({ shift, tenantId, onClose }: CashOp
 
     setIsSubmitting(true);
     try {
-      const entryId = crypto.randomUUID();
-      const numAmount = Number(amount);
-
-      const { error: insertError } = await supabase
-        .from('shift_entries')
-        .insert({
-          id: entryId,
-          tenant_id: tenantId,
-          shift_id: shift.id,
-          entry_type: operationType === 'deposit' ? 'deposit' : 'payout',
-          amount: numAmount,
-          reason,
-          occurred_at: new Date().toISOString(),
-          created_by: shift.staffId || null,
-          created_at: new Date().toISOString()
-        });
+      // P6 (MONEY-11): the server checks the shift is open and the caller's
+      // (or that they manage shifts); the id makes a retry harmless.
+      const { error: insertError } = await supabase.rpc('record_cash_movement', {
+        p_operation_id: crypto.randomUUID(),
+        p_shift_id: shift.id,
+        p_kind: operationType === 'deposit' ? 'deposit' : 'payout',
+        p_amount: Number(amount),
+        p_reason: reason.trim(),
+      });
 
       if (insertError) throw insertError;
 
