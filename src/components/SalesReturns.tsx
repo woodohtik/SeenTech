@@ -211,9 +211,14 @@ export default function SalesReturns({ tenantId, shiftId }: { tenantId: string, 
 
       if (returnError) throw returnError;
 
-      void returnResult; // { return_id, return_number, refunded_amount, tax_amount }
-
-      toastSuccess(t('sales_returns.return_success_msg'));
+      // P6 (MONEY-13): cash back is capped by what was paid; the rest of the
+      // credit note comes off what the customer owes -- say both.
+      const res = (returnResult || {}) as { refunded_amount?: number; credited_amount?: number };
+      const refunded = Number(res.refunded_amount || 0);
+      const credited = Number(res.credited_amount || 0);
+      toastSuccess(credited > 0
+        ? t('sales_returns.return_success_with_credit', { refunded: refunded.toFixed(2), credited: credited.toFixed(2) })
+        : t('sales_returns.return_success_msg'));
       setOrder(null);
       setSearchResults([]);
       setSearchQuery('');

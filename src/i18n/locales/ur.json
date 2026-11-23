@@ -4179,7 +4179,8 @@
     "searching": "تلاش جاری ہے...",
     "title": "سیلز انوائس کی واپسی",
     "title_returns": "واپسی",
-    "total": "کل رقم"
+    "total": "کل رقم",
+    "return_success_with_credit": "واپسی مکمل: {{refunded}} ریال واپس کیے گئے، اور {{credited}} ریال گاہک کے بقایا سے کم کیے گئے۔"
   },
   "settings": {
     "appearance": "ظاہری شکل",

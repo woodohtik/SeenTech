@@ -4190,7 +4190,8 @@
     "searching": "Searching...",
     "title": "Return Sales Invoice",
     "title_returns": "Returns",
-    "total": "Total"
+    "total": "Total",
+    "return_success_with_credit": "Return done: {{refunded}} SAR refunded, {{credited}} SAR taken off what the customer owes."
   },
   "settings": {
     "appearance": "Appearance",

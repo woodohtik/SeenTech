@@ -4278,7 +4278,8 @@
     "searching": "جاري البحث...",
     "title": "إرجاع فاتورة مبيعات",
     "title_returns": "المرتجعات",
-    "total": "الإجمالي"
+    "total": "الإجمالي",
+    "return_success_with_credit": "تم المرتجع: رُدّ {{refunded}} ر.س نقداً، وخُصم {{credited}} ر.س من المتبقي على العميل."
   },
   "settings": {
     "appearance": "المظهر",
