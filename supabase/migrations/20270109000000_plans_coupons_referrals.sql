@@ -163,6 +163,7 @@ BEGIN
   RETURN NEW;
 END;
 $function$;
+REVOKE ALL ON FUNCTION public.trg_confirm_referral_on_payment() FROM PUBLIC, anon, authenticated;
 DROP TRIGGER IF EXISTS saas_subscription_payments_confirm_referral ON public.saas_subscription_payments;
 CREATE TRIGGER saas_subscription_payments_confirm_referral AFTER INSERT ON public.saas_subscription_payments
 FOR EACH ROW EXECUTE FUNCTION public.trg_confirm_referral_on_payment();
