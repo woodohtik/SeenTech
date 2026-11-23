@@ -360,7 +360,7 @@ export default function PaymentVoucherModal({
             <div className="text-center py-4 border-b border-dashed border-slate-300">
               <h2 className="text-base font-black text-slate-950 leading-none">{tenantName}</h2>
               <p className="text-sm text-slate-500 font-bold uppercase mt-1">{t('procurement.pv_receipt_subtitle')}</p>
-              <h1 className="text-lg font-black text-red-600 mt-2.5">{t('procurement.pv_receipt_title')}</h1>
+              <h2 className="text-lg font-black text-red-600 mt-2.5">{t('procurement.pv_receipt_title')}</h2>
               <p className="text-sm text-slate-500 font-sans font-black uppercase">PAYMENT VOUCHER</p>
             </div>
 

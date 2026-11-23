@@ -598,13 +598,17 @@ export default function SaaSLayout({ children, userRole }: SaaSLayoutProps) {
             <UserPreferencesMenu role={userRole} dropdownPosition="bottom" />
 
             <div className="relative" ref={notificationsRef}>
-              <button 
+              <button
+                type="button"
                 onClick={() => setShowNotifications(!showNotifications)}
+                aria-label={t('dashboard.notifications')}
+                aria-expanded={showNotifications}
                 className="p-3 bg-surface-muted text-content-muted rounded-2xl hover:bg-surface transition-all relative"
               >
-                <Bell size={20} />
+                <Bell size={20} aria-hidden="true" />
                 {unreadCount > 0 && (
-                  <span className="absolute top-2 left-2 w-4 h-4 bg-danger text-white text-sm font-black rounded-full border-2 border-surface flex items-center justify-center">
+                  // A pill that grows with its number (it was a 16px circle under 14px type).
+                  <span className="absolute -top-1 -start-1 min-w-6 h-6 px-1.5 bg-danger text-white text-sm leading-none font-black rounded-full border-2 border-surface flex items-center justify-center tabular-nums">
                     {unreadCount > 9 ? '+9' : unreadCount}
                   </span>
                 )}

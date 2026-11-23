@@ -1042,10 +1042,10 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
     <div className={cn("p-4 main-640:p-6 space-y-6 main-640:space-y-8", isRtl ? "text-right" : "text-left")} dir={isRtl ? "rtl" : "ltr"}>
       <div className="flex flex-col main-720:flex-row main-720:items-center justify-between gap-4 min-w-0">
         <div className="min-w-0">
-          <h1 className="text-xl main-640:text-3xl font-black text-content flex items-center gap-2 main-640:gap-3">
+          <h2 className="text-xl main-640:text-3xl font-black text-content flex items-center gap-2 main-640:gap-3">
             <Shield className="text-brand shrink-0" size={24} />
             {t('settings_page.staff.title')}
-          </h1>
+          </h2>
           <p className="text-content-muted font-medium mt-1 text-sm main-640:text-base">{t('settings_page.staff.subtitle')}</p>
         </div>
         {/* The view switcher holds up to 5 tabs; it scrolls horizontally on

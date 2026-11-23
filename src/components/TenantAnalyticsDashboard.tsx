@@ -234,7 +234,7 @@ export default function TenantAnalyticsDashboard() {
             <ArrowRight size={20} className="rtl:-scale-x-100" />
           </Link>
           <div>
-            <h1 className="text-2xl font-black text-content flex items-center gap-3">
+            <h2 className="text-2xl font-black text-content flex items-center gap-3">
               {data.tenant.name || data.tenant.store_name}
               {data.health.churnRisk === 'high' && (
                 <span className="flex items-center gap-1.5 px-2.5 py-1 bg-[var(--seen-danger-bg)] text-danger text-sm rounded-lg font-bold">
@@ -242,7 +242,7 @@ export default function TenantAnalyticsDashboard() {
                   {t('saas.churn_risk')}
                 </span>
               )}
-            </h1>
+            </h2>
             <p className="text-sm font-medium text-content-muted mt-1 font-mono">ID: {tenantId}</p>
           </div>
         </div>

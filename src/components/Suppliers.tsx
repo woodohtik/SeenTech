@@ -498,7 +498,7 @@ export default function Suppliers({ tenantId }: { tenantId: string }) {
     <div className="p-4 main-720:p-6 space-y-6 font-sans">
       <div className="flex flex-col main-720:flex-row justify-between items-start main-720:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-content">{t('procurement.title', 'الموردين والمشتريات')}</h1>
+          <h2 className="text-2xl font-bold text-content">{t('procurement.title', 'الموردين والمشتريات')}</h2>
           <p className="text-content-muted">{t('procurement.subtitle', 'إدارة الموردين، أوامر الشراء، والمرتجعات')}</p>
         </div>
         <div className="flex gap-2 w-full main-720:w-auto">

@@ -1,4 +1,4 @@
--- 20270111000000. Staging, rolled back:
+-- 20270111000000 (the aal2 rule it works around is in 20270102000000). Staging, rolled back:
 --   npx supabase db query --linked --file supabase/staging-checks/saas_users_read_own_row_test.sql
 DO $test$
 DECLARE
@@ -35,6 +35,14 @@ BEGIN
   SELECT count(*) INTO n FROM public.saas_users;
   RESET ROLE;
   IF n <> 1 THEN RAISE EXCEPTION 'FAIL aal1 admin sees % saas_users rows', n; END IF;
+  checks := checks + 1;
+
+  -- 3b. ...and cannot change their own row in aal1 (e.g. turn two-factor off).
+  SET LOCAL ROLE authenticated;
+  UPDATE public.saas_users SET mfa_enabled = false WHERE uid = adm.uid;
+  GET DIAGNOSTICS n = ROW_COUNT;
+  RESET ROLE;
+  IF n <> 0 THEN RAISE EXCEPTION 'FAIL aal1 admin updated their own row'; END IF;
   checks := checks + 1;
 
   -- 4. After the code (aal2), the admin is an admin again and sees the team.

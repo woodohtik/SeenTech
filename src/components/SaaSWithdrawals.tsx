@@ -87,7 +87,7 @@ export default function SaaSWithdrawals() {
 
   return (
     <div dir={isRtl ? 'rtl' : 'ltr'} className="p-6 text-content">
-      <h1 className="text-[#0E2A42] font-black text-[26px] m-0">{t('saas.withdrawals_title')}</h1>
+      <h2 className="text-[#0E2A42] font-black text-[26px] m-0">{t('saas.withdrawals_title')}</h2>
       <p className="text-content-muted text-[14.5px] mt-1.5 mb-5">{t('saas.withdrawals_subtitle')}</p>
 
       {loading ? (

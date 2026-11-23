@@ -880,7 +880,7 @@ export default function PrinterSettings() {
             <Printer size={24} />
           </div>
           <div className="min-w-0">
-            <h1 className="text-lg main-640:text-2xl font-black text-content">{t('settings_page.printer.title')}</h1>
+            <h2 className="text-lg main-640:text-2xl font-black text-content">{t('settings_page.printer.title')}</h2>
             <p className="text-sm text-content-muted mt-1 font-medium">
               {t('settings_page.printer.subtitle')}
             </p>

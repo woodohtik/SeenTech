@@ -136,7 +136,7 @@ export default function SaaSReports() {
     <div className="space-y-8 font-sans" dir={isRtl ? 'rtl' : 'ltr'}>
       <div className="flex flex-col main-720:flex-row justify-between items-start main-720:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-black text-content">{t('saas.financial_reports_title')}</h1>
+          <h2 className="text-3xl font-black text-content">{t('saas.financial_reports_title')}</h2>
           <p className="text-content-muted font-bold mt-1">{t('saas.financial_reports_subtitle')}</p>
         </div>
         <div className="flex gap-2">

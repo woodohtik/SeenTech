@@ -250,7 +250,13 @@ export function layoutChecks(cfg: { minText: number; minTouch: number; touchMaxW
       const box = (el.tagName === 'INPUT' && /^(checkbox|radio)$/.test((el as HTMLInputElement).type) && el.closest('label')) || el;
       const r = box.getBoundingClientRect();
       if (!onScreenX(r)) continue;
-      if (Math.min(r.width, r.height) >= cfg.minTouch - 0.5) continue;
+      // data-touch-ok: the pressable area is a larger ::after (after:-inset-*); measure that.
+      let grow = 0;
+      if (el.hasAttribute('data-touch-ok')) {
+        const after = getComputedStyle(el, '::after');
+        grow = Math.max(0, -parseFloat(after.top) || 0, -parseFloat(after.left) || 0) * 2;
+      }
+      if (Math.min(r.width, r.height) + grow >= cfg.minTouch - 0.5) continue;
       push(touchTargets, { el: describe(el), text: textOf(el) || el.getAttribute('aria-label') || '', value: `${Math.round(r.width)}x${Math.round(r.height)}` });
     }
   }

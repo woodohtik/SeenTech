@@ -221,7 +221,7 @@ export default function ShiftHistory({ tenantId, staffId, isManager }: ShiftHist
         <div className="hidden print:block fixed inset-0 bg-white z-[200] p-8 text-black" dir={isRtl ? 'rtl' : 'ltr'}>
           <div className="max-w-md mx-auto">
             <div className="text-center mb-6 border-b border-dashed border-gray-400 pb-4">
-              <h1 className="text-2xl font-black mb-2">{t('shift_closing.title')}</h1>
+              <h2 className="text-2xl font-black mb-2">{t('shift_closing.title')}</h2>
               <p className="text-sm">{t('shift_history.employee')}: {selectedShift.staffName}</p>
               <div className="text-sm flex items-center justify-center gap-2 my-1">
                 <span>{t('shift_history.start_time')}:</span>

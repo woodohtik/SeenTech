@@ -327,7 +327,7 @@ export default function SaaSTeamManagement() {
       {/* Header section with Stats */}
       <div className="flex flex-col main-720:flex-row justify-between items-start main-720:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-black text-content">{t('saas.team_management_title', 'إدارة أعضاء الفريق')}</h1>
+          <h2 className="text-3xl font-black text-content">{t('saas.team_management_title', 'إدارة أعضاء الفريق')}</h2>
           <p className="text-content-muted mt-1">{t('saas.team_management_subtitle', 'إضافة موظفي فريق العمل وتحديد صلاحياتهم')}</p>
         </div>
 

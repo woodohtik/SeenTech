@@ -1,7 +1,7 @@
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { contentFiles, PRINT } from '../scripts/responsive/content-files.mjs';
+import { contentFiles, PRINT, SHELL } from '../scripts/responsive/content-files.mjs';
 
 /**
  * seen-responsive-layout-task.md, kept true after the task:
@@ -51,6 +51,19 @@ describe('responsive guard', () => {
       });
     }
     expect(found, 'inside the content area, use main-640: main-720: main-900: main-1024: main-1280: (index.css)').toEqual([]);
+  });
+
+  it('outside the content area, nothing uses the content-width variants (there is no data-main there)', () => {
+    const content = new Set(contentFiles() as string[]);
+    const found = sourceFiles()
+      .filter((f) => !content.has(f) && !(SHELL as string[]).includes(f))
+      .filter((f) => /(^|["'`\s:])main-(480|640|720|900|1024|1280):/.test(read(f)));
+    expect(found, 'pages with no layout would stay in their phone layout').toEqual([]);
+  });
+
+  it('a screen inside a layout has no h1 of its own: the layout holds the one h1', () => {
+    const found = (contentFiles() as string[]).filter((f) => /<h1[\s>]/.test(read(f)));
+    expect(found).toEqual([]);
   });
 
   it('no text under 14px on screen (print documents set their own sizes)', () => {

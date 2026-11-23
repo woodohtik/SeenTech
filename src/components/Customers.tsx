@@ -2570,7 +2570,7 @@ const CustomerStatementModal = ({
           <div className="hidden print:block space-y-2 pb-4 border-b border-gray-200">
             <div className="flex justify-between items-start">
               <div>
-                <h1 className="text-xl font-bold text-black">{t('customers.store_statement')}</h1>
+                <h2 className="text-xl font-bold text-black">{t('customers.store_statement')}</h2>
                 <div className="text-sm text-black flex items-center gap-2 mt-1">
                   <span>{t('customers.statement_date')}:</span>
                   <DateTimeDisplay date={new Date()} showTime={true} size="xs" />

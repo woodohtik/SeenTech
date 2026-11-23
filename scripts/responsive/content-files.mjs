@@ -101,10 +101,13 @@ export function contentFiles() {
 
   const fileOf = (name) => (lazy.has(name) ? resolveImport(app, lazy.get(name)) : null);
   const insideRoots = [...insideNames].map(fileOf).filter((f) => f && !shell.includes(f));
-  const outsideRoots = [...outsideNames].filter((n) => !insideNames.has(n)).map(fileOf).filter(Boolean);
+  // Rendered anywhere without a layout (a Suspense fallback on a public
+  // route, say) means it is not content: outside wins. Pages there have no
+  // data-main, so content variants would leave them in their phone layout.
+  const outsideRoots = [...outsideNames].map(fileOf).filter(Boolean);
 
   // Outside: what App shows with no layout, and what the layouts themselves use for their chrome.
-  const stop = new Set(insideRoots);
+  const stop = new Set(insideRoots.filter((f) => !outsideRoots.includes(f)));
   const outside = reach([...outsideRoots, ...shell, path.join(SRC, 'main.tsx')].filter(existsSync), stop);
   for (const f of reach(insideRoots)) if (!outside.has(f)) inside.add(f);
 

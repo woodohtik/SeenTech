@@ -278,7 +278,7 @@ export default function SupplierLedger({
           </button>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-xl font-black text-content">{t('procurement.supplier_ledger_title', 'كشف حساب المورد والمستندات المتبادلة')}</h1>
+              <h2 className="text-xl font-black text-content">{t('procurement.supplier_ledger_title', 'كشف حساب المورد والمستندات المتبادلة')}</h2>
               <span className="bg-surface-muted border border-border text-content-muted px-2.5 py-1 rounded-full text-sm font-black">{t('procurement.subsidiary_ledger', 'دفتر الأستاذ المساعد')}</span>
             </div>
             <p className="text-sm font-bold text-content-muted mt-0.5">{t('procurement.supplier_ledger_subtitle', 'مراجعة كاملة لجميع الديون والمشتريات وتواريخ الدفع في')} {supplier.name}</p>
@@ -323,7 +323,7 @@ export default function SupplierLedger({
       <div className="hidden print:block text-content border-b-2 border-content pb-6 mb-6">
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-2xl font-black">{tenantName}</h1>
+            <h2 className="text-2xl font-black">{tenantName}</h2>
             <p className="text-sm font-bold text-content-muted mt-1">{t('procurement.detailed_statement_partners', 'كشف حركـات الحساب التفصيلي للشركاء والموردين')}</p>
           </div>
           <div className="text-left font-mono text-sm text-content-muted">
@@ -647,7 +647,7 @@ export default function SupplierLedger({
         <div className="border-b-2 border-content pb-6">
           <div className="flex justify-between items-center">
             <div>
-              <h1 className="text-2xl font-black text-content">{tenantName}</h1>
+              <h2 className="text-2xl font-black text-content">{tenantName}</h2>
               <p className="text-sm font-bold text-content-muted mt-1">{t('procurement.detailed_statement_partners')}</p>
             </div>
             <div className="text-left font-mono text-sm text-content-muted">

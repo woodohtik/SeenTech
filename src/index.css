@@ -196,7 +196,20 @@ h1, h2, h3, h4, h5, h6 {
   --danger: #EF4444;
   --warning: #F59E0B;
   --info: #60A5FA;
+  /* Status grounds (design-system/tokens.css gives the light ones): in dark
+     mode a dark tint of each status colour, so the bright status text on it
+     keeps its contrast (review 2026-11-24, I-2: the light grounds left ~2-3.5:1). */
+  --seen-success-bg: color-mix(in oklab, var(--success) 16%, var(--surface));
+  --seen-warning-bg: color-mix(in oklab, var(--warning) 16%, var(--surface));
+  --seen-danger-bg: color-mix(in oklab, var(--danger) 16%, var(--surface));
 }
+
+/* Status chips (a status text on its status ground) in dark mode: the text a
+   step lighter -- on its dark ground the plain status colour is 4.1:1 for
+   danger; these are 7.2 / 8.1 / 5.6:1. */
+.dark .bg-\[var\(--seen-success-bg\)\].text-success { color: #34D399; }
+.dark .bg-\[var\(--seen-warning-bg\)\].text-warning { color: #FBBF24; }
+.dark .bg-\[var\(--seen-danger-bg\)\].text-danger { color: #F87171; }
 
 /* seen-readiness-fixes-task.md P4 (UX-10): in dark mode white on the bright
    warning / success colours is ~2:1 -- text on those solid backgrounds is dark. */
@@ -605,20 +618,23 @@ html, body {
 
 /* 5) هدف لمس مريح على الأجهزة اللمسية: 48×48 (DESIGN.md §7، و
    seen-responsive-layout-task.md المرحلة 5). كان 40 وللارتفاع فقط، فبقيت
-   الأزرار الأيقونية الضيقة أصغر من الإصبع. :where() يبقي الوزن صفراً حتى
-   يستطيع مكوّن أن يقرر غير ذلك صراحةً (min-h-0) لسبب يوثّقه.
-   العرض الأدنى للأزرار الأيقونية فقط (التي تحمل aria-label): على زر نصي
-   داخل صف flex كان min-width: 48px يلغي min-width: auto فيتقلص الزر تحت
-   نصه وتتراكب الأزرار (قيس في تبويبات المخزون). */
+   الأزرار الأيقونية الضيقة أصغر من الإصبع.
+   العرض الأدنى للأزرار الأيقونية فقط (التي تحمل aria-label أو أيقونة وحيدة):
+   على زر نصي داخل صف flex كان min-width: 48px يلغي min-width: auto فيتقلص
+   الزر تحت نصه وتتراكب الأزرار (قيس في تبويبات المخزون).
+   القاعدة خارج @layer عمداً حتى لا تغلبها فئة min-h-* أصغر بالخطأ. الاستثناء
+   الوحيد صريح: data-touch-ok على عنصر وسّع منطقة ضغطه بطريقة أخرى (مثل
+   after:-inset في زر طي القائمة)، فيبقى بحجمه المرسوم. */
 @media (pointer: coarse) {
-  :where(button, a[role="button"], [role="tab"], [role="switch"], [role="menuitem"], summary):not(.sr-only),
-  :where(aside a[href], nav a[href]) {
+  :where(button, a[role="button"], [role="tab"], [role="switch"], [role="menuitem"], summary):not(.sr-only):not([data-touch-ok]),
+  :where(aside a[href], nav a[href]):not([data-touch-ok]) {
     min-height: 48px;
   }
-  :where(button[aria-label], a[role="button"][aria-label], button:has(> svg:only-child)):not(.sr-only) {
+  :where(button[aria-label], a[role="button"][aria-label], button:has(> svg:only-child)):not(.sr-only):not([data-touch-ok]) {
     min-width: 48px;
   }
 }
+
 
 /* 6) دعم وضع الكمبيوتر على الجوال والتاب (Desktop View Support) */
 .desktop-mode-active, .desktop-mode-active body {

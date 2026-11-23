@@ -326,7 +326,7 @@ export default function Sales({ tenantId }: { tenantId: string }) {
       <div className="bg-surface border-b border-border shrink-0">
         <div className="px-4 main-640:px-6 py-3.5 main-640:py-4 flex flex-col gap-3 main-640:gap-4">
           <div className="flex justify-between items-center w-full">
-            <h1 className="text-lg main-640:text-2xl font-black text-content">{t('sales.title')}</h1>
+            <h2 className="text-lg main-640:text-2xl font-black text-content">{t('sales.title')}</h2>
             
             {/* Quick cash drawer badge for mobile, compact */}
             {activeShift && (

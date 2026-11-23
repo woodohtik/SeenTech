@@ -8,6 +8,7 @@ import React, {
     useState,
     type ReactNode,
 } from 'react';
+import { ASSISTANT_EXPANDED_KEY, SIDEBAR_CHOICE_PREFIX } from '../lib/shellLayout';
 import type { Session, User as SupabaseUser } from '@supabase/supabase-js';
 
 import { supabase } from '../lib/supabase/client';
@@ -773,7 +774,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             console.warn('Failed to clear the offline caches on logout:', err);
         }
         try {
+            // Everything goes, except how each person laid out their screen
+            // (sidebar folded or open, assistant wide): not private, and on a
+            // shared shop device each employee keeps theirs.
+            const keep = Object.keys(localStorage)
+                .filter((k) => k.startsWith(SIDEBAR_CHOICE_PREFIX) || k === ASSISTANT_EXPANDED_KEY)
+                .map((k) => [k, localStorage.getItem(k)] as const);
             localStorage.clear();
+            for (const [k, v] of keep) if (v !== null) localStorage.setItem(k, v);
             sessionStorage.clear();
             await supabase.auth.signOut();
         } catch (e) {

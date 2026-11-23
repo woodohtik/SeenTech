@@ -49,9 +49,9 @@ export default function AccessDenied({ userRole, requiredRoles, redirectPath }: 
           <span>{t('permissions.error_403_forbidden')}</span>
         </div>
 
-        <h1 className="text-2xl main-720:text-3xl font-black text-content">
+        <h2 className="text-2xl main-720:text-3xl font-black text-content">
           {t('permissions.access_denied_title')}
-        </h1>
+        </h2>
 
         <p className="text-sm main-720:text-base text-content-muted leading-relaxed font-medium">
           {t('permissions.access_denied_desc', { role: userRole || t('orders.not_specified') })}

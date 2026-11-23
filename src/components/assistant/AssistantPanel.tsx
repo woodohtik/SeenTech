@@ -140,6 +140,9 @@ export function AssistantPanel(props: AssistantPanelProps) {
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
+        // Docked beside the page, Escape pressed in the page (a window open
+        // there) is the page's: leave it to close that window.
+        if (!isModal && panelRef.current && !panelRef.current.contains(e.target as Node)) return;
         e.stopPropagation();
         onClose();
         return;

@@ -17,6 +17,10 @@
  *     the assistant floats instead;
  *   - with nothing chosen, the sidebar is folded from 1024 to 1279px.
  */
+/** Where each person's layout choices are kept; kept through sign-out (AuthContext logout): not private. */
+export const SIDEBAR_CHOICE_PREFIX = 'seen_sidebar_choice_';
+export const ASSISTANT_EXPANDED_KEY = 'seen_ai_panel_expanded';
+
 export const SIDEBAR_OPEN_PX = 256;
 export const SIDEBAR_COLLAPSED_PX = 80;
 /** What the page must keep for the assistant to sit beside it. */
@@ -103,4 +107,15 @@ export function shellFromKey(key: string): Shell {
 export const MAIN_STEPS = [480, 640, 720, 900, 1024, 1280] as const;
 export function mainSteps(widthPx: number): string {
   return MAIN_STEPS.filter((step) => widthPx >= step).join(' ');
+}
+
+/**
+ * Whether the content area has reached a step (the same test the `main-*`
+ * variants make). For code that must agree with a layout written in those
+ * variants -- an animation that slides a panel in from the side the CSS put
+ * it on. False where no layout is measuring (no data-main).
+ */
+export function contentReached(step: (typeof MAIN_STEPS)[number]): boolean {
+  if (typeof document === 'undefined') return false;
+  return (document.documentElement.dataset.main ?? '').split(' ').includes(String(step));
 }

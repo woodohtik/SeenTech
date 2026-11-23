@@ -107,10 +107,10 @@ const WarehouseManagement: React.FC<WarehouseManagementProps> = ({ tenantId }) =
     <div className="p-4 main-640:p-6 space-y-5 main-640:space-y-6">
       <div className="flex flex-col main-720:flex-row main-720:items-center justify-between gap-4 min-w-0">
         <div className="min-w-0">
-          <h1 className="text-xl main-640:text-3xl font-black text-content flex items-center gap-2 main-640:gap-3">
+          <h2 className="text-xl main-640:text-3xl font-black text-content flex items-center gap-2 main-640:gap-3">
             <Building2 className="text-brand shrink-0" size={24} />
             {t('branches.title')}
-          </h1>
+          </h2>
           <p className="text-content-muted font-medium mt-1 text-sm main-640:text-base">{t('branches.subtitle')}</p>
         </div>
 

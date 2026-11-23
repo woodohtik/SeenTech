@@ -100,10 +100,11 @@ function LayoutShell({ children, role, tenantId, currentStaff, onLock, isLocked 
 
   // seen-responsive-layout-task.md Phase 1: the sidebar's fold and the
   // assistant's place are one decision (lib/shellLayout.ts), by the window's
-  // width; the content measures itself (data-main on <main>).
-  const { shell, setSidebar, assistantOpen, setAssistantOpen, toggleExpanded } = useShellLayout({
+  // width; the content measures itself (data-main on <html>).
+  const { shell, setSidebar, openSidebarForNow, endSidebarForNow, assistantOpen, setAssistantOpen, toggleExpanded } = useShellLayout({
     hasSidebar: layoutMode === 'sidebar',
-    owner: `${tenantId || 'none'}_${currentStaff?.id || role || 'none'}`,
+    // The person's choice is kept per shop and employee, once both are known.
+    owner: tenantId && currentStaff?.id ? `${tenantId}_${currentStaff.id}` : null,
   });
   const isCollapsed = shell.sidebar === 'collapsed';
   const setIsCollapsed = (collapsed: boolean) => setSidebar(collapsed ? 'collapsed' : 'open');
@@ -114,8 +115,11 @@ function LayoutShell({ children, role, tenantId, currentStaff, onLock, isLocked 
       if (!isCollapsed) {
         setIsSettingsSubMenuOpen(true);
       }
+    } else {
+      // Leaving Settings: a sidebar opened only to show its menu folds back.
+      endSidebarForNow();
     }
-  }, [location.pathname, isCollapsed]);
+  }, [location.pathname, isCollapsed, endSidebarForNow]);
 
   React.useEffect(() => {
     const fetchTenant = async () => {
@@ -278,7 +282,7 @@ function LayoutShell({ children, role, tenantId, currentStaff, onLock, isLocked 
       }}
     >
       <SkipLink targetId="tour-dashboard-container" />
-      {/* The document's one h1: which shop this is. Each screen's title is the h2 under it. */}
+      {/* The document's one h1: which shop this is. Each screen's title is an h2 under it (src/responsiveGuard.test.ts). */}
       <h1 className="sr-only">{tenantName || t('common.tailor_system')}</h1>
       <ImpersonationBanner
         tenantId={impersonationTenantId}
@@ -330,6 +334,7 @@ function LayoutShell({ children, role, tenantId, currentStaff, onLock, isLocked 
           aria-label={t(isCollapsed ? 'common.sidebar_expand' : 'common.sidebar_collapse')}
           aria-expanded={!isCollapsed}
           aria-controls="tour-sidebar"
+          data-touch-ok
           className={cn(
             "hidden lg:flex absolute top-10 bg-surface border border-border rounded-full p-1 shadow-sm hover:bg-surface-muted transition-colors z-20",
             // A 24px circle to look at, 44px to press.
@@ -437,7 +442,8 @@ function LayoutShell({ children, role, tenantId, currentStaff, onLock, isLocked 
                       setIsMobileMenuOpen(false);
                       if (isSettings) {
                         if (isCollapsed) {
-                          setIsCollapsed(false);
+                          // Open to show the Settings menu -- not the person choosing an open sidebar.
+                          openSidebarForNow();
                           setIsSettingsSubMenuOpen(true);
                         } else {
                           if (isSettingsActive) {

@@ -1,4 +1,5 @@
 import { ThermalInvoice, StandardInvoice, InvoiceData } from "./printing/InvoiceReceipt";
+import { contentReached } from '../lib/shellLayout';
 import { AutoGrid } from './ui/AutoGrid';
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { formatSaudiPhone } from '../utils/phoneUtils';
@@ -2390,9 +2391,9 @@ const invoiceData: InvoiceData | null = completedOrder ? {
               }}
             />
             <motion.div
-              initial={shouldReduceMotion ? false : { y: window.innerWidth < 1024 ? '100%' : 0, x: window.innerWidth >= 1024 ? '100%' : 0 }}
+              initial={shouldReduceMotion ? false : { y: contentReached(900) ? 0 : '100%', x: contentReached(900) ? '100%' : 0 }}
               animate={{ y: 0, x: 0 }}
-              exit={shouldReduceMotion ? undefined : { y: window.innerWidth < 1024 ? '100%' : 0, x: window.innerWidth >= 1024 ? '100%' : 0 }}
+              exit={shouldReduceMotion ? undefined : { y: contentReached(900) ? 0 : '100%', x: contentReached(900) ? '100%' : 0 }}
               transition={shouldReduceMotion ? { duration: 0 } : { type: 'spring', damping: 25, stiffness: 200 }}
               className="bg-surface w-full main-900:w-[450px] main-720:h-auto main-900:h-full h-[90vh] shadow-2xl relative z-10 flex flex-col main-900:rounded-none rounded-t-3xl border-t main-900:border-t-0 main-900:border-r border-border overflow-hidden main-900:mr-auto main-720:max-w-md main-720:rounded-3xl main-720:mb-10 main-900:max-w-none main-900:mb-0 main-900:ml-0"
               dir={isRtl ? 'rtl' : 'ltr'}

@@ -169,10 +169,10 @@ const StockTransferWorkflow: React.FC<StockTransferWorkflowProps> = ({ tenantId 
     <div className="p-6 space-y-6">
       <div className="flex flex-col main-720:flex-row main-720:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-black text-content flex items-center gap-3">
+          <h2 className="text-3xl font-black text-content flex items-center gap-3">
             <ArrowRightLeft className="text-brand" size={32} />
             {t('inventory.transfers_title')}
-          </h1>
+          </h2>
           <p className="text-content-muted font-medium mt-1">{t('inventory.transfers_subtitle')}</p>
         </div>
       </div>

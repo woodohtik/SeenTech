@@ -1,8 +1,8 @@
-import { useCallback, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
-import { mainSteps, resolveShell, shellFromKey, shellKey, type Shell, type SidebarChoice } from '../lib/shellLayout';
+import { useCallback, useMemo, useRef, useState, useSyncExternalStore } from 'react';
+import { ASSISTANT_EXPANDED_KEY, SIDEBAR_CHOICE_PREFIX, mainSteps, resolveShell, shellFromKey, shellKey, type Shell, type SidebarChoice } from '../lib/shellLayout';
 
-const EXPANDED_KEY = 'seen_ai_panel_expanded';
-const sidebarKey = (owner: string) => `seen_sidebar_choice_${owner}`;
+const EXPANDED_KEY = ASSISTANT_EXPANDED_KEY;
+const sidebarKey = (owner: string) => `${SIDEBAR_CHOICE_PREFIX}${owner}`;
 
 function read(key: string): string | null {
   try { return localStorage.getItem(key); } catch { return null; }
@@ -29,12 +29,26 @@ function subscribeToResize(onChange: () => void) {
  * the snapshot, so dragging the window's edge re-renders only when a
  * threshold is crossed, not on every pixel.
  */
-export function useShellLayout(opts: { hasSidebar: boolean; owner: string }) {
+export function useShellLayout(opts: {
+  hasSidebar: boolean;
+  /**
+   * Whose choice this is (shop + employee), or null while not yet known: then
+   * nothing is read or saved, so a choice is never filed under a key that is
+   * not read again.
+   */
+  owner: string | null;
+}) {
   const { hasSidebar, owner } = opts;
-  const [sidebarChoice, setChoice] = useState<SidebarChoice>(() => {
-    const saved = read(sidebarKey(owner));
+  const readChoice = (who: string | null): SidebarChoice => {
+    if (!who) return null;
+    const saved = read(sidebarKey(who));
     return saved === 'open' || saved === 'collapsed' ? saved : null;
-  });
+  };
+  const [savedChoice, setChoice] = useState<SidebarChoice>(() => readChoice(owner));
+  // Opened for a moment by the app itself (a folded sidebar opening its
+  // Settings menu): shown, never saved as the person's choice.
+  const [transientOpen, setTransientOpen] = useState(false);
+  const sidebarChoice: SidebarChoice = transientOpen ? 'open' : savedChoice;
   const [assistantOpen, setAssistantOpen] = useState(false);
   const [assistantExpanded, setExpanded] = useState(() => read(EXPANDED_KEY) === '1');
 
@@ -43,8 +57,7 @@ export function useShellLayout(opts: { hasSidebar: boolean; owner: string }) {
   const [knownOwner, setKnownOwner] = useState(owner);
   if (knownOwner !== owner) {
     setKnownOwner(owner);
-    const saved = read(sidebarKey(owner));
-    setChoice(saved === 'open' || saved === 'collapsed' ? saved : null);
+    setChoice(readChoice(owner));
   }
 
   const key = useSyncExternalStore(
@@ -56,9 +69,15 @@ export function useShellLayout(opts: { hasSidebar: boolean; owner: string }) {
 
   /** The user sets the sidebar: kept, and never overridden by the assistant. */
   const setSidebar = useCallback((choice: Exclude<SidebarChoice, null>) => {
+    setTransientOpen(false);
     setChoice(choice);
-    write(sidebarKey(owner), choice);
+    if (owner) write(sidebarKey(owner), choice);
   }, [owner]);
+
+  /** Open the sidebar for now (to show a menu in it) without recording a choice. */
+  const openSidebarForNow = useCallback(() => setTransientOpen(true), []);
+  /** Back to the person's own choice (or the default). */
+  const endSidebarForNow = useCallback(() => setTransientOpen(false), []);
 
   const toggleExpanded = useCallback(() => {
     setExpanded((value) => {
@@ -67,7 +86,7 @@ export function useShellLayout(opts: { hasSidebar: boolean; owner: string }) {
     });
   }, []);
 
-  return { shell, sidebarChoice, setSidebar, assistantOpen, setAssistantOpen, assistantExpanded, toggleExpanded };
+  return { shell, sidebarChoice, setSidebar, openSidebarForNow, endSidebarForNow, assistantOpen, setAssistantOpen, assistantExpanded, toggleExpanded };
 }
 
 /**
@@ -75,15 +94,20 @@ export function useShellLayout(opts: { hasSidebar: boolean; owner: string }) {
  * variants (index.css). They are written on <html>, not on the element
  * measured, so that windows and menus drawn outside it (a portal to <body>)
  * follow the content's width like everything else on the page.
- * Set before the first paint and kept by a ResizeObserver; it touches the
- * attribute only when the steps change and never React state, so resizing
- * re-renders nothing. Removed when the layout goes: pages with no shell
- * (login, public links) use the window's variants.
+ *
+ * A callback ref, not an effect on a ref object: the element it measures can
+ * come and go while the layout stays mounted (the admin layout shows the
+ * two-factor screen first and its <main> after), and each new element must
+ * be measured. Set before the first paint and kept by a ResizeObserver; it
+ * touches the attribute only when the steps change and never React state,
+ * so resizing re-renders nothing. Removed when the element goes: pages with
+ * no shell (login, public links) use the window's variants.
  */
 export function useMeasuredSteps<T extends HTMLElement>() {
-  const ref = useRef<T>(null);
-  useLayoutEffect(() => {
-    const el = ref.current;
+  const stop = useRef<(() => void) | null>(null);
+  return useCallback((el: T | null) => {
+    stop.current?.();
+    stop.current = null;
     if (!el) return;
     const root = document.documentElement;
     const apply = (width: number) => {
@@ -99,10 +123,9 @@ export function useMeasuredSteps<T extends HTMLElement>() {
       });
       observer.observe(el, { box: 'border-box' });
     }
-    return () => {
+    stop.current = () => {
       observer?.disconnect();
       delete root.dataset.main;
     };
   }, []);
-  return ref;
 }
