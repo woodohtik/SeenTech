@@ -183,7 +183,8 @@ async function runProbes(page: Page, dir: string, name: string): Promise<Record<
 async function newContext(browser: Awaited<ReturnType<typeof chromium.launch>>, width: number, lang: 'ar' | 'en') {
   const context = await browser.newContext({
     viewport: { width, height: width < 1024 ? 800 : 900 },
-    hasTouch: width < 1024, isMobile: width < 768, deviceScaleFactor: 1,
+    // A touch screen up to 1024 (a tablet held sideways is 1024): the touch-target check applies there too.
+    hasTouch: width <= 1024, isMobile: width < 768, deviceScaleFactor: 1,
     serviceWorkers: 'block', locale: lang === 'ar' ? 'ar-SA' : 'en-GB', reducedMotion: 'reduce',
   });
   // tsx compiles with keepNames: functions sent to the page reference this helper.
@@ -268,6 +269,14 @@ async function main() {
               const name = `${screen.key}-${width}-${dir}-${state.assistant === 'closed' ? 'page' : `assistant-${state.assistant}`}`;
               row.shot = `shots/${name}.jpg`;
               await page.screenshot({ path: path.join(shotsDir, `${name}.jpg`), type: 'jpeg', quality: 62 });
+              // And where the eye would catch a defect, if there is one: scrolled to it.
+              for (const kind of ['overlap', 'crushed', 'overflow']) {
+                const defect = page.locator(`[data-layout-defect="${kind}"]`).first();
+                if (!(await defect.count())) continue;
+                await defect.scrollIntoViewIfNeeded().catch(() => {});
+                await page.screenshot({ path: path.join(shotsDir, `${name}-${kind}.jpg`), type: 'jpeg', quality: 62 });
+                await page.evaluate(() => document.querySelector('main')?.scrollTo(0, 0));
+              }
               if (!opt.noProbes && lang === 'ar' && state.assistant !== 'expanded') {
                 probeLeads.push({ screen: screen.key, width, probes: await runProbes(page, rawDir, name) });
               }

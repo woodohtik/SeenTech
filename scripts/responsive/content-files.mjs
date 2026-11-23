@@ -25,10 +25,15 @@ const rel = (f) => path.relative(ROOT, f).replace(/\\/g, '/');
 
 /** The shell: these decide by the window, and so does everything only they use. */
 export const SHELL = ['src/components/Layout.tsx', 'src/components/SaaSLayout.tsx'];
+/**
+ * Windows and bottom sheets decide by the WINDOW (the task, phase 2 item 6:
+ * "under 640px of the window: a full-width bottom sheet"), wherever they are used.
+ */
+export const BY_WINDOW = [/^src\/components\/ui\/Modal\.tsx$/];
 /** Paper, not screen: sizes there are the printer's. */
 export const PRINT = [
   /^src\/components\/printing\//, /ReportPrintDocument\.tsx$/, /ZReport\.tsx$/, /^src\/pages\/PublicInvoice\.tsx$/,
-  /^src\/utils\/print/, /^src\/lib\/print/,
+  /^src\/utils\/print/, /^src\/lib\/print/, /^src\/components\/orders\/OrderWorkCard\.tsx$/,
 ];
 
 function resolveImport(from, spec) {
@@ -107,6 +112,7 @@ export function contentFiles() {
     .filter((f) => inside.has(f))
     .map(rel)
     .filter((f) => !PRINT.some((re) => re.test(f)))
+    .filter((f) => !BY_WINDOW.some((re) => re.test(f)))
     .sort();
 }
 

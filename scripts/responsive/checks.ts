@@ -77,9 +77,25 @@ export function layoutChecks(cfg: { minText: number; minTouch: number; touchMaxW
     return null;
   };
   const push = (r: CheckResult, sample: CheckSample) => { r.count++; if (r.samples.length < SAMPLES) r.samples.push(sample); };
+  // The first element each defect check finds is marked, so the tool can
+  // scroll to it and photograph it (data-layout-defect="overlap" ...).
+  for (const old of Array.from(document.querySelectorAll('[data-layout-defect]'))) old.removeAttribute('data-layout-defect');
+  const mark = (el: Element, kind: string) => { if (!document.querySelector(`[data-layout-defect="${kind}"]`)) el.setAttribute('data-layout-defect', kind); };
+
+  /** The part of the page an element can be seen through: its ancestors that clip (overflow other than visible). */
+  const clipOf = (el: Element): DOMRect => {
+    let left = -Infinity; let top = -Infinity; let right = Infinity; let bottom = Infinity;
+    for (let p = el.parentElement; p && p !== document.body; p = p.parentElement) {
+      const cs = getComputedStyle(p);
+      if (cs.overflowX === 'visible' && cs.overflowY === 'visible') continue;
+      const r = p.getBoundingClientRect();
+      left = Math.max(left, r.left); top = Math.max(top, r.top); right = Math.min(right, r.right); bottom = Math.min(bottom, r.bottom);
+    }
+    return new DOMRect(left, top, Math.max(0, right - left), Math.max(0, bottom - top));
+  };
 
   // The elements that carry text of their own: what a person reads.
-  type Leaf = { el: HTMLElement; rect: DOMRect; lines: number; words: number; layer: Element | null };
+  type Leaf = { el: HTMLElement; rect: DOMRect; rects: DOMRect[]; lines: number; words: number; layer: Element | null };
   const leaves: Leaf[] = [];
   for (const el of Array.from(document.body.querySelectorAll<HTMLElement>('*'))) {
     if (/^(SCRIPT|STYLE|NOSCRIPT|OPTION|SELECT)$/.test(el.tagName)) continue;
@@ -87,12 +103,19 @@ export function layoutChecks(cfg: { minText: number; minTouch: number; touchMaxW
     if (own.length === 0 || !shown(el) || hiddenByAncestor(el)) continue;
     const range = document.createRange();
     const tops = new Set<number>();
+    const rects: DOMRect[] = [];
+    const clip = clipOf(el);
     let left = Infinity; let right = -Infinity; let top = Infinity; let bottom = -Infinity; let words = 0;
     for (const n of own) {
       range.selectNodeContents(n);
       words += ((n.nodeValue || '').trim().match(/\S+/g) || []).length;
       for (const rc of Array.from(range.getClientRects())) {
         if (rc.width < 1) continue;
+        // Only what shows: a line scrolled out of its box is not on screen.
+        const shownPart = new DOMRect(Math.max(rc.left, clip.left), Math.max(rc.top, clip.top), 0, 0);
+        shownPart.width = Math.min(rc.right, clip.right) - shownPart.left;
+        shownPart.height = Math.min(rc.bottom, clip.bottom) - shownPart.top;
+        if (shownPart.width >= 1 && shownPart.height >= 1) rects.push(shownPart);
         tops.add(Math.round(rc.top));
         left = Math.min(left, rc.left); right = Math.max(right, rc.right); top = Math.min(top, rc.top); bottom = Math.max(bottom, rc.bottom);
       }
@@ -100,7 +123,7 @@ export function layoutChecks(cfg: { minText: number; minTouch: number; touchMaxW
     if (!isFinite(left)) continue;
     const rect = new DOMRect(left, top, right - left, bottom - top);
     if (!onScreenX(rect) || rect.bottom < 0 || rect.top > vh * 3) continue;
-    leaves.push({ el, rect, lines: tops.size, words, layer: layerOf(el) });
+    leaves.push({ el, rect, rects, lines: tops.size, words, layer: layerOf(el) });
   }
 
   // 1. No horizontal scroll on the page.
@@ -123,6 +146,28 @@ export function layoutChecks(cfg: { minText: number; minTouch: number; touchMaxW
     }
     push(overflow, { el: describe(el), text: textOf(el), value: `out of the viewport by ${Math.round(Math.max(r.right - vw, -r.left))}px` });
   }
+  // ...and nothing hidden past the edge of the content area, which clips
+  // what overflows it (overflow-x: hidden) -- off the page, but not the window.
+  const contentArea = document.querySelector('main');
+  if (contentArea) {
+    const box = contentArea.getBoundingClientRect();
+    for (const el of Array.from(contentArea.querySelectorAll<HTMLElement>('*'))) {
+      if (!shown(el)) continue;
+      const cs = getComputedStyle(el);
+      if (cs.position === 'fixed' || insideScroller(el)) continue;
+      const r = el.getBoundingClientRect();
+      if (r.bottom < 0 || r.top > vh * 3) continue;
+      const by = Math.max(r.right - box.right, box.left - r.left);
+      if (by <= 2) continue;
+      const parent = el.parentElement;
+      if (parent && parent !== contentArea) {
+        const pr = parent.getBoundingClientRect();
+        if (Math.max(pr.right - box.right, box.left - pr.left) > 2) continue;
+      }
+      mark(el, 'overflow');
+      push(overflow, { el: describe(el), text: textOf(el), value: `cut off by the content area by ${Math.round(by)}px` });
+    }
+  }
   for (const leaf of leaves) {
     if (insideScroller(leaf.el)) continue;
     const own = getComputedStyle(leaf.el);
@@ -142,6 +187,7 @@ export function layoutChecks(cfg: { minText: number; minTouch: number; touchMaxW
     const by = Math.max(leaf.rect.right - br.right, br.left - leaf.rect.left);
     if (by <= 2) continue;
     const clipped = /hidden|clip/.test(getComputedStyle(box).overflowX);
+    mark(leaf.el, 'overflow');
     push(overflow, { el: describe(leaf.el), text: textOf(leaf.el), value: `${clipped ? 'cut by' : 'runs out of'} ${describe(box)} by ${Math.round(by)}px` });
   }
 
@@ -149,6 +195,7 @@ export function layoutChecks(cfg: { minText: number; minTouch: number; touchMaxW
   const crushedText: CheckResult = { count: 0, samples: [] };
   for (const leaf of leaves) {
     if (leaf.lines >= 3 && leaf.words / leaf.lines <= 1.34) {
+      mark(leaf.el, 'crushed');
       push(crushedText, { el: describe(leaf.el), text: textOf(leaf.el), value: `${leaf.words} words on ${leaf.lines} lines, ${Math.round(leaf.rect.width)}px wide` });
     }
   }
@@ -160,12 +207,22 @@ export function layoutChecks(cfg: { minText: number; minTouch: number; touchMaxW
     for (let j = i + 1; j < leaves.length; j++) {
       const b = leaves[j];
       if (a.layer !== b.layer || a.el.contains(b.el) || b.el.contains(a.el)) continue;
-      const w = Math.min(a.rect.right, b.rect.right) - Math.max(a.rect.left, b.rect.left);
-      const h = Math.min(a.rect.bottom, b.rect.bottom) - Math.max(a.rect.top, b.rect.top);
-      if (w <= 4 || h <= 4) continue;
-      const smaller = Math.min(a.rect.width * a.rect.height, b.rect.width * b.rect.height);
-      if (smaller <= 0 || (w * h) / smaller < 0.2) continue;
-      push(textOverlap, { el: `${describe(a.el)} / ${describe(b.el)}`, text: `${textOf(a.el)} / ${textOf(b.el)}`, value: `${Math.round(w)}x${Math.round(h)}px shared` });
+      // Line by line: text that wraps has a bounding box wider than any of
+      // its lines, and that box overlaps its neighbours on paper only.
+      let hit: [number, number] | null = null;
+      for (const ra of a.rects) {
+        for (const rb of b.rects) {
+          const w = Math.min(ra.right, rb.right) - Math.max(ra.left, rb.left);
+          const h = Math.min(ra.bottom, rb.bottom) - Math.max(ra.top, rb.top);
+          if (w <= 4 || h <= 4) continue;
+          const smaller = Math.min(ra.width * ra.height, rb.width * rb.height);
+          if (smaller > 0 && (w * h) / smaller >= 0.2) { hit = [w, h]; break; }
+        }
+        if (hit) break;
+      }
+      if (!hit) continue;
+      mark(a.el, 'overlap');
+      push(textOverlap, { el: `${describe(a.el)} / ${describe(b.el)}`, text: `${textOf(a.el)} / ${textOf(b.el)}`, value: `${Math.round(hit[0])}x${Math.round(hit[1])}px shared` });
     }
   }
 
