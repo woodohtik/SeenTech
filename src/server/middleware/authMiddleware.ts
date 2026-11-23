@@ -6,6 +6,7 @@ import { adminAuth } from '../firebase-admin.ts';
 import { supabaseAdmin } from '../supabase-admin.ts';
 import { logger } from '../logger.ts';
 import { ACTING_HEADER, resolveActingSession } from '../actingSession.ts';
+import { tenantAccessBlock } from '../tenantAccess.ts';
 
 // This project's Supabase auth now signs access tokens with an asymmetric
 // ES256 key (not the legacy shared HS256 secret) -- verify against its public
@@ -205,6 +206,37 @@ export const authenticate = async (req: AuthRequest, res: Response, next: NextFu
         });
         return res.status(403).json({ error: 'Forbidden: Account deactivated' });
       }
+
+      // P6 (SECURITY-12, PLATFORM-04): routes here run as service_role, past
+      // RLS -- refuse a shop the database itself would refuse (deactivated,
+      // in the trash, subscription locked). Ending an acting session stays
+      // open so a locked device can still sign its employee out.
+      const reqPath = String(req.originalUrl || req.url || '').split('?')[0];
+      if (reqPath !== '/api/staff/acting-session/end') {
+        const { data: tenantRow, error: tenantError } = await supabaseAdmin
+          .from('tenants')
+          .select('status, trashed_at, subscription_status, subscription_end_date')
+          .eq('id', staffRow.tenant_id)
+          .maybeSingle();
+        if (tenantError) {
+          logger.error({ err: tenantError }, '[authMiddleware] tenant lookup failed');
+          return res.status(503).json({ error: 'Service unavailable', code: 'tenant_lookup_failed' });
+        }
+        const block = tenantAccessBlock(tenantRow);
+        if (block) {
+          await logSecurityEvent({
+            type: 'blocked_tenant_access_attempt',
+            uid: decodedToken.uid,
+            tenant_id: staffRow.tenant_id,
+            staff_id: staffRow.id,
+            reason: block.code,
+            path: req.path,
+            method: req.method,
+          });
+          return res.status(block.http).json({ error: 'Forbidden: shop access is closed', code: block.code });
+        }
+      }
+
       req.user.role = staffRow.role;
       req.user.tenantId = staffRow.tenant_id;
       req.user.staffId = staffRow.id;

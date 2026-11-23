@@ -184,6 +184,54 @@ describe('authenticate', () => {
     expect(res.status).not.toHaveBeenCalled();
   });
 
+  // P6 (SECURITY-12, PLATFORM-04): the shop's own state closes the server too.
+  it.each([
+    [{ status: 'inactive' }, 403, 'tenant_inactive'],
+    [{ status: 'active', trashed_at: '2026-11-01T00:00:00Z' }, 403, 'tenant_deleted'],
+    [{ status: 'active', subscription_status: 'locked' }, 402, 'subscription_locked'],
+    [{ status: 'active', subscription_status: 'active', subscription_end_date: '2020-01-01T00:00:00Z' }, 402, 'subscription_locked'],
+  ])('refuses staff of a closed shop (%j)', async (tenant, http, code) => {
+    jwtVerifyMock.mockResolvedValue({ payload: { sub: 'uid-9', email: 'cashier@shop.test' } });
+    maybeSingleMock
+      .mockResolvedValueOnce({ data: null, error: null }) // saas_users
+      .mockResolvedValueOnce({ data: { id: 'staff-9', role: 'cashier', tenant_id: 'tenant-9' }, error: null }) // staff
+      .mockResolvedValueOnce({ data: tenant, error: null }); // tenants
+    const req = makeReq('Bearer valid-supabase-token');
+    const res = makeRes();
+    const next = vi.fn();
+    await authenticate(req, res, next);
+    expect(next).not.toHaveBeenCalled();
+    expect(res.status).toHaveBeenCalledWith(http);
+    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ code }));
+  });
+
+  it('lets staff of a shop in its grace days through', async () => {
+    jwtVerifyMock.mockResolvedValue({ payload: { sub: 'uid-8', email: 'cashier@shop.test' } });
+    maybeSingleMock
+      .mockResolvedValueOnce({ data: null, error: null })
+      .mockResolvedValueOnce({ data: { id: 'staff-8', role: 'cashier', tenant_id: 'tenant-8' }, error: null })
+      .mockResolvedValueOnce({ data: { status: 'active', subscription_status: 'active', subscription_end_date: new Date(Date.now() - 86_400_000).toISOString() }, error: null });
+    const req = makeReq('Bearer valid-supabase-token');
+    const res = makeRes();
+    const next = vi.fn();
+    await authenticate(req, res, next);
+    expect(next).toHaveBeenCalledOnce();
+  });
+
+  it('a failed shop lookup refuses rather than lets through', async () => {
+    jwtVerifyMock.mockResolvedValue({ payload: { sub: 'uid-7', email: 'cashier@shop.test' } });
+    maybeSingleMock
+      .mockResolvedValueOnce({ data: null, error: null })
+      .mockResolvedValueOnce({ data: { id: 'staff-7', role: 'cashier', tenant_id: 'tenant-7' }, error: null })
+      .mockResolvedValueOnce({ data: null, error: { message: 'boom' } });
+    const req = makeReq('Bearer valid-supabase-token');
+    const res = makeRes();
+    const next = vi.fn();
+    await authenticate(req, res, next);
+    expect(next).not.toHaveBeenCalled();
+    expect(res.status).toHaveBeenCalledWith(503);
+  });
+
   it('grants tenant staff role/tenantId/staffId from the staff table when not a saas_user', async () => {
     jwtVerifyMock.mockResolvedValue({ payload: { sub: 'uid-2', email: 'cashier@shop.test' } });
     maybeSingleMock

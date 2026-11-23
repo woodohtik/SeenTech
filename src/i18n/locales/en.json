@@ -1744,7 +1744,8 @@
       "rls_permission_issue": "Database permission problem (RLS). Please contact support to resolve this.",
       "unknown": "An unknown error occurred",
       "weak_password": "Password is too weak",
-      "accept_terms_required": "You need to agree to the terms of use and the privacy policy to create the account"
+      "accept_terms_required": "You need to agree to the terms of use and the privacy policy to create the account",
+      "phone_or_password_wrong": "The phone number or password is incorrect"
     },
     "exit_system": "Exit System",
     "forgot_desc": "Enter your email to send a reset link",

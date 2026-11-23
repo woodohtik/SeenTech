@@ -409,34 +409,52 @@ async function checkPhoneLookupRateLimit(
   };
 }
 
-app.post("/api/auth/lookup-email-by-phone", asyncHandler(async (req, res) => {
+// P6: sign-in by phone number. The phone and the password come in together
+// and a session goes out; the browser never receives the account's email,
+// and a wrong phone and a wrong password get the same answer. Limited per
+// IP and per phone number.
+app.post("/api/auth/sign-in-with-phone", asyncHandler(async (req, res) => {
   const { supabaseAdmin } = await import("./src/server/supabase-admin.ts");
   const phone = String((req.body || {}).phone || '').trim();
-
-  if (!phone) {
-    return res.status(400).json({ ok: false, error: 'رقم جوال مطلوب' });
+  const password = String((req.body || {}).password || '');
+  if (!phone || !password) {
+    return res.status(400).json({ ok: false, error: 'رقم الجوال وكلمة المرور مطلوبان' });
   }
 
-  const { allowed, recordAttempt } = await checkPhoneLookupRateLimit(supabaseAdmin, clientIp(req));
-  if (!allowed) {
+  const byIp = await checkPhoneLookupRateLimit(supabaseAdmin, clientIp(req));
+  const byPhone = await checkPhoneLookupRateLimit(supabaseAdmin, `phone:${phone}`);
+  if (!byIp.allowed || !byPhone.allowed) {
     return res.status(429).json({ ok: false, error: 'محاولات كثيرة جداً. انتظر دقيقة ثم أعد المحاولة.' });
   }
+  await byIp.recordAttempt();
+  await byPhone.recordAttempt();
 
   const { data: reqRow } = await supabaseAdmin.from('tailor_requests').select('email').eq('phone', phone).maybeSingle();
-  if (reqRow?.email) {
-    await recordAttempt();
-    return res.json({ ok: true, email: reqRow.email });
+  let email: string | null = reqRow?.email || null;
+  if (!email) {
+    const { data: staffRow } = await supabaseAdmin.from('staff').select('email').eq('phone', phone).maybeSingle();
+    email = staffRow?.email || null;
   }
+  const refused = () => res.status(401).json({ ok: false, error: 'رقم الجوال أو كلمة المرور غير صحيحة' });
+  if (!email) return refused();
 
-  const { data: staffRow } = await supabaseAdmin.from('staff').select('email').eq('phone', phone).maybeSingle();
-  if (staffRow?.email) {
-    await recordAttempt();
-    return res.json({ ok: true, email: staffRow.email });
-  }
-
-  await recordAttempt();
-  res.status(404).json({ ok: false, error: 'لا يوجد حساب مرتبط بهذا الرقم' });
+  // A client of its own for this one sign-in: the shared supabaseAdmin must
+  // never pick up a user's session.
+  const { createClient } = await import('@supabase/supabase-js');
+  const signer = createClient(
+    (process.env.VITE_SUPABASE_URL || '').trim(),
+    (process.env.SUPABASE_SERVICE_ROLE_KEY || '').trim(),
+    { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false } },
+  );
+  const { data, error } = await signer.auth.signInWithPassword({ email, password });
+  if (error || !data?.session) return refused();
+  res.json({ ok: true, session: { access_token: data.session.access_token, refresh_token: data.session.refresh_token } });
 }));
+
+// Retired route: older installed apps get a clear answer.
+app.post("/api/auth/lookup-email-by-phone", (_req, res) => {
+  res.status(410).json({ ok: false, error: 'حدّث التطبيق ثم سجّل الدخول من جديد' });
+});
 
 app.get("/api/public/order-tracking/:token", asyncHandler(async (req, res) => {
   const { token } = req.params;
@@ -514,6 +532,7 @@ async function publicTrackingStages(supabaseAdmin: any, vertical: string | null 
 
 const ORDER_LOOKUP_NUMBER_RE = /^[0-9]{1,10}$/;
 const PHONE_LAST4_RE = /^[0-9]{4}$/;
+const ORDER_LOOKUP_FAILURES_PER_HOUR = 10;
 
 app.post("/api/public/order-lookup", asyncHandler(async (req, res) => {
   const orderNumberRaw = (req.body || {}).orderNumber;
@@ -532,6 +551,12 @@ app.post("/api/public/order-lookup", asyncHandler(async (req, res) => {
   if (!allowed) {
     return res.status(429).json({ error: 'محاولات كثيرة جداً. انتظر دقيقة ثم أعد المحاولة.' });
   }
+  // P6: also limited per order number, 10 failures an hour
+  // (increment_order_lookup_failure, 20270107000001).
+  const { data: numberRec } = await supabaseAdmin.from('tracking_attempts').select('count, reset_at').eq('ip', `order:${orderNumber}`).maybeSingle();
+  if (numberRec && new Date(numberRec.reset_at).getTime() > Date.now() && numberRec.count >= ORDER_LOOKUP_FAILURES_PER_HOUR) {
+    return res.status(429).json({ error: 'محاولات كثيرة جداً لهذا الطلب. حاول بعد ساعة، أو استخدم رابط التتبع من رسالة المحل.' });
+  }
 
   const { data: candidates } = await supabaseAdmin
     .from('orders')
@@ -549,6 +574,7 @@ app.post("/api/public/order-lookup", asyncHandler(async (req, res) => {
 
   if (matches.length !== 1) {
     await recordFailure();
+    await supabaseAdmin.rpc('increment_order_lookup_failure', { p_order_number: orderNumber });
     return res.status(404).json({ error: 'Order not found' });
   }
   const orderData = matches[0];

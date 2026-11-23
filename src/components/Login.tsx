@@ -313,39 +313,34 @@ export default function Login() {
     setLoading(true);
     setError(null);
     try {
-      let emailToUse = loginId;
       if (!loginId.includes('@')) {
-        const formattedPhone = formatSaudiPhone(loginId);
-
+        // P6: the server signs in with the phone and returns the session.
+        let res: Response;
         try {
-          // بحث خادمي (لا استعلام مباشر من المتصفح) -- RLS على staff/
-          // tailor_requests تمنع القراءة غير المُصادَق عليها أصلاً، فهذا
-          // البحث يحتاج supabaseAdmin على السيرفر (محدود المعدّل هناك).
-          // انظر /api/auth/lookup-email-by-phone في server.ts.
-          const lookupRes = await fetch('/api/auth/lookup-email-by-phone', {
+          res = await fetch('/api/auth/sign-in-with-phone', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ phone: formattedPhone }),
+            body: JSON.stringify({ phone: formatSaudiPhone(loginId), password }),
           });
-          const lookupData = await lookupRes.json().catch(() => null);
-
-          if (lookupRes.ok && lookupData?.email) {
-            emailToUse = lookupData.email;
-          } else if (lookupRes.status === 429) {
-            throw new Error(lookupData?.error || t('login.errors.too_many_attempts', 'محاولات كثيرة جداً. انتظر دقيقة ثم أعد المحاولة.'));
-          } else {
-            throw new Error(t('login.errors.phone_not_registered'));
-          }
         } catch (fetchErr: any) {
-             if (fetchErr instanceof TypeError && fetchErr.message === 'Failed to fetch') {
-                 throw new Error(t('login.errors.db_unreachable', { url: import.meta.env.VITE_SUPABASE_URL || t('login.errors.no_url') }));
-             }
-             throw fetchErr;
+          if (fetchErr instanceof TypeError) {
+            throw new Error(t('login.errors.db_unreachable', { url: import.meta.env.VITE_SUPABASE_URL || t('login.errors.no_url') }));
+          }
+          throw fetchErr;
         }
+        const body = await res.json().catch(() => null);
+        if (res.status === 429) {
+          throw new Error(body?.error || t('login.errors.too_many_attempts', 'محاولات كثيرة جداً. انتظر دقيقة ثم أعد المحاولة.'));
+        }
+        if (!res.ok || !body?.session?.access_token) {
+          throw new Error(t('login.errors.phone_or_password_wrong'));
+        }
+        const { error: sessionErr } = await supabase.auth.setSession(body.session);
+        if (sessionErr) throw sessionErr;
+      } else {
+        const { error: signInErr } = await supabase.auth.signInWithPassword({ email: loginId, password });
+        if (signInErr) throw signInErr;
       }
-
-      const { error: signInErr } = await supabase.auth.signInWithPassword({ email: emailToUse, password });
-      if (signInErr) throw signInErr;
 
       if (rememberMe) {
         localStorage.setItem('rememberedUser', loginId);
