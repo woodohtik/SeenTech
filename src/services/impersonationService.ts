@@ -10,30 +10,23 @@ import { supabase } from '../lib/supabase/client';
 
 export type ImpersonationAccessType = 'stealth' | 'explicit';
 
-interface ImpersonationActor {
-  id: string;
-  name: string;
-}
-
-/** يُدرج سجل support_sessions. يُرجع false عند فشل الإدراج -- المستدعي يقرر
- * هل يمنع المتابعة بلا سجل تدقيق (كما تفعل كل مسارات الانتحال الآن). */
-export async function logImpersonationStart(
-  tenantId: string,
-  actor: ImpersonationActor,
-  accessType: ImpersonationAccessType
-): Promise<boolean> {
-  const { error } = await supabase.from('support_sessions').insert({
-    tenant_id: tenantId,
-    saas_user_id: actor.id,
-    saas_user_name: actor.name,
-    access_type: accessType,
-    started_at: new Date().toISOString(),
+/**
+ * seen-readiness-fixes-task.md P6 (SECURITY-11): the session row is written
+ * by the server (start_support_session), which also decides its type --
+ * 'explicit' only on this admin's approved, unexpired request for this
+ * shop, otherwise 'stealth'. The shop's owner sees every session. Returns
+ * null when it could not be recorded (callers then do not continue).
+ */
+export async function startSupportSession(tenantId: string, requestId?: string): Promise<ImpersonationAccessType | null> {
+  const { data, error } = await supabase.rpc('start_support_session', {
+    p_tenant_id: tenantId,
+    ...(requestId ? { p_request_id: requestId } : {}),
   });
   if (error) {
-    console.error('[impersonation] Failed to log session start:', error);
-    return false;
+    console.error('[impersonation] Failed to record the support session:', error);
+    return null;
   }
-  return true;
+  return ((data as { access_type?: ImpersonationAccessType } | null)?.access_type) ?? null;
 }
 
 /** ينهي آخر سجل مفتوح (بلا ended_at) للمستخدم الحالي نفسه في هذا المستأجر،

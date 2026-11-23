@@ -43,6 +43,8 @@ import { isValidMeasurementUnit, type MeasurementUnit } from '../utils/measureme
 import { DEFAULT_FABRIC_ESTIMATE_SETTINGS, normalizeFabricEstimateSettings } from '../utils/fabricEstimate';
 import { useVerticalConfig } from '../hooks/useVerticalConfig';
 import { measurementSetFor } from '../constants/measurementFields';
+// P6 (SECURITY-11): the owner sees every support session in the shop.
+const TenantSupportHistory = React.lazy(() => import('./TenantSupportHistory'));
 
 interface SettingsProps {
   tenantId: string;
@@ -1174,6 +1176,11 @@ export default function Settings({ tenantId }: SettingsProps) {
                 </form>
               )}
 
+              {activeTab === 'data' && (currentStaff?.role === 'owner' || currentStaff?.role === 'super_admin') && tenantId && (
+                <React.Suspense fallback={null}>
+                  <TenantSupportHistory tenantId={tenantId} />
+                </React.Suspense>
+              )}
               {activeTab === 'data' && (currentStaff?.role === 'owner' || currentStaff?.role === 'super_admin') && (
                 <div className="bg-surface p-5 sm:p-8 md:p-10 rounded-2xl border border-border shadow-xl shadow-brand/5 space-y-6 md:space-y-10 w-full">
                    <div className={cn("flex flex-col sm:flex-row items-center sm:items-start gap-4 border-b border-border pb-6 sm:pb-8 text-center", isRtl ? "sm:text-right" : "sm:text-left")}>

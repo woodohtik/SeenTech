@@ -39,7 +39,7 @@ import { useTranslation } from 'react-i18next';
 import { getFriendlyErrorMessage } from '../lib/appErrors';
 import UserPreferencesMenu from './UserPreferencesMenu';
 import ImpersonationBanner, { IMPERSONATION_BANNER_HEIGHT } from './ImpersonationBanner';
-import { logImpersonationStart, endImpersonation } from '../services/impersonationService';
+import { endImpersonation } from '../services/impersonationService';
 import TwoFactorChallenge from './TwoFactorChallenge';
 
 import { IconInput } from './ui/IconInput';

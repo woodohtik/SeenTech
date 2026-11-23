@@ -71,111 +71,32 @@ export default function SupportConsentModal({ tenantId }: Props) {
   }, [tenantId, isAuthorizedToApprove]);
 
   const fetchPendingRequests = async () => {
-    try {
-      const { data, error } = await supabase
-          .from('support_access_requests')
-          .select('*')
-          .eq('tenant_id', tenantId)
-          .eq('status', 'pending');
-
-      if (!error && data) {
-        setRequests(data);
-      } else {
-        // Fallback to saas_settings on any error (table missing, RLS policies, etc.)
-        const { data: setting } = await supabase
-          .from('saas_settings')
-          .select('*')
-          .eq('key', 'support_access_requests')
-          .maybeSingle();
-
-        if (setting?.value && Array.isArray(setting.value)) {
-          const now = new Date().getTime();
-          const pending = setting.value.filter((r: any) => 
-            r.tenant_id === tenantId && 
-            r.status === 'pending' &&
-            new Date(r.expires_at).getTime() > now
-          );
-          setRequests(pending);
-        }
+    // P6 (SECURITY-11): the shop's owner reads its own requests (RLS).
+    const { data, error } = await supabase
+      .from('support_access_requests')
+      .select('*')
+      .eq('tenant_id', tenantId)
+      .eq('status', 'pending')
+      .gt('expires_at', new Date().toISOString());
+    if (error) {
+      if (!hasWarnedFetchFailureRef.current) {
+        hasWarnedFetchFailureRef.current = true;
+        handleError(error, t('support_consent.fetch_requests_failed', 'تعذّر تحميل طلبات صلاحية الدعم'));
       }
-    } catch (err) {
-      console.error("Error in fetchPendingRequests, trying fallback:", err);
-      try {
-        const { data: setting } = await supabase
-          .from('saas_settings')
-          .select('*')
-          .eq('key', 'support_access_requests')
-          .maybeSingle();
-
-        if (setting?.value && Array.isArray(setting.value)) {
-          const now = new Date().getTime();
-          const pending = setting.value.filter((r: any) => 
-            r.tenant_id === tenantId && 
-            r.status === 'pending' &&
-            new Date(r.expires_at).getTime() > now
-          );
-          setRequests(pending);
-        }
-      } catch (fallbackErr) {
-        console.error("Fallback failed as well:", fallbackErr);
-        if (!hasWarnedFetchFailureRef.current) {
-          hasWarnedFetchFailureRef.current = true;
-          handleError(fallbackErr, t('support_consent.fetch_requests_failed', 'تعذّر تحميل طلبات صلاحية الدعم'));
-        }
-      }
+      return;
     }
+    setRequests(data || []);
   };
 
   const handleRespond = async (requestId: string, status: 'approved' | 'rejected') => {
-    // Optimistic UI
     setRequests(prev => prev.filter(r => r.id !== requestId));
-    
-    try {
-      const { error } = await supabase
-          .from('support_access_requests')
-          .update({ 
-            status,
-            responded_at: new Date().toISOString()
-          })
-          .eq('id', requestId);
-
-      if (error) {
-        throw error;
-      }
-    } catch (err) {
-      console.warn("Error updating support_access_requests directly, using fallback:", err);
-      try {
-        // Fallback to saas_settings
-        const { data: setting } = await supabase
-          .from('saas_settings')
-          .select('*')
-          .eq('key', 'support_access_requests')
-          .maybeSingle();
-
-        if (setting?.value && Array.isArray(setting.value)) {
-          const updated = setting.value.map((r: any) => {
-            if (r.id === requestId) {
-              return {
-                ...r,
-                status,
-                responded_at: new Date().toISOString()
-              };
-            }
-            return r;
-          });
-
-          await supabase
-            .from('saas_settings')
-            .upsert({
-              key: 'support_access_requests',
-              value: updated,
-              updated_at: new Date().toISOString()
-            });
-        }
-      } catch (fallbackErr) {
-        console.error("Fallback response failed:", fallbackErr);
-        handleError(fallbackErr, t('support_consent.respond_failed', 'تعذّر تسجيل ردّك على طلب صلاحية الدعم — حاول مرة أخرى'));
-      }
+    const { error } = await supabase.rpc('respond_support_access_request', {
+      p_request_id: requestId,
+      p_approve: status === 'approved',
+    });
+    if (error) {
+      handleError(error, t('support_consent.respond_failed', 'تعذّر تسجيل ردّك على طلب صلاحية الدعم — حاول مرة أخرى'));
+      fetchPendingRequests();
     }
   };
 

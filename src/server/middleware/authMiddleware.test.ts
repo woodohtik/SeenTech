@@ -288,12 +288,10 @@ describe('authenticate', () => {
     expect(req.user).toEqual(expect.objectContaining({ uid: 'uid-legacy', role: 'owner' }));
   });
 
-  it('falls back to Firebase verification when both Supabase paths fail (transition window)', async () => {
+  // P6 (SECURITY-16): the Firebase transition fallback is gone.
+  it('refuses a Firebase ID token even when Firebase would have verified it', async () => {
     jwtVerifyMock.mockRejectedValue(new Error('not a supabase token'));
     verifyIdTokenMock.mockResolvedValue({ uid: 'firebase-uid', email: 'legacyuser@shop.test' });
-    maybeSingleMock
-      .mockResolvedValueOnce({ data: null, error: null }) // saas_users
-      .mockResolvedValueOnce({ data: { id: 'staff-3', role: 'tailor', tenant_id: 'tenant-3' }, error: null }); // staff
 
     const req = makeReq('Bearer some-firebase-id-token');
     const res = makeRes();
@@ -301,8 +299,9 @@ describe('authenticate', () => {
 
     await authenticate(req, res, next);
 
-    expect(next).toHaveBeenCalledOnce();
-    expect(req.user).toEqual(expect.objectContaining({ uid: 'firebase-uid', role: 'tailor' }));
+    expect(verifyIdTokenMock).not.toHaveBeenCalled();
+    expect(res.status).toHaveBeenCalledWith(401);
+    expect(next).not.toHaveBeenCalled();
   });
 
   it('does not fall back to Firebase when adminAuth is not configured (no Firebase app initialized)', async () => {

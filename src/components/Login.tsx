@@ -289,6 +289,8 @@ export default function Login() {
   };
 
   // Password Strength Logic
+  const isAcceptablePassword = (pass: string) => pass.length >= 8 && /\p{L}/u.test(pass) && /[0-9]/.test(pass);
+
   const getPasswordStrength = (pass: string) => {
     if (!pass) return 0;
     let strength = 0;
@@ -374,7 +376,9 @@ export default function Login() {
       setError(t('login.errors.invalid_phone'));
       return;
     }
-    if (!googleUser && strength < 2) {
+    // P6 (SECURITY-17): at least 8 characters with letters and digits -- the
+    // same rule as the auth server (minimum_password_length 8, letters_digits).
+    if (!googleUser && !isAcceptablePassword(regPassword)) {
       setError(t('login.errors.weak_password'));
       return;
     }

@@ -2,7 +2,6 @@ import type { Request, Response, NextFunction } from 'express';
 import express from 'express';
 import jwt from 'jsonwebtoken';
 import { createRemoteJWKSet, jwtVerify } from 'jose';
-import { adminAuth } from '../firebase-admin.ts';
 import { supabaseAdmin } from '../supabase-admin.ts';
 import { logger } from '../logger.ts';
 import { ACTING_HEADER, resolveActingSession } from '../actingSession.ts';
@@ -55,9 +54,7 @@ async function logSecurityEvent(entry: Record<string, unknown>): Promise<void> {
  *
  * Stage 2 cutover: Supabase-issued JWTs (verified locally against
  * SUPABASE_JWT_SECRET, mirroring what GoTrue itself does) are the primary
- * path. Firebase ID tokens are still accepted as a TRANSITION-WINDOW-ONLY
- * fallback for accounts/sessions not yet migrated — remove this branch
- * entirely once the cutover has stabilized (see Stage 2 rollout plan).
+ * path. Firebase ID tokens are no longer accepted (P6, SECURITY-16).
  */
 export const authenticate = async (req: AuthRequest, res: Response, next: NextFunction) => {
   const authHeader = req.headers.authorization;
@@ -92,22 +89,16 @@ export const authenticate = async (req: AuthRequest, res: Response, next: NextFu
         }) as { sub: string; email?: string; aal?: string };
         decodedToken = { uid: payload.sub, email: payload.email, aal: payload.aal };
       } catch {
-        // Not a valid legacy token either; fall through to the Firebase path.
+        // Not a valid legacy token either.
       }
     }
 
-    // TRANSITION-WINDOW FALLBACK ONLY — remove once cutover stabilizes.
-    if (!decodedToken && adminAuth) {
-      try {
-        decodedToken = await adminAuth.verifyIdToken(idToken);
-      } catch (verifyError: any) {
-        logger.warn({ err: verifyError }, '[authMiddleware] verifyIdToken failed');
-      }
-    }
+    // P6 (SECURITY-16): Firebase ID tokens are no longer accepted -- the app
+    // signs in with Supabase only since the cutover.
 
     if (!decodedToken) {
       // SECURITY: no unverified-fallback decode path. A token that fails
-      // signature verification against both Supabase and Firebase is
+      // signature verification against Supabase (JWKS or the legacy secret) is
       // rejected outright — never trust a JWT payload without verifying
       // its signature first.
       return res.status(401).json({ error: 'Unauthorized: Invalid token' });

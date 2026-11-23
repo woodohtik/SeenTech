@@ -36,7 +36,7 @@ import {
   RotateCcw
 } from 'lucide-react';
 import { supabase } from '../lib/supabase/client';
-import { logImpersonationStart } from '../services/impersonationService';
+import { startSupportSession } from '../services/impersonationService';
 import { handleError, OperationType, getFriendlyErrorMessage } from '../lib/appErrors';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { TailorRequest, Tenant, Plan, Order } from '../types';
@@ -248,11 +248,7 @@ export default function AdminTailors() {
 
   const handleStealthLogin = async (tenantId: string) => {
     try {
-      const logged = await logImpersonationStart(
-        tenantId,
-        { id: dbUser!.id, name: dbUser?.display_name || dbUser?.email || 'Admin' },
-        'stealth'
-      );
+      const logged = await startSupportSession(tenantId);
       if (!logged) {
         showToast(t('saas.tenants.stealth_audit_log_failed', 'تعذّر تسجيل عملية الدخول الخفي في سجل التدقيق -- لا يمكن المتابعة بلا سجل'), 'error');
         return;
@@ -269,111 +265,57 @@ export default function AdminTailors() {
   const handleRequestAccess = async (tenantId: string) => {
     try {
       setLoading(true);
-      let requestObj: any = null;
-      let isFallback = false;
-
-      const newRequestData = {
-        tenant_id: tenantId,
-        saas_user_id: dbUser!.id,
-        saas_user_name: dbUser?.display_name || dbUser?.email || 'Support Representative',
-        status: 'pending',
-        requested_at: new Date().toISOString(),
-        expires_at: new Date(Date.now() + 15 * 60000).toISOString() // 15 mins expiry
-      };
-
-      try {
-        const { data, error } = await supabase.from('support_access_requests').insert(newRequestData).select().single();
-        if (error) throw error;
-        requestObj = data;
-      } catch (err: any) {
-        console.warn('Direct support access requests insertion failed in AdminTailors, trying fallback:', err);
-        isFallback = true;
-        const newId = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-        requestObj = { id: newId, ...newRequestData };
-
-        try {
-          const { data: setting } = await supabase
-            .from('saas_settings')
-            .select('*')
-            .eq('key', 'support_access_requests')
-            .maybeSingle();
-
-          const existingRequests = setting?.value && Array.isArray(setting.value) ? setting.value : [];
-          existingRequests.push(requestObj);
-
-          await supabase.from('saas_settings').upsert({
-            key: 'support_access_requests',
-            value: existingRequests,
-            updated_at: new Date().toISOString()
-          });
-        } catch (fallbackErr) {
-          console.error('Fallback support request save failed:', fallbackErr);
-          throw fallbackErr;
-        }
-      }
+      // P6 (SECURITY-11): the request lives in support_access_requests only;
+      // the shop's owner sees it and answers it there.
+      const { data: requestObj, error } = await supabase
+        .from('support_access_requests')
+        .insert({
+          tenant_id: tenantId,
+          saas_user_id: dbUser!.id,
+          saas_user_name: dbUser?.display_name || dbUser?.email || 'Support Representative',
+          status: 'pending',
+          requested_at: new Date().toISOString(),
+          expires_at: new Date(Date.now() + 15 * 60000).toISOString(), // 15 mins expiry
+        })
+        .select()
+        .single();
+      if (error || !requestObj) throw error || new Error('request not created');
 
       showToast(t('saas.tenants.access_request_sent'), 'success');
-      
-      // Poll for approval...
+
       const interval = setInterval(async () => {
-        let currentStatus = 'pending';
+        const { data: checkData } = await supabase
+          .from('support_access_requests')
+          .select('status')
+          .eq('id', requestObj.id)
+          .single();
+        const currentStatus = checkData?.status || 'pending';
+        if (currentStatus === 'pending') return;
 
-        if (!isFallback) {
-          const { data: checkData } = await supabase
-            .from('support_access_requests')
-            .select('status')
-            .eq('id', requestObj.id)
-            .single();
-          if (checkData) {
-            currentStatus = checkData.status;
+        clearInterval(interval);
+        clearTimeout(expiry);
+        setLoading(false);
+        if (currentStatus === 'approved') {
+          const logged = await startSupportSession(tenantId, requestObj.id);
+          if (logged !== 'explicit') {
+            showToast(t('saas.tenants.stealth_audit_log_failed', 'تعذّر تسجيل عملية الدخول الخفي في سجل التدقيق -- لا يمكن المتابعة بلا سجل'), 'error');
+            return;
           }
+          showToast(t('saas.tenants.access_approved'), 'success');
+          localStorage.setItem('impersonatedTenantId', tenantId);
+          localStorage.setItem('tenant_id', tenantId);
+          window.location.href = '/dashboard';
         } else {
-          // Check from saas_settings fallback
-          const { data: setting } = await supabase
-            .from('saas_settings')
-            .select('*')
-            .eq('key', 'support_access_requests')
-            .maybeSingle();
-          if (setting?.value && Array.isArray(setting.value)) {
-            const req = setting.value.find((r: any) => r.id === requestObj.id);
-            if (req) {
-              currentStatus = req.status;
-            }
-          }
-        }
-          
-        if (currentStatus !== 'pending') {
-          clearInterval(interval);
-          setLoading(false);
-          
-          if (currentStatus === 'approved') {
-            const logged = await logImpersonationStart(
-              tenantId,
-              { id: dbUser!.id, name: dbUser?.display_name || dbUser?.email || 'Support Representative' },
-              'explicit'
-            );
-            if (!logged) {
-              showToast(t('saas.tenants.stealth_audit_log_failed', 'تعذّر تسجيل عملية الدخول الخفي في سجل التدقيق -- لا يمكن المتابعة بلا سجل'), 'error');
-              return;
-            }
-
-            showToast(t('saas.tenants.access_approved'), 'success');
-            localStorage.setItem('impersonatedTenantId', tenantId);
-            localStorage.setItem('tenant_id', tenantId);
-            window.location.href = '/dashboard';
-          } else {
-            showToast(t('saas.tenants.access_rejected'), 'error');
-          }
+          showToast(t('saas.tenants.access_rejected'), 'error');
         }
       }, 3000);
-      
+
       // Stop polling after 15 minutes
-      setTimeout(() => {
+      const expiry = setTimeout(() => {
         clearInterval(interval);
         setLoading(false);
         showToast(t('saas.tenants.access_request_expired'), 'error');
       }, 15 * 60000);
-
     } catch (e) {
       setLoading(false);
       showToast(t('saas.tenants.access_request_error'), 'error');
@@ -381,11 +323,8 @@ export default function AdminTailors() {
   };
 
   const handleImpersonate = async (tenantId: string) => {
-    const logged = await logImpersonationStart(
-      tenantId,
-      { id: dbUser!.id, name: dbUser?.display_name || dbUser?.email || 'Admin' },
-      'explicit'
-    );
+    // Without the shop's approval this is recorded as what it is: stealth.
+    const logged = await startSupportSession(tenantId);
     if (!logged) {
       showToast(t('saas.tenants.stealth_audit_log_failed', 'تعذّر تسجيل عملية الدخول الخفي في سجل التدقيق -- لا يمكن المتابعة بلا سجل'), 'error');
       return;

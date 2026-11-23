@@ -20,16 +20,14 @@ export default function TenantSupportHistory({ tenantId }: Props) {
 
   const fetchSessions = async () => {
     setLoading(true);
-    // Explicit sessions only for the tenant to see. Mute stealth logic explicitly here.
-    // support_sessions مؤكَّد موجود وفعّال في schema cache على staging والإنتاج
-    // (seen-admin-reengineering-task.md بند 9) -- لا حاجة لمسار بديل عبر
-    // saas_settings بعد الآن.
+    // P6 (SECURITY-11): every support session in the shop -- the ones the
+    // shop approved and the ones it did not -- so nothing is hidden from it.
     const { data } = await supabase
       .from('support_sessions')
       .select('*')
       .eq('tenant_id', tenantId)
-      .eq('access_type', 'explicit')
-      .order('started_at', { ascending: false });
+      .order('started_at', { ascending: false })
+      .limit(50);
 
     setSessions(data || []);
     setLoading(false);
@@ -75,6 +73,9 @@ export default function TenantSupportHistory({ tenantId }: Props) {
                     <h3 className="font-black text-content flex items-center gap-2">
                       {session.saas_user_name}
                       {isActive && <span className="bg-success text-white text-[10px] px-2 py-0.5 rounded-full uppercase tracking-wider animate-pulse">{t('saas.support_history.active_now')}</span>}
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-black ${session.access_type === 'explicit' ? 'bg-success/10 text-success' : 'bg-warning/15 text-content'}`}>
+                        {session.access_type === 'explicit' ? t('saas.support_history.type_approved') : t('saas.support_history.type_without_approval')}
+                      </span>
                     </h3>
                     <p className="text-xs text-content-muted font-bold flex items-center gap-1 mt-1">
                       <Clock size={12} />

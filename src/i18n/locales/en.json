@@ -1743,7 +1743,7 @@
       "reset_failed": "Could not send the email; check that the address is correct",
       "rls_permission_issue": "Database permission problem (RLS). Please contact support to resolve this.",
       "unknown": "An unknown error occurred",
-      "weak_password": "Password is too weak",
+      "weak_password": "Weak password: at least 8 characters, with letters and digits.",
       "accept_terms_required": "You need to agree to the terms of use and the privacy policy to create the account",
       "phone_or_password_wrong": "The phone number or password is incorrect"
     },
@@ -3912,7 +3912,9 @@
       "empty": "No maintenance sign-ins have been recorded.",
       "minutes_value": "{{minutes}} min",
       "subtitle": "A history of system staff signing in to your account for maintenance and support.",
-      "title": "Support Visit Log"
+      "title": "Support Visit Log",
+      "type_approved": "With your approval",
+      "type_without_approval": "Without an approval request"
     },
     "support_mode": "Support Mode",
     "support_staff_name": "Technical Support",
