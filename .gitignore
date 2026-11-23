@@ -45,3 +45,6 @@ perf-out-*.log
 perf-out-*.err
 dist-perf-server/
 dist-perf-server2/
+
+# seen-responsive-layout-task.md: the snapshot tool's build and raw probe output
+/.responsive-out/

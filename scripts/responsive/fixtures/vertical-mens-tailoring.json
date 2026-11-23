@@ -1,0 +1,362 @@
+{
+ "vertical_field_schemas": [
+  {
+   "applies_to": "order_item",
+   "field_key": "collar_type",
+   "field_type": "select",
+   "id": "d648e381-4f57-4880-9224-ea7ae418c02c",
+   "label_ar": "نوع الياقة",
+   "label_en": "Collar type",
+   "label_ur": "کالر کی قسم",
+   "options": [
+    "كلاسيكي",
+    "صيني",
+    "مدوّر"
+   ],
+   "options_i18n": {
+    "en": [
+     "Classic",
+     "Mandarin",
+     "Round"
+    ],
+    "ur": [
+     "کلاسک",
+     "چینی",
+     "گول"
+    ]
+   },
+   "sort": 1,
+   "vertical_key": "mens_tailoring"
+  },
+  {
+   "applies_to": "order_item",
+   "field_key": "cuff_type",
+   "field_type": "select",
+   "id": "10efcf21-83f3-491c-b5b6-7ca17327f083",
+   "label_ar": "نوع الكُم",
+   "label_en": "Cuff type",
+   "label_ur": "کف کی قسم",
+   "options": [
+    "مفرد",
+    "مزدوج",
+    "بكبسون"
+   ],
+   "options_i18n": {
+    "en": [
+     "Single",
+     "Double",
+     "Press stud"
+    ],
+    "ur": [
+     "سنگل",
+     "ڈبل",
+     "بٹن دار"
+    ]
+   },
+   "sort": 2,
+   "vertical_key": "mens_tailoring"
+  },
+  {
+   "applies_to": "order_item",
+   "field_key": "pocket_type",
+   "field_type": "select",
+   "id": "b042469d-3de3-4478-8777-50d1286de45e",
+   "label_ar": "نوع الجيب",
+   "label_en": "Pocket type",
+   "label_ur": "جیب کی قسم",
+   "options": [
+    "جانبي",
+    "صدر",
+    "مخفي"
+   ],
+   "options_i18n": {
+    "en": [
+     "Side",
+     "Chest",
+     "Hidden"
+    ],
+    "ur": [
+     "سائیڈ",
+     "سینہ",
+     "چھپی ہوئی"
+    ]
+   },
+   "sort": 3,
+   "vertical_key": "mens_tailoring"
+  },
+  {
+   "applies_to": "order_item",
+   "field_key": "closure_type",
+   "field_type": "select",
+   "id": "13a187a1-764a-4c98-9f41-baff098fb821",
+   "label_ar": "نوع الإغلاق",
+   "label_en": "Closure type",
+   "label_ur": "بندش کی قسم",
+   "options": [
+    "سحّاب",
+    "أزرار"
+   ],
+   "options_i18n": {
+    "en": [
+     "Zip",
+     "Buttons"
+    ],
+    "ur": [
+     "زپ",
+     "بٹن"
+    ]
+   },
+   "sort": 4,
+   "vertical_key": "mens_tailoring"
+  },
+  {
+   "applies_to": "order_item",
+   "field_key": "collar_padding",
+   "field_type": "select",
+   "id": "0221974d-0008-433e-ae97-301ce281911c",
+   "label_ar": "تبطين الياقة",
+   "label_en": "Collar padding",
+   "label_ur": "کالر کی لائننگ",
+   "options": [
+    "قاسٍ",
+    "ناعم"
+   ],
+   "options_i18n": {
+    "en": [
+     "Stiff",
+     "Soft"
+    ],
+    "ur": [
+     "سخت",
+     "نرم"
+    ]
+   },
+   "sort": 5,
+   "vertical_key": "mens_tailoring"
+  },
+  {
+   "applies_to": "order_item",
+   "field_key": "embroidery",
+   "field_type": "text",
+   "id": "28b3a58b-3985-488f-9dc0-28d4b3aaa0f6",
+   "label_ar": "التطريز",
+   "label_en": "Embroidery",
+   "label_ur": "کڑھائی",
+   "options": null,
+   "options_i18n": null,
+   "sort": 6,
+   "vertical_key": "mens_tailoring"
+  }
+ ],
+ "vertical_inventory_categories": [
+  {
+   "category_key": "fabric",
+   "id": "5fe9b6ca-d844-440f-b096-a8e9428dfb86",
+   "label_ar": "قماش",
+   "label_en": "Fabric",
+   "label_ur": "کپڑا",
+   "measure_kind": "length",
+   "sort": 1,
+   "vertical_key": "mens_tailoring"
+  },
+  {
+   "category_key": "thread",
+   "id": "775dfabe-5451-4c42-8130-86701ad92e95",
+   "label_ar": "خيوط",
+   "label_en": "Thread",
+   "label_ur": "دھاگا",
+   "measure_kind": "count",
+   "sort": 2,
+   "vertical_key": "mens_tailoring"
+  },
+  {
+   "category_key": "button",
+   "id": "54f62ad6-dc47-4411-8721-fd7891404b43",
+   "label_ar": "أزرار",
+   "label_en": "Buttons",
+   "label_ur": "بٹن",
+   "measure_kind": "count",
+   "sort": 3,
+   "vertical_key": "mens_tailoring"
+  },
+  {
+   "category_key": "lining",
+   "id": "9b6740e3-d984-4e2a-870a-93f12cd444d3",
+   "label_ar": "بطانة",
+   "label_en": "Lining",
+   "label_ur": "استر",
+   "measure_kind": "count",
+   "sort": 4,
+   "vertical_key": "mens_tailoring"
+  },
+  {
+   "category_key": "accessories",
+   "id": "724abd1b-0ffd-45ed-887b-b26dd44be546",
+   "label_ar": "إكسسوارات",
+   "label_en": "Accessories",
+   "label_ur": "لوازمات",
+   "measure_kind": "count",
+   "sort": 5,
+   "vertical_key": "mens_tailoring"
+  },
+  {
+   "category_key": "ready_made",
+   "id": "88c85bea-397b-46ab-b1fc-1123a4844648",
+   "label_ar": "جاهز",
+   "label_en": "Ready-made",
+   "label_ur": "ریڈی میڈ",
+   "measure_kind": "count",
+   "sort": 6,
+   "vertical_key": "mens_tailoring"
+  },
+  {
+   "category_key": "other",
+   "id": "98e2eff2-1aef-4900-b91b-ea27ebf11bf1",
+   "label_ar": "أخرى",
+   "label_en": "Other",
+   "label_ur": "دیگر",
+   "measure_kind": "count",
+   "sort": 7,
+   "vertical_key": "mens_tailoring"
+  }
+ ],
+ "vertical_workflow_stages": [
+  {
+   "consumes_materials": false,
+   "id": "a419a26a-667c-4279-822b-72a3605816f7",
+   "is_terminal": false,
+   "label_ar": "تم أخذ المقاسات",
+   "label_en": "Measurements taken",
+   "label_ur": "ناپ لے لیا گیا",
+   "legacy_status": "measurements_taken",
+   "phase": "received",
+   "sort": 1,
+   "stage_key": "measurements_taken",
+   "vertical_key": "mens_tailoring"
+  },
+  {
+   "consumes_materials": true,
+   "id": "cdd9b333-7c67-4334-a173-7be0258e9da0",
+   "is_terminal": false,
+   "label_ar": "قص",
+   "label_en": "Cutting",
+   "label_ur": "کٹائی",
+   "legacy_status": "cutting",
+   "phase": "in_progress",
+   "sort": 2,
+   "stage_key": "cutting",
+   "vertical_key": "mens_tailoring"
+  },
+  {
+   "consumes_materials": false,
+   "id": "58bd8b4d-d0c7-4d73-9790-091c71e95993",
+   "is_terminal": false,
+   "label_ar": "خياطة",
+   "label_en": "Sewing",
+   "label_ur": "سلائی",
+   "legacy_status": "sewing",
+   "phase": "in_progress",
+   "sort": 3,
+   "stage_key": "sewing",
+   "vertical_key": "mens_tailoring"
+  },
+  {
+   "consumes_materials": false,
+   "id": "c0e02ce7-6de0-4579-a91e-4cb46d18aefa",
+   "is_terminal": false,
+   "label_ar": "تطريز",
+   "label_en": "Embroidery",
+   "label_ur": "کڑھائی",
+   "legacy_status": "embroidery",
+   "phase": "in_progress",
+   "sort": 4,
+   "stage_key": "embroidery",
+   "vertical_key": "mens_tailoring"
+  },
+  {
+   "consumes_materials": false,
+   "id": "62aaf15c-9a02-4ce6-9c2e-e99d7d1945b4",
+   "is_terminal": false,
+   "label_ar": "كي وتغليف",
+   "label_en": "Ironing & packaging",
+   "label_ur": "استری اور پیکنگ",
+   "legacy_status": "ironing_packaging",
+   "phase": "in_progress",
+   "sort": 5,
+   "stage_key": "ironing_packaging",
+   "vertical_key": "mens_tailoring"
+  },
+  {
+   "consumes_materials": false,
+   "id": "fc94a077-dadc-4265-aba5-04a8fd974c9d",
+   "is_terminal": false,
+   "label_ar": "جاهز",
+   "label_en": "Ready",
+   "label_ur": "تیار",
+   "legacy_status": "ready",
+   "phase": "ready",
+   "sort": 6,
+   "stage_key": "ready",
+   "vertical_key": "mens_tailoring"
+  },
+  {
+   "consumes_materials": false,
+   "id": "3ca12474-4866-417a-9967-178d4831f321",
+   "is_terminal": false,
+   "label_ar": "تسليم جزئي",
+   "label_en": "Partially delivered",
+   "label_ur": "جزوی حوالگی",
+   "legacy_status": "partial_delivered",
+   "phase": "in_progress",
+   "sort": 7,
+   "stage_key": "partial_delivered",
+   "vertical_key": "mens_tailoring"
+  },
+  {
+   "consumes_materials": false,
+   "id": "7b345857-2a4c-4d7e-89c1-dff854f590a0",
+   "is_terminal": true,
+   "label_ar": "تم التسليم",
+   "label_en": "Delivered",
+   "label_ur": "حوالے کر دیا گیا",
+   "legacy_status": "delivered",
+   "phase": "delivered",
+   "sort": 8,
+   "stage_key": "delivered",
+   "vertical_key": "mens_tailoring"
+  },
+  {
+   "consumes_materials": false,
+   "id": "df9bf2f8-2317-4ab2-91b1-b23f1158675c",
+   "is_terminal": true,
+   "label_ar": "ملغي",
+   "label_en": "Cancelled",
+   "label_ur": "منسوخ",
+   "legacy_status": "cancelled",
+   "phase": "cancelled",
+   "sort": 9,
+   "stage_key": "cancelled",
+   "vertical_key": "mens_tailoring"
+  }
+ ],
+ "verticals": [
+  {
+   "capabilities": {
+    "body_measurements": "thobe",
+    "fabric_consumption": true,
+    "item_term": "thobe",
+    "order_dimensions": false,
+    "orders_module": true,
+    "sells_by_length": true,
+    "workshop_term": "tailor"
+   },
+   "is_active": true,
+   "key": "mens_tailoring",
+   "name_ar": "خياطة رجالية",
+   "name_en": "Men's Tailoring",
+   "name_ur": "مردانہ سلائی",
+   "readiness": "ready",
+   "sort": 1
+  }
+ ]
+}
