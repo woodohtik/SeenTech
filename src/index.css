@@ -601,7 +601,8 @@ html, body {
    داخل صف flex كان min-width: 48px يلغي min-width: auto فيتقلص الزر تحت
    نصه وتتراكب الأزرار (قيس في تبويبات المخزون). */
 @media (pointer: coarse) {
-  :where(button, a[role="button"], [role="tab"], [role="switch"], [role="menuitem"], summary):not(.sr-only) {
+  :where(button, a[role="button"], [role="tab"], [role="switch"], [role="menuitem"], summary):not(.sr-only),
+  :where(aside a[href], nav a[href]) {
     min-height: 48px;
   }
   :where(button[aria-label], a[role="button"][aria-label], button:has(> svg:only-child)):not(.sr-only) {

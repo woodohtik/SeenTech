@@ -64,7 +64,7 @@ export function Modal({ isOpen, onClose, title, children, footer, maxWidth = 'md
             >
               <Dialog.Panel
                 className={cn(
-                  'w-full transform overflow-hidden rounded-t-[20px] sm:rounded-[20px] bg-surface shadow-2xl transition-all border border-border text-start max-h-[92dvh] sm:max-h-[85dvh] flex flex-col',
+                  'w-full transform overflow-hidden rounded-t-[20px] sm:rounded-[20px] bg-surface shadow-2xl transition-[transform,opacity] motion-reduce:transition-none border border-border text-start max-h-[92dvh] sm:max-h-[85dvh] flex flex-col',
                   MAX_WIDTH[maxWidth],
                   panelClassName
                 )}

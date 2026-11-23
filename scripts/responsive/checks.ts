@@ -282,7 +282,7 @@ export function layoutChecks(cfg: { minText: number; minTouch: number; touchMaxW
 
   const aside = document.querySelector('#tour-sidebar');
   const asideRect = aside ? aside.getBoundingClientRect() : null;
-  const panel = Array.from(document.querySelectorAll('[role="dialog"]')).find((d) => d.querySelector('textarea'));
+  const panel = document.querySelector('[data-assistant-mode] [role="dialog"]');
   const mainRect = main ? main.getBoundingClientRect() : null;
   const panelRect = panel ? panel.getBoundingClientRect() : null;
   // Beside the page (docked) if the panel and the content do not share any width.

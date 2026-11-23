@@ -1164,7 +1164,7 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
           <div className="flex flex-wrap main-640:flex-nowrap items-center gap-2 main-640:gap-3 justify-between main-640:justify-end w-full main-640:w-auto">
             <button 
               onClick={() => setIsDeleteConfirmVisible(true)}
-              className="flex items-center gap-1.5 main-640:gap-2 bg-danger/10 text-danger px-3 main-640:px-4 py-2 main-640:py-2.5 rounded-xl main-640:rounded-2xl font-bold text-sm hover:bg-danger/20 transition-all border border-danger/20 shrink-0"
+              className="flex items-center gap-1.5 main-640:gap-2 bg-[var(--seen-danger-bg)] text-danger px-3 main-640:px-4 py-2 main-640:py-2.5 rounded-xl main-640:rounded-2xl font-bold text-sm hover:bg-danger/15 transition-all border border-danger/20 shrink-0"
             >
               <AlertTriangle size={15} />
               {t('dashboard.delete_test_data')}
@@ -1194,6 +1194,9 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
             )}
             <div className="relative shrink-0">
               <button 
+                type="button"
+                aria-label={t('dashboard.notifications')}
+                aria-expanded={isNotificationsOpen}
                 onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
                 className="relative p-2 main-640:p-3 bg-surface rounded-xl main-640:rounded-2xl border border-border shadow-sm hover:bg-surface-muted transition-colors"
               >
@@ -1505,7 +1508,7 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
                       type="button"
                       onClick={() => setChartViewMode('both')}
                       className={cn(
-                        "px-3 py-1.5 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer",
+                        "min-w-12 justify-center px-3 py-1.5 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer",
                         chartViewMode === 'both' ? "bg-surface text-brand shadow-sm font-black" : "text-content-muted hover:text-content"
                       )}
                     >
@@ -1515,7 +1518,7 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
                       type="button"
                       onClick={() => setChartViewMode('revenue')}
                       className={cn(
-                        "px-3 py-1.5 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer",
+                        "min-w-12 justify-center px-3 py-1.5 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer",
                         chartViewMode === 'revenue' ? "bg-surface text-brand shadow-sm font-black" : "text-content-muted hover:text-content"
                       )}
                     >
@@ -1526,7 +1529,7 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
                       type="button"
                       onClick={() => setChartViewMode('orders')}
                       className={cn(
-                        "px-3 py-1.5 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer",
+                        "min-w-12 justify-center px-3 py-1.5 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer",
                         chartViewMode === 'orders' ? "bg-surface text-info shadow-sm font-black" : "text-content-muted hover:text-content"
                       )}
                     >

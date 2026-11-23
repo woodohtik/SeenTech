@@ -1308,13 +1308,14 @@ function TailoringOrderFormBody({
                   )}
                 </div>
 
-                <div className="flex items-center gap-3 p-3 bg-warning/10 rounded-2xl border border-warning/20">
+                {/* The whole strip toggles it: a 48px target (seen-responsive-layout-task.md Phase 5). */}
+                <label htmlFor="order-is-test" className="flex min-h-12 cursor-pointer items-center gap-3 p-3 bg-warning/10 rounded-2xl border border-warning/20">
                   <input type="checkbox" id="order-is-test" {...register('isTest' as any)} className="w-5 h-5 text-brand border-border rounded focus:ring-brand" />
-                  <label htmlFor="order-is-test" className="text-sm font-bold text-warning flex items-center gap-2">
-                    <Zap size={16} />
+                  <span className="text-sm font-bold text-warning flex items-center gap-2">
+                    <Zap size={16} aria-hidden="true" />
                     {t('common.test_data')}
-                  </label>
-                </div>
+                  </span>
+                </label>
               </div>
             </div>
           </div>

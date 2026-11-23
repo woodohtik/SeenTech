@@ -146,7 +146,8 @@ async function setSidebar(page: Page, want: Sidebar, width: number): Promise<boo
 }
 
 async function setAssistant(page: Page, want: Assistant) {
-  const panel = page.getByRole('dialog').filter({ has: page.locator('textarea') });
+  // The assistant's own dialog: a screen's window (the new-order form) has a textarea too.
+  const panel = page.locator('[data-assistant-mode] [role="dialog"]');
   const isOpen = (await panel.count()) > 0;
   if (want === 'closed') {
     if (isOpen) { await page.keyboard.press('Escape'); await page.waitForTimeout(450); }

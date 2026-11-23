@@ -83,11 +83,13 @@ export function StatIcon({ className, children }: { className?: string; children
 
 /** A small status on a card: 14px, 6px corners (DESIGN.md §4: badges). */
 export function StatBadge({ tone = 'neutral', children }: { tone?: 'success' | 'danger' | 'neutral' | 'info'; children: React.ReactNode }) {
+  // DESIGN.md's status pairs (design-system/tokens.css), each 4.5:1 or more at
+  // 14px; a 10% tint of the text colour fell short (success 4.3, danger 4.1).
   const tones = {
-    success: 'bg-success/10 text-success',
-    danger: 'bg-danger/10 text-danger',
-    info: 'bg-info/10 text-info',
-    neutral: 'bg-surface-muted text-content-muted',
+    success: 'bg-[var(--seen-success-bg)] text-success',
+    danger: 'bg-[var(--seen-danger-bg)] text-danger',
+    info: 'bg-[#E6F1F6] text-info',
+    neutral: 'bg-surface-muted text-content',
   } as const;
   return (
     <span className={cn('inline-flex max-w-full items-center whitespace-nowrap rounded-[6px] px-2 py-0.5 text-sm font-bold', tones[tone])}>

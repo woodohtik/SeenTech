@@ -363,7 +363,9 @@ function LayoutShell({ children, role, tenantId, currentStaff, onLock, isLocked 
           </div>
           
           {/* Close button for mobile */}
-          <button 
+          <button
+            type="button"
+            aria-label={t('common.close')}
             onClick={() => setIsMobileMenuOpen(false)}
             className="lg:hidden absolute left-4 top-1/2 -translate-y-1/2 p-2 hover:bg-surface-muted rounded-full"
           >
