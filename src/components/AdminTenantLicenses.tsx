@@ -22,7 +22,7 @@ import { getPlanName, getSubscriptionInfo } from '../utils/tenantSubscription';
 export default function AdminTenantLicenses() {
   const { t } = useTranslation();
   const { dbUser } = useAuth();
-  const { confirm } = useConfirm();
+  const { confirm, promptText } = useConfirm();
   const { success: showSuccess, error: showError } = useToast();
 
   const [tenants, setTenants] = useState<Tenant[]>([]);
@@ -75,51 +75,54 @@ export default function AdminTenantLicenses() {
       showError(t('saas.unauthorized_action'));
       return;
     }
-    const ok = await confirm({ description: t('saas.tenants.confirm_change_plan') });
-    if (!ok) return;
+    // P6 (PLATFORM-10): the server activates the plan, with the reason and
+    // the amount actually paid (0 for a gift) -- recorded in Seen's ledger
+    // and the admin log. It used to be a direct update from this screen,
+    // with no record, and it credited referral rewards for free grants.
+    const newPlan = plans.find((p) => p.id === newPlanId);
+    const isPaidPlan = Number(newPlan?.price || 0) > 0;
+    const reason = await promptText({
+      title: t('saas.tenants.activate_reason_title'),
+      description: t('saas.tenants.activate_reason_desc'),
+      placeholder: t('saas.tenants.activate_reason_placeholder'),
+    });
+    if (reason === null) return;
+    if (!reason.trim()) {
+      showError(t('saas.tenants.activate_reason_required'));
+      return;
+    }
+    let amount = 0;
+    if (isPaidPlan) {
+      const typed = await promptText({
+        title: t('saas.tenants.activate_amount_title'),
+        description: t('saas.tenants.activate_amount_desc'),
+        defaultValue: String(newPlan?.price ?? 0),
+      });
+      if (typed === null) return;
+      amount = Number(typed);
+      if (!Number.isFinite(amount) || amount < 0) {
+        showError(t('saas.tenants.activate_amount_invalid'));
+        return;
+      }
+    }
 
     try {
-      const today = new Date().toISOString();
-      const newPlan = plans.find((p) => p.id === newPlanId);
-      const isFreeOrTrial = newPlanId === 'free' || (newPlan && newPlan.price === 0) || newPlanId.includes('trial');
-      // Manually granting a paid plan here is a fresh grant starting now --
-      // same subscription_end_date this screen's own expiry display and
-      // BillingSettings.tsx both read, so the change is actually visible
-      // instead of only touching created_at (the join date, unrelated to
-      // billing once subscription_end_date exists).
-      const updatePayload: Record<string, any> = { plan_id: newPlanId, updated_at: today };
-      if (!isFreeOrTrial) {
-        const oneYearFromNow = new Date();
-        oneYearFromNow.setFullYear(oneYearFromNow.getFullYear() + 1);
-        updatePayload.subscription_end_date = oneYearFromNow.toISOString();
-
-        // Real customer bug (reported 2026-11-18, multiple tenants incl.
-        // "النعمان للخياطة"): this manual renewal is almost always used on
-        // a tenant trial_lock_sweep already flipped to subscription_status
-        // = 'locked' (that is exactly why the founder is granting a paid
-        // plan here). Setting only plan_id/subscription_end_date left that
-        // 'locked' value in place -- App.tsx's own lock screen reads it
-        // directly (isLockedOrPurging), and app_current_tenant_id() (DB-
-        // side RLS gate) checks the identical column -- so a customer who
-        // had just paid still hit "trial expired" on login, and every
-        // query would have returned empty even if they got past the
-        // screen. Mirrors activate_tenant_subscription's own fuller reset
-        // (20260910040000), which this screen never actually called.
-        updatePayload.subscription_status = 'active';
-        updatePayload.locked_at = null;
-        updatePayload.purge_at = null;
-        updatePayload.is_trial = false;
-      }
-      const { error } = await supabase.from('tenants').update(updatePayload).eq('id', tenantId);
+      const { data, error } = await supabase.rpc('admin_activate_plan', {
+        p_tenant_id: tenantId,
+        p_plan_id: newPlanId,
+        p_amount: amount,
+        p_reason: reason.trim(),
+      });
       if (error) throw error;
+      const endDate = (data as { subscription_end_date?: string | null } | null)?.subscription_end_date ?? null;
       setTenants((prev) =>
         prev.map((tenant) =>
           tenant.id === tenantId
-            ? {
+            ? ({
                 ...tenant,
                 planId: newPlanId,
-                ...(updatePayload.subscription_end_date ? { subscription_end_date: updatePayload.subscription_end_date } : {}),
-              }
+                ...(endDate ? { subscription_end_date: endDate, subscription_status: 'active', is_trial: false, locked_at: null, purge_at: null } : {}),
+              } as unknown as Tenant)
             : tenant
         )
       );

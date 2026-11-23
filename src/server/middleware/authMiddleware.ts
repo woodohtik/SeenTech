@@ -206,7 +206,7 @@ export const authenticate = async (req: AuthRequest, res: Response, next: NextFu
       if (reqPath !== '/api/staff/acting-session/end') {
         const { data: tenantRow, error: tenantError } = await supabaseAdmin
           .from('tenants')
-          .select('status, trashed_at, subscription_status, subscription_end_date')
+          .select('status, trashed_at, subscription_status, subscription_end_date, trial_ends_at')
           .eq('id', staffRow.tenant_id)
           .maybeSingle();
         if (tenantError) {

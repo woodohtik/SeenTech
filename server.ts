@@ -2984,6 +2984,26 @@ app.get("/api/cron/zatca-cert-expiry-check", asyncHandler(async (req: any, res) 
   res.json({ ok: true, checked: (expiringSoon || []).length, alerted, backfilled });
 }));
 
+// seen-readiness-fixes-task.md P6 (PLATFORM-20) -- the database's scheduled
+// jobs, checked once a day (.github/workflows/platform-health.yml). Answers
+// 200 with ok:false and the problems, so the workflow fails and someone is
+// told; CRON_SECRET only.
+app.get("/api/cron/platform-health", asyncHandler(async (req: any, res) => {
+  const cronSecret = (process.env.CRON_SECRET || '').trim();
+  const providedBuf = Buffer.from(typeof req.headers.authorization === 'string' ? req.headers.authorization : '');
+  const expectedBuf = Buffer.from(`Bearer ${cronSecret}`);
+  if (!(cronSecret.length > 0 && providedBuf.length === expectedBuf.length && crypto.timingSafeEqual(providedBuf, expectedBuf))) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  const { supabaseAdmin } = await import("./src/server/supabase-admin.ts");
+  const { cronProblems } = await import('./src/server/cronHealth.ts');
+  const { data, error } = await supabaseAdmin.rpc('saas_cron_health');
+  if (error) return internalError(res, "Error in GET /api/cron/platform-health:", error);
+  const problems = cronProblems(data as any);
+  if (problems.length > 0) logger.error({ problems }, '[cron/platform-health] scheduled jobs need attention');
+  res.json({ ok: problems.length === 0, problems, jobs: ((data as any)?.jobs || []).length });
+}));
+
 // seen-readiness-fixes-task.md P2.4 -- the ZATCA queue worker. Sends the
 // invoices and credit notes that are due (public.zatca_submissions), the same
 // send the cashier's device asks for, and records the outcome: retried with a

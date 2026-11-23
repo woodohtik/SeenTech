@@ -14,12 +14,8 @@ export const autoSeed = async () => {
     if (plansData && plansData.length === 0) {
       console.log('Seeding initial data...');
       
-      // 1. Seed Plans
-      const plans = [
-        { id: 'free', name: 'الباقة المجانية', price: 0, features: ['تجربة 14 يوم', 'عدد لا محدود من الفواتير', 'بدون ربط بطاقة'], max_staff: 2, max_orders: 100 },
-        { id: 'basic', name: 'الخطة الأساسية', price: 599, features: ['إدارة العملاء', 'إدارة الطلبات', 'دعم فني'], max_staff: 5, max_orders: 50000 }
-      ];
-      await supabase.from('plans').insert(plans);
+      // P6 (PLATFORM-15): the plans are seeded by a migration
+      // (20270109000000); a browser cannot write them.
 
       // 2. Seed Sample Requests
       const sampleRequests = [

@@ -190,6 +190,7 @@ describe('authenticate', () => {
     [{ status: 'active', trashed_at: '2026-11-01T00:00:00Z' }, 403, 'tenant_deleted'],
     [{ status: 'active', subscription_status: 'locked' }, 402, 'subscription_locked'],
     [{ status: 'active', subscription_status: 'active', subscription_end_date: '2020-01-01T00:00:00Z' }, 402, 'subscription_locked'],
+    [{ status: 'active', subscription_status: 'trial', trial_ends_at: '2020-01-01T00:00:00Z' }, 402, 'subscription_locked'],
   ])('refuses staff of a closed shop (%j)', async (tenant, http, code) => {
     jwtVerifyMock.mockResolvedValue({ payload: { sub: 'uid-9', email: 'cashier@shop.test' } });
     maybeSingleMock

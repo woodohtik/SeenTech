@@ -573,15 +573,7 @@ export default function AdminTailors() {
       if (error) throw error;
       setTenants(prev => prev.filter(t2 => t2.id !== tenant.id));
       showToast(t('saas.tenants.permanently_deleted_success', 'تم حذف التاجر نهائياً'), 'success');
-      await supabase.from('audit_logs').insert({
-        action: 'Permanently delete tenant',
-        performed_by: dbUser?.id || null,
-        performed_by_email: dbUser?.email || 'Super Admin',
-        target_tenant_id: tenant.id,
-        details: `Merchant ${tenant.id} (${tenant.name}) permanently deleted`,
-        type: 'security',
-        occurred_at: new Date().toISOString(),
-      });
+      // P6 (PLATFORM-09): the server logs the deletion itself (saas_security_logs).
     } catch (err) {
       console.error('Error permanently deleting tenant:', err);
       // P5 (PLATFORM-08): "export first" is the server's own words -- show them.

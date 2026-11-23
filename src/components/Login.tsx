@@ -449,19 +449,6 @@ export default function Login() {
 
       // Create Onboarding Request in Supabase
       try {
-        // Ensure plan records exist in database to prevent plan_id foreign key constraint failures
-        try {
-          const { data: plansData } = await supabase.from('plans').select('id');
-          if (!plansData || plansData.length === 0 || !plansData.find(p => p.id === 'free')) {
-            await supabase.from('plans').insert([
-              { id: 'free', name: 'الباقة المجانية', price: 0, features: ['تجربة 14 يوم', 'عدد لا محدود من الفواتير', 'بدون ربط بطاقة'], max_staff: 2, max_orders: 100 },
-              { id: 'basic', name: 'الخطة الأساسية', price: 599, features: ['إدارة العملاء', 'إدارة الطلبات', 'دعم فني'], max_staff: 5, max_orders: 50000 }
-            ]);
-          }
-        } catch (planError) {
-          console.error("Failed to ensure default plans are seeded:", planError);
-        }
-
         // First insert the user into the global users table
         const { error: userInsertError } = await supabase
           .from('users')

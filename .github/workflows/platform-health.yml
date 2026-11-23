@@ -1,0 +1,34 @@
+name: Platform health
+
+# seen-readiness-fixes-task.md P6 (PLATFORM-20): once a day, ask each
+# environment how its database's scheduled jobs last ran (trial lock, purge,
+# clean-ups). The run fails -- and GitHub tells the repository's owner -- when
+# pg_cron is missing, a job is switched off, never ran, failed, or is stale.
+on:
+  schedule:
+    - cron: '20 4 * * *'
+  workflow_dispatch: {}
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        host: [staging.seentech.io, www.seentech.io]
+    steps:
+      - name: Scheduled jobs on ${{ matrix.host }}
+        run: |
+          status=$(curl -sS -o response.json -w "%{http_code}" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            https://${{ matrix.host }}/api/cron/platform-health)
+          echo "Response status: $status"
+          cat response.json || true
+          if [ "$status" != "200" ]; then
+            echo "::error::platform-health on ${{ matrix.host }} returned HTTP $status"
+            exit 1
+          fi
+          if ! grep -q '"ok":true' response.json; then
+            echo "::error::scheduled jobs on ${{ matrix.host }} need attention"
+            exit 1
+          fi

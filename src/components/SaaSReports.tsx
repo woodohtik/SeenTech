@@ -64,13 +64,14 @@ export default function SaaSReports() {
       }
 
       const activeTenants = tenants.filter(t => t.status === 'active');
-      const mrr = activeTenants.reduce((acc, t) => {
-        const plan = plans.find(p => p.id === t.plan_id);
-        return acc + Number(plan?.price || 0);
-      }, 0);
-
+      // P6 (PLATFORM-18): the server's figures -- revenue is what shops paid
+      // Seen (it was the shops' own sales), MRR is the monthly share of the
+      // shops on an active paid subscription (it summed a yearly price for
+      // every shop, locked and trial included).
+      const mrr = Number(revenueReport.mrr) || 0;
+      const payingShops = Number(revenueReport.paying_shops) || 0;
       const totalRevenue = Number(revenueReport.total_revenue) || 0;
-      const arpu = activeTenants.length > 0 ? mrr / activeTenants.length : 0;
+      const arpu = payingShops > 0 ? mrr / payingShops : 0;
 
       const monthly: { month_start: string; revenue: number }[] = revenueReport.monthly || [];
       const chartData = monthly.map(m => ({
