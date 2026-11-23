@@ -133,6 +133,31 @@ h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-heading);
 }
 
+/* seen-responsive-layout-task.md Phase 1: the content decides by ITS OWN width.
+   The layout measures its content area (<main>) and writes the steps that
+   width has reached on <html>: data-main="480 640 720" (useMeasuredSteps,
+   from a ResizeObserver). These variants read them: `main-640:grid-cols-2`
+   means "two columns once the content area is 640px wide" -- whatever the
+   window, the sidebar or the assistant are doing.
+
+   Who uses which:
+     content (scripts/responsive/content-files.mjs)  main-*
+     the shell, pages with no shell, shared pieces    sm: md: lg: xl:
+   A viewport variant mapped to the content width it stood for:
+     sm -> main-640, md -> main-720, lg -> main-900, xl -> main-1024, 2xl -> main-1280
+
+   Not a CSS container on purpose: 136 fixed overlays live inside <main>, and
+   engines that still apply layout containment with container-type would pin
+   them to it (measured; docs/responsive/plan-audit.md, note 2). And on
+   <html>, not <main>, so windows drawn in a portal follow it too.
+   Keep these in ascending order: a wider step must win over a narrower one. */
+@custom-variant main-480 (&:where([data-main~="480"] *));
+@custom-variant main-640 (&:where([data-main~="640"] *));
+@custom-variant main-720 (&:where([data-main~="720"] *));
+@custom-variant main-900 (&:where([data-main~="900"] *));
+@custom-variant main-1024 (&:where([data-main~="1024"] *));
+@custom-variant main-1280 (&:where([data-main~="1280"] *));
+
 /* seen-readiness-fixes-task.md P4 (UX-17): numbers, IBANs and phone numbers
    read left to right inside Arabic text. Used across the app; never defined. */
 @utility dir-ltr {

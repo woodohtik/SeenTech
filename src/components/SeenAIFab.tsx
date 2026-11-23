@@ -1,14 +1,25 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import type { AssistantMode } from '../lib/shellLayout';
 import { AnimatePresence } from 'motion/react';
 import { useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { startTargetedTour } from '../lib/tourEvents';
 import { AssistantMark } from './assistant/parts';
-import { AssistantPanel, PANEL_WIDTH, PANEL_WIDTH_EXPANDED, useMediaQuery } from './assistant/AssistantPanel';
+import { AssistantPanel } from './assistant/AssistantPanel';
 import { isAssistantAdminRole, pageKeyForPath, type AssistantAccess } from './assistant/catalog';
 import { useAssistantChat, useAssistantStatus } from './assistant/useAssistantChat';
 
 interface SeenAIFabProps {
+  /**
+   * Where the assistant sits, decided by the shell (lib/shellLayout.ts):
+   * beside the page, over it, or as a bottom sheet. The shell owns "open" and
+   * "wide" as well, because the sidebar's fold depends on them.
+   */
+  mode: AssistantMode;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  expanded: boolean;
+  onToggleExpanded: () => void;
   userName?: string;
   userRole?: string;
   tenantId?: string | null;
@@ -16,42 +27,27 @@ interface SeenAIFabProps {
   can?: (permission: string) => boolean;
 }
 
-const EXPANDED_KEY = 'seen_ai_panel_expanded';
-/** Read by Layout's root: the width the docked panel takes from the page at 1280px and up. */
-const DOCK_VAR = '--assistant-dock';
-
-function readExpanded(): boolean {
-  try {
-    return localStorage.getItem(EXPANDED_KEY) === '1';
-  } catch {
-    return false;
-  }
-}
-
 /**
  * The assistant: a launcher in the corner and the panel it opens. The pieces
  * live in ./assistant; this file only holds what is open and wires them.
  */
-export default function SeenAIFab({ userName, userRole, tenantId, can }: SeenAIFabProps) {
+export default function SeenAIFab({ mode, open: isOpen, onOpenChange, expanded, onToggleExpanded, userName, userRole, tenantId, can }: SeenAIFabProps) {
   const { t } = useTranslation();
   const { pathname } = useLocation();
   const status = useAssistantStatus(tenantId);
-  const [isOpen, setIsOpen] = useState(false);
-  const [expanded, setExpanded] = useState(readExpanded);
   const [input, setInput] = useState('');
   const launcherRef = useRef<HTMLButtonElement>(null);
-  const isDocked = useMediaQuery('(min-width: 1280px)');
 
   const close = useCallback(() => {
-    setIsOpen(false);
+    onOpenChange(false);
     // Focus returns to where it came from.
     window.setTimeout(() => launcherRef.current?.focus(), 0);
-  }, []);
+  }, [onOpenChange]);
 
   const launchGuidedTour = useCallback((topic: string) => {
-    setIsOpen(false);
+    onOpenChange(false);
     window.setTimeout(() => startTargetedTour(topic), 300);
-  }, []);
+  }, [onOpenChange]);
 
   const chat = useAssistantChat({ tenantId, userName, userRole, page: pageKeyForPath(pathname), onTourRequested: launchGuidedTour });
 
@@ -59,25 +55,6 @@ export default function SeenAIFab({ userName, userRole, tenantId, can }: SeenAIF
     isAdmin: isAssistantAdminRole(userRole),
     can: (permission) => (can ? can(permission) : false),
   }), [userRole, can]);
-
-  const toggleExpanded = useCallback(() => {
-    setExpanded((value) => {
-      try {
-        localStorage.setItem(EXPANDED_KEY, value ? '0' : '1');
-      } catch {
-        // No storage (private window): the choice lasts for this visit only.
-      }
-      return !value;
-    });
-  }, []);
-
-  // At 1280px and up the panel sits beside the page instead of over it.
-  useEffect(() => {
-    const root = document.documentElement;
-    if (isOpen && isDocked) root.style.setProperty(DOCK_VAR, `${expanded ? PANEL_WIDTH_EXPANDED : PANEL_WIDTH}px`);
-    else root.style.removeProperty(DOCK_VAR);
-    return () => { root.style.removeProperty(DOCK_VAR); };
-  }, [isOpen, isDocked, expanded]);
 
   // The counts change with every message: re-read them when the panel opens
   // and when a reply (or a refusal) finishes.
@@ -103,7 +80,7 @@ export default function SeenAIFab({ userName, userRole, tenantId, can }: SeenAIF
           type="button"
           id="tour-ai-fab"
           data-tour="ai-fab"
-          onClick={() => setIsOpen(true)}
+          onClick={() => onOpenChange(true)}
           aria-label={t('ai.launcher')}
           aria-haspopup="dialog"
           title={t('ai.launcher')}
@@ -116,11 +93,12 @@ export default function SeenAIFab({ userName, userRole, tenantId, can }: SeenAIF
       )}
 
       <AnimatePresence>
-        {isOpen && (
+        {isOpen && mode !== 'closed' && (
           <AssistantPanel
+            mode={mode}
             onClose={close}
             expanded={expanded}
-            onToggleExpanded={toggleExpanded}
+            onToggleExpanded={onToggleExpanded}
             userName={userName}
             pathname={pathname}
             access={access}

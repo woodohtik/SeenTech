@@ -5,6 +5,7 @@ import { Tenant } from '../types';
 import { useTranslation } from 'react-i18next';
 import { Calendar } from 'lucide-react';
 import { cn } from '../lib/utils';
+import { PageHeader } from './ui/PageHeader';
 
 interface HeaderProps {
   tenantId: string;
@@ -15,12 +16,9 @@ interface HeaderProps {
 
 export default function Header({ tenantId, title, subtitle, children }: HeaderProps) {
   const [tenant, setTenant] = useState<Tenant | null>(null);
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const [trialDays, setTrialDays] = useState<number | null>(null);
   const [isTrialPlan, setIsTrialPlan] = useState<boolean>(true);
-
-  const currentLanguageCode = i18n.language || 'ar';
-  const isRtl = currentLanguageCode !== 'en';
 
   useEffect(() => {
     if (tenant) {
@@ -83,50 +81,38 @@ export default function Header({ tenantId, title, subtitle, children }: HeaderPr
     };
   }, [tenantId]);
 
+  const badge = trialDays !== null ? (
+    <span className={cn(
+      "inline-flex shrink-0 select-none items-center gap-1.5 whitespace-nowrap rounded-full border px-3 py-1 text-sm font-bold",
+      trialDays <= 3
+        ? "border-danger/20 bg-danger/10 text-danger motion-safe:animate-pulse"
+        : "border-info/20 bg-info/10 text-info"
+    )}>
+      <Calendar size={14} strokeWidth={2.5} aria-hidden="true" />
+      {trialDays === 0
+        ? (isTrialPlan ? t('subscription.trial_ended') : t('subscription.subscription_ended'))
+        : (isTrialPlan
+            ? t('subscription.trial_days_left', { days: trialDays })
+            : t('subscription.subscription_days_left', { days: trialDays }))}
+    </span>
+  ) : null;
+
+  // The layout is PageHeader's (by the content's width); this file only reads the shop.
   return (
-    <header className={cn(
-      "flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8 w-full",
-      isRtl ? "text-right" : "text-left"
-    )} dir={isRtl ? "rtl" : "ltr"}>
-      
-      {/* Title & Shop Logo */}
-      <div className="flex items-center gap-4">
-        {tenant?.logoUrl && (
-          <img 
-            src={tenant.logoUrl} 
-            alt={t('common.shop_logo')} 
-            className="w-16 h-16 rounded-2xl object-cover shadow-md border border-border" 
-          />
-        )}
-        <div className="flex flex-col">
-          <div className="flex items-center gap-3 flex-wrap">
-            <h2 className="text-3xl sm:text-4xl font-black text-content tracking-tight">{title}</h2>
-            {trialDays !== null && (
-              <span className={cn(
-                "px-3 py-1.5 rounded-2xl text-xs font-bold tracking-wide flex items-center gap-1.5 shrink-0 select-none border whitespace-nowrap",
-                trialDays <= 3 
-                  ? "bg-danger/10 text-danger border-danger/20 animate-pulse" 
-                  : "bg-info/10 text-info border-info/20"
-              )}>
-                <Calendar size={13} strokeWidth={2.5} />
-                {trialDays === 0
-                  ? (isTrialPlan ? t('subscription.trial_ended') : t('subscription.subscription_ended'))
-                  : (isTrialPlan
-                      ? t('subscription.trial_days_left', { days: trialDays })
-                      : t('subscription.subscription_days_left', { days: trialDays }))}
-              </span>
-            )}
-          </div>
-          <p className="text-content-muted mt-1 font-medium text-sm sm:text-base">{subtitle}</p>
-        </div>
-      </div>
-
-      {/* Action Area (Controls) */}
-      <div className="flex flex-wrap items-center gap-3 w-full md:w-auto mt-2 md:mt-0 justify-end">
-        {children}
-      </div>
-
-    </header>
+    <PageHeader
+      title={title}
+      subtitle={subtitle}
+      badge={badge}
+      logo={tenant?.logoUrl ? (
+        <img
+          src={tenant.logoUrl}
+          alt={t('common.shop_logo')}
+          className="h-14 w-14 shrink-0 rounded-[12px] border border-border object-cover main-720:h-16 main-720:w-16"
+        />
+      ) : null}
+    >
+      {children}
+    </PageHeader>
   );
 }
 

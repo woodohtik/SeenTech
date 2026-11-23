@@ -13,9 +13,7 @@ import { markdownToPlainText } from './markdown';
 import { pageKeyForPath, suggestionsFor, type AssistantAccess } from './catalog';
 import type { ChatMessage, ChatNotice, ChatProgress } from './types';
 import { REMAINING_WARNING_AT } from './useAssistantChat';
-
-export const PANEL_WIDTH = 440;
-export const PANEL_WIDTH_EXPANDED = 640;
+import { assistantWidthCss } from '../../lib/shellLayout';
 
 /** Subscribes to a media query; false where matchMedia does not exist. */
 export function useMediaQuery(query: string): boolean {
@@ -76,7 +74,10 @@ function WelcomeScreen({
 }
 
 export interface AssistantPanelProps {
+  /** Decided by the shell from the window's width (lib/shellLayout.ts). */
+  mode: 'sheet' | 'overlay' | 'docked';
   onClose: () => void;
+  /** Already false where the wide size is not offered. */
   expanded: boolean;
   onToggleExpanded: () => void;
   userName?: string;
@@ -105,14 +106,18 @@ export interface AssistantPanelProps {
 }
 
 /**
- * The assistant's container, in three shapes by width:
- *   under 640px   a bottom sheet over an ink-40% cover
- *   640-1279px    a side panel floating over the page, no cover
- *   1280px and up the same panel docked beside the page (Layout shifts the content)
+ * The assistant's container, in three shapes (seen-responsive-layout-task.md Phase 1):
+ *   sheet    under 640px: a bottom sheet over an ink-40% cover
+ *   overlay  a side panel over the page and a cover, where sitting beside the
+ *            page would leave it under 960px -- the page keeps its width
+ *   docked   the same panel beside the page; Layout gives it the room
+ * The sheet and the overlay are modal (cover, Tab kept inside, Escape and a
+ * press on the cover close them); the docked panel is not -- the page beside
+ * it stays in use.
  */
 export function AssistantPanel(props: AssistantPanelProps) {
   const {
-    onClose, expanded, onToggleExpanded, userName, pathname, access, messages, isSending, progress, notice,
+    mode, onClose, expanded, onToggleExpanded, userName, pathname, access, messages, isSending, progress, notice,
     announcement, input, onInputChange, onSend, onStop, onRetry, onNewConversation, onStartTour, remainingToday, onRate, onCloseRating,
     conversationId, onListConversations, onOpenConversation, onDeleteConversation,
   } = props;
@@ -120,7 +125,8 @@ export function AssistantPanel(props: AssistantPanelProps) {
   const { t } = useTranslation();
   const { dir, isRtl } = useDirection();
   const reduceMotion = useReducedMotion();
-  const isPanel = useMediaQuery('(min-width: 640px)');
+  const isPanel = mode !== 'sheet';
+  const isModal = mode !== 'docked';
   const canExpand = useMediaQuery('(min-width: 1024px)');
   const panelRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -138,8 +144,8 @@ export function AssistantPanel(props: AssistantPanelProps) {
         onClose();
         return;
       }
-      // The bottom sheet is modal: Tab stays inside it. The side panel is not.
-      if (e.key !== 'Tab' || isPanel || !panelRef.current) return;
+      // Modal (sheet, overlay): Tab stays inside. Beside the page it does not.
+      if (e.key !== 'Tab' || !isModal || !panelRef.current) return;
       const items = Array.from(panelRef.current.querySelectorAll<HTMLElement>(FOCUSABLE)).filter((el) => el.offsetParent !== null);
       if (items.length === 0) return;
       const first = items[0];
@@ -151,16 +157,16 @@ export function AssistantPanel(props: AssistantPanelProps) {
     };
     document.addEventListener('keydown', onKeyDown);
     return () => document.removeEventListener('keydown', onKeyDown);
-  }, [isPanel, onClose]);
+  }, [isModal, onClose]);
 
-  // Following a link inside the sheet leaves the page under it; close it. The side panel stays.
-  const handleNavigate = () => { if (!isPanel) onClose(); };
+  // Following a link while the assistant covers the page: close it, so the page shows. Docked, it stays.
+  const handleNavigate = () => { if (isModal) onClose(); };
   const handleAsk = (text: string) => { onSend(text); inputRef.current?.focus(); };
 
   const transition = reduceMotion ? { duration: 0 } : { duration: 0.3, ease: [0.2, 0.8, 0.2, 1] as const };
   // The panel sits on the side away from the sidebar: inline-end, which is the left in RTL.
   const offscreen = isPanel ? { x: isRtl ? '-100%' : '100%' } : { y: '100%' };
-  const width = expanded && canExpand ? PANEL_WIDTH_EXPANDED : PANEL_WIDTH;
+  const width = assistantWidthCss(expanded);
   // Out of messages: from a refusal just now, or from the counts read on opening.
   const limitMessage = notice?.kind === 'limit'
     ? (notice.message || t('ai.limit_strip'))
@@ -170,8 +176,8 @@ export function AssistantPanel(props: AssistantPanelProps) {
     : null;
 
   return (
-    <div dir={dir} className={cn("fixed z-50", isPanel ? "inset-y-0 end-0" : "inset-0")}>
-      {!isPanel && (
+    <div dir={dir} data-assistant-mode={mode} className={cn("fixed z-50", isModal ? "inset-0" : "inset-y-0 end-0")}>
+      {isModal && (
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -186,7 +192,7 @@ export function AssistantPanel(props: AssistantPanelProps) {
       <motion.div
         ref={panelRef}
         role="dialog"
-        aria-modal={!isPanel}
+        aria-modal={isModal}
         aria-label={t('ai.name')}
         initial={offscreen}
         animate={{ x: 0, y: 0 }}
@@ -196,7 +202,7 @@ export function AssistantPanel(props: AssistantPanelProps) {
         className={cn(
           "bg-surface text-content flex flex-col font-sans",
           isPanel
-            ? "h-full border-s border-border shadow-[0_12px_32px_rgba(14,42,66,.16),0_2px_6px_rgba(14,42,66,.08)] xl:shadow-none"
+            ? cn("h-full border-s border-border", mode === 'overlay' && "absolute inset-y-0 end-0 shadow-[0_12px_32px_rgba(14,42,66,.16),0_2px_6px_rgba(14,42,66,.08)]")
             : "absolute inset-x-0 bottom-0 h-[92dvh] rounded-t-[20px] shadow-[0_12px_32px_rgba(14,42,66,.16),0_2px_6px_rgba(14,42,66,.08)]"
         )}
       >

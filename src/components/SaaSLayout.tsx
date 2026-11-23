@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useMeasuredSteps } from '../hooks/useShellLayout';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Shield,
@@ -84,6 +85,7 @@ export default function SaaSLayout({ children, userRole }: SaaSLayoutProps) {
   const navigate = useNavigate();
   const location = useLocation();
   const { impersonationTenantId, setImpersonationTenantId, dbUser, user: currentAuthUser } = useAuth();
+  const mainRef = useMeasuredSteps<HTMLElement>();
   const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth > 1024);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
   const [impersonatedTenantName, setImpersonatedTenantName] = useState<string | null>(null);
@@ -555,7 +557,7 @@ export default function SaaSLayout({ children, userRole }: SaaSLayoutProps) {
       </motion.aside>
 
       {/* Main Content */}
-      <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
+      <main ref={mainRef} className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* Top Header */}
         <header className="h-20 bg-surface border-b border-border px-8 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-4">

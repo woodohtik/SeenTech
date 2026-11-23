@@ -1,4 +1,6 @@
 import React from 'react';
+import { useMeasuredSteps, useShellLayout } from '../hooks/useShellLayout';
+import { assistantWidthCss } from '../lib/shellLayout';
 import SubscriptionExpiryBanner from './SubscriptionExpiryBanner';
 import { setShopWhatsAppSettings } from '../utils/whatsapp';
 import { NavLink, useNavigate } from 'react-router-dom';
@@ -88,9 +90,23 @@ function LayoutShell({ children, role, tenantId, currentStaff, onLock, isLocked 
   const isRtl = isRtlLang(i18n.language);
   const { theme, setTheme } = useTheme();
   const { impersonationTenantId, setImpersonationTenantId, dbUser, logout } = useAuth();
-  const [isCollapsed, setIsCollapsed] = React.useState(false);
   const [isSettingsSubMenuOpen, setIsSettingsSubMenuOpen] = React.useState(location.pathname.startsWith('/settings'));
-  const [isHovered, setIsHovered] = React.useState(false);
+  const [tenantLogo, setTenantLogo] = React.useState<string | null>(null);
+  const [tenantName, setTenantName] = React.useState<string>(t('common.tailor_system'));
+  const [isLangOpen, setIsLangOpen] = React.useState(false);
+  const [layoutMode, setLayoutMode] = React.useState<'sidebar' | 'grid'>('sidebar');
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
+
+  // seen-responsive-layout-task.md Phase 1: the sidebar's fold and the
+  // assistant's place are one decision (lib/shellLayout.ts), by the window's
+  // width; the content measures itself (data-main on <main>).
+  const { shell, setSidebar, assistantOpen, setAssistantOpen, toggleExpanded } = useShellLayout({
+    hasSidebar: layoutMode === 'sidebar',
+    owner: `${tenantId || 'none'}_${currentStaff?.id || role || 'none'}`,
+  });
+  const isCollapsed = shell.sidebar === 'collapsed';
+  const setIsCollapsed = (collapsed: boolean) => setSidebar(collapsed ? 'collapsed' : 'open');
+  const mainRef = useMeasuredSteps<HTMLElement>();
 
   React.useEffect(() => {
     if (location.pathname.startsWith('/settings')) {
@@ -99,11 +115,6 @@ function LayoutShell({ children, role, tenantId, currentStaff, onLock, isLocked 
       }
     }
   }, [location.pathname, isCollapsed]);
-  const [tenantLogo, setTenantLogo] = React.useState<string | null>(null);
-  const [tenantName, setTenantName] = React.useState<string>(t('common.tailor_system'));
-  const [isLangOpen, setIsLangOpen] = React.useState(false);
-  const [layoutMode, setLayoutMode] = React.useState<'sidebar' | 'grid'>('sidebar');
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
 
   React.useEffect(() => {
     const fetchTenant = async () => {
@@ -255,10 +266,14 @@ function LayoutShell({ children, role, tenantId, currentStaff, onLock, isLocked 
   return (
     <>
     <div
-      className={cn("flex min-h-[100dvh] bg-surface-muted font-sans overflow-hidden w-full transition-all duration-300 xl:pe-[var(--assistant-dock,0px)]", isLocked && "blur-xl select-none pointer-events-none scale-98")}
+      // The page gives room to the assistant only when it is docked. Padding
+      // alone moves, briefly, and not at all for people who asked for less motion.
+      className={cn("flex min-h-[100dvh] bg-surface-muted font-sans overflow-hidden w-full transition-[padding] duration-200 motion-reduce:transition-none", isLocked && "blur-xl select-none pointer-events-none scale-98")}
+      data-assistant={shell.assistant}
       style={{
         height: impersonationTenantId ? `calc(100dvh - ${IMPERSONATION_BANNER_HEIGHT}px)` : '100dvh',
         marginTop: impersonationTenantId ? IMPERSONATION_BANNER_HEIGHT : 0,
+        paddingInlineEnd: shell.assistant === 'docked' ? assistantWidthCss(shell.expanded) : undefined,
       }}
     >
       <ImpersonationBanner
@@ -305,10 +320,16 @@ function LayoutShell({ children, role, tenantId, currentStaff, onLock, isLocked 
           )}
         >
         {/* Collapse Toggle - Desktop only */}
-        <button 
+        <button
+          type="button"
           onClick={() => setIsCollapsed(!isCollapsed)}
+          aria-label={t(isCollapsed ? 'common.sidebar_expand' : 'common.sidebar_collapse')}
+          aria-expanded={!isCollapsed}
+          aria-controls="tour-sidebar"
           className={cn(
             "hidden lg:flex absolute top-10 bg-surface border border-border rounded-full p-1 shadow-sm hover:bg-surface-muted transition-colors z-20",
+            // A 24px circle to look at, 44px to press.
+            "after:absolute after:-inset-2.5",
             isRtl ? "-left-3" : "-right-3"
           )}
         >
@@ -405,6 +426,7 @@ function LayoutShell({ children, role, tenantId, currentStaff, onLock, isLocked 
                     to={item.to}
                     id={tourId}
                     data-tour={tourId ? tourId.replace('tour-', '') : undefined}
+                    aria-label={isCollapsed && !isMobileMenuOpen ? item.label : undefined}
                     onClick={(e) => {
                       setIsMobileMenuOpen(false);
                       if (isSettings) {
@@ -443,7 +465,7 @@ function LayoutShell({ children, role, tenantId, currentStaff, onLock, isLocked 
                         
                         {/* Tooltip for collapsed state */}
                         {isCollapsed && (
-                          <div className="hidden lg:block absolute right-full mr-2 px-2 py-1 bg-brand text-white text-[10px] rounded opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-50 shadow-lg">
+                          <div aria-hidden="true" className="hidden lg:block absolute start-full ms-2 px-2 py-1 bg-brand text-white text-sm rounded-[6px] opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-50 shadow-lg">
                             {item.label}
                           </div>
                         )}
@@ -630,12 +652,11 @@ function LayoutShell({ children, role, tenantId, currentStaff, onLock, isLocked 
         )}
 
         <main
+          ref={mainRef}
           id="tour-dashboard-container"
           data-tour="dashboard-container"
-          className={cn(
-          "flex-1 overflow-x-hidden flex flex-col pb-[calc(5.5rem+env(safe-area-inset-bottom))] lg:pb-0",
-          layoutMode === 'grid' && location.pathname === '/' ? "p-4 md:p-8" : "p-4 md:p-8"
-        )}>
+          className="flex-1 overflow-x-hidden flex flex-col p-4 main-640:p-8 pb-[calc(5.5rem+env(safe-area-inset-bottom))] lg:pb-0"
+        >
           {layoutMode === 'grid' && location.pathname === '/' ? (
             <div className="max-w-7xl mx-auto space-y-12 py-8 flex-1">
               <div className="text-center space-y-2">
@@ -697,6 +718,11 @@ function LayoutShell({ children, role, tenantId, currentStaff, onLock, isLocked 
         <ErrorBoundary variant="inline" inlineLabel={t('errors.assistant_unavailable')}>
           <React.Suspense fallback={null}>
           <SeenAIFab
+            mode={shell.assistant}
+            open={assistantOpen}
+            onOpenChange={setAssistantOpen}
+            expanded={shell.expanded}
+            onToggleExpanded={toggleExpanded}
             tenantId={tenantId}
             userName={currentStaff?.name || dbUser?.display_name || dbUser?.email || ''}
             userRole={effectiveRole ?? undefined}
