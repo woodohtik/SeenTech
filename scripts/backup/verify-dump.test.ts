@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest';
-// @ts-expect-error -- plain .mjs script
 import { dumpProblem } from './verify-dump.mjs';
 
 // seen-readiness-fixes-task.md P5 (PLATFORM-12).

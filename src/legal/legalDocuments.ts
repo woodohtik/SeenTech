@@ -5,8 +5,7 @@
  * the text; bump the versions when it changes, so a new acceptance is asked
  * for. Text in [brackets] is for the founder to fill in.
  */
-export const TERMS_VERSION = '2026-11-23-draft';
-export const PRIVACY_VERSION = '2026-11-23-draft';
+export { TERMS_VERSION, PRIVACY_VERSION } from './legalVersions';
 
 export type LegalLang = 'ar' | 'en' | 'ur';
 export type LegalSection = { heading: string; paragraphs: string[] };

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef, lazy, Suspense } from 'react';
-import { PRIVACY_VERSION, TERMS_VERSION } from '../legal/legalDocuments';
+import { PRIVACY_VERSION, TERMS_VERSION } from '../legal/legalVersions';
 import { formatSaudiPhone, validateSaudiPhone } from '../utils/phoneUtils';
 import { supabase } from '../lib/supabase/client';
 import {
