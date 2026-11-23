@@ -10,10 +10,12 @@
  */
 
 import { supabase } from '../lib/supabase/client';
+import { PUBLIC_SITE_URL } from '../constants/site';
 
 export const REWARD_PER_PARTNER_REFERRAL = 300;
 export const MIN_PARTNER_WITHDRAWAL = 1000;
-export const SITE = 'https://seentech.io';
+/** The public site (constants/site.ts): referral links point here. */
+export const SITE = PUBLIC_SITE_URL;
 
 export interface PartnerWallet { balance: number; total_earned: number; }
 export interface PartnerReferralRow { id: string; referred_tenant_id: string; reward_amount: number; status: string; created_at: string; qualified_until?: string; credited_at?: string; }

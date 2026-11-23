@@ -8,6 +8,7 @@
  */
 
 import { supabase } from '../lib/supabase/client';
+import { PUBLIC_SITE_URL } from '../constants/site';
 
 /**
  * seen-fields-categories-referral-task.md #5 -- هذان كانا ثابتين فعلياً في
@@ -18,7 +19,8 @@ import { supabase } from '../lib/supabase/client';
  */
 export const REWARD_PER_REFERRAL = 300;
 export const MIN_WITHDRAWAL = 1000;   // السحب متاح عند تجاوز هذا المبلغ (فوق 1000)
-export const SITE = 'https://seen.sa';
+/** The public site (constants/site.ts): referral links point here. */
+export const SITE = PUBLIC_SITE_URL;
 
 export interface Wallet { balance: number; total_earned: number; }
 export interface ReferralRow { id: string; referred_tenant_id: string; reward_amount: number; status: string; created_at: string; qualified_until?: string; credited_at?: string; }
