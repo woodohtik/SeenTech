@@ -134,6 +134,9 @@ export default defineConfig(({mode}) => {
         },
       }),
     ],
+    // P6 (CODEHEALTH-13): console.log / console.debug calls are removed from
+    // production bundles (warnings and errors stay, for Sentry and support).
+    esbuild: mode === 'production' ? { pure: ['console.log', 'console.debug'], drop: ['debugger'] } : undefined,
     build: {
       outDir: 'dist',
       emptyOutDir: true,

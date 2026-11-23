@@ -20,5 +20,10 @@ export default defineConfig({
     environment: 'node',
     include: ['src/**/*.test.ts', 'src/**/*.test.tsx', 'scripts/**/*.test.ts', 'public/**/*.test.ts'],
     setupFiles: ['src/test/setup.ts'],
+    // P6 (CODEHEALTH-14): the default 5 s is too tight for the tests that
+    // render images, hash PINs or build the blog when the whole suite runs
+    // in parallel -- they passed alone and timed out together.
+    testTimeout: 30_000,
+    hookTimeout: 30_000,
   },
 });

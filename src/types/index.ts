@@ -202,28 +202,9 @@ export interface Shift {
   notes?: string;
 }
 
-export type PermissionKey = 
-  | 'customers.view' | 'customers.create' | 'customers.edit' | 'customers.delete'
-  | 'orders.view' | 'orders.create' | 'orders.edit' | 'orders.delete'
-  | 'inventory.view' | 'inventory.create' | 'inventory.edit' | 'inventory.delete' | 'inventory.reconcile'
-  | 'inventory.transfer' | 'inventory.receive'
-  | 'branches.view' | 'branches.manage'
-  | 'staff.view' | 'staff.create' | 'staff.edit' | 'staff.delete' | 'staff.manage' | 'staff.permissions'
-  | 'reports.view' | 'reports.export'
-  | 'settings.view' | 'settings.edit' | 'settings.tax' | 'settings.whatsapp' | 'settings.billing' | 'settings.notifications' | 'settings.manage'
-  | 'dashboard.view' | 'dashboard.revenue' | 'dashboard.orders' | 'dashboard.inventory' | 'dashboard.customers'
-  | 'shifts.view' | 'shifts.manage'
-  | 'action.refund'
-  | 'action.discount'
-  | 'suppliers.manage'
-  | 'sales.view'
-  // The rest of src/shared/permissionsMatrix.json's keys (seen-permissions-fix-task.md Phase 4).
-  | 'orders.view_details' | 'orders.update_status'
-  | 'invoices.view'
-  | 'payments.collect' | 'payments.view_prices'
-  | 'inventory.manage'
-  | 'reports.financial' | 'reports.tax'
-  | 'system.delete';
+// P6 (CODEHEALTH-07): derived from the permissions matrix -- see src/shared/permissionKeys.ts.
+import type { PermissionKey } from '../shared/permissionKeys';
+export type { PermissionKey };
 
 export type PermissionsMap = Record<PermissionKey, boolean>;
 

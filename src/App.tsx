@@ -480,8 +480,8 @@ function AppContent() {
     const isFreePlan = !planId || planId === 'free' || planId.includes('trial');
 
     // 3. Paid-subscription lifecycle lives in subscription_status
-    // (trial/active/locked/purge_pending, see computeTrialStatus in
-    // trialService.ts) -- tenants has no subscription_end_date column at
+    // (trial/active/locked/purge_pending; the database's trial_lock_sweep and
+    // app_current_tenant_id set and read it) -- tenants has no subscription_end_date column at
     // all (confirmed absent live, see
     // 20260822090400_tenants_owner_update_and_plan_guard.sql), and
     // tenant.status is a *different* column (tenant_status:

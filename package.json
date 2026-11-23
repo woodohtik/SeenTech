@@ -10,7 +10,7 @@
     "start": "node dist/server.cjs",
     "preview": "vite preview",
     "clean": "rm -rf dist",
-    "lint": "tsc --noEmit && eslint .",
+    "lint": "tsc --noEmit && eslint . --max-warnings 471",
     "size": "node scripts/check-bundle-size.mjs dist",
     "lint:fix": "eslint . --fix",
     "db:migrate": "tsx scripts/migrate.ts",

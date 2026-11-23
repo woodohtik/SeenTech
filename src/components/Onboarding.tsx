@@ -262,7 +262,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
   };
 
   const onSubmit = async (data: any) => {
-    console.log("[Onboarding] Starting submission with data:", data);
+    console.log("[Onboarding] Starting submission.");
     try {
       const { data: { session } } = await supabase.auth.getSession();
       const user = session?.user;

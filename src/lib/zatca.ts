@@ -1,5 +1,22 @@
+/** A TLV field's length is a single byte. */
+export const TLV_MAX_BYTES = 255;
+
+/**
+ * seen-readiness-fixes-task.md P6 (CODEHEALTH-11): the length byte used to
+ * wrap around for a value over 255 bytes (a long Arabic seller name is 2
+ * bytes a letter), which corrupted every field after it in the QR. A value
+ * that long is now cut to fit, on a whole character.
+ */
+export function fitTlvValue(value: string): Uint8Array {
+    const bytes = new TextEncoder().encode(value);
+    if (bytes.length <= TLV_MAX_BYTES) return bytes;
+    let end = TLV_MAX_BYTES;
+    while (end > 0 && (bytes[end] & 0xc0) === 0x80) end--; // not in the middle of a UTF-8 character
+    return bytes.slice(0, end);
+}
+
 export function toTLV(tag: number, value: string): Uint8Array {
-    const valueBytes = new TextEncoder().encode(value);
+    const valueBytes = fitTlvValue(value);
     const tagBytes = new Uint8Array([tag]);
     const lengthBytes = new Uint8Array([valueBytes.length]);
 

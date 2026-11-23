@@ -19,6 +19,6 @@ describe('verify-dump', () => {
 
   it('accepts a real one', () => {
     expect(dumpProblem(schema, 'schema')).toBeNull();
-    expect(dumpProblem(`COPY public.orders (id) FROM stdin;\n${'a\n'.repeat(1000)}\.\n`, 'data')).toBeNull();
+    expect(dumpProblem(`COPY public.orders (id) FROM stdin;\n${'a\n'.repeat(1000)}\\.\n`, 'data')).toBeNull();
   });
 });

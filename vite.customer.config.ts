@@ -22,6 +22,8 @@ export default defineConfig(({mode}) => {
     throw new Error('build:customer needs VITE_CUSTOMER_API_ORIGIN (the site this app calls, e.g. https://www.seentech.io).');
   }
   return {
+  // P6 (CODEHEALTH-13): no console.log / console.debug in production bundles.
+  esbuild: mode === 'production' ? { pure: ['console.log', 'console.debug'], drop: ['debugger'] } : undefined,
   plugins: [react(), tailwindcss()],
   build: {
     outDir: 'dist-customer',

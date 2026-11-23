@@ -20,7 +20,10 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Type check
+      # tsc, then ESLint: an error fails the build, and so does going over
+      # the warning ceiling in package.json's lint script (P6, CODEHEALTH-12:
+      # 471 today -- lower it as warnings are fixed, never raise it).
+      - name: Type check and lint
         run: npm run lint
 
       # seen-deep-technical-audit.md Medium #6: no dependency-security check
@@ -37,6 +40,13 @@ jobs:
       # bump that needs a real Android/iOS build-pipeline test this CI
       # can't do. Deliberately left ungated rather than force a major
       # mobile-tooling bump blind.
+      # seen-readiness-fixes-task.md P6 (CODEHEALTH-10): a real gate on what
+      # ships -- a critical advisory in a production dependency fails the
+      # build. (The one known critical is in a dev-only tool, see above, and
+      # is outside this gate; the full report below stays for visibility.)
+      - name: Dependency audit (production dependencies, critical = fail)
+        run: npm audit --omit=dev --audit-level=critical
+
       - name: Dependency audit (report-only)
         run: npm audit --audit-level=high
         continue-on-error: true
