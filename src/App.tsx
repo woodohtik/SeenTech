@@ -18,6 +18,7 @@ const LandingPage = React.lazy(() => import('./components/LandingPage'));
 const PartnerLogin = React.lazy(() => import('./components/public/PartnerLogin'));
 // seen-readiness-fixes-task.md P5 (PLATFORM-01): the privacy policy and the terms of use.
 const LegalPage = React.lazy(() => import('./pages/LegalPage'));
+const SubscriptionLockScreen = React.lazy(() => import('./components/SubscriptionLockScreen'));
 const PartnerReferrals = React.lazy(() => import('./components/public/PartnerReferrals'));
 
 // صفحة تتبّع الطلب العامة للعميل النهائي (بلا مصادقة) — /track/:token
@@ -597,65 +598,20 @@ function AppContent() {
     return <MainSkeleton />;
   }
 
-  // Trial or Subscription expiration lock interception
+  // Trial or Subscription expiration lock interception -- P5 (PLATFORM-02/03):
+  // the owner renews from here; see SubscriptionLockScreen.
   if ((isTrialExpired || isSubscriptionExpired) && user && !isSaaSStaff && !isPublicRoute) {
     return (
-      <div className={`min-h-screen flex items-center justify-center bg-gray-950 ${isRtl ? 'text-right' : 'text-left'} p-6 font-sans select-none`} dir={dir}>
-        <div
-          className="seen-enter-zoom max-w-xl w-full bg-slate-900 rounded-3xl shadow-2xl p-10 md:p-14 border border-red-500/15 relative overflow-hidden"
-        >
-          {/* Visual Accents */}
-          <div className="absolute top-0 right-0 w-44 h-44 bg-red-500/5 rounded-full blur-3xl -mr-20 -mt-20" />
-          <div className="absolute bottom-0 left-0 w-44 h-44 bg-indigo-500/5 rounded-full blur-3xl -ml-20 -mb-20" />
-          
-          <div className="w-24 h-24 bg-red-950/30 text-red-500 rounded-3xl flex items-center justify-center mx-auto mb-8 border border-red-500/10">
-            <AlertCircle size={48} className="animate-pulse" />
-          </div>
-          
-          <h2 className="text-3xl font-black text-white text-center mb-4 tracking-tight leading-tight">
-            {isSubscriptionExpired ? t('subscription.expired_account_title') : t('subscription.trial_expired_account_title')}
-          </h2>
-          <p className="text-slate-500 text-center font-medium leading-relaxed mb-10 px-4 text-sm md:text-base">
-            {isSubscriptionExpired 
-              ? t('subscription.expired_account_desc')
-              : t('subscription.trial_expired_account_desc')}
-          </p>
-          
-          <div className="bg-slate-950/50 rounded-2xl p-5 border border-slate-800/65 mb-10 text-sm space-y-2.5">
-            <div className="flex justify-between items-center text-slate-300">
-              <span className="text-slate-500 font-medium">{t('billing.modal_bank_holder_label')}</span>
-              <span className="font-bold text-white">{(currentUserStaff as any)?.tenant?.name || t('subscription.workspace_fallback_name')}</span>
-            </div>
-            <div className="flex justify-between items-center text-slate-300">
-              <span className="text-slate-500 font-medium">{t('subscription.account_email_label')}</span>
-              <span className="font-mono text-white text-[12px]">{user.email}</span>
-            </div>
-            <div className="flex justify-between items-center text-slate-300 mb-0.5">
-              <span className="text-slate-500 font-medium">{t('subscription.start_date_label')}</span>
-              <span className="font-mono text-white">
-                {tenantCreatedAt ? new Date(tenantCreatedAt).toLocaleDateString(localeOf(i18n.language), { dateStyle: 'long' }) : '-'}
-              </span>
-            </div>
-          </div>
-          
-          <div className="space-y-4">
-            <a 
-              href={`mailto:nomansa2566512@gmail.com?subject=${encodeURIComponent(t('subscription.activation_email_subject'))}`}
-              className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-4 rounded-2xl font-bold transition-all shadow-lg shadow-indigo-900/20 flex items-center justify-center gap-3 text-center"
-            >
-              {t('subscription.request_activation_now')}
-            </a>
-            
-            <button
-              onClick={() => logout()}
-              className="w-full bg-slate-850 hover:bg-slate-800 text-slate-200 py-4 rounded-2xl font-bold transition-all border border-slate-700/30 flex items-center justify-center gap-2"
-            >
-              <LogOut size={18} />
-              {t('common.logout_from_account')}
-            </button>
-          </div>
-        </div>
-      </div>
+      <React.Suspense fallback={<MainSkeleton />}>
+        <SubscriptionLockScreen
+          tenant={tenant}
+          userId={user.id}
+          userEmail={user.email}
+          kind={isSubscriptionExpired ? 'subscription' : 'trial'}
+          dir={dir === 'ltr' ? 'ltr' : 'rtl'}
+          onLogout={() => logout()}
+        />
+      </React.Suspense>
     );
   }
 

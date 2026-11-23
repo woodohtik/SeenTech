@@ -88,6 +88,7 @@ import DashboardGridCard from './DashboardGridCard';
 const RevenueChart = lazy(() => import('./dashboard/RevenueChart'));
 import { localeOf } from '../lib/direction';
 import i18n from '../i18n/config';
+import { SUPPORT_EMAIL } from '../constants/support';
 
 interface DashboardProps {
   tenantId: string;
@@ -1297,7 +1298,7 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
             </div>
           </div>
           <a 
-            href={`mailto:nomansa2566512@gmail.com?subject=${encodeURIComponent(t('subscription.activation_email_subject'))}`}
+            href={`mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(t('subscription.activation_email_subject'))}`}
             className="w-full md:w-auto bg-amber-600 hover:bg-amber-700 text-white px-6 py-3.5 rounded-2xl font-bold text-xs sm:text-sm shadow-lg shadow-amber-900/10 transition-all shrink-0 flex items-center justify-center gap-2 border border-amber-700/20"
           >
             <ExternalLink size={15} />

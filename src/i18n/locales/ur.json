@@ -5333,7 +5333,17 @@
     "trial_left_days_hours_one": "آپ کے ٹرائل میں {{count}} دن اور {{hours}} گھنٹے باقی ہیں",
     "trial_left_days_one": "آپ کے ٹرائل میں {{count}} دن باقی ہے",
     "trial_left_hours": "آپ کے ٹرائل میں {{hours}} گھنٹے باقی ہیں",
-    "workspace_fallback_name": "ورک اسپیس"
+    "workspace_fallback_name": "ورک اسپیس",
+    "lock_back": "واپس",
+    "lock_shop_label": "دکان",
+    "lock_renew_now": "ابھی سبسکرپشن کی تجدید کریں",
+    "lock_ask_owner": "دکان کے مالک سے سبسکرپشن کی تجدید کا کہیں۔",
+    "lock_contact_support": "سپورٹ سے رابطہ کریں",
+    "lock_purge_warning": "اگر سبسکرپشن کی تجدید نہ ہوئی تو دکان کا آزمائشی ڈیٹا {{date}} کو حذف ہو جائے گا۔ ادائیگی کا ثبوت بھیجنے سے جائزے تک حذف رک جاتا ہے۔",
+    "expiry_banner_days": "آپ کی سبسکرپشن {{count}} دن میں ختم ہو جائے گی۔ اکاؤنٹ لاک ہونے سے بچنے کے لیے سبسکرپشن صفحے سے تجدید کریں۔",
+    "expiry_banner_trial_days": "آپ کی آزمائش {{count}} دن میں ختم ہو جائے گی۔",
+    "expiry_banner_grace": "آپ کی سبسکرپشن ختم ہو گئی ہے۔ تجدید نہ ہونے پر اکاؤنٹ {{date}} کو لاک ہو جائے گا۔",
+    "expiry_banner_action": "ابھی تجدید کریں"
   },
   "suppliers": {
     "add_supplier": "سپلائر شامل کریں",

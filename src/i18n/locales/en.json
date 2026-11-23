@@ -5344,7 +5344,17 @@
     "trial_left_days_hours_one": "{{count}} day and {{hours}} hours left in your trial",
     "trial_left_days_one": "{{count}} day left in your trial",
     "trial_left_hours": "{{hours}} hours left in your trial",
-    "workspace_fallback_name": "Workspace"
+    "workspace_fallback_name": "Workspace",
+    "lock_back": "Back",
+    "lock_shop_label": "Shop",
+    "lock_renew_now": "Renew the subscription now",
+    "lock_ask_owner": "Ask the shop owner to renew the subscription.",
+    "lock_contact_support": "Contact support",
+    "lock_purge_warning": "The shop's trial data will be deleted on {{date}} unless the subscription is renewed. Sending a payment proof stops the deletion until we review it.",
+    "expiry_banner_days": "Your subscription ends in {{count}} days. Renew it on the subscription page to avoid the account being locked.",
+    "expiry_banner_trial_days": "Your trial ends in {{count}} days.",
+    "expiry_banner_grace": "Your subscription has ended. The account will be locked on {{date}} unless it is renewed.",
+    "expiry_banner_action": "Renew now"
   },
   "suppliers": {
     "add_supplier": "Add Supplier",

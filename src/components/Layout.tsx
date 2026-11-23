@@ -1,4 +1,5 @@
 import React from 'react';
+import SubscriptionExpiryBanner from './SubscriptionExpiryBanner';
 import { setShopWhatsAppSettings } from '../utils/whatsapp';
 import { NavLink, useNavigate } from 'react-router-dom';
 import {
@@ -622,6 +623,10 @@ function LayoutShell({ children, role, tenantId, currentStaff, onLock, isLocked 
         )}>
         {!isActingAsSaaS && !impersonationTenantId && currentStaff?.has_seen_onboarding && (
           <SetupChecklistBar tenantId={tenantId} hasPermission={tourHasPermission} />
+        )}
+        {/* P5 (PLATFORM-02): warn before the subscription ends and during the grace days. */}
+        {!isActingAsSaaS && !impersonationTenantId && canViewBilling && (
+          <SubscriptionExpiryBanner tenantId={tenantId} />
         )}
 
         <main

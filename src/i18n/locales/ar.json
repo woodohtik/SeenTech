@@ -5429,7 +5429,17 @@
     "trial_left_days_hours_one": "باقي {{count}} يوم و{{hours}} ساعة على انتهاء تجربتك",
     "trial_left_days_one": "باقي {{count}} يوم على انتهاء تجربتك",
     "trial_left_hours": "باقي {{hours}} ساعة على انتهاء تجربتك",
-    "workspace_fallback_name": "مساحة العمل"
+    "workspace_fallback_name": "مساحة العمل",
+    "lock_back": "العودة",
+    "lock_shop_label": "المحل",
+    "lock_renew_now": "جدّد الاشتراك الآن",
+    "lock_ask_owner": "اطلب من مالك المحل تجديد الاشتراك.",
+    "lock_contact_support": "تواصل مع الدعم",
+    "lock_purge_warning": "ستُحذف بيانات المحل التجريبية في {{date}} إذا لم يُجدَّد الاشتراك. إرسال إثبات دفع يوقف الحذف حتى نراجعه.",
+    "expiry_banner_days": "ينتهي اشتراكك خلال {{count}} يوم. جدّده من صفحة الاشتراك لتجنّب قفل الحساب.",
+    "expiry_banner_trial_days": "تنتهي الفترة التجريبية خلال {{count}} يوم.",
+    "expiry_banner_grace": "انتهى اشتراكك. سيُقفل الحساب في {{date}} ما لم يُجدَّد.",
+    "expiry_banner_action": "جدّد الآن"
   },
   "suppliers": {
     "add_supplier": "إضافة مورد",
