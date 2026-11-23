@@ -1277,7 +1277,7 @@ const SupplierImportModal = ({
               tenant_id: tenantId,
             },
             0,
-            `supplier-import-opening:${newSup.id}`
+            crypto.randomUUID() // P6 (MONEY-12): an operation id must be a UUID
           );
         }
 

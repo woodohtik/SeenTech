@@ -63,52 +63,29 @@ export async function getSupplierTransactions(
 export async function addSupplierTransaction(
   tenantId: string,
   transaction: Omit<SupplierTransaction, 'id' | 'running_balance'>,
-  currentBalance: number,
+  _currentBalance: number,
   operationId?: string
 ): Promise<SupplierTransaction> {
+  // P6 (MONEY-12): one server call moves the balance and writes the ledger
+  // line with the balance it produced; the operation id makes a retry apply
+  // once. (The two used to be separate calls that could disagree.)
   const transactionId = operationId || crypto.randomUUID();
-
-  // credit: we owe supplier more (+ balance); debit: we pay supplier (- balance)
-  const isDebit = transaction.debit > 0;
-  const delta = isDebit ? -transaction.debit : transaction.credit;
-
-  // Call the atomic RPC FIRST and use its authoritative returned balance for
-  // the ledger row -- computing running_balance from the currentBalance
-  // parameter (read separately, before this call) used to leave the ledger
-  // silently diverging from the real suppliers.balance under concurrency:
-  // two near-simultaneous transactions for the same supplier both apply
-  // their delta correctly via the RPC, but each ledger row still recorded
-  // its own stale pre-update snapshot as running_balance.
-  let authoritativeBalance = currentBalance + delta;
-  const { data: newBalance, error: updateErr } = await supabase.rpc('increment_supplier_balance', {
+  const { data, error } = await supabase.rpc('record_supplier_transaction', {
+    p_operation_id: transactionId,
     p_supplier_id: transaction.supplier_id,
-    p_delta: delta,
-    p_operation_id: operationId || null,
+    p_type: transaction.type,
+    p_credit: transaction.credit || 0,
+    p_debit: transaction.debit || 0,
+    p_reference: transaction.reference_number || null,
+    p_date: transaction.date || null,
+    p_notes: transaction.notes || null,
   });
-  if (updateErr) throw updateErr;
-  if (typeof newBalance === 'number') authoritativeBalance = newBalance;
-
-  const fullTransaction: SupplierTransaction = {
-    ...transaction,
-    id: transactionId,
-    running_balance: Number(authoritativeBalance.toFixed(2)),
-  };
-
-  const { error } = await supabase
-    .from('supplier_transactions')
-    .upsert({
-      id: fullTransaction.id,
-      supplier_id: fullTransaction.supplier_id,
-      tenant_id: fullTransaction.tenant_id,
-      type: fullTransaction.type,
-      credit: fullTransaction.credit,
-      debit: fullTransaction.debit,
-      running_balance: fullTransaction.running_balance,
-      reference_number: fullTransaction.reference_number,
-      date: fullTransaction.date,
-      notes: fullTransaction.notes,
-    }, { onConflict: 'id', ignoreDuplicates: true });
   if (error) throw error;
-
-  return fullTransaction;
+  const result = data as { id: string; running_balance: number };
+  return {
+    ...transaction,
+    tenant_id: tenantId,
+    id: result.id,
+    running_balance: Number(result.running_balance),
+  };
 }
