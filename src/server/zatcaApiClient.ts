@@ -57,6 +57,16 @@
  * log line and inspect it byte-for-byte) before escalating to item 2
  * (ZATCA's own EGS developer support, 19993 / info@zatca.gov.sa) as a
  * last resort.
+ *
+ * seen-readiness-fixes-task.md P6 (ZATCA-05, 2026-11-23): the CSR itself was
+ * the likely cause, in four ways, all fixed in zatcaCsr.ts / server.ts and
+ * checked with `openssl req -verify -text`: no certificate template name
+ * (1.3.6.1.4.1.311.20.2 -- TSTZATCA-/PREZATCA-/ZATCA-Code-Signing by
+ * environment); the `csr` field carried the base64 of the DER, where ZATCA
+ * takes the base64 of the whole PEM text; O was the VAT number, not the
+ * taxpayer's name; and the EGS string "1-..|2-..|3-.." sat in CN instead of
+ * the SAN serial number. NOT yet re-tried against the live sandbox -- see
+ * docs/zatca/compliance-run.md.
  */
 
 const ZATCA_BASE_URL: Record<'sandbox' | 'simulation' | 'production', string> = {

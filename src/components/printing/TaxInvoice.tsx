@@ -1,4 +1,5 @@
 import React from 'react';
+import { sellerForInvoice } from '../../utils/sellerDetails';
 import { useTranslation } from 'react-i18next';
 import { QRCodeSVG } from 'qrcode.react';
 import Barcode from 'react-barcode';
@@ -106,14 +107,10 @@ export default function TaxInvoice({
     } catch { return null; }
   });
 
-  const seller = {
-    ...rawSeller,
-    name: layoutSettings?.header?.facilityName || rawSeller.name,
-    vatNumber: layoutSettings?.header?.taxId || rawSeller.vatNumber,
-    address: layoutSettings?.header?.address || rawSeller.address,
-    phone: layoutSettings?.header?.contactNumbers || rawSeller.phone,
-    logoUrl: layoutSettings?.header?.logoUrl || rawSeller.logoUrl,
-  };
+  // P6 (ZATCA-16): the shop's official details win; the layout settings kept
+  // in this browser only fill an empty one, and choose the contact numbers
+  // and the logo -- see sellerForInvoice.
+  const seller = { ...rawSeller, ...sellerForInvoice(rawSeller, layoutSettings?.header) };
   // If totals are not provided, compute them dynamically (assuming unitPrice is VAT-inclusive)
   const computedTotals = totals || (() => {
     let grandTotal = 0;

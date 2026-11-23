@@ -138,7 +138,8 @@ const OID = {
   businessCategory: '2.5.4.15',
   uid: '0.9.2342.19200300.100.1.1',
   subjectAltName: '2.5.29.17',
-  keyUsage: '2.5.29.15',
+  /** Microsoft's certificate template name -- ZATCA reads the environment from it. */
+  certificateTemplateName: '1.3.6.1.4.1.311.20.2',
   extensionRequest: '1.2.840.113549.1.9.14', // pkcs-9-at-extensionRequest
 };
 
@@ -147,22 +148,36 @@ function rdn(oid: string, value: Buffer): Buffer {
   return derSet(derSequence(derOid(oid), value));
 }
 
+export type ZatcaCsrEnvironment = 'sandbox' | 'simulation' | 'production';
+
+/** The certificate template name ZATCA expects in each environment (P6, ZATCA-05). */
+export const ZATCA_CSR_TEMPLATE: Record<ZatcaCsrEnvironment, string> = {
+  sandbox: 'TSTZATCA-Code-Signing',
+  simulation: 'PREZATCA-Code-Signing',
+  production: 'ZATCA-Code-Signing',
+};
+
 export interface ZatcaCsrSubject {
   /** ISO 3166-1 alpha-2, e.g. "SA". */
   countryCode: string;
-  /** ZATCA's "Organization Unit Name" -- in practice the branch/business unit identifier. */
+  /** The branch or business unit's name (for a VAT-group member ZATCA wants the 10-digit TIN here). */
   organizationUnitName: string;
-  /** The taxpayer's 15-digit VAT registration number. */
+  /** The taxpayer's name -- the organisation, not its VAT number (P6, ZATCA-05). */
   organizationName: string;
-  /**
-   * EGS (E-invoice Generation Solution) Serial Number, ZATCA's required
-   * format: "1-<Solution Name>|2-<Model>|3-<Serial Number>".
-   */
+  /** A name for this EGS unit. */
   commonName: string;
-  /** VAT registration number again, carried in the SAN's UID field (ZATCA repeats it there). */
+  /** The 15-digit VAT registration number, carried in the SAN's UID field. */
   vatNumber: string;
-  /** A unique identifier for this specific EGS unit (SAN's "SN" field). */
+  /**
+   * The EGS serial number in the SAN's "SN" field, in ZATCA's format:
+   * "1-<Solution Name>|2-<Model>|3-<Serial Number>".
+   */
   egsSerialNumber: string;
+  /**
+   * Which ZATCA environment the CSR is for; it selects the certificate
+   * template name ZATCA checks. Defaults to the developer sandbox.
+   */
+  environment?: ZatcaCsrEnvironment;
   /**
    * 4-digit invoice-type support flag ZATCA reads from the SAN "title"
    * field: positions are (Tax[Standard], Simplified, reserved, reserved),
@@ -202,14 +217,17 @@ function buildSanExtensionValue(s: ZatcaCsrSubject): Buffer {
 }
 
 function buildExtensions(s: ZatcaCsrSubject): Buffer {
-  // keyUsage: digitalSignature (bit 0) + nonRepudiation (bit 1) set, critical.
-  const keyUsageExt = derSequence(
-    derOid(OID.keyUsage),
-    Buffer.from([0x01, 0x01, 0xff]), // BOOLEAN TRUE (critical)
-    derOctetString(derBitString(Buffer.from([0xc0]), 6))
+  // P6 (ZATCA-05): the two extensions of ZATCA's own CSR template, in its
+  // order -- the certificate template name for the environment (a
+  // PrintableString, as the ZATCA SDK's config writes it), then the SAN.
+  // The CSR used to carry keyUsage and no template name; ZATCA answered it
+  // with a bare 400 "Invalid Request".
+  const templateExt = derSequence(
+    derOid(OID.certificateTemplateName),
+    derOctetString(derPrintableString(ZATCA_CSR_TEMPLATE[s.environment ?? 'sandbox']))
   );
   const sanExt = derSequence(derOid(OID.subjectAltName), derOctetString(buildSanExtensionValue(s)));
-  return derSequence(keyUsageExt, sanExt);
+  return derSequence(templateExt, sanExt);
 }
 
 /** The PKCS#9 extensionRequest attribute, carrying the extensions above. */
@@ -230,8 +248,13 @@ function buildAttributes(s: ZatcaCsrSubject): Buffer {
 export interface ZatcaCsrResult {
   /** PEM-encoded PKCS#10 CSR ("-----BEGIN CERTIFICATE REQUEST-----..."), what ZATCA's CSID endpoints expect. */
   csrPem: string;
-  /** The raw DER bytes, base64-encoded with no PEM headers -- some ZATCA onboarding flows want this form directly in the request body. */
+  /** The raw DER bytes, base64-encoded with no PEM headers. */
   csrBase64: string;
+  /**
+   * What goes in the `csr` field of ZATCA's compliance request: the base64
+   * of the whole PEM text, headers included (P6, ZATCA-05) -- not the DER.
+   */
+  csrForZatca: string;
 }
 
 /**
@@ -267,5 +290,5 @@ export function generateZatcaCsr(subject: ZatcaCsrSubject, privateKeyPem: string
   const pemBody = csrBase64.match(/.{1,64}/g)?.join('\n') ?? csrBase64;
   const csrPem = `-----BEGIN CERTIFICATE REQUEST-----\n${pemBody}\n-----END CERTIFICATE REQUEST-----\n`;
 
-  return { csrPem, csrBase64 };
+  return { csrPem, csrBase64, csrForZatca: Buffer.from(csrPem, 'utf8').toString('base64') };
 }

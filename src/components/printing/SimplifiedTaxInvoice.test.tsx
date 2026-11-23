@@ -58,3 +58,18 @@ test('a line priced with VAT inside still prints as it did', () => {
   expect(text).toContain('115.00');
   expect(text).not.toContain('132.25'); // 115 * 1.15
 });
+
+// P6 (ZATCA-16): layout settings kept in the browser do not change who the
+// seller is on the printed tax invoice.
+test("the printed VAT number and name are the shop's official ones, whatever the browser's layout settings say", () => {
+  localStorage.setItem('pos_invoice_settings', JSON.stringify({ header: { facilityName: 'اسم مزوّر', taxId: '399999999900003', address: 'عنوان آخر' } }));
+  try {
+    const { container } = render(<SimplifiedTaxInvoice {...props} />);
+    const text = container.textContent || '';
+    expect(text).toContain('300000000000003');
+    expect(text).not.toContain('399999999900003');
+    expect(text).not.toContain('اسم مزوّر');
+  } finally {
+    localStorage.removeItem('pos_invoice_settings');
+  }
+});

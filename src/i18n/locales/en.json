@@ -242,7 +242,7 @@
     "compare_table_title": "System Features Comparison",
     "current_plan_badge": "Your Current Plan",
     "current_plan_basic_desc": "The comprehensive basic plan with direct ZATCA connection, custom tailoring, measurements, invoices, inventory, and tech support.",
-    "current_plan_free_desc": "You are currently on the trial period. Upgrade to the basic plan for unlimited usage and approved ZATCA connection.",
+    "current_plan_free_desc": "You are currently on the trial period. Upgrade to the basic plan for unlimited usage and the ZATCA connection.",
     "expansion": {
       "cta": "See Add-ons",
       "description": "You are using Seen like a pro — add a new branch or turn on AI reports to grow further on the same system.",
@@ -724,7 +724,7 @@
   },
   "compliance": {
     "check_legal_name": "Legal Name of the Business",
-    "check_legal_name_hint": "Appears on the approved invoice.",
+    "check_legal_name_hint": "Appears on the tax invoice.",
     "check_pdpl": "Data Protection Acknowledgement (PDPL)",
     "check_phase1_qr": "Phase One Invoice (QR)",
     "check_phase2": "ZATCA Integration — Phase Two",
@@ -5282,7 +5282,7 @@
       "reports_dashboard": "Reports & Dashboard",
       "trial_all_features_14_days": "All features free for 14 days",
       "unlimited_invoices": "Unlimited invoices",
-      "zatca_invoicing": "Approved ZATCA E-Invoicing"
+      "zatca_invoicing": "E-invoicing to ZATCA's requirements"
     },
     "free_plan_desc": "Try Seen and all its tools before paying a single riyal.",
     "free_plan_name": "Free Plan",

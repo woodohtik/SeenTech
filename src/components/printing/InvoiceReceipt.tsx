@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { sellerForInvoice } from '../../utils/sellerDetails';
 import { QRCodeSVG } from 'qrcode.react';
 import { useTranslation } from 'react-i18next';
 import { Printer } from 'lucide-react';
@@ -147,11 +148,13 @@ export const ThermalInvoice = ({
 
   const settings = propSettings || localSettings;
 
+  // P6 (ZATCA-16): the shop's official details first -- see sellerForInvoice.
+  const officialSeller = sellerForInvoice(data.seller, settings?.header);
   const sellerInfo = {
-    name: settings?.header?.facilityName || data.seller?.name || 'المنشأة',
-    vatNumber: settings?.header?.taxId || data.seller?.vatNumber || '000000000000000',
-    address: settings?.header?.address || data.seller?.address || 'المملكة العربية السعودية',
-    phone: settings?.header?.contactNumbers || data.seller?.phone || '',
+    name: officialSeller.name || 'المنشأة',
+    vatNumber: officialSeller.vatNumber || '000000000000000',
+    address: officialSeller.address || 'المملكة العربية السعودية',
+    phone: officialSeller.phone || '',
     logoUrl: settings?.header?.logoUrl || '',
   };
 
@@ -245,11 +248,13 @@ export const StandardInvoice = ({
 
   const settings = propSettings || localSettings;
 
+  // P6 (ZATCA-16): the shop's official details first -- see sellerForInvoice.
+  const officialSeller = sellerForInvoice(data.seller, settings?.header);
   const sellerInfo = {
-    name: settings?.header?.facilityName || data.seller?.name || 'المنشأة',
-    vatNumber: settings?.header?.taxId || data.seller?.vatNumber || '000000000000000',
-    address: settings?.header?.address || data.seller?.address || 'المملكة العربية السعودية',
-    phone: settings?.header?.contactNumbers || data.seller?.phone || '',
+    name: officialSeller.name || 'المنشأة',
+    vatNumber: officialSeller.vatNumber || '000000000000000',
+    address: officialSeller.address || 'المملكة العربية السعودية',
+    phone: officialSeller.phone || '',
     logoUrl: settings?.header?.logoUrl || '',
   };
 

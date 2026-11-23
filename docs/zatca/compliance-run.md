@@ -34,3 +34,33 @@ The tests sign with a **test-only** key and self-signed certificate made in memo
 - The **environment** is not yet a per-shop field (ZATCA-04): compliance runs on the test environment, sending uses production.
 - **Deposits** (ZATCA-13): an advance payment still has no invoice of its own; needs the tax adviser's rule.
 - **The POS receipt** printed at the sale still carries the Phase 1 QR. A reprint shows the Phase 2 QR once the invoice is signed (seconds later when online). An offline sale can't be signed until it syncs.
+
+## طلب الشهادة (CSR) — P6، ZATCA-05
+
+كانت بيئة الاختبار ترد على طلب شهادة الامتثال بـ`400 Invalid Request` دون سبب. بمقارنة الطلب بقالب أدوات زاتكا ظهرت أربعة فروق، وأُصلحت كلها:
+
+| قبل | بعد |
+|---|---|
+| لا يوجد امتداد قالب الشهادة | `1.3.6.1.4.1.311.20.2` بقيمة `TSTZATCA-Code-Signing` (sandbox) أو `PREZATCA-Code-Signing` (simulation) أو `ZATCA-Code-Signing` (الإنتاج) |
+| حقل `csr` = base64 لبايتات DER | base64 لنص PEM كاملاً بترويسته |
+| `O` = الرقم الضريبي | `O` = اسم المنشأة |
+| سلسلة الجهاز `1-…\|2-…\|3-…` في `CN` | في الرقم التسلسلي داخل SAN، و`CN` اسم للوحدة |
+
+**ما تحققنا منه:** `openssl req -verify -text` يقبل الطلب ويعرض الامتدادين، و12 اختبار وحدة.
+
+**ما لم يُجرَّب بعد:** إرسال الطلب فعلاً إلى بيئة الاختبار. هذا يُنشئ شهادة امتثال تجريبية لدى زاتكا، فيحتاج موافقة المؤسس. طلب شهادة محفوظ بالصيغة القديمة يُرفض برسالة «أعد توليده».
+
+## تاريخ انتهاء الشهادة — P6، ZATCA-15
+
+`binarySecurityToken` من زاتكا هو base64 لنص الشهادة (ترميز مزدوج)، فكان تاريخ الانتهاء لا يُستخرج ولا يصل أي تنبيه. صار يُقرأ بكل الصيغ، والمهمة المجدولة تملأ التاريخ للشهادات المحفوظة قبل الإصلاح. لا يوجد بعد مسار تجديد آلي للشهادة: التنبيه يطلب من المالك إعادة الربط.
+
+## تدوير مفتاح تشفير الأسرار — P6، ZATCA-20
+
+1. ولّد مفتاحاً جديداً: `openssl rand -hex 32`.
+2. أضفه في Vercel باسم `ZATCA_ENCRYPTION_KEY_V2`، واضبط `ZATCA_ENCRYPTION_KEY_VERSION=2`. **أبقِ** `ZATCA_ENCRYPTION_KEY` القديم.
+3. أعد النشر. الأسرار الجديدة تُكتب بالمفتاح الجديد، والقديمة تُقرأ بالقديم.
+4. انقل القديمة: `npx tsx scripts/zatca/reencrypt-secrets.ts` (عرض فقط)، ثم مع `--apply`. جرّبه على staging أولاً.
+5. حين يقول السكربت إنه لم يبقَ شيء على الإصدار القديم، احذف المفتاح القديم.
+
+حتى يحدث تدوير، لا يتغيّر شيء في الصفوف الحالية ولا في صيغتها.
+

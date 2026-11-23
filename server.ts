@@ -2680,20 +2680,26 @@ app.post("/api/zatca/generate-csr", authenticate, requirePermission('settings.ta
   // csid_type) only. organizationUnitName is set to the tenant's own legal
   // name rather than a specific branch identifier on purpose; revisit only
   // if a real tenant explicitly needs per-branch invoice units.
-  const { csrBase64 } = generateZatcaCsr(
+  // P6 (ZATCA-05): the organisation is the taxpayer's name (it was the VAT
+  // number), the EGS string "1-..|2-..|3-.." is the SAN serial number (it
+  // was the common name), the template name follows the environment the
+  // compliance request goes to, and ZATCA is sent the base64 of the PEM.
+  const { csrForZatca } = generateZatcaCsr(
     {
       countryCode: 'SA',
       organizationUnitName: tenant.name,
-      organizationName: tenant.vat_number,
-      commonName: `1-Seen|2-SeenPOS|3-${egsSerialNumber}`,
+      organizationName: tenant.name,
+      commonName: `Seen-${egsSerialNumber}`,
       vatNumber: tenant.vat_number,
-      egsSerialNumber,
+      egsSerialNumber: `1-Seen|2-SeenPOS|3-${egsSerialNumber}`,
+      environment: zatcaTestEnvironment(),
       location: tenant.city,
       businessCategory: 'Tailoring and Garment Services',
     },
     privateKeyPem,
     publicKeyPem
   );
+  const csrBase64 = csrForZatca;
 
   const { error } = await supabaseAdmin.from('zatca_pending_csr').upsert({
     tenant_id: tenantId,
@@ -2720,6 +2726,11 @@ app.post("/api/zatca/request-compliance-csid", authenticate, requirePermission('
     .eq('tenant_id', tenantId)
     .maybeSingle();
   if (!pending) return res.status(409).json({ error: 'لا يوجد CSR معلَّق -- ولِّد واحداً أولاً (الخطوة ب)' });
+  // P6 (ZATCA-05): a CSR made before the template fix is the raw DER, with
+  // no certificate template name -- ZATCA refuses it. Ask for a new one.
+  if (!Buffer.from(String(pending.csr_base64 || ''), 'base64').toString('utf8').startsWith('-----BEGIN CERTIFICATE REQUEST-----')) {
+    return res.status(409).json({ error: 'طلب الشهادة المحفوظ بصيغة قديمة -- أعد توليده (الخطوة ب) ثم أدخل رمز OTP جديداً', code: 'csr_outdated' });
+  }
 
   const { requestComplianceCsid, ZatcaApiError } = await import('./src/server/zatcaApiClient.ts');
   const { encryptZatcaSecret, extractCertificateExpiry } = await import('./src/server/zatcaCrypto.ts');
@@ -2916,6 +2927,28 @@ app.get("/api/cron/zatca-cert-expiry-check", asyncHandler(async (req: any, res) 
   const { supabaseAdmin } = await import("./src/server/supabase-admin.ts");
   const cutoff = new Date(Date.now() + ZATCA_CERT_EXPIRY_ALERT_WINDOW_DAYS * 24 * 60 * 60 * 1000).toISOString();
 
+  // P6 (ZATCA-15): certificates saved before the expiry could be read have
+  // no expires_at, and the query below skips those -- fill it in from the
+  // stored certificate first, so they are warned about too.
+  let backfilled = 0;
+  const { extractCertificateExpiry } = await import('./src/server/zatcaCrypto.ts');
+  const { data: undated } = await supabaseAdmin
+    .from('zatca_credentials')
+    .select('tenant_id, csid_type, certificate')
+    .is('expires_at', null)
+    .not('certificate', 'is', null)
+    .limit(200);
+  for (const row of undated || []) {
+    const expiry = extractCertificateExpiry(String(row.certificate || ''));
+    if (!expiry) continue;
+    const { error: fillError } = await supabaseAdmin
+      .from('zatca_credentials')
+      .update({ expires_at: expiry.toISOString() })
+      .eq('tenant_id', row.tenant_id)
+      .eq('csid_type', row.csid_type);
+    if (!fillError) backfilled++;
+  }
+
   const { data: expiringSoon, error } = await supabaseAdmin
     .from('zatca_credentials')
     .select('tenant_id, csid_type, expires_at')
@@ -2948,7 +2981,7 @@ app.get("/api/cron/zatca-cert-expiry-check", asyncHandler(async (req: any, res) 
     }
   }
 
-  res.json({ ok: true, checked: (expiringSoon || []).length, alerted });
+  res.json({ ok: true, checked: (expiringSoon || []).length, alerted, backfilled });
 }));
 
 // seen-readiness-fixes-task.md P2.4 -- the ZATCA queue worker. Sends the
