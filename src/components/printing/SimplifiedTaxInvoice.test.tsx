@@ -36,3 +36,25 @@ test('a provisional receipt says it is not a tax invoice and has no QR; a tax in
   expect(screen.queryByText('فاتورة ضريبية مبسطة')).toBeNull();
   expect(svgCount(receipt.container)).toBe(withQr - 1); // the QR is the one gone
 });
+
+// P6 (MONEY-21): the printed line total agrees with the server's total --
+// a line priced before VAT is not printed as if VAT were inside it.
+test('a line priced before VAT prints with its VAT, under the same total', () => {
+  const { container } = render(
+    <SimplifiedTaxInvoice
+      {...props}
+      items={[{ id: 1, name: 'ثوب', quantity: 1, unitPrice: 100 }]}
+      totals={{ subtotal: 100, discount: 0, taxableAmount: 100, vatAmount: 15, grandTotal: 115 }}
+    />,
+  );
+  const text = container.textContent || '';
+  expect(text).toContain('115.00');
+  expect(text).not.toContain('86.96'); // 100 / 1.15: the old "VAT is inside" reading of the line
+});
+
+test('a line priced with VAT inside still prints as it did', () => {
+  const { container } = render(<SimplifiedTaxInvoice {...props} />); // 115, totals 100 / 15 / 115
+  const text = container.textContent || '';
+  expect(text).toContain('115.00');
+  expect(text).not.toContain('132.25'); // 115 * 1.15
+});

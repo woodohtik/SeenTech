@@ -3553,7 +3553,8 @@
     "tab_tailor_commissions__technician": "Technician commissions",
     "no_shifts_found": "No closed shifts were found for this date to build the combined report",
     "z_report_success": "The combined financial report was generated",
-    "z_report_error": "Something went wrong while generating the combined financial report"
+    "z_report_error": "Something went wrong while generating the combined financial report",
+    "vat_input_estimate_note": "An estimate: it assumes every purchase includes VAT at the shop's rate. Check supplier invoices before filing."
   },
   "saas": {
     "account_health_score": "Account Health (Health Score)",
@@ -5707,7 +5708,8 @@
     "whatsapp_pdf_attached": "Please find the attached report in PDF format.",
     "whatsapp_save_instruction": "The report was saved to your device successfully. Enter the recipient's WhatsApp number below (rep, manager or owner), then send it.",
     "withdrawals_expenses": "Withdrawals & Expenses",
-    "export_failed": "The end-of-day report could not be exported -- the file was not saved"
+    "export_failed": "The end-of-day report could not be exported -- the file was not saved",
+    "net_sales_before_tax": "Net sales before VAT"
   },
   "pwa": {
     "update_available": "A new update is available",

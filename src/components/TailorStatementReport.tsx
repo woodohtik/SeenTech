@@ -32,6 +32,8 @@ interface TailorCommissionData {
   customer_name: string;
   calculated_commission: number;
   updated_at: string;
+  /** When the commission fell due (P6, MONEY-20); older orders carry their last update. */
+  commission_at?: string | null;
   assigned_tailor_id: string;
   status: string;
 }
@@ -86,7 +88,7 @@ export default function TailorStatementReport({ tenantId }: TailorStatementRepor
       // source now.
       let query = supabase
         .from('orders')
-        .select('id, order_number, customer_name, calculated_commission, updated_at, assigned_tailor_id, status')
+        .select('id, order_number, customer_name, calculated_commission, commission_at, updated_at, assigned_tailor_id, status')
         .eq('tenant_id', tenantId)
         .not('calculated_commission', 'is', null);
 
@@ -111,7 +113,7 @@ export default function TailorStatementReport({ tenantId }: TailorStatementRepor
   const monthlyChartData = useMemo(() => {
     const map = new Map<string, { label: string, total: number, dateVal: number }>();
     commissions.forEach(c => {
-      const date = new Date(c.updated_at);
+      const date = new Date(c.commission_at || c.updated_at);
       const yearMonth = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
       const label = date.toLocaleString(localeOf(i18n.language), { month: 'short', year: 'numeric' });
       if (!map.has(yearMonth)) {
@@ -273,7 +275,7 @@ export default function TailorStatementReport({ tenantId }: TailorStatementRepor
                         {tailor?.name || t('sales.unknown')}
                       </td>
                       <td className="px-6 py-4 text-content-muted" dir="ltr">
-                        {new Date(item.updated_at).toLocaleString(localeOf(i18n.language))}
+                        {new Date(item.commission_at || item.updated_at).toLocaleString(localeOf(i18n.language))}
                       </td>
                       <td className="px-6 py-4">
                         <span className="inline-flex items-center px-3 py-1 bg-success/10 text-success font-bold rounded-lg text-sm">

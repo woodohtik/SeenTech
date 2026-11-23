@@ -17,7 +17,8 @@ import type { TailoringTax } from './tailoringOrder';
 export interface VatSummaryInput {
   /** Sum of the stored tax_amount of the period's non-cancelled orders. */
   outputTaxOnSales: number;
-  refunds: ReadonlyArray<{ refunded_amount: number | string | null; order_id?: string | null }>;
+  /** total_amount is the credit note's value (P6, MONEY-13: it can exceed the cash refunded on a credit sale). */
+  refunds: ReadonlyArray<{ refunded_amount: number | string | null; total_amount?: number | string | null; order_id?: string | null }>;
   /** orders.tax_rate by order id, as stored (15 or 0.15 both occur). */
   orderTaxRate: ReadonlyMap<string, number | string | null | undefined>;
   purchasesTotal: number;
@@ -44,7 +45,7 @@ export function computeVatSummary(input: VatSummaryInput): VatSummary {
   const shopPercent = input.tax.enabled ? input.tax.vatRatePercentage : 0;
 
   const refundedVat = input.refunds.reduce((sum, r) => {
-    const amount = Number(r.refunded_amount || 0);
+    const amount = Number(r.total_amount ?? r.refunded_amount ?? 0);
     const stored = r.order_id ? ratePercent(input.orderTaxRate.get(r.order_id)) : null;
     return sum + vatInside(amount, stored ?? shopPercent);
   }, 0);

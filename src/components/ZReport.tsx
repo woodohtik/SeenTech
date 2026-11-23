@@ -401,7 +401,7 @@ export default function ZReport({ data, onClose }: ZReportProps) {
               </h4>
             </div>
             <div className="flex justify-between sm:block sm:text-right border-t border-white/20 sm:border-0 pt-3 sm:pt-0">
-              <p className="text-[10px] font-bold uppercase opacity-80 mb-1">{t('z_report.net_profit', 'الربح الصافي')}</p>
+              <p className="text-[10px] font-bold uppercase opacity-80 mb-1">{t('z_report.net_sales_before_tax', 'صافي المبيعات قبل الضريبة')}</p>
               <h4 className="text-lg sm:text-2xl font-black text-success bg-white px-4 py-1 rounded-xl shadow-inner inline-block">
                 <PriceDisplay amount={netProfit} />
               </h4>

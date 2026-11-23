@@ -60,3 +60,12 @@ test('stored rates: 15 and 0.15 both mean 15%; blank is unknown', () => {
   expect(ratePercent(null)).toBeNull();
   expect(ratePercent('')).toBeNull();
 });
+
+// P6 (MONEY-13): a credit sale's return gives no cash back, but its credit
+// note still takes the VAT off -- the note's value counts, not the cash.
+test('output VAT comes off by the credit note value, even with nothing refunded in cash', () => {
+  const s = computeVatSummary({ ...base, refunds: [{ refunded_amount: 0, total_amount: 115 }] });
+  expect(s.outputVat).toBeCloseTo(135, 9); // 150 - 15, as with a cash refund of 115
+  const older = computeVatSummary({ ...base, refunds: [{ refunded_amount: 115 }] }); // rows without total_amount
+  expect(older.outputVat).toBeCloseTo(135, 9);
+});

@@ -4,6 +4,7 @@ import Barcode from 'react-barcode';
 import { useTranslation } from 'react-i18next';
 import { generateZatcaQR } from '../../services/zatcaService';
 import { calculateItemTax } from '../../utils/b2bHelper';
+import { inferLineTaxType } from '../../utils/lineTaxType';
 import { computePaidRemaining } from '../../utils/cartTotals';
 import { ShoppingBag, Printer } from 'lucide-react';
 import { CurrencySymbol } from '../CurrencySymbol';
@@ -14,7 +15,7 @@ export interface SimplifiedInvoiceItem {
   name: string;
   quantity: number;
   unitPrice: number; // Price as configured on the product -- its tax treatment is taxType, not assumed.
-  /** Defaults to 'inclusive' when absent, matching this component's historical assumption. */
+  /** When absent, read from the order's own totals (inferLineTaxType, P6 MONEY-21) -- never assumed. */
   taxType?: ProductTaxType;
   vatAmount?: number;
   total?: number;
@@ -110,7 +111,11 @@ export default function SimplifiedTaxInvoice({
     logoUrl: layoutSettings?.header?.logoUrl || rawSeller.logoUrl,
   };
 
-  // If totals are not provided, compute them dynamically (assuming unitPrice is VAT-inclusive)
+  // P6 (MONEY-21): a line without a tax type of its own is read the way that
+  // makes the lines add up to the server's total -- see inferLineTaxType.
+  const fallbackTaxType = inferLineTaxType(items, totals, vatRate);
+
+  // If totals are not provided, compute them from the lines.
   const computedTotals = totals || (() => {
     let grandTotal = 0;
     let vatAmount = 0;
@@ -127,7 +132,7 @@ export default function SimplifiedTaxInvoice({
     // understating both the taxable amount and the real total.
     items.forEach((item) => {
       const { basePrice: itemTotalExc, taxAmount: itemVat, finalPrice: itemTotalInc } =
-        calculateItemTax(item.unitPrice, item.taxType || 'inclusive', vatRate, item.quantity);
+        calculateItemTax(item.unitPrice, item.taxType || fallbackTaxType, vatRate, item.quantity);
 
       grandTotal += itemTotalInc;
       vatAmount += itemVat;
@@ -330,7 +335,7 @@ export default function SimplifiedTaxInvoice({
             // already knows how to turn this item's own taxType into a
             // correct base/tax/final split; use its finalPrice as the
             // displayed line total instead of re-deriving it naively.
-            const itemTaxType = item.taxType || 'inclusive';
+            const itemTaxType = item.taxType || fallbackTaxType;
             const { basePrice: itemExc, taxAmount: itemVat, finalPrice: itemTotalInc } =
               calculateItemTax(item.unitPrice, itemTaxType, vatRate, item.quantity);
             const showBreakdown = vatRate > 0 && itemTaxType !== 'exempt';

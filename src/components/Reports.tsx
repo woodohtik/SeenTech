@@ -154,7 +154,7 @@ export default function Reports({ tenantId }: { tenantId: string }) {
         supabase.from('purchase_orders').select('*, purchase_order_items(*)').eq('tenant_id', tenantId),
         supabase.from('suppliers').select('*').eq('tenant_id', tenantId),
         supabase.from('shift_entries').select('amount, occurred_at, reason').eq('tenant_id', tenantId).eq('entry_type', 'payout'),
-        supabase.from('sales_returns').select('refunded_amount, returned_at, order_id').eq('tenant_id', tenantId),
+        supabase.from('sales_returns').select('refunded_amount, total_amount, returned_at, order_id').eq('tenant_id', tenantId),
         // Bug report (sprint 2 reports engine, 2026-11-17): orders has no
         // `items` column at all -- a POS sale's items live only in
         // order_items (this query), a تفصيل order created directly in
@@ -1942,6 +1942,7 @@ export default function Reports({ tenantId }: { tenantId: string }) {
                   <p className="text-[10px] sm:text-xs font-black text-content-muted uppercase tracking-widest">{t('reports.vat_input')}</p>
                   <h3 className="text-base sm:text-2xl font-black text-warning mt-1 sm:mt-2"><PriceDisplay amount={vatStats.inputVat} /></h3>
                   <p className="text-[9px] sm:text-[10px] text-content-muted mt-0.5 sm:mt-1 font-bold">{t('reports.vat_input_desc')}</p>
+                  <p role="note" className="text-[9px] sm:text-[10px] text-warning mt-1 font-black">{t('reports.vat_input_estimate_note')}</p>
                 </div>
                 <div className="bg-surface p-4 sm:p-8 rounded-2xl border border-border shadow-sm">
                   <p className="text-[10px] sm:text-xs font-black text-content-muted uppercase tracking-widest">{t('reports.vat_net_due')}</p>
