@@ -1,59 +1,33 @@
 import React from 'react';
-import { cn } from '../lib/utils';
-import { Icon, type IconName } from './ui/Icon';
 import { useTranslation } from 'react-i18next';
-import { isRtlLang } from '../lib/direction';
+import { Icon, type IconName } from './ui/Icon';
+import { StatBadge, StatCard, StatIcon } from './ui/StatCard';
 
 interface DashboardGridCardProps {
   title: string;
   detail: string | React.ReactNode;
   icon: IconName;
-  color: string; // Tailwind class for icon color
+  color: string; // Tailwind class for the icon tile's colour
   isActive?: boolean;
   onClick?: () => void;
 }
 
-export default function DashboardGridCard({
-  title,
-  detail,
-  icon,
-  color,
-  isActive = true,
-  onClick
-}: DashboardGridCardProps) {
-  const { t, i18n } = useTranslation();
-  const isRtl = isRtlLang(i18n.language);
-  const dir = isRtl ? 'rtl' : 'ltr';
-  const textAlignmentClass = isRtl ? 'text-right' : 'text-left';
-  const flexAlignmentClass = isRtl ? 'items-start' : 'items-end';
-
+/**
+ * The dashboard's action cards ("خياطة وتفصيل: 5 طلب قيد التنفيذ").
+ * seen-responsive-layout-task.md Phase 2: built on StatCard, so the label
+ * is 16px with no letter-spacing, the line under it wraps between words
+ * only, and nothing inside pushes the card wider than its column.
+ */
+export default function DashboardGridCard({ title, detail, icon, color, isActive = true, onClick }: DashboardGridCardProps) {
+  const { t } = useTranslation();
   return (
-    <button
+    <StatCard
       onClick={onClick}
-      className={cn(
-        "bg-surface p-4 sm:p-6 rounded-2xl sm:rounded-3xl border border-border shadow-sm hover:shadow-xl transition-all group flex flex-col w-full cursor-pointer h-full",
-        textAlignmentClass,
-        flexAlignmentClass
-      )}
-      dir={dir}
-    >
-      <div className="flex items-center justify-between mb-3 sm:mb-4 w-full">
-        <div className={cn(color, "p-3 sm:p-4 rounded-xl sm:rounded-2xl text-white shadow-lg shadow-current/20 group-hover:scale-110 transition-transform")}>
-          <Icon name={icon} className="w-5 h-5 sm:w-6 sm:h-6" />
-        </div>
-        {isActive && (
-          <span className="text-[10px] font-black px-2 py-1 rounded-lg bg-success/10 text-success">
-            {t('saas.status_active')}
-          </span>
-        )}
-      </div>
-      
-      <div className={cn("mt-auto w-full", textAlignmentClass)}>
-        <p className="text-content-muted text-xs font-black uppercase tracking-widest">{title}</p>
-        <h3 className={cn("text-xl font-black text-content mt-1", textAlignmentClass)}>
-          {detail}
-        </h3>
-      </div>
-    </button>
+      label={title}
+      value={detail}
+      wrapValue
+      icon={<StatIcon className={color}><Icon name={icon} className="h-6 w-6" /></StatIcon>}
+      badge={isActive ? <StatBadge tone="success">{t('saas.status_active')}</StatBadge> : undefined}
+    />
   );
 }

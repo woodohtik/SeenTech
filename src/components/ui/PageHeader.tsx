@@ -51,7 +51,9 @@ export function PageHeader({ title, subtitle, badge, logo, children, className }
       </div>
 
       {children ? (
-        <div className="flex min-w-0 flex-wrap items-center gap-3 main-720:flex-1 main-720:justify-end">
+        // The tools wrap -- and so does a row of them a screen wraps in its
+        // own <div>; a button's label never breaks inside the row.
+        <div className="flex min-w-0 flex-wrap items-center gap-3 main-720:flex-1 main-720:justify-end [&>div]:max-w-full [&>div]:flex-wrap [&>button]:whitespace-nowrap [&>div>button]:whitespace-nowrap">
           {children}
         </div>
       ) : null}

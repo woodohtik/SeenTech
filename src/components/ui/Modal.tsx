@@ -64,7 +64,7 @@ export function Modal({ isOpen, onClose, title, children, footer, maxWidth = 'md
             >
               <Dialog.Panel
                 className={cn(
-                  'w-full transform overflow-hidden rounded-t-3xl sm:rounded-3xl bg-surface shadow-2xl transition-all border border-border text-start max-h-[90vh] sm:max-h-[85vh] flex flex-col',
+                  'w-full transform overflow-hidden rounded-t-[20px] sm:rounded-[20px] bg-surface shadow-2xl transition-all border border-border text-start max-h-[92dvh] sm:max-h-[85dvh] flex flex-col',
                   MAX_WIDTH[maxWidth],
                   panelClassName
                 )}
@@ -82,7 +82,7 @@ export function Modal({ isOpen, onClose, title, children, footer, maxWidth = 'md
                     </button>
                   </div>
                 )}
-                <div className="p-6 overflow-y-auto">{children}</div>
+                <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-6">{children}</div>
                 {footer && <div className="p-6 pt-4 border-t border-border shrink-0">{footer}</div>}
               </Dialog.Panel>
             </Transition.Child>
