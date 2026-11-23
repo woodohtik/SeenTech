@@ -51,7 +51,7 @@ export const IconInput = forwardRef<HTMLInputElement, IconInputProps>(({
         <label 
           htmlFor={id} 
           className={cn(
-            "block text-xs font-black uppercase tracking-widest px-1 transition-colors select-none",
+            "block text-sm font-black uppercase px-1 transition-colors select-none",
             disabled ? "text-content-muted/80" : "text-content-muted hover:text-content",
             error ? "text-danger" : ""
           )}
@@ -119,7 +119,7 @@ export const IconInput = forwardRef<HTMLInputElement, IconInputProps>(({
       {/* Error Message -- id matches the id-error convention so callers can
           wire aria-describedby (passed through via ...props) to a real element. */}
       {error && (
-        <span id={id ? `${id}-error` : undefined} className="text-xs font-semibold text-danger px-1 mt-0.5 animate-fadeIn">
+        <span id={id ? `${id}-error` : undefined} className="text-sm font-semibold text-danger px-1 mt-0.5 animate-fadeIn">
           {error}
         </span>
       )}

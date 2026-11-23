@@ -92,7 +92,7 @@ export default function EmployeeActivityLogTab({ tenantId }: { tenantId: string 
     <div className="space-y-6 font-sans">
       
       {/* Filters */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center">
+      <div className="grid grid-cols-1 main-640:grid-cols-2 gap-4 items-center">
         <IconInput
           type="text"
           startIcon={Search}
@@ -108,7 +108,7 @@ export default function EmployeeActivityLogTab({ tenantId }: { tenantId: string 
       {/* Logs Table */}
       <div className="bg-surface rounded-2xl border border-border overflow-x-auto whitespace-nowrap scrollbar-hide">
         <table className="w-full text-right text-sm min-w-max">
-          <thead className="bg-surface-muted border-b border-border text-content-muted uppercase tracking-widest text-[10px] font-black">
+          <thead className="bg-surface-muted border-b border-border text-content-muted uppercase text-sm font-black">
             <tr>
               <th className="p-4">{t('settings_page.staff.activity.time', 'الوقت')}</th>
               <th className="p-4">{t('settings_page.staff.activity.employee', 'الموظف')}</th>
@@ -128,7 +128,7 @@ export default function EmployeeActivityLogTab({ tenantId }: { tenantId: string 
                   <td className="p-4 font-bold text-content">{log.staffName}</td>
                   <td className="p-4 font-bold">{log.branchName || '-'}</td>
                   <td className="p-4">
-                    <span className={`px-2 py-1 rounded-lg border font-bold text-xs ${getActionColor(log.action)}`}>
+                    <span className={`px-2 py-1 rounded-lg border font-bold text-sm ${getActionColor(log.action)}`}>
                       {getActionLabel(log.action)}
                     </span>
                   </td>
@@ -150,7 +150,7 @@ export default function EmployeeActivityLogTab({ tenantId }: { tenantId: string 
       </div>
       
       <div className="text-center pt-8 border-t border-border">
-        <p className="text-[10px] font-black text-content-muted uppercase tracking-widest flex items-center justify-center gap-1" dir="ltr">
+        <p className="text-sm font-black text-content-muted uppercase flex items-center justify-center gap-1" dir="ltr">
           Powered By <a href="#" className="text-brand hover:underline" target="_blank" rel="noreferrer">Seen</a>
         </p>
       </div>

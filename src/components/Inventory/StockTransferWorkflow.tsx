@@ -167,7 +167,7 @@ const StockTransferWorkflow: React.FC<StockTransferWorkflowProps> = ({ tenantId 
 
   return (
     <div className="p-6 space-y-6">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="flex flex-col main-720:flex-row main-720:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-black text-content flex items-center gap-3">
             <ArrowRightLeft className="text-brand" size={32} />
@@ -185,7 +185,7 @@ const StockTransferWorkflow: React.FC<StockTransferWorkflowProps> = ({ tenantId 
               key={status}
               onClick={() => setFilterStatus(status)}
               className={cn(
-                "px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all",
+                "px-6 py-2 rounded-xl text-sm font-black uppercase transition-all",
                 filterStatus === status 
                   ? "bg-brand text-white shadow-lg shadow-brand/10" 
                   : "bg-surface-muted text-content-muted hover:bg-border/20"
@@ -210,7 +210,7 @@ const StockTransferWorkflow: React.FC<StockTransferWorkflowProps> = ({ tenantId 
                 layout
                 className="bg-surface rounded-2xl border border-border shadow-sm transition-all group overflow-hidden"
               >
-                <div className="p-6 flex flex-col md:flex-row md:items-center justify-between gap-6">
+                <div className="p-6 flex flex-col main-720:flex-row main-720:items-center justify-between gap-6">
                   <div className="flex items-center gap-6">
                     <div className={cn("p-4 rounded-2xl", status.color)}>
                       <StatusIcon size={24} />
@@ -222,7 +222,7 @@ const StockTransferWorkflow: React.FC<StockTransferWorkflowProps> = ({ tenantId 
                         <ArrowRight size={16} className="text-border" />
                         <span className="text-sm font-black text-content">{getBranchName(transfer.toBranchId)}</span>
                       </div>
-                      <div className="flex items-center gap-4 text-xs font-bold text-content-muted uppercase tracking-widest">
+                      <div className="flex items-center gap-4 text-sm font-bold text-content-muted uppercase">
                         <span className="flex items-center gap-1"><Package size={12} /> {transfer.items.length} {t('inventory.items')}</span>
                         <span className="flex items-center gap-1"><Calendar size={12} /> {new Date(transfer.createdAt).toLocaleDateString(localeOf(i18n.language))}</span>
                         <span className="flex items-center gap-1"><User size={12} /> {transfer.requestedByName}</span>
@@ -235,7 +235,7 @@ const StockTransferWorkflow: React.FC<StockTransferWorkflowProps> = ({ tenantId 
                       <button 
                         onClick={() => handleShip(transfer)}
                         disabled={busyTransferId === transfer.id}
-                        className="bg-brand text-white px-6 py-2.5 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-brand/90 transition-all shadow-lg shadow-brand/10 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="bg-brand text-white px-6 py-2.5 rounded-xl font-black text-sm uppercase hover:bg-brand/90 transition-all shadow-lg shadow-brand/10 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         {busyTransferId === transfer.id ? t('common.saving') : t('inventory.ship_items')}
                       </button>
@@ -243,7 +243,7 @@ const StockTransferWorkflow: React.FC<StockTransferWorkflowProps> = ({ tenantId 
                     {transfer.status === 'in_transit' && (
                       <button 
                         onClick={() => setSelectedTransfer(transfer)}
-                        className="bg-success text-white px-6 py-2.5 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-success/90 transition-all shadow-lg shadow-success/10"
+                        className="bg-success text-white px-6 py-2.5 rounded-xl font-black text-sm uppercase hover:bg-success/90 transition-all shadow-lg shadow-success/10"
                       >
                         {t('inventory.receive_items')}
                       </button>
@@ -252,14 +252,14 @@ const StockTransferWorkflow: React.FC<StockTransferWorkflowProps> = ({ tenantId 
                       <button
                         onClick={() => { setRejectReason(''); setRejecting(transfer); }}
                         disabled={busyTransferId === transfer.id}
-                        className="bg-danger/10 text-danger px-4 py-2.5 rounded-xl font-black text-xs hover:bg-danger/20 transition-all disabled:opacity-50"
+                        className="bg-danger/10 text-danger px-4 py-2.5 rounded-xl font-black text-sm hover:bg-danger/20 transition-all disabled:opacity-50"
                       >
                         {transfer.status === 'pending' ? t('inventory.transfer_reject') : t('inventory.transfer_cancel')}
                       </button>
                     )}
                     <button 
                       onClick={() => setSelectedTransfer(transfer)}
-                      className="bg-surface-muted text-content-muted px-6 py-2.5 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-border/20 transition-all"
+                      className="bg-surface-muted text-content-muted px-6 py-2.5 rounded-xl font-black text-sm uppercase hover:bg-border/20 transition-all"
                     >
                       {t('common.details')}
                     </button>
@@ -340,7 +340,7 @@ const TransferDetailsModal = ({ transfer, onClose, onReceive, getBranchName }: a
             </div>
             <div>
               <h2 className="text-2xl font-black text-content">{t('inventory.transfer_details')}</h2>
-              <p className="text-xs text-content-muted font-bold uppercase tracking-widest">ID: {transfer.id.substring(0, 8)}</p>
+              <p className="text-sm text-content-muted font-bold uppercase">ID: {transfer.id.substring(0, 8)}</p>
             </div>
           </div>
           <button aria-label={t('common.close')} onClick={onClose} className="p-2 hover:bg-surface rounded-full transition-colors shadow-sm min-w-11 min-h-11 inline-flex items-center justify-center">
@@ -351,23 +351,23 @@ const TransferDetailsModal = ({ transfer, onClose, onReceive, getBranchName }: a
         <div className="p-8 space-y-8 overflow-y-auto max-h-[70vh]">
           <div className="grid grid-cols-2 gap-8">
             <div className="space-y-4">
-              <h3 className="text-xs font-black text-content-muted uppercase tracking-widest">{t('inventory.from')}</h3>
+              <h3 className="text-sm font-black text-content-muted uppercase">{t('inventory.from')}</h3>
               <div className="p-4 bg-surface-muted rounded-2xl border border-border">
                 <p className="font-black text-content">{getBranchName(transfer.fromBranchId)}</p>
-                <p className="text-xs font-bold text-content-muted uppercase tracking-widest mt-1">{t('inventory.source_location')}</p>
+                <p className="text-sm font-bold text-content-muted uppercase mt-1">{t('inventory.source_location')}</p>
               </div>
             </div>
             <div className="space-y-4">
-              <h3 className="text-xs font-black text-content-muted uppercase tracking-widest">{t('inventory.to')}</h3>
+              <h3 className="text-sm font-black text-content-muted uppercase">{t('inventory.to')}</h3>
               <div className="p-4 bg-surface-muted rounded-2xl border border-border">
                 <p className="font-black text-content">{getBranchName(transfer.toBranchId)}</p>
-                <p className="text-xs font-bold text-content-muted uppercase tracking-widest mt-1">{t('inventory.destination_location')}</p>
+                <p className="text-sm font-bold text-content-muted uppercase mt-1">{t('inventory.destination_location')}</p>
               </div>
             </div>
           </div>
 
           <div className="space-y-4">
-            <h3 className="text-xs font-black text-content-muted uppercase tracking-widest">{t('inventory.items_list')}</h3>
+            <h3 className="text-sm font-black text-content-muted uppercase">{t('inventory.items_list')}</h3>
             <div className="space-y-3">
               {transfer.items.map((item: any) => (
                 <div key={item.itemId} className="p-5 bg-surface border border-border rounded-3xl flex items-center justify-between group hover:border-brand/20 transition-all">
@@ -377,13 +377,13 @@ const TransferDetailsModal = ({ transfer, onClose, onReceive, getBranchName }: a
                   
                   <div className="flex items-center gap-8">
                     <div className="text-center">
-                      <p className="text-xs font-black text-content-muted uppercase tracking-widest mb-1">{t('inventory.requested')}</p>
+                      <p className="text-sm font-black text-content-muted uppercase mb-1">{t('inventory.requested')}</p>
                       <p className="font-black text-content">{item.requestedQuantity}</p>
                     </div>
                     
                     {transfer.status === 'in_transit' ? (
                       <div className="text-center">
-                        <p className="text-xs font-black text-brand uppercase tracking-widest mb-1">{t('inventory.receiving')}</p>
+                        <p className="text-sm font-black text-brand uppercase mb-1">{t('inventory.receiving')}</p>
                         <input 
                           type="number"
                           value={receivedQuantities[item.itemId]}
@@ -395,13 +395,13 @@ const TransferDetailsModal = ({ transfer, onClose, onReceive, getBranchName }: a
                       <>
                         {item.shippedQuantity && (
                           <div className="text-center">
-                            <p className="text-xs font-black text-content-muted uppercase tracking-widest mb-1">{t('inventory.shipped')}</p>
+                            <p className="text-sm font-black text-content-muted uppercase mb-1">{t('inventory.shipped')}</p>
                             <p className="font-black text-content">{item.shippedQuantity}</p>
                           </div>
                         )}
                         {item.receivedQuantity && (
                           <div className="text-center">
-                            <p className="text-xs font-black text-success uppercase tracking-widest mb-1">{t('inventory.received')}</p>
+                            <p className="text-sm font-black text-success uppercase mb-1">{t('inventory.received')}</p>
                             <p className="font-black text-success">{item.receivedQuantity}</p>
                           </div>
                         )}
@@ -418,15 +418,15 @@ const TransferDetailsModal = ({ transfer, onClose, onReceive, getBranchName }: a
               <div className="p-6 bg-warning/10 rounded-3xl border border-warning/20 flex items-start gap-4">
                 <AlertTriangle className="text-warning shrink-0" size={24} />
                 <div>
-                  <p className="text-sm font-black text-warning uppercase tracking-widest">{t('inventory.reconciliation_notice')}</p>
-                  <p className="text-xs font-bold text-warning/80 mt-1 leading-relaxed">
+                  <p className="text-sm font-black text-warning uppercase">{t('inventory.reconciliation_notice')}</p>
+                  <p className="text-sm font-bold text-warning/80 mt-1 leading-relaxed">
                     {t('inventory.reconciliation_desc')}
                   </p>
                 </div>
               </div>
               
               <div className="space-y-2">
-                <label className="text-xs font-black text-content-muted uppercase tracking-widest">{t('inventory.receiving_notes_optional')}</label>
+                <label className="text-sm font-black text-content-muted uppercase">{t('inventory.receiving_notes_optional')}</label>
                 <textarea
                   value={remarks}
                   onChange={(e) => setRemarks(e.target.value)}
@@ -439,7 +439,7 @@ const TransferDetailsModal = ({ transfer, onClose, onReceive, getBranchName }: a
           
           {transfer.remarks && transfer.status !== 'in_transit' && (
             <div className="space-y-2">
-              <h3 className="text-xs font-black text-content-muted uppercase tracking-widest">{t('inventory.receiving_notes')}</h3>
+              <h3 className="text-sm font-black text-content-muted uppercase">{t('inventory.receiving_notes')}</h3>
               <div className="p-4 bg-surface-muted rounded-2xl border border-border">
                 <p className="text-sm font-medium text-content">{transfer.remarks}</p>
               </div>

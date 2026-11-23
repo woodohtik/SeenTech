@@ -103,7 +103,7 @@ export default function NewOrderAlert({
               onClick={() => { navigate(`/orders?highlight=${event.id}`); dismiss(event.id); }}
               className="flex-1 text-start min-w-0"
             >
-              <p className="text-[11px] font-black uppercase tracking-wider text-success">
+              <p className="text-sm font-black uppercase text-success">
                 {event.title}
               </p>
               <p className="text-sm font-bold truncate">

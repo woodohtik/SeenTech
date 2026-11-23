@@ -797,22 +797,22 @@ export default function Customers({ tenantId }: CustomersProps) {
           {canExport && (
           <button
             onClick={() => handleExportExcel()}
-            className="bg-surface text-content border border-border px-4 py-3 rounded-2xl font-bold flex items-center gap-2 hover:bg-surface-muted transition-all text-xs sm:text-sm cursor-pointer shadow-sm hover:border-brand/30"
+            className="bg-surface text-content border border-border px-4 py-3 rounded-2xl font-bold flex items-center gap-2 hover:bg-surface-muted transition-all text-sm cursor-pointer shadow-sm hover:border-brand/30"
             title={t('customers.export_excel_title')}
           >
             <FileSpreadsheet size={18} className="text-success" />
-            <span className="hidden sm:inline">{t('customers.export_excel')}</span>
+            <span className="hidden main-640:inline">{t('customers.export_excel')}</span>
           </button>
           )}
 
           {canCreate && (
             <button
               onClick={() => setIsImportModalOpen(true)}
-              className="bg-surface text-content border border-border px-4 py-3 rounded-2xl font-bold flex items-center gap-2 hover:bg-surface-muted transition-all text-xs sm:text-sm cursor-pointer shadow-sm hover:border-brand/30"
+              className="bg-surface text-content border border-border px-4 py-3 rounded-2xl font-bold flex items-center gap-2 hover:bg-surface-muted transition-all text-sm cursor-pointer shadow-sm hover:border-brand/30"
               title={t('customers.import_excel_title')}
             >
               <Upload size={18} className="text-brand" />
-              <span className="hidden sm:inline">{t('customers.import_excel')}</span>
+              <span className="hidden main-640:inline">{t('customers.import_excel')}</span>
             </button>
           )}
 
@@ -821,7 +821,7 @@ export default function Customers({ tenantId }: CustomersProps) {
               id="tour-customers-add-btn"
               data-tour="customers-add-btn"
               onClick={() => { setEditingCustomer(null); reset({}); setIsModalOpen(true); }}
-              className="bg-brand text-white px-6 py-3 rounded-2xl font-bold flex items-center gap-2 hover:bg-brand/90 transition-all shadow-lg shadow-brand/10 text-sm sm:text-base cursor-pointer"
+              className="bg-brand text-white px-6 py-3 rounded-2xl font-bold flex items-center gap-2 hover:bg-brand/90 transition-all shadow-lg shadow-brand/10 text-sm main-640:text-base cursor-pointer"
             >
               <UserPlus size={20} />
               <span>{t('pos.add_new_customer')}</span>
@@ -831,7 +831,7 @@ export default function Customers({ tenantId }: CustomersProps) {
       </Header>
 
       <div className="space-y-4">
-        <div className="flex flex-col lg:flex-row gap-3">
+        <div className="flex flex-col main-900:flex-row gap-3">
           {/* Search Box */}
           <div id="tour-customers-search" data-tour="customers-search" className="flex-1">
             <IconInput
@@ -869,7 +869,7 @@ export default function Customers({ tenantId }: CustomersProps) {
             <button
               onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
               className={cn(
-                "px-3 sm:px-4 py-3 rounded-2xl border font-bold flex items-center gap-2 transition-all cursor-pointer text-xs sm:text-sm shadow-sm relative shrink-0",
+                "px-3 main-640:px-4 py-3 rounded-2xl border font-bold flex items-center gap-2 transition-all cursor-pointer text-sm shadow-sm relative shrink-0",
                 showAdvancedFilters || balanceFilter !== 'all' || filter === 'b2b' || filter === 'b2c'
                   ? "bg-brand/10 text-brand border-brand/30"
                   : "bg-surface text-content border-border hover:bg-surface-muted"
@@ -886,7 +886,7 @@ export default function Customers({ tenantId }: CustomersProps) {
             <SmartSelect
               value={sortBy}
               onChange={(v) => setSortBy(v as any)}
-              className="w-auto min-w-[130px] sm:min-w-[180px] rounded-2xl px-3 sm:px-4 py-3 text-xs sm:text-sm"
+              className="w-auto min-w-[130px] main-640:min-w-[180px] rounded-2xl px-3 main-640:px-4 py-3 text-sm"
               options={[
                 { value: 'date', label: t('customers.sort_recent') },
                 { value: 'date_asc', label: t('customers.sort_oldest') },
@@ -904,7 +904,7 @@ export default function Customers({ tenantId }: CustomersProps) {
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: 'auto', opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
-              className="overflow-hidden bg-surface p-4 sm:p-6 rounded-3xl border border-border shadow-sm space-y-4"
+              className="overflow-hidden bg-surface p-4 main-640:p-6 rounded-3xl border border-border shadow-sm space-y-4"
             >
               <div className="flex items-center justify-between border-b border-border pb-3">
                 <h4 className="text-sm font-black text-content flex items-center gap-2">
@@ -917,16 +917,16 @@ export default function Customers({ tenantId }: CustomersProps) {
                     setBalanceFilter('all');
                     setSearch('');
                   }}
-                  className="text-xs font-bold text-brand hover:underline cursor-pointer"
+                  className="text-sm font-bold text-brand hover:underline cursor-pointer"
                 >
                   {t('customers.reset_all_filters')}
                 </button>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 main-720:grid-cols-2 main-900:grid-cols-3 gap-4">
                 {/* Filter by Type */}
                 <div className="space-y-2">
-                  <label className="text-xs font-bold text-content-muted">{t('customers.filter_type_label')}</label>
+                  <label className="text-sm font-bold text-content-muted">{t('customers.filter_type_label')}</label>
                   <div className="flex flex-wrap gap-1.5">
                     {[
                       { id: 'all', label: t('common.all') },
@@ -938,7 +938,7 @@ export default function Customers({ tenantId }: CustomersProps) {
                         key={typeItem.id}
                         onClick={() => setFilter(typeItem.id as any)}
                         className={cn(
-                          "px-3 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer",
+                          "px-3 py-1.5 rounded-xl text-sm font-bold border transition-all cursor-pointer",
                           filter === typeItem.id
                             ? "bg-brand text-white border-brand shadow-sm"
                             : "bg-surface-muted text-content-muted border-border hover:text-content"
@@ -952,7 +952,7 @@ export default function Customers({ tenantId }: CustomersProps) {
 
                 {/* Filter by Balance */}
                 <div className="space-y-2">
-                  <label className="text-xs font-bold text-content-muted">{t('customers.filter_balance_label')}</label>
+                  <label className="text-sm font-bold text-content-muted">{t('customers.filter_balance_label')}</label>
                   <div className="flex flex-wrap gap-1.5">
                     {[
                       { id: 'all', label: t('common.all') },
@@ -964,7 +964,7 @@ export default function Customers({ tenantId }: CustomersProps) {
                         key={balItem.id}
                         onClick={() => setBalanceFilter(balItem.id as any)}
                         className={cn(
-                          "px-3 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer",
+                          "px-3 py-1.5 rounded-xl text-sm font-bold border transition-all cursor-pointer",
                           balanceFilter === balItem.id
                             ? "bg-brand text-white border-brand shadow-sm"
                             : "bg-surface-muted text-content-muted border-border hover:text-content"
@@ -978,7 +978,7 @@ export default function Customers({ tenantId }: CustomersProps) {
 
                 {/* Filter by Measurements */}
                 <div className="space-y-2">
-                  <label className="text-xs font-bold text-content-muted">{t('customers.filter_measurements_label')}</label>
+                  <label className="text-sm font-bold text-content-muted">{t('customers.filter_measurements_label')}</label>
                   <div className="flex flex-wrap gap-1.5">
                     {[
                       { id: 'all', label: t('common.all') },
@@ -989,7 +989,7 @@ export default function Customers({ tenantId }: CustomersProps) {
                         key={mItem.id}
                         onClick={() => setFilter(mItem.id as any)}
                         className={cn(
-                          "px-3 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer",
+                          "px-3 py-1.5 rounded-xl text-sm font-bold border transition-all cursor-pointer",
                           filter === mItem.id
                             ? "bg-brand text-white border-brand shadow-sm"
                             : "bg-surface-muted text-content-muted border-border hover:text-content"
@@ -1019,7 +1019,7 @@ export default function Customers({ tenantId }: CustomersProps) {
               key={chip.id}
               onClick={() => setFilter(chip.id as any)}
               className={cn(
-                "flex items-center gap-2 px-4 py-2 rounded-full text-xs sm:text-sm font-black transition-all border shrink-0 whitespace-nowrap cursor-pointer",
+                "flex items-center gap-2 px-4 py-2 rounded-full text-sm font-black transition-all border shrink-0 whitespace-nowrap cursor-pointer",
                 filter === chip.id 
                   ? "bg-brand border-brand text-white shadow-md shadow-brand/20 scale-102" 
                   : "bg-surface border-border text-content-muted hover:border-brand/30 hover:text-brand"
@@ -1028,7 +1028,7 @@ export default function Customers({ tenantId }: CustomersProps) {
               <chip.icon size={15} />
               <span>{chip.label}</span>
               {filter === chip.id && (
-                <span className="bg-white/20 px-2 py-0.5 rounded-full text-[10px]">
+                <span className="bg-white/20 px-2 py-0.5 rounded-full text-sm">
                   {filteredCustomers.length}
                 </span>
               )}
@@ -1039,14 +1039,14 @@ export default function Customers({ tenantId }: CustomersProps) {
 
       {/* Customer Stats Summary Block */}
       {customers.length > 0 && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 main-720:grid-cols-4 gap-3">
           <div className="flex items-center gap-3 p-4 bg-surface rounded-2xl border border-border/80 shadow-sm transition-all hover:border-brand/20">
             <div className="w-9 h-9 rounded-xl bg-brand/10 text-brand flex items-center justify-center shrink-0">
               <Users size={16} />
             </div>
             <div className="min-w-0">
-              <span className="block text-[10px] font-black text-content-muted uppercase tracking-wider leading-none">{t('dashboard.total_customers')}</span>
-              <span className="text-sm sm:text-base font-black text-content mt-1 block">{customers.length}</span>
+              <span className="block text-sm font-black text-content-muted uppercase leading-none">{t('dashboard.total_customers')}</span>
+              <span className="text-sm main-640:text-base font-black text-content mt-1 block">{customers.length}</span>
             </div>
           </div>
           
@@ -1055,8 +1055,8 @@ export default function Customers({ tenantId }: CustomersProps) {
               <SlidersHorizontal size={16} />
             </div>
             <div className="min-w-0">
-              <span className="block text-[10px] font-black text-content-muted uppercase tracking-wider leading-none">{t('customers.filter_results')}</span>
-              <span className="text-sm sm:text-base font-black text-brand mt-1 block">{filteredCustomers.length}</span>
+              <span className="block text-sm font-black text-content-muted uppercase leading-none">{t('customers.filter_results')}</span>
+              <span className="text-sm main-640:text-base font-black text-brand mt-1 block">{filteredCustomers.length}</span>
             </div>
           </div>
 
@@ -1065,8 +1065,8 @@ export default function Customers({ tenantId }: CustomersProps) {
               <ArrowDownLeft size={16} />
             </div>
             <div className="min-w-0">
-              <span className="block text-[10px] font-black text-content-muted uppercase tracking-wider leading-none">{t('customers.stat_debtors')}</span>
-              <span className="text-sm sm:text-base font-black text-danger mt-1 block">
+              <span className="block text-sm font-black text-content-muted uppercase leading-none">{t('customers.stat_debtors')}</span>
+              <span className="text-sm main-640:text-base font-black text-danger mt-1 block">
                 {customers.filter(c => (customerBalances[c.id] || 0) > 0).length}
               </span>
             </div>
@@ -1077,8 +1077,8 @@ export default function Customers({ tenantId }: CustomersProps) {
               <ArrowUpRight size={16} />
             </div>
             <div className="min-w-0">
-              <span className="block text-[10px] font-black text-content-muted uppercase tracking-wider leading-none">{t('customers.stat_creditors')}</span>
-              <span className="text-sm sm:text-base font-black text-success mt-1 block">
+              <span className="block text-sm font-black text-content-muted uppercase leading-none">{t('customers.stat_creditors')}</span>
+              <span className="text-sm main-640:text-base font-black text-success mt-1 block">
                 {customers.filter(c => (customerBalances[c.id] || 0) < 0).length}
               </span>
             </div>
@@ -1090,7 +1090,7 @@ export default function Customers({ tenantId }: CustomersProps) {
       <div className="space-y-3">
         {/* Row Header - Desktop only */}
         {filteredCustomers.length > 0 && (
-          <div className="hidden lg:grid grid-cols-12 gap-4 px-6 py-4 bg-surface rounded-2xl text-xs font-black text-content-muted border border-border/80 shadow-sm items-center">
+          <div className="hidden main-900:grid grid-cols-12 gap-4 px-6 py-4 bg-surface rounded-2xl text-sm font-black text-content-muted border border-border/80 shadow-sm items-center">
             <div className="col-span-1 flex items-center gap-2.5">
               <button
                 type="button"
@@ -1134,7 +1134,7 @@ export default function Customers({ tenantId }: CustomersProps) {
                 animate={{ opacity: 1, y: 0 }}
                 onClick={() => openDetails(customer)}
                 className={cn(
-                  "bg-surface rounded-2xl border transition-all group relative p-3 sm:p-4 lg:p-6 cursor-pointer select-none",
+                  "bg-surface rounded-2xl border transition-all group relative p-3 main-640:p-4 main-900:p-6 cursor-pointer select-none",
                   activeMenuId === customer.id ? "z-40" : "z-10",
                   isSelected
                     ? "border-brand ring-2 ring-brand/30 bg-brand/5 shadow-md"
@@ -1142,10 +1142,10 @@ export default function Customers({ tenantId }: CustomersProps) {
                 )}
               >
                 {/* Desktop 12-col grid row vs Mobile/Tablet Card Layout */}
-                <div className="flex flex-col gap-3 lg:grid lg:grid-cols-12 lg:gap-4 lg:items-center">
+                <div className="flex flex-col gap-3 main-900:grid main-900:grid-cols-12 main-900:gap-4 main-900:items-center">
                   
                   {/* MOBILE & TABLET HEADER (< lg) */}
-                  <div className="flex lg:hidden items-center justify-between gap-3 border-b border-border/50 pb-3">
+                  <div className="flex main-900:hidden items-center justify-between gap-3 border-b border-border/50 pb-3">
                     <div className="flex items-center gap-3 min-w-0">
                       <button
                         type="button"
@@ -1164,7 +1164,7 @@ export default function Customers({ tenantId }: CustomersProps) {
                         {isSelected ? <CheckSquare size={16} /> : <Square size={16} />}
                       </button>
 
-                      <div className="w-9 h-9 bg-brand/10 text-brand rounded-xl flex items-center justify-center text-xs font-black shadow-inner shrink-0">
+                      <div className="w-9 h-9 bg-brand/10 text-brand rounded-xl flex items-center justify-center text-sm font-black shadow-inner shrink-0">
                         {getInitials(customer.name)}
                       </div>
 
@@ -1172,10 +1172,10 @@ export default function Customers({ tenantId }: CustomersProps) {
                         <h3 className="text-sm font-black text-content flex items-center gap-1.5 hover:text-brand transition-colors">
                           <span className="truncate">{customer.name}</span>
                           {customer.isB2B && (
-                            <span className="bg-brand/10 text-brand px-1.5 py-0.5 rounded-md text-[9px] font-black shrink-0">B2B</span>
+                            <span className="bg-brand/10 text-brand px-1.5 py-0.5 rounded-md text-sm font-black shrink-0">B2B</span>
                           )}
                         </h3>
-                        <span className="text-[10px] font-bold text-content-muted/80">
+                        <span className="text-sm font-bold text-content-muted/80">
                           #{String(index + 1).padStart(2, '0')}
                         </span>
                       </div>
@@ -1183,7 +1183,7 @@ export default function Customers({ tenantId }: CustomersProps) {
 
                     <div className="flex items-center gap-2 shrink-0">
                       {customer.isTest && (
-                        <span className="bg-warning/10 text-warning px-2 py-0.5 rounded-md text-[9px] font-black flex items-center gap-0.5">
+                        <span className="bg-warning/10 text-warning px-2 py-0.5 rounded-md text-sm font-black flex items-center gap-0.5">
                           <Zap size={8} />
                           {t('common.test_data')}
                         </span>
@@ -1220,12 +1220,12 @@ export default function Customers({ tenantId }: CustomersProps) {
                                 animate={{ opacity: 1, scale: 1, y: 0 }}
                                 exit={{ opacity: 0, scale: 0.95, y: -10 }}
                                 className={cn(
-                                  "absolute z-50 bg-surface/95 backdrop-blur-md border border-border shadow-2xl rounded-2xl p-2 min-w-[180px] sm:min-w-[200px] flex flex-col gap-0.5 mt-1.5 top-full",
+                                  "absolute z-50 bg-surface/95 backdrop-blur-md border border-border shadow-2xl rounded-2xl p-2 min-w-[180px] main-640:min-w-[200px] flex flex-col gap-0.5 mt-1.5 top-full",
                                   isRtl ? "left-0 origin-top-left" : "right-0 origin-top-right"
                                 )}
                                 onClick={(e) => e.stopPropagation()}
                               >
-                                <div className="px-2.5 py-1 text-[10px] font-black text-content-muted/80 uppercase tracking-wider text-start border-b border-border/40 mb-1">
+                                <div className="px-2.5 py-1 text-sm font-black text-content-muted/80 uppercase text-start border-b border-border/40 mb-1">
                                   {t('customers.customer_options')}
                                 </div>
 
@@ -1235,7 +1235,7 @@ export default function Customers({ tenantId }: CustomersProps) {
                                     setActiveMenuId(null);
                                     openDetails(customer);
                                   }}
-                                  className="w-full flex items-center justify-between px-2.5 py-2 text-start rounded-xl text-xs font-bold text-content-muted hover:text-brand hover:bg-brand/5 transition-all cursor-pointer group"
+                                  className="w-full flex items-center justify-between px-2.5 py-2 text-start rounded-xl text-sm font-bold text-content-muted hover:text-brand hover:bg-brand/5 transition-all cursor-pointer group"
                                 >
                                   <span className="truncate">{t('customers.view_full_profile')}</span>
                                   <div className="w-6 h-6 rounded-lg bg-brand/5 flex items-center justify-center shrink-0 group-hover:bg-brand/15 text-brand transition-all">
@@ -1249,7 +1249,7 @@ export default function Customers({ tenantId }: CustomersProps) {
                                     setActiveMenuId(null);
                                     openStatement(customer);
                                   }}
-                                  className="w-full flex items-center justify-between px-2.5 py-2 text-start rounded-xl text-xs font-bold text-content-muted hover:text-brand hover:bg-brand/5 transition-all cursor-pointer group"
+                                  className="w-full flex items-center justify-between px-2.5 py-2 text-start rounded-xl text-sm font-bold text-content-muted hover:text-brand hover:bg-brand/5 transition-all cursor-pointer group"
                                 >
                                   <span className="truncate">{t('customers.account_statement')}</span>
                                   <div className="w-6 h-6 rounded-lg bg-brand/5 flex items-center justify-center shrink-0 group-hover:bg-brand/15 text-brand transition-all">
@@ -1263,7 +1263,7 @@ export default function Customers({ tenantId }: CustomersProps) {
                                     setActiveMenuId(null);
                                     navigate(`/orders?customerId=${customer.id}`);
                                   }}
-                                  className="w-full flex items-center justify-between px-2.5 py-2 text-start rounded-xl text-xs font-bold text-content-muted hover:text-brand hover:bg-brand/5 transition-all cursor-pointer group"
+                                  className="w-full flex items-center justify-between px-2.5 py-2 text-start rounded-xl text-sm font-bold text-content-muted hover:text-brand hover:bg-brand/5 transition-all cursor-pointer group"
                                 >
                                   <span className="truncate">{t('orders.create_new_order')}</span>
                                   <div className="w-6 h-6 rounded-lg bg-brand/5 flex items-center justify-center shrink-0 group-hover:bg-brand/15 text-brand transition-all">
@@ -1279,7 +1279,7 @@ export default function Customers({ tenantId }: CustomersProps) {
                                     setActiveMenuId(null);
                                     sendMeasurementsLink(customer);
                                   }}
-                                  className="w-full flex items-center justify-between px-2.5 py-2 text-start rounded-xl text-xs font-bold text-content-muted hover:text-brand hover:bg-brand/5 transition-all cursor-pointer group"
+                                  className="w-full flex items-center justify-between px-2.5 py-2 text-start rounded-xl text-sm font-bold text-content-muted hover:text-brand hover:bg-brand/5 transition-all cursor-pointer group"
                                 >
                                   <span className="truncate">{t('customers.send_measurements_link')}</span>
                                   <div className="w-6 h-6 rounded-lg bg-brand/5 flex items-center justify-center shrink-0 group-hover:bg-brand/15 text-brand transition-all">
@@ -1297,7 +1297,7 @@ export default function Customers({ tenantId }: CustomersProps) {
                                         setActiveMenuId(null);
                                         openEditModal(customer);
                                       }}
-                                      className="w-full flex items-center justify-between px-2.5 py-2 text-start rounded-xl text-xs font-bold text-content-muted hover:text-brand hover:bg-brand/5 transition-all cursor-pointer group"
+                                      className="w-full flex items-center justify-between px-2.5 py-2 text-start rounded-xl text-sm font-bold text-content-muted hover:text-brand hover:bg-brand/5 transition-all cursor-pointer group"
                                     >
                                       <span className="truncate">{t('common.edit')}</span>
                                       <div className="w-6 h-6 rounded-lg bg-brand/5 flex items-center justify-center shrink-0 group-hover:bg-brand/15 text-brand/80 transition-all">
@@ -1314,7 +1314,7 @@ export default function Customers({ tenantId }: CustomersProps) {
                                       setActiveMenuId(null);
                                       handleDelete(customer.id);
                                     }}
-                                    className="w-full flex items-center justify-between px-2.5 py-2 text-start rounded-xl text-xs font-bold text-danger hover:text-danger/90 hover:bg-danger/5 transition-all cursor-pointer group"
+                                    className="w-full flex items-center justify-between px-2.5 py-2 text-start rounded-xl text-sm font-bold text-danger hover:text-danger/90 hover:bg-danger/5 transition-all cursor-pointer group"
                                   >
                                     <span className="truncate">{t('common.delete')}</span>
                                     <div className="w-6 h-6 rounded-lg bg-danger/5 flex items-center justify-center shrink-0 group-hover:bg-danger/15 text-danger transition-all">
@@ -1331,17 +1331,17 @@ export default function Customers({ tenantId }: CustomersProps) {
                   </div>
 
                   {/* MOBILE & TABLET INFO GRID (< lg) */}
-                  <div className="grid lg:hidden grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                  <div className="grid main-900:hidden grid-cols-2 main-640:grid-cols-4 gap-2 text-sm">
                     {/* Phone */}
                     <div className="bg-surface-muted/60 p-2.5 rounded-xl border border-border/40 flex flex-col gap-1 justify-center">
-                      <span className="text-[10px] font-bold text-content-muted flex items-center gap-1">
+                      <span className="text-sm font-bold text-content-muted flex items-center gap-1">
                         <Phone size={10} className="text-brand shrink-0" />
                         {t('onboarding.fields.phone')}
                       </span>
                       <a 
                         href={`tel:${customer.phone}`} 
                         onClick={(e) => e.stopPropagation()}
-                        className="font-bold text-content hover:text-brand transition-colors dir-ltr text-right truncate text-xs"
+                        className="inline-flex min-h-11 items-center font-bold text-content hover:text-brand transition-colors dir-ltr text-right truncate text-sm"
                       >
                         {customer.phone}
                       </a>
@@ -1349,36 +1349,36 @@ export default function Customers({ tenantId }: CustomersProps) {
 
                     {/* Orders count */}
                     <div className="bg-surface-muted/60 p-2.5 rounded-xl border border-border/40 flex flex-col gap-1 justify-center">
-                      <span className="text-[10px] font-bold text-content-muted flex items-center gap-1">
+                      <span className="text-sm font-bold text-content-muted flex items-center gap-1">
                         <ShoppingBag size={10} className="text-brand shrink-0" />
                         {t('dashboard.orders_count')}
                       </span>
-                      <span className="font-black text-brand text-xs">
+                      <span className="font-black text-brand text-sm">
                         {customerOrderCounts[customer.id] || 0}
                       </span>
                     </div>
 
                     {/* Total purchases */}
                     <div className="bg-surface-muted/60 p-2.5 rounded-xl border border-border/40 flex flex-col gap-1 justify-center">
-                      <span className="text-[10px] font-bold text-content-muted flex items-center gap-1">
+                      <span className="text-sm font-bold text-content-muted flex items-center gap-1">
                         <DollarSign size={10} className="text-brand shrink-0" />
                         {t('customers.total_purchases_short')}
                       </span>
-                      <span className="font-black text-content text-xs">
+                      <span className="font-black text-content text-sm">
                         <PriceDisplay amount={customerTotalPurchases[customer.id] || 0} />
                       </span>
                     </div>
 
                     {/* Balance */}
                     <div className="bg-surface-muted/60 p-2.5 rounded-xl border border-border/40 flex flex-col gap-1 justify-center">
-                      <span className="text-[10px] font-bold text-content-muted">
+                      <span className="text-sm font-bold text-content-muted">
                         {t('customers.balance')}
                       </span>
                       <div className="flex items-center">
                         {(() => {
                           if (balance > 0) {
                             return (
-                              <span className="bg-danger/10 text-danger border border-danger/20 px-2 py-0.5 rounded-md text-[10px] font-black flex items-center gap-1 truncate">
+                              <span className="bg-danger/10 text-danger border border-danger/20 px-2 py-0.5 rounded-md text-sm font-black flex items-center gap-1 truncate">
                                 <span className="w-1.5 h-1.5 bg-danger rounded-full animate-pulse shrink-0" />
                                 <span>{t('customers.debtor')}:</span>
                                 <PriceDisplay amount={balance} />
@@ -1386,7 +1386,7 @@ export default function Customers({ tenantId }: CustomersProps) {
                             );
                           } else if (balance < 0) {
                             return (
-                              <span className="bg-success/10 text-success border border-success/20 px-2 py-0.5 rounded-md text-[10px] font-black flex items-center gap-1 truncate">
+                              <span className="bg-success/10 text-success border border-success/20 px-2 py-0.5 rounded-md text-sm font-black flex items-center gap-1 truncate">
                                 <span className="w-1.5 h-1.5 bg-success rounded-full shrink-0" />
                                 <span>{t('customers.creditor')}:</span>
                                 <PriceDisplay amount={Math.abs(balance)} />
@@ -1394,7 +1394,7 @@ export default function Customers({ tenantId }: CustomersProps) {
                             );
                           } else {
                             return (
-                              <span className="text-content-muted font-bold text-[10px] bg-surface-muted border border-border/50 px-2 py-0.5 rounded-md">
+                              <span className="text-content-muted font-bold text-sm bg-surface-muted border border-border/50 px-2 py-0.5 rounded-md">
                                 0
                               </span>
                             );
@@ -1404,10 +1404,10 @@ export default function Customers({ tenantId }: CustomersProps) {
                     </div>
                   </div>
 
-                  {/* DESKTOP COLUMNS (lg:grid lg:grid-cols-12) */}
+                  {/* DESKTOP COLUMNS (main-900:grid main-900:grid-cols-12) */}
                   
-                  {/* Col 1: Checkbox + Number (lg:col-span-1) */}
-                  <div className="hidden lg:flex col-span-1 items-center gap-2.5">
+                  {/* Col 1: Checkbox + Number (main-900:col-span-1) */}
+                  <div className="hidden main-900:flex col-span-1 items-center gap-2.5">
                     <button
                       type="button"
                       onClick={(e) => {
@@ -1424,13 +1424,13 @@ export default function Customers({ tenantId }: CustomersProps) {
                     >
                       {isSelected ? <CheckSquare size={16} /> : <Square size={16} />}
                     </button>
-                    <span className="inline-flex items-center justify-center bg-surface-muted border border-border/60 text-[10px] font-black text-content-muted w-6.5 h-6.5 rounded-full shrink-0 shadow-inner">
+                    <span className="inline-flex items-center justify-center bg-surface-muted border border-border/60 text-sm font-black text-content-muted w-6.5 h-6.5 rounded-full shrink-0 shadow-inner">
                       {String(index + 1).padStart(2, '0')}
                     </span>
                   </div>
 
-                  {/* Col 2: Name & Type & Initials (lg:col-span-3) */}
-                  <div className="hidden lg:flex col-span-3 items-center gap-3">
+                  {/* Col 2: Name & Type & Initials (main-900:col-span-3) */}
+                  <div className="hidden main-900:flex col-span-3 items-center gap-3">
                     <div className="w-10 h-10 bg-brand/10 text-brand rounded-xl flex items-center justify-center text-sm font-black shadow-inner shrink-0">
                       {getInitials(customer.name)}
                     </div>
@@ -1438,11 +1438,11 @@ export default function Customers({ tenantId }: CustomersProps) {
                       <h3 className="text-base font-black text-content flex items-center gap-1.5 hover:text-brand transition-colors">
                         <span className="truncate">{customer.name}</span>
                         {customer.isB2B && (
-                          <span className="bg-brand/10 text-brand px-1.5 py-0.5 rounded-md text-[9px] font-black shrink-0">B2B</span>
+                          <span className="bg-brand/10 text-brand px-1.5 py-0.5 rounded-md text-sm font-black shrink-0">B2B</span>
                         )}
                       </h3>
                       {customer.isTest && (
-                        <span className="inline-flex bg-warning/10 text-warning px-1.5 py-0.5 rounded-md text-[9px] font-black mt-0.5 items-center gap-0.5">
+                        <span className="inline-flex bg-warning/10 text-warning px-1.5 py-0.5 rounded-md text-sm font-black mt-0.5 items-center gap-0.5">
                           <Zap size={8} />
                           {t('common.test_data')}
                         </span>
@@ -1450,38 +1450,38 @@ export default function Customers({ tenantId }: CustomersProps) {
                     </div>
                   </div>
 
-                  {/* Col 3: Phone Number (lg:col-span-2) */}
-                  <div className="hidden lg:flex col-span-2 items-center justify-start gap-2 text-sm text-content-muted">
+                  {/* Col 3: Phone Number (main-900:col-span-2) */}
+                  <div className="hidden main-900:flex col-span-2 items-center justify-start gap-2 text-sm text-content-muted">
                     <a 
                       href={`tel:${customer.phone}`} 
                       onClick={(e) => e.stopPropagation()}
-                      className="text-xs text-content-muted font-bold flex items-center gap-1 hover:text-brand transition-colors"
+                      className="text-sm text-content-muted font-bold flex min-h-11 items-center gap-1 hover:text-brand transition-colors"
                     >
                       <Phone size={12} className="text-brand shrink-0" />
                       <span>{customer.phone}</span>
                     </a>
                   </div>
 
-                  {/* Col 4: Number of Orders (lg:col-span-1) */}
-                  <div className="hidden lg:flex col-span-1 items-center justify-start gap-2 text-sm text-content">
-                    <span className="bg-brand/10 text-brand px-2.5 py-0.5 rounded-lg text-xs font-black">
+                  {/* Col 4: Number of Orders (main-900:col-span-1) */}
+                  <div className="hidden main-900:flex col-span-1 items-center justify-start gap-2 text-sm text-content">
+                    <span className="bg-brand/10 text-brand px-2.5 py-0.5 rounded-lg text-sm font-black">
                       {customerOrderCounts[customer.id] || 0}
                     </span>
                   </div>
 
-                  {/* Col 5: Total Purchase Amount (lg:col-span-2) */}
-                  <div className="hidden lg:flex col-span-2 items-center justify-start gap-2 text-sm text-content">
+                  {/* Col 5: Total Purchase Amount (main-900:col-span-2) */}
+                  <div className="hidden main-900:flex col-span-2 items-center justify-start gap-2 text-sm text-content">
                     <span className="font-bold text-content">
                       <PriceDisplay amount={customerTotalPurchases[customer.id] || 0} />
                     </span>
                   </div>
 
-                  {/* Col 6: Financial Balance (lg:col-span-2) */}
-                  <div className="hidden lg:flex col-span-2 items-center justify-start gap-2">
+                  {/* Col 6: Financial Balance (main-900:col-span-2) */}
+                  <div className="hidden main-900:flex col-span-2 items-center justify-start gap-2">
                     {(() => {
                       if (balance > 0) {
                         return (
-                          <span className="bg-danger/10 text-danger border border-danger/20 px-2.5 py-1 rounded-full text-xs font-black whitespace-nowrap flex items-center gap-1.5">
+                          <span className="bg-danger/10 text-danger border border-danger/20 px-2.5 py-1 rounded-full text-sm font-black whitespace-nowrap flex items-center gap-1.5">
                             <span className="w-1.5 h-1.5 bg-danger rounded-full animate-pulse shrink-0" />
                             <span>{t('customers.debtor')}:</span>
                             <PriceDisplay amount={balance} />
@@ -1489,7 +1489,7 @@ export default function Customers({ tenantId }: CustomersProps) {
                         );
                       } else if (balance < 0) {
                         return (
-                          <span className="bg-success/10 text-success border border-success/20 px-2.5 py-1 rounded-full text-xs font-black whitespace-nowrap flex items-center gap-1.5">
+                          <span className="bg-success/10 text-success border border-success/20 px-2.5 py-1 rounded-full text-sm font-black whitespace-nowrap flex items-center gap-1.5">
                             <span className="w-1.5 h-1.5 bg-success rounded-full shrink-0" />
                             <span>{t('customers.creditor')}:</span>
                             <PriceDisplay amount={Math.abs(balance)} />
@@ -1497,7 +1497,7 @@ export default function Customers({ tenantId }: CustomersProps) {
                         );
                       } else {
                         return (
-                          <span className="text-content-muted font-bold text-xs bg-surface-muted/60 border border-border/50 px-2.5 py-1 rounded-full">
+                          <span className="text-content-muted font-bold text-sm bg-surface-muted/60 border border-border/50 px-2.5 py-1 rounded-full">
                             0
                           </span>
                         );
@@ -1506,7 +1506,7 @@ export default function Customers({ tenantId }: CustomersProps) {
                   </div>
 
                   {/* Col 7: Actions (Desktop only) */}
-                  <div className="hidden lg:flex col-span-1 items-center justify-end">
+                  <div className="hidden main-900:flex col-span-1 items-center justify-end">
                     <div className="relative flex items-center justify-end">
                       <button
                         type="button"
@@ -1540,12 +1540,12 @@ export default function Customers({ tenantId }: CustomersProps) {
                               animate={{ opacity: 1, scale: 1, y: 0 }}
                               exit={{ opacity: 0, scale: 0.95, y: -10 }}
                               className={cn(
-                                "absolute z-50 bg-surface/95 backdrop-blur-md border border-border shadow-2xl rounded-2xl p-2 min-w-[180px] sm:min-w-[200px] flex flex-col gap-0.5 mt-1.5 top-full",
+                                "absolute z-50 bg-surface/95 backdrop-blur-md border border-border shadow-2xl rounded-2xl p-2 min-w-[180px] main-640:min-w-[200px] flex flex-col gap-0.5 mt-1.5 top-full",
                                 isRtl ? "left-0 origin-top-left" : "right-0 origin-top-right"
                               )}
                               onClick={(e) => e.stopPropagation()}
                             >
-                              <div className="px-2.5 py-1 text-[10px] font-black text-content-muted/80 uppercase tracking-wider text-start border-b border-border/40 mb-1">
+                              <div className="px-2.5 py-1 text-sm font-black text-content-muted/80 uppercase text-start border-b border-border/40 mb-1">
                                 {t('customers.customer_options')}
                               </div>
 
@@ -1556,7 +1556,7 @@ export default function Customers({ tenantId }: CustomersProps) {
                                   setActiveMenuId(null);
                                   openDetails(customer);
                                 }}
-                                className="w-full flex items-center justify-between px-2.5 py-2 text-start rounded-xl text-xs font-bold text-content-muted hover:text-brand hover:bg-brand/5 transition-all cursor-pointer group"
+                                className="w-full flex items-center justify-between px-2.5 py-2 text-start rounded-xl text-sm font-bold text-content-muted hover:text-brand hover:bg-brand/5 transition-all cursor-pointer group"
                               >
                                 <span className="truncate">{t('customers.view_full_profile')}</span>
                                 <div className="w-6 h-6 rounded-lg bg-brand/5 flex items-center justify-center shrink-0 group-hover:bg-brand/15 text-brand transition-all">
@@ -1571,7 +1571,7 @@ export default function Customers({ tenantId }: CustomersProps) {
                                   setActiveMenuId(null);
                                   openStatement(customer);
                                 }}
-                                className="w-full flex items-center justify-between px-2.5 py-2 text-start rounded-xl text-xs font-bold text-content-muted hover:text-brand hover:bg-brand/5 transition-all cursor-pointer group"
+                                className="w-full flex items-center justify-between px-2.5 py-2 text-start rounded-xl text-sm font-bold text-content-muted hover:text-brand hover:bg-brand/5 transition-all cursor-pointer group"
                               >
                                 <span className="truncate">{t('customers.account_statement')}</span>
                                 <div className="w-6 h-6 rounded-lg bg-brand/5 flex items-center justify-center shrink-0 group-hover:bg-brand/15 text-brand transition-all">
@@ -1586,7 +1586,7 @@ export default function Customers({ tenantId }: CustomersProps) {
                                   setActiveMenuId(null);
                                   navigate(`/orders?customerId=${customer.id}`);
                                 }}
-                                className="w-full flex items-center justify-between px-2.5 py-2 text-start rounded-xl text-xs font-bold text-content-muted hover:text-brand hover:bg-brand/5 transition-all cursor-pointer group"
+                                className="w-full flex items-center justify-between px-2.5 py-2 text-start rounded-xl text-sm font-bold text-content-muted hover:text-brand hover:bg-brand/5 transition-all cursor-pointer group"
                               >
                                 <span className="truncate">{t('orders.create_new_order')}</span>
                                 <div className="w-6 h-6 rounded-lg bg-brand/5 flex items-center justify-center shrink-0 group-hover:bg-brand/15 text-brand transition-all">
@@ -1603,7 +1603,7 @@ export default function Customers({ tenantId }: CustomersProps) {
                                   setActiveMenuId(null);
                                   sendMeasurementsLink(customer);
                                 }}
-                                className="w-full flex items-center justify-between px-2.5 py-2 text-start rounded-xl text-xs font-bold text-content-muted hover:text-brand hover:bg-brand/5 transition-all cursor-pointer group"
+                                className="w-full flex items-center justify-between px-2.5 py-2 text-start rounded-xl text-sm font-bold text-content-muted hover:text-brand hover:bg-brand/5 transition-all cursor-pointer group"
                               >
                                 <span className="truncate">{t('customers.send_measurements_link')}</span>
                                 <div className="w-6 h-6 rounded-lg bg-brand/5 flex items-center justify-center shrink-0 group-hover:bg-brand/15 text-brand transition-all">
@@ -1621,7 +1621,7 @@ export default function Customers({ tenantId }: CustomersProps) {
                                       setActiveMenuId(null);
                                       openEditModal(customer);
                                     }}
-                                    className="w-full flex items-center justify-between px-2.5 py-2 text-start rounded-xl text-xs font-bold text-content-muted hover:text-brand hover:bg-brand/5 transition-all cursor-pointer group"
+                                    className="w-full flex items-center justify-between px-2.5 py-2 text-start rounded-xl text-sm font-bold text-content-muted hover:text-brand hover:bg-brand/5 transition-all cursor-pointer group"
                                   >
                                     <span className="truncate">{t('common.edit')}</span>
                                     <div className="w-6 h-6 rounded-lg bg-brand/5 flex items-center justify-center shrink-0 group-hover:bg-brand/15 text-brand/80 transition-all">
@@ -1638,7 +1638,7 @@ export default function Customers({ tenantId }: CustomersProps) {
                                     setActiveMenuId(null);
                                     handleDelete(customer.id);
                                   }}
-                                  className="w-full flex items-center justify-between px-2.5 py-2 text-start rounded-xl text-xs font-bold text-danger hover:text-danger/90 hover:bg-danger/5 transition-all cursor-pointer group"
+                                  className="w-full flex items-center justify-between px-2.5 py-2 text-start rounded-xl text-sm font-bold text-danger hover:text-danger/90 hover:bg-danger/5 transition-all cursor-pointer group"
                                 >
                                   <span className="truncate">{t('common.delete')}</span>
                                   <div className="w-6 h-6 rounded-lg bg-danger/5 flex items-center justify-center shrink-0 group-hover:bg-danger/15 text-danger transition-all">
@@ -1699,13 +1699,13 @@ export default function Customers({ tenantId }: CustomersProps) {
             initial={{ y: 80, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: 80, opacity: 0 }}
-            className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[100] bg-slate-900/95 backdrop-blur-md text-white px-5 py-3.5 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.3)] border border-white/10 flex items-center gap-4 max-w-2xl w-[92vw] sm:w-auto justify-between"
+            className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[100] bg-slate-900/95 backdrop-blur-md text-white px-5 py-3.5 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.3)] border border-white/10 flex items-center gap-4 max-w-2xl w-[92vw] main-640:w-auto justify-between"
           >
             <div className="flex items-center gap-3 shrink-0">
-              <span className="bg-brand text-white font-black px-2.5 py-1 rounded-xl text-xs sm:text-sm animate-pulse">
+              <span className="bg-brand text-white font-black px-2.5 py-1 rounded-xl text-sm animate-pulse">
                 {selectedCustomerIds.length}
               </span>
-              <span className="text-xs sm:text-sm font-black text-slate-200 truncate">
+              <span className="text-sm font-black text-slate-200 truncate">
                 {t('customers.selected_for_actions')}
               </span>
             </div>
@@ -1714,22 +1714,22 @@ export default function Customers({ tenantId }: CustomersProps) {
               {canExport && (
               <button
                 onClick={() => handleExportExcel()}
-                className="bg-success hover:bg-success/90 text-white px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all hover:scale-102 cursor-pointer border border-success/10 shadow-lg shadow-success/10"
+                className="bg-success hover:bg-success/90 text-white px-3.5 py-2 rounded-xl text-sm font-bold flex items-center gap-1.5 transition-all hover:scale-102 cursor-pointer border border-success/10 shadow-lg shadow-success/10"
                 title={t('customers.export_selected_excel')}
               >
                 <FileSpreadsheet size={14} />
-                <span className="hidden sm:inline">{t('customers.export_excel_short')}</span>
+                <span className="hidden main-640:inline">{t('customers.export_excel_short')}</span>
               </button>
               )}
 
               {canDelete && (
                 <button
                   onClick={() => setIsBulkDeleteModalOpen(true)}
-                  className="bg-danger hover:bg-danger/90 text-white px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all hover:scale-102 cursor-pointer border border-danger/10 shadow-lg shadow-danger/10"
+                  className="bg-danger hover:bg-danger/90 text-white px-3.5 py-2 rounded-xl text-sm font-bold flex items-center gap-1.5 transition-all hover:scale-102 cursor-pointer border border-danger/10 shadow-lg shadow-danger/10"
                   title={t('customers.delete_selected_customers')}
                 >
                   <Trash2 size={14} />
-                  <span className="hidden sm:inline">{t('customers.delete_selected_short')}</span>
+                  <span className="hidden main-640:inline">{t('customers.delete_selected_short')}</span>
                 </button>
               )}
 
@@ -1753,7 +1753,7 @@ export default function Customers({ tenantId }: CustomersProps) {
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="bg-surface p-6 sm:p-8 rounded-3xl border border-border shadow-2xl max-w-md w-full text-start space-y-6"
+              className="bg-surface p-6 main-640:p-8 rounded-3xl border border-border shadow-2xl max-w-md w-full text-start space-y-6"
               dir={isRtl ? "rtl" : "ltr"}
             >
               <div className="flex items-center gap-4 text-danger">
@@ -1762,7 +1762,7 @@ export default function Customers({ tenantId }: CustomersProps) {
                 </div>
                 <div>
                   <h3 className="text-xl font-black text-content">{t('customers.bulk_delete_title')}</h3>
-                  <p className="text-xs text-content-muted mt-1 font-medium">{t('customers.irreversible_action')}</p>
+                  <p className="text-sm text-content-muted mt-1 font-medium">{t('customers.irreversible_action')}</p>
                 </div>
               </div>
 
@@ -1792,19 +1792,19 @@ export default function Customers({ tenantId }: CustomersProps) {
       {/* Modals */}
       <AnimatePresence>
         {isModalOpen && (
-          <div role="dialog" aria-modal="true" className="fixed inset-0 z-[150] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/50 backdrop-blur-sm overflow-y-auto">
+          <div role="dialog" aria-modal="true" className="fixed inset-0 z-[150] flex items-end main-640:items-center justify-center p-0 main-640:p-4 bg-black/50 backdrop-blur-sm overflow-y-auto">
             <motion.div
               initial={{ scale: 0.95, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.95, opacity: 0, y: 20 }}
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="relative w-full max-w-[clamp(320px,94vw,1100px)] max-h-[92vh] sm:max-h-[90vh] rounded-t-3xl sm:rounded-3xl bg-[var(--surface)] shadow-2xl flex flex-col my-auto border border-border z-10 overflow-hidden"
+              className="relative w-full max-w-[clamp(320px,94vw,1100px)] max-h-[92vh] main-640:max-h-[90vh] rounded-t-3xl main-640:rounded-3xl bg-[var(--surface)] shadow-2xl flex flex-col my-auto border border-border z-10 overflow-hidden"
               dir={isRtl ? "rtl" : "ltr"}
             >
               <form onSubmit={handleSubmit(onSubmit, onInvalidSubmit)} className="flex flex-col flex-1 max-h-[90vh] overflow-hidden">
                 {/* Header (Fixed) */}
-                <div className="sticky top-0 z-10 flex items-center justify-between p-4 sm:p-6 border-b border-[var(--border)] bg-[var(--surface)] shrink-0 bg-brand/5">
-                  <h3 className="text-base sm:text-lg lg:text-xl font-black text-content">
+                <div className="sticky top-0 z-10 flex items-center justify-between p-4 main-640:p-6 border-b border-[var(--border)] bg-[var(--surface)] shrink-0 bg-brand/5">
+                  <h3 className="text-base main-640:text-lg main-900:text-xl font-black text-content">
                     {editingCustomer ? t('customers.edit_customer') : t('pos.add_new_customer')}
                   </h3>
                   <button type="button" onClick={() => setIsModalOpen(false)} className="p-2 hover:bg-surface-muted rounded-full transition-colors text-content-muted">
@@ -1813,9 +1813,9 @@ export default function Customers({ tenantId }: CustomersProps) {
                 </div>
                 
                 {/* Body (Scrollable) */}
-                <div className={cn("flex-1 overflow-y-auto p-4 sm:p-6 space-y-6", isRtl ? "text-right" : "text-left")}>
+                <div className={cn("flex-1 overflow-y-auto p-4 main-640:p-6 space-y-6", isRtl ? "text-right" : "text-left")}>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                <div className="grid grid-cols-1 main-720:grid-cols-2 gap-6 mb-8">
                   <div className="space-y-2">
                     <label htmlFor="customer-name" className="text-sm font-bold text-content-muted">{t('login.full_name')} <span className="text-danger">*</span></label>
                     <IconInput
@@ -1857,7 +1857,7 @@ export default function Customers({ tenantId }: CustomersProps) {
                       if (revokeError) handleError(revokeError as any, t('customers.measurements_link_failed'));
                       else toastSuccess(t('customers.measurements_link_revoked'));
                     }}
-                    className="-mt-6 mb-8 px-4 py-2 text-content-muted font-bold text-xs rounded-xl hover:bg-surface-muted transition-all w-fit"
+                    className="-mt-6 mb-8 px-4 py-2 text-content-muted font-bold text-sm rounded-xl hover:bg-surface-muted transition-all w-fit"
                   >
                     {t('customers.revoke_measurements_link')}
                   </button>
@@ -1868,9 +1868,9 @@ export default function Customers({ tenantId }: CustomersProps) {
                   {t('customers.b2b_data')}
                 </h4>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8 pb-8 border-b border-border">
+                <div className="grid grid-cols-1 main-720:grid-cols-2 gap-6 mb-8 pb-8 border-b border-border">
                   <div className="space-y-2">
-                    <label htmlFor="customer-company-name" className="text-sm font-bold text-content-muted">{t('customers.company_name_full')} <span className="opacity-70 text-xs">({t('common.optional')})</span></label>
+                    <label htmlFor="customer-company-name" className="text-sm font-bold text-content-muted">{t('customers.company_name_full')} <span className="opacity-70 text-sm">({t('common.optional')})</span></label>
                     <IconInput
                       id="customer-company-name"
                       type="text"
@@ -1880,7 +1880,7 @@ export default function Customers({ tenantId }: CustomersProps) {
                     />
                   </div>
                   <div className="space-y-2">
-                    <label htmlFor="customer-trn" className="text-sm font-bold text-content-muted">{t('customers.trn_company')} <span className="opacity-70 text-xs">({t('common.optional')})</span></label>
+                    <label htmlFor="customer-trn" className="text-sm font-bold text-content-muted">{t('customers.trn_company')} <span className="opacity-70 text-sm">({t('common.optional')})</span></label>
                     <IconInput
                       id="customer-trn"
                       type="text"
@@ -1963,21 +1963,21 @@ export default function Customers({ tenantId }: CustomersProps) {
                 </div>
 
                 {/* Footer (Fixed) */}
-                <div className="sticky bottom-0 z-10 shrink-0 px-4 pt-4 pb-[calc(1rem+env(safe-area-inset-bottom))] sm:px-6 sm:pt-6 sm:pb-[calc(1.5rem+env(safe-area-inset-bottom))] border-t border-[var(--border)] bg-[var(--surface)] flex items-center justify-between gap-3 shadow-md">
+                <div className="sticky bottom-0 z-10 shrink-0 px-4 pt-4 pb-[calc(1rem+env(safe-area-inset-bottom))] main-640:px-6 main-640:pt-6 main-640:pb-[calc(1.5rem+env(safe-area-inset-bottom))] border-t border-[var(--border)] bg-[var(--surface)] flex items-center justify-between gap-3 shadow-md">
                   <div>
                     {Object.keys(errors).length > 0 && (
-                      <p className="text-xs text-danger font-bold flex items-center gap-1">
+                      <p className="text-sm text-danger font-bold flex items-center gap-1">
                         <AlertCircle size={14} />
                         <span>{t('customers.name_phone_required')}</span>
                       </p>
                     )}
                   </div>
                   <div className="flex items-center gap-3">
-                    <button type="button" onClick={() => setIsModalOpen(false)} className="px-6 py-2.5 sm:px-8 sm:py-3.5 text-content-muted font-bold hover:text-content transition-colors text-sm sm:text-base">{t('common.cancel')}</button>
+                    <button type="button" onClick={() => setIsModalOpen(false)} className="px-6 py-2.5 main-640:px-8 main-640:py-3.5 text-content-muted font-bold hover:text-content transition-colors text-sm main-640:text-base">{t('common.cancel')}</button>
                     <button 
                       type="submit" 
                       disabled={isSubmitting}
-                      className="bg-brand text-white px-8 py-2.5 sm:px-12 sm:py-3.5 rounded-xl font-bold hover:bg-brand/90 shadow-lg shadow-brand/20 transition-all hover:scale-102 active:scale-98 disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
+                      className="bg-brand text-white px-8 py-2.5 main-640:px-12 main-640:py-3.5 rounded-xl font-bold hover:bg-brand/90 shadow-lg shadow-brand/20 transition-all hover:scale-102 active:scale-98 disabled:opacity-50 disabled:cursor-not-allowed text-sm main-640:text-base"
                     >
                       {isSubmitting ? t('common.saving') : t('common.save')}
                     </button>
@@ -2035,22 +2035,22 @@ export default function Customers({ tenantId }: CustomersProps) {
 const DetailSection = ({ title, icon: Icon, children, defaultOpen = true }: any) => {
   const [isOpen, setIsOpen] = useState(defaultOpen);
   return (
-    <div className="bg-surface rounded-2xl sm:rounded-3xl border border-border shadow-sm overflow-hidden">
+    <div className="bg-surface rounded-2xl main-640:rounded-3xl border border-border shadow-sm overflow-hidden">
       <button 
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full p-3.5 sm:p-5 flex items-center justify-between bg-surface-muted/50 hover:bg-surface-muted transition-colors"
+        className="w-full p-3.5 main-640:p-5 flex items-center justify-between bg-surface-muted/50 hover:bg-surface-muted transition-colors"
       >
-        <div className="flex items-center gap-2 sm:gap-3">
-          <div className="p-1.5 sm:p-2 bg-surface rounded-lg sm:rounded-xl text-brand shadow-sm">
-            <Icon size={16} className="sm:w-5 sm:h-5" />
+        <div className="flex items-center gap-2 main-640:gap-3">
+          <div className="p-1.5 main-640:p-2 bg-surface rounded-lg main-640:rounded-xl text-brand shadow-sm">
+            <Icon size={16} className="main-640:w-5 main-640:h-5" />
           </div>
-          <h3 className="text-xs sm:text-sm font-black text-content uppercase tracking-widest">{title}</h3>
+          <h3 className="text-sm font-black text-content uppercase">{title}</h3>
         </div>
         <motion.div
           animate={{ rotate: isOpen ? 180 : 0 }}
           transition={{ duration: 0.2 }}
         >
-          <ChevronDown size={16} className="text-content-muted sm:w-5 sm:h-5" />
+          <ChevronDown size={16} className="text-content-muted main-640:w-5 main-640:h-5" />
         </motion.div>
       </button>
       <AnimatePresence initial={false}>
@@ -2061,7 +2061,7 @@ const DetailSection = ({ title, icon: Icon, children, defaultOpen = true }: any)
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.3, ease: 'easeInOut' }}
           >
-            <div className="p-4 sm:p-6 border-t border-border">
+            <div className="p-4 main-640:p-6 border-t border-border">
               {children}
             </div>
           </motion.div>
@@ -2096,7 +2096,7 @@ const CustomerDetailsModal = ({
   const isRtl = isRtlLang(i18n.language);
 
   return (
-    <div role="dialog" aria-modal="true" className="fixed inset-0 z-[150] flex items-end sm:items-center justify-center p-0 sm:p-6 overflow-y-auto">
+    <div role="dialog" aria-modal="true" className="fixed inset-0 z-[150] flex items-end main-640:items-center justify-center p-0 main-640:p-6 overflow-y-auto">
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -2108,38 +2108,38 @@ const CustomerDetailsModal = ({
         initial={{ scale: 0.9, opacity: 0, y: 20 }}
         animate={{ scale: 1, opacity: 1, y: 0 }}
         exit={{ scale: 0.9, opacity: 0, y: 20 }}
-        className={cn("bg-surface w-full max-w-5xl rounded-t-3xl sm:rounded-3xl shadow-2xl relative z-10 overflow-hidden flex flex-col max-h-[92vh] sm:max-h-[90vh] border border-border", isRtl ? "text-right" : "text-left")}
+        className={cn("bg-surface w-full max-w-5xl rounded-t-3xl main-640:rounded-3xl shadow-2xl relative z-10 overflow-hidden flex flex-col max-h-[92vh] main-640:max-h-[90vh] border border-border", isRtl ? "text-right" : "text-left")}
       >
-        <div className="p-4 sm:p-6 border-b border-border flex justify-between items-center bg-brand/5">
-          <div className="flex items-center gap-2.5 sm:gap-3">
-            <div className="p-2.5 sm:p-3 bg-brand text-white rounded-xl sm:rounded-2xl">
-              <UserPlus size={20} className="sm:w-6 sm:h-6" />
+        <div className="p-4 main-640:p-6 border-b border-border flex justify-between items-center bg-brand/5">
+          <div className="flex items-center gap-2.5 main-640:gap-3">
+            <div className="p-2.5 main-640:p-3 bg-brand text-white rounded-xl main-640:rounded-2xl">
+              <UserPlus size={20} className="main-640:w-6 main-640:h-6" />
             </div>
             <div>
-              <h2 className="text-base sm:text-xl font-black text-content flex items-center gap-1.5 sm:gap-2">
+              <h2 className="text-base main-640:text-xl font-black text-content flex items-center gap-1.5 main-640:gap-2">
                 {customer.name}
                 {customer.isB2B && (
-                   <span className="bg-brand text-white px-1.5 py-0.5 rounded-md text-[9px] uppercase font-black tracking-wider">B2B</span>
+                   <span className="bg-brand text-white px-1.5 py-0.5 rounded-md text-sm uppercase font-black">B2B</span>
                 )}
               </h2>
-              <p className="text-[11px] sm:text-xs text-content-muted font-bold">{customer.phone}</p>
+              <p className="text-sm text-content-muted font-bold">{customer.phone}</p>
             </div>
           </div>
-          <button aria-label={t('common.close')} onClick={onClose} className="p-1.5 sm:p-2 hover:bg-surface rounded-full transition-colors shadow-sm min-w-11 min-h-11 inline-flex items-center justify-center">
-            <X size={20} className="text-content-muted sm:w-6 sm:h-6" />
+          <button aria-label={t('common.close')} onClick={onClose} className="p-1.5 main-640:p-2 hover:bg-surface rounded-full transition-colors shadow-sm min-w-11 min-h-11 inline-flex items-center justify-center">
+            <X size={20} className="text-content-muted main-640:w-6 main-640:h-6" />
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 sm:space-y-6" dir={isRtl ? "rtl" : "ltr"}>
+        <div className="flex-1 overflow-y-auto p-4 main-640:p-6 space-y-4 main-640:space-y-6" dir={isRtl ? "rtl" : "ltr"}>
           {customer.isB2B && (
              <DetailSection title={t('customers.b2b_data')} icon={ShoppingBag}>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                   <div className="bg-surface p-4 rounded-xl sm:rounded-2xl border border-border">
-                      <p className="text-[10px] text-content-muted font-black uppercase tracking-wider mb-1">{t('customers.company_name_label')}</p>
+                <div className="grid grid-cols-1 main-720:grid-cols-2 gap-4">
+                   <div className="bg-surface p-4 rounded-xl main-640:rounded-2xl border border-border">
+                      <p className="text-sm text-content-muted font-black uppercase mb-1">{t('customers.company_name_label')}</p>
                       <p className="text-sm font-black text-content">{customer.companyName || t('orders.none')}</p>
                    </div>
-                   <div className="bg-surface p-4 rounded-xl sm:rounded-2xl border border-border">
-                      <p className="text-[10px] text-content-muted font-black uppercase tracking-wider mb-1">{t('customers.trn_label')}</p>
+                   <div className="bg-surface p-4 rounded-xl main-640:rounded-2xl border border-border">
+                      <p className="text-sm text-content-muted font-black uppercase mb-1">{t('customers.trn_label')}</p>
                       <p className="text-sm font-mono font-black text-content">{customer.trn || t('orders.none')}</p>
                    </div>
                 </div>
@@ -2150,22 +2150,22 @@ const CustomerDetailsModal = ({
           <>
           {/* Measurements Section */}
           <DetailSection title={t('customers.current_measurements')} icon={Ruler}>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
+            <div className="grid grid-cols-2 main-720:grid-cols-4 gap-3 main-640:gap-4">
               {measurementRows(customer.measurements, true).map((row) => ({
                 label: t(row.labelKey), value: row.value, icon: <Ruler size={14} />, color: 'bg-brand/10 text-brand',
               })).map((m) => {
                 const displayValue = typeof m.value === 'number' ? cmToDisplayUnit(m.value, measurementUnit) : m.value;
                 return (
-                  <div key={m.label} className="bg-surface p-3 sm:p-4 rounded-xl sm:rounded-2xl border border-border hover:border-brand/20 transition-all group shadow-sm">
-                    <div className="flex items-center gap-1.5 sm:gap-2 mb-1.5 sm:mb-2">
+                  <div key={m.label} className="bg-surface p-3 main-640:p-4 rounded-xl main-640:rounded-2xl border border-border hover:border-brand/20 transition-all group shadow-sm">
+                    <div className="flex items-center gap-1.5 main-640:gap-2 mb-1.5 main-640:mb-2">
                       <div className={cn("p-1.5 rounded-lg", m.color)}>
                         {m.icon}
                       </div>
-                      <p className="text-[10px] text-content-muted font-black uppercase tracking-wider">{m.label}</p>
+                      <p className="text-sm text-content-muted font-black uppercase">{m.label}</p>
                     </div>
-                    <p className="text-base sm:text-xl font-black text-content">
+                    <p className="text-base main-640:text-xl font-black text-content">
                       {displayValue || '-'}
-                      <span className="text-[10px] text-content-muted mr-1 font-bold">{t(unitLabelKey(measurementUnit))}</span>
+                      <span className="text-sm text-content-muted mr-1 font-bold">{t(unitLabelKey(measurementUnit))}</span>
                     </p>
                   </div>
                 );
@@ -2177,7 +2177,7 @@ const CustomerDetailsModal = ({
 
           {/* Visual Details Section */}
           <DetailSection title={t('customers.visual_details_chart')} icon={Zap}>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
+            <div className="grid grid-cols-2 main-720:grid-cols-3 main-900:grid-cols-5 gap-3 main-640:gap-4">
               {[
                 { label: t('customers.collar'), value: customer.measurements?.collarType, desc: t('customers.collar_desc') },
                 { label: t('customers.cuff'), value: customer.measurements?.cuffType, desc: t('customers.cuff_desc') },
@@ -2185,15 +2185,15 @@ const CustomerDetailsModal = ({
                 { label: t('customers.chest_style'), value: customer.measurements?.chestStyle, desc: t('inventory.chest_style') },
                 { label: t('customers.shoulder_style'), value: customer.measurements?.shoulderStyle, desc: t('customers.shoulder_style_desc') },
               ].map((v) => (
-                <div key={v.label} className="bg-surface p-3 sm:p-4 rounded-2xl sm:rounded-3xl border border-border flex flex-col items-center text-center group hover:border-brand/40 transition-all shadow-sm">
-                  <div className="w-12 h-12 sm:w-16 sm:h-16 bg-brand/5 text-brand rounded-xl sm:rounded-2xl flex items-center justify-center mb-2 sm:mb-3 group-hover:scale-110 transition-transform shadow-inner">
-                    {v.value ? visualIcons[v.value] : <Info size={20} className="opacity-20 sm:w-6 sm:h-6" />}
+                <div key={v.label} className="bg-surface p-3 main-640:p-4 rounded-2xl main-640:rounded-3xl border border-border flex flex-col items-center text-center group hover:border-brand/40 transition-all shadow-sm">
+                  <div className="w-12 h-12 main-640:w-16 main-640:h-16 bg-brand/5 text-brand rounded-xl main-640:rounded-2xl flex items-center justify-center mb-2 main-640:mb-3 group-hover:scale-110 transition-transform shadow-inner">
+                    {v.value ? visualIcons[v.value] : <Info size={20} className="opacity-20 main-640:w-6 main-640:h-6" />}
                   </div>
-                  <p className="text-[10px] text-brand/60 font-black uppercase tracking-widest mb-1">{v.label}</p>
-                  <p className="text-xs sm:text-sm font-black text-content truncate w-full">
+                  <p className="text-sm text-brand/60 font-black uppercase mb-1">{v.label}</p>
+                  <p className="text-sm font-black text-content truncate w-full">
                     {v.value ? visualLabels[v.value] : t('orders.not_specified')}
                   </p>
-                  <p className="text-[8px] sm:text-[9px] text-content-muted font-bold mt-0.5">{v.desc}</p>
+                  <p className="text-sm text-content-muted font-bold mt-0.5">{v.desc}</p>
                 </div>
               ))}
             </div>
@@ -2201,7 +2201,7 @@ const CustomerDetailsModal = ({
 
           {/* Garment Blueprint Section */}
           <DetailSection title={t('customers.garment_blueprint')} icon={Scissors}>
-            <div className="bg-surface-muted/30 rounded-2xl p-2 sm:p-4 border border-border pointer-events-none overflow-x-auto scrollbar-hide">
+            <div className="bg-surface-muted/30 rounded-2xl p-2 main-640:p-4 border border-border pointer-events-none overflow-x-auto scrollbar-hide">
               <ThobeMeasurementSelector
                 values={(customer.measurements as Measurements) || {}}
                 onChange={() => {}} // Read-only in details view
@@ -2213,21 +2213,21 @@ const CustomerDetailsModal = ({
 
           {/* Style Preferences Section */}
           <DetailSection title={t('customers.design_preferences')} icon={ShoppingBag} defaultOpen={false}>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
-              <div className="bg-surface-muted p-4 rounded-xl sm:rounded-2xl border border-border">
-                <span className="text-[10px] text-content-muted font-bold block mb-1">{t('customers.neck_shape')}</span>
+            <div className="grid grid-cols-1 main-640:grid-cols-3 gap-3 main-640:gap-4">
+              <div className="bg-surface-muted p-4 rounded-xl main-640:rounded-2xl border border-border">
+                <span className="text-sm text-content-muted font-bold block mb-1">{t('customers.neck_shape')}</span>
                 <span className="text-sm font-bold text-content">
                   {customer.styles?.neckShape === 'round' ? t('customers.neck_shape_round') : customer.styles?.neckShape === 'v-neck' ? t('customers.neck_shape_v') : customer.styles?.neckShape === 'square' ? t('customers.neck_shape_square') : '-'}
                 </span>
               </div>
-              <div className="bg-surface-muted p-4 rounded-xl sm:rounded-2xl border border-border">
-                <span className="text-[10px] text-content-muted font-bold block mb-1">{t('customers.sleeve_type')}</span>
+              <div className="bg-surface-muted p-4 rounded-xl main-640:rounded-2xl border border-border">
+                <span className="text-sm text-content-muted font-bold block mb-1">{t('customers.sleeve_type')}</span>
                 <span className="text-sm font-bold text-content">
                   {customer.styles?.sleeveStyle === 'normal' ? t('inventory.cuff_regular') : customer.styles?.sleeveStyle === 'cuff' ? t('customers.sleeve_style_cuff') : customer.styles?.sleeveStyle === 'wide' ? t('customers.sleeve_style_wide') : '-'}
                 </span>
               </div>
-              <div className="bg-surface-muted p-4 rounded-xl sm:rounded-2xl border border-border">
-                <span className="text-[10px] text-content-muted font-bold block mb-1">{t('customers.pocket_style')}</span>
+              <div className="bg-surface-muted p-4 rounded-xl main-640:rounded-2xl border border-border">
+                <span className="text-sm text-content-muted font-bold block mb-1">{t('customers.pocket_style')}</span>
                 <span className="text-sm font-bold text-content">
                   {customer.styles?.pocketType === 'none' ? t('customers.pocket_none') : customer.styles?.pocketType === 'single' ? t('customers.pocket_single') : customer.styles?.pocketType === 'double' ? t('customers.pocket_double') : '-'}
                 </span>
@@ -2240,20 +2240,20 @@ const CustomerDetailsModal = ({
             <div className="space-y-3">
               {orders.length > 0 ? (
                 orders.map((order) => (
-                  <div key={order.id} className="bg-surface p-4 rounded-xl sm:rounded-2xl border border-border shadow-sm flex items-center justify-between hover:border-brand/20 transition-colors">
-                    <div className="flex items-center gap-2.5 sm:gap-3">
+                  <div key={order.id} className="bg-surface p-4 rounded-xl main-640:rounded-2xl border border-border shadow-sm flex items-center justify-between hover:border-brand/20 transition-colors">
+                    <div className="flex items-center gap-2.5 main-640:gap-3">
                       <div className="p-2 bg-surface-muted rounded-xl text-content-muted animate-pulse">
-                        <ShoppingBag size={16} className="sm:w-[18px] sm:h-[18px]" />
+                        <ShoppingBag size={16} className="main-640:w-[18px] main-640:h-[18px]" />
                       </div>
                       <div>
-                        <p className="text-xs sm:text-sm font-bold text-content">#{order.id.slice(-6).toUpperCase()}</p>
+                        <p className="text-sm font-bold text-content">#{order.id.slice(-6).toUpperCase()}</p>
                         <DateTimeDisplay date={order.orderDate} showTime={true} size="xs" />
                       </div>
                     </div>
                     <div className={cn(isRtl ? "text-left" : "text-right")}>
-                      <p className="text-xs sm:text-sm font-black text-brand"><PriceDisplay amount={order.totalAmount} /></p>
+                      <p className="text-sm font-black text-brand"><PriceDisplay amount={order.totalAmount} /></p>
                       <span className={cn(
-                        "text-[9px] sm:text-[10px] font-bold px-2 py-0.5 rounded-full",
+                        "text-sm font-bold px-2 py-0.5 rounded-full",
                         order.status === 'delivered' ? "bg-success/10 text-success" : "bg-warning/10 text-warning"
                       )}>
                         {order.status === 'delivered' ? t('common.status_delivered') : t('common.status_in_progress')}
@@ -2262,7 +2262,7 @@ const CustomerDetailsModal = ({
                   </div>
                 ))
               ) : (
-                <div className="text-center py-8 bg-surface-muted rounded-xl sm:rounded-2xl border-2 border-dashed border-border text-content-muted">
+                <div className="text-center py-8 bg-surface-muted rounded-xl main-640:rounded-2xl border-2 border-dashed border-border text-content-muted">
                   <p className="text-sm font-bold">{t('customers.no_previous_orders')}</p>
                 </div>
               )}
@@ -2271,7 +2271,7 @@ const CustomerDetailsModal = ({
 
           {customer.notes && (
             <DetailSection title={t('common.notes')} icon={Info} defaultOpen={false}>
-              <p className="text-sm text-content-muted leading-relaxed bg-warning/5 p-4 rounded-xl sm:rounded-2xl border border-warning/10">
+              <p className="text-sm text-content-muted leading-relaxed bg-warning/5 p-4 rounded-xl main-640:rounded-2xl border border-warning/10">
                 {customer.notes}
               </p>
             </DetailSection>
@@ -2279,19 +2279,19 @@ const CustomerDetailsModal = ({
         </div>
 
         {/* Footer (Fixed) */}
-        <div className="sticky bottom-0 z-10 shrink-0 px-4 pt-4 pb-[calc(1rem+env(safe-area-inset-bottom))] sm:px-6 sm:pt-6 sm:pb-[calc(1.5rem+env(safe-area-inset-bottom))] border-t border-[var(--border)] bg-[var(--surface)] flex gap-2.5 sm:gap-3 text-xs sm:text-base">
+        <div className="sticky bottom-0 z-10 shrink-0 px-4 pt-4 pb-[calc(1rem+env(safe-area-inset-bottom))] main-640:px-6 main-640:pt-6 main-640:pb-[calc(1.5rem+env(safe-area-inset-bottom))] border-t border-[var(--border)] bg-[var(--surface)] flex gap-2.5 main-640:gap-3 text-sm main-640:text-base">
           <button 
             onClick={onEdit}
-            className="flex-1 flex items-center justify-center gap-1.5 sm:gap-2 bg-surface text-content py-3 rounded-xl font-bold border border-border hover:bg-surface-muted transition-all"
+            className="flex-1 flex items-center justify-center gap-1.5 main-640:gap-2 bg-surface text-content py-3 rounded-xl font-bold border border-border hover:bg-surface-muted transition-all"
           >
-            <Edit2 size={16} className="sm:w-[18px] sm:h-[18px]" />
+            <Edit2 size={16} className="main-640:w-[18px] main-640:h-[18px]" />
             <span>{t('customers.edit_data')}</span>
           </button>
           <button 
             onClick={onNewOrder}
-            className="flex-1 flex items-center justify-center gap-1.5 sm:gap-2 bg-brand text-white py-3 rounded-xl font-bold hover:bg-brand/90 transition-all shadow-lg shadow-brand/10"
+            className="flex-1 flex items-center justify-center gap-1.5 main-640:gap-2 bg-brand text-white py-3 rounded-xl font-bold hover:bg-brand/90 transition-all shadow-lg shadow-brand/10"
           >
-            <Plus size={16} className="sm:w-[18px] sm:h-[18px]" />
+            <Plus size={16} className="main-640:w-[18px] main-640:h-[18px]" />
             <span>{t('orders.create_new_order')}</span>
           </button>
         </div>
@@ -2394,10 +2394,10 @@ const CustomerStatementModal = ({
   // (seen-tablet-mobile-ux-review.md بند 6) -- بلا تكرار منطق الدفع نفسه في
   // مكانين، خاصة أنه يعالج تحصيل مبلغ مالي حقيقي.
   const renderLedgerExpandedPanel = (order: Order) => (
-    <div className={cn("grid gap-4", order.remainingAmount > 0 ? "grid-cols-1 md:grid-cols-2" : "grid-cols-1")}>
+    <div className={cn("grid gap-4", order.remainingAmount > 0 ? "grid-cols-1 main-720:grid-cols-2" : "grid-cols-1")}>
 
       {/* Order items column */}
-      <div className="space-y-2 text-xs">
+      <div className="space-y-2 text-sm">
         <h4 className="font-black text-content-muted border-b border-border/40 pb-1 flex items-center gap-1.5">
           <ShoppingBag size={14} />
           {t('orders.order_items')}
@@ -2408,7 +2408,7 @@ const CustomerStatementModal = ({
               <div key={idx} className="bg-surface p-2.5 rounded-xl border border-border flex justify-between items-center shadow-sm">
                 <div>
                   <p className="font-bold text-content">{item.name || item.thobeType || tv('orders.thobe_custom')}</p>
-                  <p className="text-[10px] text-content-muted">{t('common.quantity')}: {item.quantity || 1}</p>
+                  <p className="text-sm text-content-muted">{t('common.quantity')}: {item.quantity || 1}</p>
                 </div>
                 <p className="font-bold text-brand"><PriceDisplay amount={item.price || item.totalPrice} /></p>
               </div>
@@ -2423,7 +2423,7 @@ const CustomerStatementModal = ({
       {order.remainingAmount > 0 && (
         <div className="bg-surface p-4 rounded-2xl border border-danger/10 space-y-3.5 shadow-sm flex flex-col justify-between">
           <div>
-            <h4 className="font-black text-danger border-b border-border/40 pb-1 flex items-center gap-1.5 text-xs mb-3">
+            <h4 className="font-black text-danger border-b border-border/40 pb-1 flex items-center gap-1.5 text-sm mb-3">
               <CreditCard size={14} />
               {t('orders.pay_remaining_title')}
             </h4>
@@ -2443,7 +2443,7 @@ const CustomerStatementModal = ({
 
                 {/* Payment Method Selection */}
                 <div className="space-y-1">
-                  <label className="text-[10px] font-black text-content-muted uppercase">
+                  <label className="text-sm font-black text-content-muted uppercase">
                     {t('orders.payment_method')}
                   </label>
                   <div className="grid grid-cols-3 gap-1.5">
@@ -2457,7 +2457,7 @@ const CustomerStatementModal = ({
                         type="button"
                         onClick={() => setPayMethod(m.id as any)}
                         className={cn(
-                          "p-2 rounded-lg border text-[10px] font-bold flex flex-col items-center gap-1 transition-all cursor-pointer",
+                          "p-2 rounded-lg border text-sm font-bold flex flex-col items-center gap-1 transition-all cursor-pointer",
                           payMethod === m.id ? "bg-brand border-brand text-white shadow-sm" : "bg-surface-muted border-transparent text-content-muted hover:bg-border/20"
                         )}
                       >
@@ -2473,14 +2473,14 @@ const CustomerStatementModal = ({
                     type="button"
                     onClick={() => handlePaymentSubmit(order)}
                     disabled={isPaying || payAmount <= 0}
-                    className="flex-1 bg-success hover:bg-success/90 text-white py-2 rounded-xl font-bold text-xs transition-colors disabled:opacity-50 flex items-center justify-center gap-1 cursor-pointer shadow-sm"
+                    className="flex-1 bg-success hover:bg-success/90 text-white py-2 rounded-xl font-bold text-sm transition-colors disabled:opacity-50 flex items-center justify-center gap-1 cursor-pointer shadow-sm"
                   >
                     {isPaying ? t('orders.processing') : t('orders.confirm_payment')}
                   </button>
                   <button
                     type="button"
                     onClick={() => { setPayingOrderId(null); setPayAmount(0); }}
-                    className="px-3 py-2 text-content-muted font-bold text-xs hover:bg-surface-muted rounded-xl transition-colors cursor-pointer"
+                    className="px-3 py-2 text-content-muted font-bold text-sm hover:bg-surface-muted rounded-xl transition-colors cursor-pointer"
                   >
                     {t('common.cancel')}
                   </button>
@@ -2488,7 +2488,7 @@ const CustomerStatementModal = ({
               </div>
             ) : (
               <div className="space-y-3">
-                <p className="text-content-muted font-medium text-xs leading-relaxed">
+                <p className="text-content-muted font-medium text-sm leading-relaxed">
                   {t('orders.remaining_warning')} <span className="font-black text-danger"><PriceDisplay amount={order.remainingAmount} /></span>. {t('orders.pay_help_text')}
                 </p>
                 <button
@@ -2498,7 +2498,7 @@ const CustomerStatementModal = ({
                     setPayAmount(order.remainingAmount);
                     setPayMethod('cash');
                   }}
-                  className="w-full bg-brand hover:bg-brand/90 text-white py-2.5 rounded-xl font-black text-xs transition-all flex items-center justify-center gap-1.5 shadow-sm hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
+                  className="w-full bg-brand hover:bg-brand/90 text-white py-2.5 rounded-xl font-black text-sm transition-all flex items-center justify-center gap-1.5 shadow-sm hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
                 >
                   <CreditCard size={14} />
                   {t('orders.pay_remaining')}
@@ -2513,7 +2513,7 @@ const CustomerStatementModal = ({
   );
 
   return (
-    <div role="dialog" aria-modal="true" className="fixed inset-0 z-[150] flex items-end sm:items-center justify-center p-0 sm:p-6 overflow-y-auto print:absolute print:inset-0 print:z-[200] print:p-0 print:bg-white print:overflow-visible">
+    <div role="dialog" aria-modal="true" className="fixed inset-0 z-[150] flex items-end main-640:items-center justify-center p-0 main-640:p-6 overflow-y-auto print:absolute print:inset-0 print:z-[200] print:p-0 print:bg-white print:overflow-visible">
       {/* Background Overlay */}
       <motion.div 
         initial={{ opacity: 0 }}
@@ -2529,21 +2529,21 @@ const CustomerStatementModal = ({
         animate={{ scale: 1, opacity: 1, y: 0 }}
         exit={{ scale: 0.9, opacity: 0, y: 20 }}
         className={cn(
-          "bg-surface w-full max-w-4xl rounded-t-3xl sm:rounded-3xl shadow-2xl relative z-10 overflow-hidden flex flex-col max-h-[92vh] sm:max-h-[90vh] border border-border print:border-none print:shadow-none print:max-h-none print:rounded-none print:w-full print:static",
+          "bg-surface w-full max-w-4xl rounded-t-3xl main-640:rounded-3xl shadow-2xl relative z-10 overflow-hidden flex flex-col max-h-[92vh] main-640:max-h-[90vh] border border-border print:border-none print:shadow-none print:max-h-none print:rounded-none print:w-full print:static",
           isRtl ? "text-right" : "text-left"
         )}
       >
         {/* Header */}
-        <div className="p-4 sm:p-6 border-b border-border flex justify-between items-center bg-brand/5 print:bg-transparent print:border-b-2 print:border-black">
+        <div className="p-4 main-640:p-6 border-b border-border flex justify-between items-center bg-brand/5 print:bg-transparent print:border-b-2 print:border-black">
           <div className="flex items-center gap-3">
             <div className="p-2.5 bg-brand text-white rounded-xl print:hidden">
-              <FileText size={20} className="sm:w-6 sm:h-6" />
+              <FileText size={20} className="main-640:w-6 main-640:h-6" />
             </div>
             <div>
-              <h2 className="text-base sm:text-xl font-black text-content print:text-2xl print:text-black">
+              <h2 className="text-base main-640:text-xl font-black text-content print:text-2xl print:text-black">
                 {t('customers.account_statement_title')}
               </h2>
-              <p className="text-[11px] sm:text-xs text-content-muted font-bold print:text-sm print:text-black mt-0.5">
+              <p className="text-sm text-content-muted font-bold print:text-black mt-0.5">
                 {t('common.customer')}: <span className="font-black text-content print:text-black">{customer.name}</span> | {t('common.phone')}: <span className="font-black">{customer.phone}</span>
               </p>
             </div>
@@ -2552,52 +2552,52 @@ const CustomerStatementModal = ({
           <div className="flex items-center gap-2 print:hidden">
             <button 
               onClick={handlePrint}
-              className="p-2 bg-brand/10 text-brand hover:bg-brand hover:text-white rounded-xl transition-all flex items-center gap-1.5 text-xs font-bold shadow-sm cursor-pointer"
+              className="p-2 bg-brand/10 text-brand hover:bg-brand hover:text-white rounded-xl transition-all flex items-center gap-1.5 text-sm font-bold shadow-sm cursor-pointer"
               title={t('tax_invoices.print')}
             >
               <Printer size={16} />
               <span>{t('tax_invoices.print')}</span>
             </button>
             <button aria-label={t('common.close')} onClick={onClose} className="p-1.5 hover:bg-surface rounded-full transition-colors shadow-sm cursor-pointer min-w-11 min-h-11 inline-flex items-center justify-center">
-              <X size={20} className="text-content-muted sm:w-6 sm:h-6" />
+              <X size={20} className="text-content-muted main-640:w-6 main-640:h-6" />
             </button>
           </div>
         </div>
 
         {/* Scrollable Content */}
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6 print:overflow-visible print:p-0 print:space-y-4" dir={isRtl ? "rtl" : "ltr"}>
+        <div className="flex-1 overflow-y-auto p-4 main-640:p-6 space-y-6 print:overflow-visible print:p-0 print:space-y-4" dir={isRtl ? "rtl" : "ltr"}>
           {/* Printable Header Info (Visible only during print) */}
           <div className="hidden print:block space-y-2 pb-4 border-b border-gray-200">
             <div className="flex justify-between items-start">
               <div>
                 <h1 className="text-xl font-bold text-black">{t('customers.store_statement')}</h1>
-                <div className="text-xs text-black flex items-center gap-2 mt-1">
+                <div className="text-sm text-black flex items-center gap-2 mt-1">
                   <span>{t('customers.statement_date')}:</span>
                   <DateTimeDisplay date={new Date()} showTime={true} size="xs" />
                 </div>
               </div>
               <div className="text-end">
                 <p className="text-sm font-bold text-black">{customer.name}</p>
-                <p className="text-xs text-black">{customer.phone}</p>
+                <p className="text-sm text-black">{customer.phone}</p>
                 {customer.isB2B && customer.trn && (
-                  <p className="text-xs text-black">{t('customers.trn')}: {customer.trn}</p>
+                  <p className="text-sm text-black">{t('customers.trn')}: {customer.trn}</p>
                 )}
               </div>
             </div>
           </div>
 
           {/* Financial summary metrics bento block */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 main-640:grid-cols-3 gap-4">
             <div className="bg-surface-muted/50 p-4 rounded-2xl border border-border flex flex-col justify-between print:border-black print:bg-white">
-              <span className="text-[10px] text-content-muted font-black uppercase tracking-wider mb-1 print:text-black">{t('customers.statement_total_purchases')}</span>
-              <p className="text-lg sm:text-2xl font-black text-brand print:text-black">
+              <span className="text-sm text-content-muted font-black uppercase mb-1 print:text-black">{t('customers.statement_total_purchases')}</span>
+              <p className="text-lg main-640:text-2xl font-black text-brand print:text-black">
                 <PriceDisplay amount={totalPurchases} />
               </p>
             </div>
             
             <div className="bg-surface-muted/50 p-4 rounded-2xl border border-border flex flex-col justify-between print:border-black print:bg-white">
-              <span className="text-[10px] text-content-muted font-black uppercase tracking-wider mb-1 print:text-black">{t('customers.total_paid')}</span>
-              <p className="text-lg sm:text-2xl font-black text-success print:text-black">
+              <span className="text-sm text-content-muted font-black uppercase mb-1 print:text-black">{t('customers.total_paid')}</span>
+              <p className="text-lg main-640:text-2xl font-black text-success print:text-black">
                 <PriceDisplay amount={totalPaid} />
               </p>
             </div>
@@ -2610,15 +2610,15 @@ const CustomerStatementModal = ({
                   ? "bg-success/5 border-success/10 text-success print:text-black" 
                   : "bg-surface-muted/50 border-border text-content print:text-black"
             )}>
-              <span className="text-[10px] opacity-80 font-black uppercase tracking-wider mb-1 flex items-center gap-1">
+              <span className="text-sm opacity-80 font-black uppercase mb-1 flex items-center gap-1">
                 {netBalance > 0 && <AlertCircle size={12} className="print:hidden" />}
                 {t('customers.net_balance')}
               </span>
               <div className="flex items-baseline justify-between">
-                <p className="text-lg sm:text-2xl font-black">
+                <p className="text-lg main-640:text-2xl font-black">
                   <PriceDisplay amount={Math.abs(netBalance)} />
                 </p>
-                <span className="text-xs font-black px-2 py-0.5 rounded-full bg-white/20 print:border print:border-black print:text-black">
+                <span className="text-sm font-black px-2 py-0.5 rounded-full bg-white/20 print:border print:border-black print:text-black">
                   {netBalance > 0 
                     ? t('customers.debtor') 
                     : netBalance < 0 
@@ -2649,9 +2649,9 @@ const CustomerStatementModal = ({
                           <div className="p-4 flex items-start justify-between gap-3">
                             <div className="min-w-0">
                               <div className="font-black text-content">#{order.orderNumber || order.id.slice(-6).toUpperCase()}</div>
-                              <div className="text-content-muted text-xs mt-0.5"><DateTimeDisplay date={order.orderDate} showTime={true} size="xs" /></div>
+                              <div className="text-content-muted text-sm mt-0.5"><DateTimeDisplay date={order.orderDate} showTime={true} size="xs" /></div>
                               <span className={cn(
-                                "text-[10px] font-black px-2.5 py-0.5 rounded-full inline-block mt-2",
+                                "text-sm font-black px-2.5 py-0.5 rounded-full inline-block mt-2",
                                 order.status === 'delivered'
                                   ? "bg-success/10 text-success"
                                   : order.status === 'cancelled'
@@ -2674,7 +2674,7 @@ const CustomerStatementModal = ({
                               {isExpanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
                             </button>
                           </div>
-                          <div className="px-4 pb-4 grid grid-cols-3 gap-2 text-xs">
+                          <div className="px-4 pb-4 grid grid-cols-3 gap-2 text-sm">
                             <div>
                               <div className="text-content-muted font-bold">{t('orders.total')}</div>
                               <div className="font-bold text-content mt-0.5"><PriceDisplay amount={order.totalAmount} /></div>
@@ -2707,7 +2707,7 @@ const CustomerStatementModal = ({
                 table={
                   <table className="w-full text-sm">
                     <thead>
-                      <tr className="bg-surface-muted border-b border-border text-content-muted font-black text-xs print:bg-gray-100 print:text-black print:border-b-2 print:border-black">
+                      <tr className="bg-surface-muted border-b border-border text-content-muted font-black text-sm print:bg-gray-100 print:text-black print:border-b-2 print:border-black">
                         <th className="p-3 text-start">{t('orders.order_id')}</th>
                         <th className="p-3 text-start">{t('common.date')}</th>
                         <th className="p-3 text-start">{t('orders.total')}</th>
@@ -2730,7 +2730,7 @@ const CustomerStatementModal = ({
                                 <td className="p-3 font-black text-content print:text-black">
                                   #{order.orderNumber || order.id.slice(-6).toUpperCase()}
                                 </td>
-                                <td className="p-3 text-content-muted print:text-black text-xs">
+                                <td className="p-3 text-content-muted print:text-black text-sm">
                                   <DateTimeDisplay date={order.orderDate} showTime={true} size="xs" />
                                 </td>
                                 <td className="p-3 font-bold text-content print:text-black">
@@ -2747,7 +2747,7 @@ const CustomerStatementModal = ({
                                 </td>
                                 <td className="p-3">
                                   <span className={cn(
-                                    "text-[10px] font-black px-2.5 py-0.5 rounded-full inline-block",
+                                    "text-sm font-black px-2.5 py-0.5 rounded-full inline-block",
                                     order.status === 'delivered'
                                       ? "bg-success/10 text-success print:bg-transparent print:text-black print:border print:border-black"
                                       : order.status === 'cancelled'
@@ -2799,7 +2799,7 @@ const CustomerStatementModal = ({
               <div className="hidden print:block">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="bg-gray-100 text-black font-black text-xs border-b-2 border-black">
+                    <tr className="bg-gray-100 text-black font-black text-sm border-b-2 border-black">
                       <th className="p-3 text-start">{t('orders.order_id')}</th>
                       <th className="p-3 text-start">{t('common.date')}</th>
                       <th className="p-3 text-start">{t('orders.total')}</th>
@@ -2812,7 +2812,7 @@ const CustomerStatementModal = ({
                     {orders.length > 0 ? orders.map((order) => (
                       <tr key={order.id}>
                         <td className="p-3 font-black text-black">#{order.orderNumber || order.id.slice(-6).toUpperCase()}</td>
-                        <td className="p-3 text-black text-xs"><DateTimeDisplay date={order.orderDate} showTime={true} size="xs" /></td>
+                        <td className="p-3 text-black text-sm"><DateTimeDisplay date={order.orderDate} showTime={true} size="xs" /></td>
                         <td className="p-3 font-bold text-black"><PriceDisplay amount={order.totalAmount} /></td>
                         <td className="p-3 font-bold text-black"><PriceDisplay amount={order.paidAmount} /></td>
                         <td className="p-3 font-bold text-black"><PriceDisplay amount={order.remainingAmount} /></td>
@@ -2831,10 +2831,10 @@ const CustomerStatementModal = ({
         </div>
 
         {/* Footer */}
-        <div className="sticky bottom-0 z-10 shrink-0 px-4 pt-4 pb-[calc(1rem+env(safe-area-inset-bottom))] sm:px-6 sm:pt-6 sm:pb-[calc(1.5rem+env(safe-area-inset-bottom))] border-t border-border bg-surface flex justify-end gap-3 print:hidden">
+        <div className="sticky bottom-0 z-10 shrink-0 px-4 pt-4 pb-[calc(1rem+env(safe-area-inset-bottom))] main-640:px-6 main-640:pt-6 main-640:pb-[calc(1.5rem+env(safe-area-inset-bottom))] border-t border-border bg-surface flex justify-end gap-3 print:hidden">
           <button 
             onClick={onClose}
-            className="px-6 py-2.5 bg-surface-muted text-content hover:bg-surface border border-border rounded-xl font-bold transition-all text-xs sm:text-sm cursor-pointer"
+            className="px-6 py-2.5 bg-surface-muted text-content hover:bg-surface border border-border rounded-xl font-bold transition-all text-sm cursor-pointer"
           >
             {t('sales.close')}
           </button>
@@ -2966,7 +2966,7 @@ const CustomerImportModal = ({
   const renderRowList = (list: CustomerImportRow[], icon: React.ReactNode, colorClass: string) => (
     <div className="space-y-1.5 max-h-40 overflow-y-auto pr-1">
       {list.map((r) => (
-        <div key={r.rowNumber} className={cn("flex items-center gap-2 text-xs font-bold px-3 py-1.5 rounded-xl bg-surface-muted/60", colorClass)}>
+        <div key={r.rowNumber} className={cn("flex items-center gap-2 text-sm font-bold px-3 py-1.5 rounded-xl bg-surface-muted/60", colorClass)}>
           {icon}
           <span className="truncate">{r.name || '-'} ({r.phone || '-'})</span>
           <span className="text-content-muted font-medium shrink-0">— {r.reason}</span>
@@ -2976,7 +2976,7 @@ const CustomerImportModal = ({
   );
 
   return (
-    <div role="dialog" aria-modal="true" className="fixed inset-0 z-[110] flex items-center justify-center p-2 sm:p-4">
+    <div role="dialog" aria-modal="true" className="fixed inset-0 z-[110] flex items-center justify-center p-2 main-640:p-4">
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -2991,14 +2991,14 @@ const CustomerImportModal = ({
         className="bg-surface w-full max-w-2xl rounded-3xl shadow-2xl relative z-10 overflow-hidden flex flex-col max-h-[90vh]"
         dir={isRtl ? 'rtl' : 'ltr'}
       >
-        <div className="p-4 sm:p-8 border-b border-border flex justify-between items-center bg-surface-muted/50">
+        <div className="p-4 main-640:p-8 border-b border-border flex justify-between items-center bg-surface-muted/50">
           <div className="flex items-center gap-4">
             <div className="p-4 bg-brand text-white rounded-2xl shadow-lg shadow-brand/10">
               <Upload size={24} />
             </div>
             <div>
               <h2 className="text-2xl font-black text-content">{t('customers.import_modal_title')}</h2>
-              <p className="text-xs text-content-muted font-bold">{t('customers.import_modal_subtitle')}</p>
+              <p className="text-sm text-content-muted font-bold">{t('customers.import_modal_subtitle')}</p>
             </div>
           </div>
           {step !== 'result' && (
@@ -3008,7 +3008,7 @@ const CustomerImportModal = ({
           )}
         </div>
 
-        <div className="p-4 sm:p-8 space-y-6 overflow-y-auto">
+        <div className="p-4 main-640:p-8 space-y-6 overflow-y-auto">
           {step === 'upload' && (
             <>
               <button
@@ -3051,7 +3051,7 @@ const CustomerImportModal = ({
 
               {duplicateRows.length > 0 && (
                 <div className="space-y-1.5">
-                  <p className="text-xs font-black text-warning uppercase tracking-widest px-1">
+                  <p className="text-sm font-black text-warning uppercase px-1">
                     {duplicateRows.length} {t('customers.import_result_duplicate_header')}
                   </p>
                   {renderRowList(duplicateRows, <AlertCircle size={14} className="shrink-0" />, 'text-warning')}
@@ -3060,7 +3060,7 @@ const CustomerImportModal = ({
 
               {invalidRows.length > 0 && (
                 <div className="space-y-1.5">
-                  <p className="text-xs font-black text-danger uppercase tracking-widest px-1">
+                  <p className="text-sm font-black text-danger uppercase px-1">
                     {invalidRows.length} {t('customers.import_result_error_header')}
                   </p>
                   {renderRowList(invalidRows, <X size={14} className="shrink-0" />, 'text-danger')}
@@ -3070,12 +3070,12 @@ const CustomerImportModal = ({
           )}
         </div>
 
-        <div className="sticky bottom-0 shrink-0 p-4 sm:p-8 border-t border-border bg-surface flex justify-end gap-3">
+        <div className="sticky bottom-0 shrink-0 p-4 main-640:p-8 border-t border-border bg-surface flex justify-end gap-3">
           {step === 'preview' && (
             <>
               <button
                 onClick={() => { setRows([]); setStep('upload'); }}
-                className="px-6 py-3 bg-surface-muted text-content hover:bg-surface border border-border rounded-xl font-bold transition-all text-xs sm:text-sm cursor-pointer"
+                className="px-6 py-3 bg-surface-muted text-content hover:bg-surface border border-border rounded-xl font-bold transition-all text-sm cursor-pointer"
               >
                 {t('common.cancel')}
               </button>
@@ -3083,7 +3083,7 @@ const CustomerImportModal = ({
                 <button
                   onClick={handleConfirmImport}
                   disabled={loading}
-                  className="px-6 py-3 bg-brand hover:bg-brand/90 text-white rounded-xl font-bold text-xs sm:text-sm transition-all shadow-lg shadow-brand/20 cursor-pointer disabled:opacity-60 disabled:cursor-wait"
+                  className="px-6 py-3 bg-brand hover:bg-brand/90 text-white rounded-xl font-bold text-sm transition-all shadow-lg shadow-brand/20 cursor-pointer disabled:opacity-60 disabled:cursor-wait"
                 >
                   {t('customers.import_confirm_button', { count: validRows.length })}
                 </button>
@@ -3093,7 +3093,7 @@ const CustomerImportModal = ({
           {step === 'result' && (
             <button
               onClick={onClose}
-              className="px-6 py-3 bg-brand hover:bg-brand/90 text-white rounded-xl font-bold text-xs sm:text-sm transition-all shadow-lg shadow-brand/20 cursor-pointer"
+              className="px-6 py-3 bg-brand hover:bg-brand/90 text-white rounded-xl font-bold text-sm transition-all shadow-lg shadow-brand/20 cursor-pointer"
             >
               {t('customers.import_result_done')}
             </button>

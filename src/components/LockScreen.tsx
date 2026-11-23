@@ -199,10 +199,10 @@ export default function LockScreen({ currentStaff, onUnlock, tenantId, onUnlockW
 
         {/* User identification */}
         <div className="space-y-2">
-          <h2 className="text-2xl font-black tracking-tight text-white/90">
+          <h2 className="text-2xl font-black text-white/90">
             {currentStaff ? currentStaff.name : t('common.user')}
           </h2>
-          <p className="text-sm font-bold text-brand uppercase tracking-widest">
+          <p className="text-sm font-bold text-brand uppercase">
             {t('common.screen_locked')}
           </p>
         </div>
@@ -230,7 +230,7 @@ export default function LockScreen({ currentStaff, onUnlock, tenantId, onUnlockW
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
-              className="px-4 py-2 bg-danger/10 border border-danger/20 text-danger text-xs font-semibold rounded-2xl flex items-center gap-2"
+              className="px-4 py-2 bg-danger/10 border border-danger/20 text-danger text-sm font-semibold rounded-2xl flex items-center gap-2"
             >
               <AlertCircle size={14} />
               <span>{error}</span>
@@ -258,7 +258,7 @@ export default function LockScreen({ currentStaff, onUnlock, tenantId, onUnlockW
           <button
             type="button"
             onClick={handleClear}
-            className="h-16 rounded-2xl text-xs font-bold text-white/40 hover:text-white flex items-center justify-center transition-all cursor-pointer min-h-[44px] focus:outline-none focus-visible:ring-2 focus-visible:ring-brand"
+            className="h-16 rounded-2xl text-sm font-bold text-white/40 hover:text-white flex items-center justify-center transition-all cursor-pointer min-h-[44px] focus:outline-none focus-visible:ring-2 focus-visible:ring-brand"
           >
             {t('common.clear')}
           </button>

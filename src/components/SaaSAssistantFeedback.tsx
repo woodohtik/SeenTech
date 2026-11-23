@@ -104,7 +104,7 @@ export default function SaaSAssistantFeedback() {
                   {item.question || t('saas.assistant_feedback.no_question')}
                 </p>
                 {item.comment && <p className="m-0 text-sm text-content break-words">«{item.comment}»</p>}
-                <p className="m-0 text-xs text-content-muted">
+                <p className="m-0 text-sm text-content-muted">
                   {[item.shopName, item.page, item.toolNames.join('، '), new Date(item.at).toLocaleString(locale)]
                     .filter(Boolean)
                     .join(' · ')}

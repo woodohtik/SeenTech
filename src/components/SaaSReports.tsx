@@ -134,7 +134,7 @@ export default function SaaSReports() {
 
   return (
     <div className="space-y-8 font-sans" dir={isRtl ? 'rtl' : 'ltr'}>
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+      <div className="flex flex-col main-720:flex-row justify-between items-start main-720:items-center gap-4">
         <div>
           <h1 className="text-3xl font-black text-content">{t('saas.financial_reports_title')}</h1>
           <p className="text-content-muted font-bold mt-1">{t('saas.financial_reports_subtitle')}</p>
@@ -150,7 +150,7 @@ export default function SaaSReports() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 main-720:grid-cols-2 main-900:grid-cols-3 gap-6">
         {stats.map((stat) => (
           <div key={stat.label} className="bg-surface p-6 rounded-2xl border border-border shadow-sm transition-all">
             <div className="flex items-center justify-between mb-4">
@@ -158,12 +158,12 @@ export default function SaaSReports() {
                 <stat.icon size={24} />
               </div>
               {stat.trend !== null && (
-                <span className={`text-xs font-bold ${stat.trend >= 0 ? 'text-success' : 'text-danger'}`}>
+                <span className={`text-sm font-bold ${stat.trend >= 0 ? 'text-success' : 'text-danger'}`}>
                   {stat.trend >= 0 ? '+' : ''}{stat.trend.toFixed(1)}%
                 </span>
               )}
             </div>
-            <p className="text-content-muted text-[10px] font-black uppercase tracking-widest">{stat.label}</p>
+            <p className="text-content-muted text-sm font-black uppercase">{stat.label}</p>
             <h3 className="text-2xl font-black text-content mt-1">{stat.value}</h3>
           </div>
         ))}
@@ -177,8 +177,8 @@ export default function SaaSReports() {
               { month: t('common.no_data'), revenue: 0 }
             ]}>
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" />
-              <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fill: 'var(--content-muted)', fontSize: 12, fontWeight: 600 }} />
-              <YAxis axisLine={false} tickLine={false} tick={{ fill: 'var(--content-muted)', fontSize: 12, fontWeight: 600 }} />
+              <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fill: 'var(--content-muted)', fontSize: 14, fontWeight: 600 }} />
+              <YAxis axisLine={false} tickLine={false} tick={{ fill: 'var(--content-muted)', fontSize: 14, fontWeight: 600 }} />
               <Tooltip
                 cursor={{ fill: 'var(--surface-muted)' }}
                 contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}

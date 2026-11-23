@@ -101,7 +101,7 @@ export function SmartSelect({
     <label
       htmlFor={id}
       className={cn(
-        'block text-xs font-black uppercase tracking-widest px-1 transition-colors select-none',
+        'block text-sm font-black uppercase px-1 transition-colors select-none',
         disabled ? 'text-content-muted/80' : 'text-content-muted hover:text-content',
         error ? 'text-danger' : ''
       )}
@@ -142,16 +142,17 @@ export function SmartSelect({
               onChange={(event) => setQuery(event.target.value)}
               placeholder={resolvedPlaceholder}
             />
+            {/* 48px wide, the chevron where it was (16px in): the whole strip opens the list. */}
             <Combobox.Button className={cn(
-              "absolute inset-y-0 flex items-center transition-colors",
-              dir === 'rtl' ? "left-4" : "right-4"
+              "absolute inset-y-0 flex w-12 items-center justify-center transition-colors",
+              dir === 'rtl' ? "left-0" : "right-0"
             )}>
               <ChevronDown className="h-4 w-4 text-content-muted group-hover:text-brand" aria-hidden="true" />
             </Combobox.Button>
             <Transition as={Fragment} {...transitionProps} afterLeave={() => setQuery('')}>
               <Combobox.Options className={popoverClasses} anchor="bottom" style={{ minWidth: "var(--input-width)" }}>
                 {filteredOptions.length === 0 && query !== '' ? (
-                  <div className="relative cursor-default select-none py-3 px-4 text-content-muted text-xs font-bold">
+                  <div className="relative cursor-default select-none py-3 px-4 text-content-muted text-sm font-bold">
                     {t('common.no_results')}
                   </div>
                 ) : (
@@ -185,7 +186,7 @@ export function SmartSelect({
                             )}
                             {option.label}
                             {option.badge && (
-                              <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-surface-muted text-content-muted border border-border">{option.badge}</span>
+                              <span className="text-sm font-black px-2 py-0.5 rounded-full bg-surface-muted text-content-muted border border-border">{option.badge}</span>
                             )}
                           </span>
                           {selected ? (
@@ -272,7 +273,7 @@ export function SmartSelect({
                         )}
                         {option.label}
                         {option.badge && (
-                          <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-surface-muted text-content-muted border border-border">{option.badge}</span>
+                          <span className="text-sm font-black px-2 py-0.5 rounded-full bg-surface-muted text-content-muted border border-border">{option.badge}</span>
                         )}
                       </span>
                       {selected ? (

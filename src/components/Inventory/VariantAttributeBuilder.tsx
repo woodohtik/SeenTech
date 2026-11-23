@@ -192,7 +192,7 @@ export default function VariantAttributeBuilder({ baseSku, onCancel, onRowsChang
 
               <div className="flex items-center gap-2 flex-wrap">
                 {attr.values.map((value) => (
-                  <span key={value} className="flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full bg-brand/10 text-brand">
+                  <span key={value} className="flex items-center gap-1.5 text-sm font-bold px-3 py-1.5 rounded-full bg-brand/10 text-brand">
                     {value}
                     <button type="button" onClick={() => removeValueFromAttribute(attr.id, value)} aria-label={t("common.delete", "حذف")}>
                       <X size={12} />
@@ -210,9 +210,9 @@ export default function VariantAttributeBuilder({ baseSku, onCancel, onRowsChang
                       }
                     }}
                     placeholder={t("inventory.variants.value_placeholder", attributeValuePlaceholder(attrIndex))}
-                    className="w-32 px-3 py-1.5 bg-surface-muted border border-border rounded-full text-xs font-semibold text-content text-right outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand"
+                    className="w-32 px-3 py-1.5 bg-surface-muted border border-border rounded-full text-sm font-semibold text-content text-right outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand"
                   />
-                  <button type="button" onClick={() => addValueToAttribute(attr.id)} className="text-xs font-bold text-brand hover:underline whitespace-nowrap">
+                  <button type="button" onClick={() => addValueToAttribute(attr.id)} className="text-sm font-bold text-brand hover:underline whitespace-nowrap">
                     + {t("inventory.variants.add_value", "أضف قيمة")}
                   </button>
                 </div>
@@ -220,7 +220,7 @@ export default function VariantAttributeBuilder({ baseSku, onCancel, onRowsChang
             </div>
           ))}
 
-          <button type="button" onClick={addAttributeRow} className="text-xs font-bold text-brand hover:underline">
+          <button type="button" onClick={addAttributeRow} className="text-sm font-bold text-brand hover:underline">
             + {t("inventory.variants.add_another_attribute", "إضافة سمة أخرى (مثل المقاس)")}
           </button>
 
@@ -241,20 +241,20 @@ export default function VariantAttributeBuilder({ baseSku, onCancel, onRowsChang
         </>
       ) : (
         <>
-          <p className="text-xs font-bold text-content-muted">
+          <p className="text-sm font-bold text-content-muted">
             {t("inventory.variants.rows_hint", "راجع كل سمة وعدّل SKU/السعر/المخزون.")}
           </p>
           {!onSaveAll && (
-            <p className="text-xs font-bold text-brand bg-brand/10 p-2.5 rounded-lg">
+            <p className="text-sm font-bold text-brand bg-brand/10 p-2.5 rounded-lg">
               {t(
                 "inventory.variants.draft_save_hint",
                 "هذه السمات ستُحفظ تلقائياً مع المنتج عند الضغط على زر \"حفظ المنتج\" بالأسفل -- لا حاجة لحفظها هنا بشكل منفصل."
               )}
             </p>
           )}
-          {error && <p className="text-xs font-bold text-danger">{error}</p>}
+          {error && <p className="text-sm font-bold text-danger">{error}</p>}
           {draftConfirmed && !error && (
-            <p className="text-xs font-bold text-success">
+            <p className="text-sm font-bold text-success">
               {t("inventory.variants.draft_confirmed", "✓ جاهزة. أكمل حفظ المنتج بالأسفل لإتمام الإضافة.")}
             </p>
           )}
@@ -271,44 +271,44 @@ export default function VariantAttributeBuilder({ baseSku, onCancel, onRowsChang
                   <X size={14} />
                 </button>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+              <div className="grid grid-cols-1 main-640:grid-cols-3 gap-2">
                 <div className="space-y-1">
-                  <label className="text-[9px] font-black text-content-muted uppercase px-1">SKU</label>
+                  <label className="text-sm font-black text-content-muted uppercase px-1">SKU</label>
                   <input
                     value={row.sku}
                     onChange={(e) => updateRow(row.key, "sku", e.target.value)}
                     onKeyDown={blockEnterSubmit}
-                    className="w-full px-2.5 py-2 bg-surface-muted border border-border rounded-lg text-xs font-semibold text-content text-right outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand"
+                    className="w-full px-2.5 py-2 bg-surface-muted border border-border rounded-lg text-sm font-semibold text-content text-right outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand"
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[9px] font-black text-content-muted uppercase px-1">{t("inventory.barcode", "الباركود")}</label>
+                  <label className="text-sm font-black text-content-muted uppercase px-1">{t("inventory.barcode", "الباركود")}</label>
                   <input
                     value={row.barcode}
                     onChange={(e) => updateRow(row.key, "barcode", e.target.value)}
                     onKeyDown={blockEnterSubmit}
-                    className="w-full px-2.5 py-2 bg-surface-muted border border-border rounded-lg text-xs font-semibold text-content text-right outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand"
+                    className="w-full px-2.5 py-2 bg-surface-muted border border-border rounded-lg text-sm font-semibold text-content text-right outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand"
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[9px] font-black text-content-muted uppercase px-1">{t("inventory.variants.price_adjustment", "فرق السعر")}</label>
+                  <label className="text-sm font-black text-content-muted uppercase px-1">{t("inventory.variants.price_adjustment", "فرق السعر")}</label>
                   <input
                     type="number"
                     step="0.01"
                     value={row.priceAdjustment}
                     onChange={(e) => updateRow(row.key, "priceAdjustment", e.target.value)}
                     onKeyDown={blockEnterSubmit}
-                    className="w-full px-2.5 py-2 bg-surface-muted border border-border rounded-lg text-xs font-semibold text-content text-right outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand"
+                    className="w-full px-2.5 py-2 bg-surface-muted border border-border rounded-lg text-sm font-semibold text-content text-right outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand"
                   />
                 </div>
               </div>
-              <p className="text-[10px] text-content-muted px-1">
+              <p className="text-sm text-content-muted px-1">
                 {t("inventory.variants.stock_via_po_hint", "المخزون يُضاف لاحقاً عبر أمر شراء -- هذه السمة تُنشأ برصيد صفر.")}
               </p>
             </div>
           ))}
 
-          {rows.length === 0 && <p className="text-xs text-content-muted">{t("inventory.variants.all_rows_removed", "لم يتبقَّ أي سمة.")}</p>}
+          {rows.length === 0 && <p className="text-sm text-content-muted">{t("inventory.variants.all_rows_removed", "لم يتبقَّ أي سمة.")}</p>}
 
           <div className="flex items-center gap-2 pt-1">
             <button

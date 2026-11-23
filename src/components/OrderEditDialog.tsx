@@ -155,7 +155,7 @@ export default function OrderEditDialog({ orderId, tenantId, onClose, onSaved }:
             <div className="space-y-2">
               <span className="text-sm font-bold text-content">{t('orders.edit_lines')}</span>
               {!linesEditable && (
-                <p className="text-xs font-bold text-content-muted rounded-xl bg-surface-muted p-3">
+                <p className="text-sm font-bold text-content-muted rounded-xl bg-surface-muted p-3">
                   {hasInvoice ? t('orders.edit_lines_locked_invoice') : t('orders.edit_lines_locked_cut')}
                 </p>
               )}
@@ -169,7 +169,7 @@ export default function OrderEditDialog({ orderId, tenantId, onClose, onSaved }:
                     value={l.price} onChange={(e) => setLines((ls) => ls.map((x, j) => (j === i ? { ...x, price: Math.max(0, Number(e.target.value) || 0) } : x)))}
                     className={field} />
                   <button type="button" disabled={!linesEditable} onClick={() => setLines((ls) => ls.map((x, j) => (j === i ? { ...x, removed: !x.removed } : x)))}
-                    className="min-h-11 px-2 rounded-xl border border-border text-xs font-bold disabled:opacity-40">
+                    className="min-h-11 px-2 rounded-xl border border-border text-sm font-bold disabled:opacity-40">
                     {l.removed ? t('orders.edit_restore_line') : t('orders.edit_remove_line')}
                   </button>
                 </div>

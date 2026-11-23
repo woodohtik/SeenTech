@@ -174,8 +174,8 @@ export default function AdminTenantLicenses() {
       </header>
 
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-surface rounded-2xl border border-border shadow-sm overflow-hidden">
-        <div className="p-8 border-b border-border bg-brand/5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div className="w-full sm:w-80">
+        <div className="p-8 border-b border-border bg-brand/5 flex flex-col main-640:flex-row justify-between items-start main-640:items-center gap-4">
+          <div className="w-full main-640:w-80">
             <IconInput
               type="text"
               placeholder={t('saas.tenants.quick_search_placeholder')}
@@ -194,11 +194,11 @@ export default function AdminTenantLicenses() {
             <table className="w-full text-right min-w-[900px]">
               <thead>
                 <tr className="bg-surface-muted/30 border-b border-border">
-                  <th className="px-8 py-5 text-[10px] font-black text-content-muted uppercase tracking-widest text-center">{t('saas.tenants.col_subscriber')}</th>
-                  <th className="px-8 py-5 text-[10px] font-black text-content-muted uppercase tracking-widest text-center">{t('saas.tenants.col_current_plan')}</th>
-                  <th className="px-8 py-5 text-[10px] font-black text-content-muted uppercase tracking-widest text-center">{t('saas.tenants.col_remaining_period')}</th>
-                  <th className="px-8 py-5 text-[10px] font-black text-content-muted uppercase tracking-widest text-center">{t('saas.tenants.col_change_plan')}</th>
-                  <th className="px-8 py-5 text-[10px] font-black text-content-muted uppercase tracking-widest text-left">{t('shift_history.actions')}</th>
+                  <th className="px-8 py-5 text-sm font-black text-content-muted uppercase text-center">{t('saas.tenants.col_subscriber')}</th>
+                  <th className="px-8 py-5 text-sm font-black text-content-muted uppercase text-center">{t('saas.tenants.col_current_plan')}</th>
+                  <th className="px-8 py-5 text-sm font-black text-content-muted uppercase text-center">{t('saas.tenants.col_remaining_period')}</th>
+                  <th className="px-8 py-5 text-sm font-black text-content-muted uppercase text-center">{t('saas.tenants.col_change_plan')}</th>
+                  <th className="px-8 py-5 text-sm font-black text-content-muted uppercase text-left">{t('shift_history.actions')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
@@ -216,7 +216,7 @@ export default function AdminTenantLicenses() {
                           </div>
                           <div>
                             <div className="font-black text-sm text-content">{tenant.name}</div>
-                            <div className="text-[10px] font-bold text-content-muted">{tenant.ownerEmail}</div>
+                            <div className="text-sm font-bold text-content-muted">{tenant.ownerEmail}</div>
                           </div>
                         </div>
                       </td>
@@ -224,7 +224,7 @@ export default function AdminTenantLicenses() {
                       <td className="px-8 py-6 text-center">
                         <span
                           className={cn(
-                            'px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider',
+                            'px-3 py-1 rounded-full text-sm font-black uppercase',
                             tenant.planId === 'basic'
                               ? 'bg-info/10 text-info border border-info/20'
                               : tenant.planId === 'free'
@@ -247,7 +247,7 @@ export default function AdminTenantLicenses() {
                               style={{ width: `${sub.progress}%` }}
                             />
                           </div>
-                          <span className={cn('text-xs font-black min-w-[60px]', sub.daysLeft < 7 ? 'text-danger animate-pulse' : 'text-brand')}>
+                          <span className={cn('text-sm font-black min-w-[60px]', sub.daysLeft < 7 ? 'text-danger animate-pulse' : 'text-brand')}>
                             {t('saas.tenants.days_left', { days: sub.daysLeft })}
                           </span>
                         </div>
@@ -259,7 +259,7 @@ export default function AdminTenantLicenses() {
                             startIcon={Crown}
                             value={tenant.planId || 'free'}
                             onChange={(v) => handleUpdateTenantPlan(tenant.id, v)}
-                            className="w-full rounded-xl text-xs"
+                            className="w-full rounded-xl text-sm"
                             options={[
                               { value: 'free', label: t('saas.tenants.plan_option_free') },
                               { value: 'basic', label: t('saas.tenants.plan_option_basic') },
@@ -271,7 +271,7 @@ export default function AdminTenantLicenses() {
                       <td className="px-8 py-6 text-left">
                         <button
                           onClick={() => handleExtendTrial(tenant.id)}
-                          className="inline-flex items-center gap-1.5 px-5 py-2.5 bg-brand text-white hover:bg-brand/90 rounded-2xl text-xs font-black shadow-lg shadow-brand/20 transition-all active:scale-95 group"
+                          className="inline-flex items-center gap-1.5 px-5 py-2.5 bg-brand text-white hover:bg-brand/90 rounded-2xl text-sm font-black shadow-lg shadow-brand/20 transition-all active:scale-95 group"
                         >
                           <Clock size={16} className="group-hover:rotate-12 transition-transform" />
                           {t('saas.tenants.extend_period')}

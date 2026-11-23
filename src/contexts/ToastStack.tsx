@@ -58,7 +58,7 @@ export function ToastCard({ toast, onClose }: { toast: Toast; onClose: () => voi
       <div className="flex-1">
         <h4 className="text-sm font-black text-content">{toast.message}</h4>
         {toast.description && (
-          <p className="mt-1 text-xs font-bold text-content-muted leading-relaxed">
+          <p className="mt-1 text-sm font-bold text-content-muted leading-relaxed">
             {toast.description}
           </p>
         )}

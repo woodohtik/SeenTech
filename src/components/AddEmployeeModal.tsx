@@ -206,7 +206,7 @@ export default function AddEmployeeModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 sm:p-6" dir={dir}>
+    <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 main-640:p-6" dir={dir}>
       <motion.div 
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -243,7 +243,7 @@ export default function AddEmployeeModal({
           />
 
           <div className="space-y-1.5">
-            <label className="block text-xs font-black uppercase tracking-widest px-1 text-content-muted">{t('staff.job_role')}</label>
+            <label className="block text-sm font-black uppercase px-1 text-content-muted">{t('staff.job_role')}</label>
             <Controller
               name="role"
               control={control}
@@ -260,11 +260,11 @@ export default function AddEmployeeModal({
                 />
               )}
             />
-            {errors.role && <p className="text-xs text-danger font-bold px-1">{t(errors.role.message as string)}</p>}
+            {errors.role && <p className="text-sm text-danger font-bold px-1">{t(errors.role.message as string)}</p>}
           </div>
 
           <div className="space-y-1.5">
-            <label className="block text-xs font-black uppercase tracking-widest px-1 text-content-muted">{t('common.branch')}</label>
+            <label className="block text-sm font-black uppercase px-1 text-content-muted">{t('common.branch')}</label>
             <Controller
               name="branchId"
               control={control}
@@ -281,7 +281,7 @@ export default function AddEmployeeModal({
                 />
               )}
             />
-            {errors.branchId && <p className="text-xs text-danger font-bold px-1">{t(errors.branchId.message as string)}</p>}
+            {errors.branchId && <p className="text-sm text-danger font-bold px-1">{t(errors.branchId.message as string)}</p>}
           </div>
 
           <IconInput

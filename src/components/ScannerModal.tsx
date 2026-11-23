@@ -135,7 +135,7 @@ export default function ScannerModal({ isOpen, onClose, onScan }: ScannerModalPr
           ) : (
             <div id="reader" className="w-full h-full overflow-hidden rounded-xl border border-border bg-black"></div>
           )}
-          <p className="text-xs text-content-muted font-semibold mt-4 text-center">
+          <p className="text-sm text-content-muted font-semibold mt-4 text-center">
             {t('pos.scanner_hint')}
           </p>
         </div>

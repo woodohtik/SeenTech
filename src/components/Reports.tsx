@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { AutoGrid } from './ui/AutoGrid';
+import { StatCard } from './ui/StatCard';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase/client';
 import { handleError, OperationType } from '../lib/appErrors';
@@ -999,33 +1001,33 @@ export default function Reports({ tenantId }: { tenantId: string }) {
   }
 
   return (
-    <div className="space-y-4 sm:space-y-8 text-right pb-20 px-2 sm:px-0" dir={dir}>
+    <div className="space-y-4 main-640:space-y-8 text-right pb-20 px-2 main-640:px-0" dir={dir}>
       <Header 
         tenantId={tenantId} 
         title={t('reports.title')} 
         subtitle={t('reports.subtitle')}
       >
-        <div className="flex flex-col sm:flex-row gap-2.5 w-full sm:w-auto">
+        <div className="flex flex-col main-640:flex-row gap-2.5 w-full main-640:w-auto">
           <button 
             onClick={() => canExportReports && exportToExcel(filteredOrders, `orders_report_${activeTab}`)}
             disabled={!canExportReports}
             className={cn(
-              "flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 bg-surface border border-border rounded-xl sm:rounded-2xl text-content-muted hover:bg-surface-muted font-black text-xs sm:text-sm transition-all shadow-sm",
+              "flex-1 main-640:flex-none flex items-center justify-center gap-2 px-4 main-640:px-6 py-2.5 main-640:py-3 bg-surface border border-border rounded-xl main-640:rounded-2xl text-content-muted hover:bg-surface-muted font-black text-sm transition-all shadow-sm",
               !canExportReports && "opacity-50 cursor-not-allowed"
             )}
           >
-            <FileSpreadsheet size={16} className="text-success sm:w-5 sm:h-5" />
+            <FileSpreadsheet size={16} className="text-success main-640:w-5 main-640:h-5" />
             <span>{t('dashboard.export_excel')}</span>
           </button>
           <button
             onClick={() => canExportReports && downloadInvoicePDF('reports-printable-area', `${activeTabLabel}.pdf`)}
             disabled={!canExportReports}
             className={cn(
-              "flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 bg-brand text-white rounded-xl sm:rounded-2xl hover:bg-brand/90 font-black text-xs sm:text-sm transition-all shadow-lg shadow-brand/10",
+              "flex-1 main-640:flex-none flex items-center justify-center gap-2 px-4 main-640:px-6 py-2.5 main-640:py-3 bg-brand text-white rounded-xl main-640:rounded-2xl hover:bg-brand/90 font-black text-sm transition-all shadow-lg shadow-brand/10",
               !canExportReports && "opacity-50 cursor-not-allowed"
             )}
           >
-            <Download size={16} className="sm:w-5 sm:h-5" />
+            <Download size={16} className="main-640:w-5 main-640:h-5" />
             <span>{t('dashboard.export_pdf')}</span>
           </button>
         </div>
@@ -1040,8 +1042,8 @@ export default function Reports({ tenantId }: { tenantId: string }) {
       />
 
       {/* Filters Bar */}
-      <div id="reports-filters-bar" className="bg-surface p-4 sm:p-6 rounded-2xl border border-border shadow-sm flex flex-col lg:flex-row lg:items-center gap-4 sm:gap-6">
-        <div className="relative w-full lg:flex-1">
+      <div id="reports-filters-bar" className="bg-surface p-4 main-640:p-6 rounded-2xl border border-border shadow-sm flex flex-col main-1024:flex-row main-1024:items-center gap-4 main-640:gap-6">
+        <div className="relative w-full main-1024:flex-1">
           <IconInput
             id="reports-search-input"
             type="text"
@@ -1080,18 +1082,18 @@ export default function Reports({ tenantId }: { tenantId: string }) {
                     className="w-full flex items-center justify-between gap-3 px-4 py-3 hover:bg-surface-muted/60 transition-colors text-right border-b border-border last:border-0"
                   >
                     <div className="min-w-0">
-                      <p className="text-xs font-black text-content truncate">
+                      <p className="text-sm font-black text-content truncate">
                         {order.customerName} <span className="text-content-muted font-bold">#{order.orderNumber ?? order.id.slice(-6).toUpperCase()}</span>
                       </p>
-                      <p className="text-[10px] text-content-muted font-bold mt-0.5">
+                      <p className="text-sm text-content-muted font-bold mt-0.5">
                         <DateTimeDisplay date={order.orderDate} showTime={false} />
                       </p>
                     </div>
-                    <span className="text-xs font-black text-brand shrink-0"><PriceDisplay amount={order.totalAmount} /></span>
+                    <span className="text-sm font-black text-brand shrink-0"><PriceDisplay amount={order.totalAmount} /></span>
                   </button>
                 ))
               ) : (
-                <div className="px-4 py-6 text-center text-xs font-bold text-content-muted">
+                <div className="px-4 py-6 text-center text-sm font-bold text-content-muted">
                   {t('pos.no_orders')}
                 </div>
               )}
@@ -1099,9 +1101,9 @@ export default function Reports({ tenantId }: { tenantId: string }) {
           )}
         </div>
 
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full lg:w-auto">
+        <div className="flex min-w-0 flex-col main-640:flex-row main-640:flex-wrap items-stretch main-640:items-center gap-3 w-full main-1024:w-auto">
           {/* Start Date */}
-          <div className="flex-1 sm:flex-none min-w-[130px] lg:min-w-[150px]">
+          <div className="flex-1 main-640:flex-none min-w-[130px] main-900:min-w-[150px]">
             <DatePicker
               id="reports-date-start"
               value={dateRange.start}
@@ -1111,7 +1113,7 @@ export default function Reports({ tenantId }: { tenantId: string }) {
           </div>
 
           {/* End Date */}
-          <div className="flex-1 sm:flex-none min-w-[130px] lg:min-w-[150px]">
+          <div className="flex-1 main-640:flex-none min-w-[130px] main-900:min-w-[150px]">
             <DatePicker
               id="reports-date-end"
               value={dateRange.end}
@@ -1120,7 +1122,7 @@ export default function Reports({ tenantId }: { tenantId: string }) {
             />
           </div>
 
-          <div className="flex-1 sm:flex-none sm:min-w-[160px]">
+          <div className="flex-1 main-640:flex-none main-640:min-w-[160px]">
             <SmartSelect
               value={selectedStaff}
               onChange={(val) => setSelectedStaff(val)}
@@ -1132,7 +1134,7 @@ export default function Reports({ tenantId }: { tenantId: string }) {
             />
           </div>
 
-          <div className="flex-1 sm:flex-none sm:min-w-[160px]">
+          <div className="flex-1 main-640:flex-none main-640:min-w-[160px]">
             <SmartSelect
               value={paymentStatus}
               onChange={(val) => setPaymentStatus(val)}
@@ -1153,20 +1155,20 @@ export default function Reports({ tenantId }: { tenantId: string }) {
         <div className="pointer-events-none absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-surface to-transparent z-10" />
         <div className="pointer-events-none absolute inset-y-0 left-0 w-8 bg-gradient-to-r from-surface to-transparent z-10" />
         <div id="reports-tabs-nav-container" className="w-full overflow-x-auto pb-1 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-        <div className="flex items-center gap-1.5 sm:gap-2 bg-surface p-1.5 sm:p-2 rounded-2xl border border-border shadow-sm w-max">
+        <div className="flex items-center gap-1.5 main-640:gap-2 bg-surface p-1.5 main-640:p-2 rounded-2xl border border-border shadow-sm w-max">
           {reportTabs.map((tab) => (
             <button
               id={`tab-btn-${tab.id}`}
               key={tab.id}
               onClick={() => setActiveTab(tab.id as ReportTab)}
               className={cn(
-                "flex items-center gap-1.5 sm:gap-2 px-3 sm:px-6 py-2 sm:py-3 rounded-lg sm:rounded-2xl font-black text-xs sm:text-sm transition-all shrink-0",
+                "flex items-center gap-1.5 main-640:gap-2 px-3 main-640:px-6 py-2 main-640:py-3 rounded-lg main-640:rounded-2xl font-black text-sm transition-all shrink-0",
                 activeTab === tab.id 
                   ? "bg-brand text-white shadow-lg shadow-brand/10" 
                   : "text-content-muted hover:bg-surface-muted"
               )}
             >
-              <tab.icon size={16} className="sm:w-[18px] sm:h-[18px]" />
+              <tab.icon size={16} className="main-640:w-[18px] main-640:h-[18px]" />
               <span>{tab.label}</span>
             </button>
           ))}
@@ -1181,45 +1183,42 @@ export default function Reports({ tenantId }: { tenantId: string }) {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -20 }}
-          className="space-y-4 sm:space-y-8"
+          className="space-y-4 main-640:space-y-8"
         >
           {activeTab === 'general' && (
-            <div id="reports-general-grid" className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
+            // StatCard on an AutoGrid (seen-responsive-layout-task.md Phase 3): the
+            // amounts used to be cut ("truncate") inside a fixed four-column row.
+            <AutoGrid id="reports-general-grid" min={200} maxColumns={4}>
               {[
                 { label: t('dashboard.total_revenue'), value: financialStats.totalRevenue, icon: DollarSign, color: 'text-success', bg: 'bg-success/10', isCurrency: true },
                 { label: t('dashboard.admin.total_sales'), value: financialStats.totalSales, icon: TrendingUp, color: 'text-brand', bg: 'bg-brand/10', isCurrency: true },
                 { label: t('dashboard.orders_count'), value: filteredOrders.length, icon: ShoppingBag, color: 'text-warning', bg: 'bg-warning/10', isCurrency: false },
                 { label: t('reports.delayed_orders'), value: orderStats.delayedCount, icon: AlertTriangle, color: 'text-danger', bg: 'bg-danger/10', isCurrency: false },
-              ].map((stat, i) => (
-                <div key={i} className="bg-surface p-3 sm:p-6 lg:p-8 rounded-2xl border border-border shadow-sm flex flex-col sm:flex-row items-center sm:items-start lg:items-center gap-3 sm:gap-6 text-center sm:text-right">
-                  <div className={cn("p-2.5 sm:p-5 rounded-xl sm:rounded-2xl shrink-0", stat.bg, stat.color)}>
-                    <stat.icon size={20} className="sm:w-7 sm:h-7" />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-[10px] sm:text-xs font-black text-content-muted uppercase tracking-widest truncate">{stat.label}</p>
-                    <h3 className="text-xs sm:text-xl lg:text-2xl font-black text-content mt-0.5 sm:mt-1 truncate">
-                      {typeof stat.value === 'number' && stat.isCurrency
-                        ? <PriceDisplay amount={stat.value} />
-                        : stat.value.toLocaleString(locale)}
-                    </h3>
-                  </div>
-                </div>
+              ].map((stat) => (
+                <StatCard
+                  key={stat.label}
+                  label={stat.label}
+                  icon={<span aria-hidden="true" className={cn('flex h-12 w-12 items-center justify-center rounded-[12px]', stat.bg, stat.color)}><stat.icon size={24} /></span>}
+                  value={typeof stat.value === 'number' && stat.isCurrency
+                    ? <PriceDisplay amount={stat.value} />
+                    : stat.value.toLocaleString(locale)}
+                />
               ))}
-            </div>
+            </AutoGrid>
           )}
 
           {activeTab === 'financial' && (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-8">
+            <div className="grid grid-cols-1 main-900:grid-cols-2 gap-4 main-640:gap-8">
               {/* Revenue vs Sales Trend */}
-              <div className="bg-surface p-4 sm:p-8 rounded-2xl border border-border shadow-sm">
-                <div className="flex justify-between items-center mb-6 sm:mb-8">
-                  <h3 className="text-sm sm:text-lg font-black text-content">{t('reports.revenue_vs_sales')}</h3>
-                  <div className="flex gap-2 sm:gap-4 text-[10px] sm:text-xs font-bold">
-                    <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 sm:w-3 sm:h-3 bg-brand rounded-full" /><span>{t('common.sales')}</span></div>
-                    <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 sm:w-3 sm:h-3 bg-success rounded-full" /><span>{t('reports.revenue')}</span></div>
+              <div className="bg-surface p-4 main-640:p-8 rounded-2xl border border-border shadow-sm">
+                <div className="flex justify-between items-center mb-6 main-640:mb-8">
+                  <h3 className="text-sm main-640:text-lg font-black text-content">{t('reports.revenue_vs_sales')}</h3>
+                  <div className="flex gap-2 main-640:gap-4 text-sm font-bold">
+                    <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 main-640:w-3 main-640:h-3 bg-brand rounded-full" /><span>{t('common.sales')}</span></div>
+                    <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 main-640:w-3 main-640:h-3 bg-success rounded-full" /><span>{t('reports.revenue')}</span></div>
                   </div>
                 </div>
-                <div className="h-64 sm:h-80">
+                <div className="h-64 main-640:h-80">
                   <ResponsiveContainer width="100%" height="100%">
                     <AreaChart data={financialStats.trendChartData}>
                       <defs>
@@ -1233,8 +1232,8 @@ export default function Reports({ tenantId }: { tenantId: string }) {
                         </linearGradient>
                       </defs>
                       <CartesianGrid strokeDasharray="4 4" vertical={false} stroke="var(--border)" opacity={0.5} />
-                      <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 700, fill: 'var(--content-muted)' }} dy={6} />
-                      <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 700, fill: 'var(--content-muted)' }} />
+                      <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fontSize: 14, fontWeight: 700, fill: 'var(--content-muted)' }} dy={6} />
+                      <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 14, fontWeight: 700, fill: 'var(--content-muted)' }} />
                       <Tooltip 
                         cursor={{ stroke: 'var(--brand)', strokeWidth: 1.5, strokeDasharray: '4 4', opacity: 0.5 }}
                         content={({ active, payload, label }) => {
@@ -1243,8 +1242,8 @@ export default function Reports({ tenantId }: { tenantId: string }) {
                             const revVal = payload.find(p => p.dataKey === 'revenue')?.value as number || 0;
                             return (
                               <div className="bg-surface/95 backdrop-blur-md p-4 rounded-2xl shadow-2xl border border-border text-right min-w-[200px] animate-in fade-in zoom-in-95 duration-150">
-                                <div className="text-xs font-black text-content pb-2 mb-2 border-b border-border/60">{label}</div>
-                                <div className="space-y-2 text-xs font-bold">
+                                <div className="text-sm font-black text-content pb-2 mb-2 border-b border-border/60">{label}</div>
+                                <div className="space-y-2 text-sm font-bold">
                                   <div className="flex items-center justify-between gap-4">
                                     <span className="text-content-muted flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-brand" />{t('common.sales')}:</span>
                                     <span className="font-black text-brand"><PriceDisplay amount={salesVal} /></span>
@@ -1268,9 +1267,9 @@ export default function Reports({ tenantId }: { tenantId: string }) {
               </div>
 
               {/* Payment Methods */}
-              <div className="bg-surface p-4 sm:p-8 rounded-2xl border border-border shadow-sm">
-                <h3 className="text-sm sm:text-lg font-black text-content mb-6 sm:mb-8">{t('reports.sales_by_payment_method')}</h3>
-                <div className="h-64 sm:h-80">
+              <div className="bg-surface p-4 main-640:p-8 rounded-2xl border border-border shadow-sm">
+                <h3 className="text-sm main-640:text-lg font-black text-content mb-6 main-640:mb-8">{t('reports.sales_by_payment_method')}</h3>
+                <div className="h-64 main-640:h-80">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie
@@ -1289,51 +1288,51 @@ export default function Reports({ tenantId }: { tenantId: string }) {
                         ))}
                       </Pie>
                       <Tooltip 
-                        contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', fontWeight: 800, backgroundColor: 'var(--color-surface)', color: 'var(--color-content)', fontSize: '12px' }}
+                        contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', fontWeight: 800, backgroundColor: 'var(--color-surface)', color: 'var(--color-content)', fontSize: 14 }}
                         formatter={(value?: TooltipValueType) => <PriceDisplay amount={Number(value) || 0} />}
                       />
-                      <Legend verticalAlign="bottom" height={36} iconType="circle" wrapperStyle={{ fontSize: '11px', fontWeight: 700 }} />
+                      <Legend verticalAlign="bottom" height={36} iconType="circle" wrapperStyle={{ fontSize: 14, fontWeight: 700 }} />
                     </PieChart>
                   </ResponsiveContainer>
                 </div>
               </div>
 
               {/* Tax, Profit & Returns Cards */}
-              <div className="lg:col-span-2 grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-6">
-                <div className="bg-surface p-4 sm:p-8 rounded-2xl border border-border shadow-sm">
-                  <p className="text-[10px] sm:text-xs font-black text-content-muted uppercase tracking-widest">{t('reports.total_tax')}</p>
-                  <h3 className="text-base sm:text-2xl font-black text-danger mt-1 sm:mt-2"><PriceDisplay amount={financialStats.totalTax} /></h3>
-                  <p className="text-[9px] sm:text-[10px] text-content-muted mt-0.5 sm:mt-1 font-bold">{t('dashboard.admin.vat_15')}</p>
+              <div className="main-900:col-span-2 grid grid-cols-2 main-720:grid-cols-4 gap-3 main-640:gap-6">
+                <div className="bg-surface p-4 main-640:p-8 rounded-2xl border border-border shadow-sm">
+                  <p className="text-sm font-black text-content-muted uppercase">{t('reports.total_tax')}</p>
+                  <h3 className="text-base main-640:text-2xl font-black text-danger mt-1 main-640:mt-2"><PriceDisplay amount={financialStats.totalTax} /></h3>
+                  <p className="text-sm text-content-muted mt-0.5 main-640:mt-1 font-bold">{t('dashboard.admin.vat_15')}</p>
                 </div>
-                <div className="bg-surface p-4 sm:p-8 rounded-2xl border border-border shadow-sm">
-                  <p className="text-[10px] sm:text-xs font-black text-content-muted uppercase tracking-widest">{t('reports.net_profit')}</p>
-                  <h3 className="text-base sm:text-2xl font-black text-success mt-1 sm:mt-2"><PriceDisplay amount={financialStats.netProfit} /></h3>
-                  <p className="text-[9px] sm:text-[10px] text-content-muted mt-0.5 sm:mt-1 font-bold">{t('reports.after_tax_deduction')}</p>
+                <div className="bg-surface p-4 main-640:p-8 rounded-2xl border border-border shadow-sm">
+                  <p className="text-sm font-black text-content-muted uppercase">{t('reports.net_profit')}</p>
+                  <h3 className="text-base main-640:text-2xl font-black text-success mt-1 main-640:mt-2"><PriceDisplay amount={financialStats.netProfit} /></h3>
+                  <p className="text-sm text-content-muted mt-0.5 main-640:mt-1 font-bold">{t('reports.after_tax_deduction')}</p>
                 </div>
-                <div className="bg-surface p-4 sm:p-8 rounded-2xl border border-border shadow-sm">
-                  <p className="text-[10px] sm:text-xs font-black text-content-muted uppercase tracking-widest">{t('reports.avg_order_value')}</p>
-                  <h3 className="text-base sm:text-2xl font-black text-brand mt-1 sm:mt-2">
+                <div className="bg-surface p-4 main-640:p-8 rounded-2xl border border-border shadow-sm">
+                  <p className="text-sm font-black text-content-muted uppercase">{t('reports.avg_order_value')}</p>
+                  <h3 className="text-base main-640:text-2xl font-black text-brand mt-1 main-640:mt-2">
                     <PriceDisplay amount={nonCancelledOrders.length > 0 ? financialStats.totalSales / nonCancelledOrders.length : 0} />
                   </h3>
-                  <p className="text-[9px] sm:text-[10px] text-content-muted mt-0.5 sm:mt-1 font-bold">{t('reports.based_on_orders', { n: nonCancelledOrders.length })}</p>
+                  <p className="text-sm text-content-muted mt-0.5 main-640:mt-1 font-bold">{t('reports.based_on_orders', { n: nonCancelledOrders.length })}</p>
                 </div>
-                <div className="bg-surface p-4 sm:p-8 rounded-2xl border border-border shadow-sm">
-                  <p className="text-[10px] sm:text-xs font-black text-content-muted uppercase tracking-widest">{t('reports.total_returns_value')}</p>
-                  <h3 className="text-base sm:text-2xl font-black text-danger mt-1 sm:mt-2"><PriceDisplay amount={financialStats.totalReturnsValue} /></h3>
-                  <p className="text-[9px] sm:text-[10px] text-content-muted mt-0.5 sm:mt-1 font-bold">{t('common.status_cancelled')}</p>
+                <div className="bg-surface p-4 main-640:p-8 rounded-2xl border border-border shadow-sm">
+                  <p className="text-sm font-black text-content-muted uppercase">{t('reports.total_returns_value')}</p>
+                  <h3 className="text-base main-640:text-2xl font-black text-danger mt-1 main-640:mt-2"><PriceDisplay amount={financialStats.totalReturnsValue} /></h3>
+                  <p className="text-sm text-content-muted mt-0.5 main-640:mt-1 font-bold">{t('common.status_cancelled')}</p>
                 </div>
               </div>
             </div>
           )}
 
           {activeTab === 'profit_loss' && (
-            <div className="space-y-4 sm:space-y-8">
-              <div className="bg-warning/5 border border-warning/15 text-warning rounded-2xl p-4 text-xs sm:text-sm font-bold flex items-start gap-3">
+            <div className="space-y-4 main-640:space-y-8">
+              <div className="bg-warning/5 border border-warning/15 text-warning rounded-2xl p-4 text-sm font-bold flex items-start gap-3">
                 <AlertTriangle size={18} className="shrink-0 mt-0.5" />
                 <span>{t('reports.pl_estimate_disclaimer')}</span>
               </div>
 
-              <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-6">
+              <div className="grid grid-cols-2 main-900:grid-cols-5 gap-3 main-640:gap-6">
                 {[
                   { label: t('reports.pl_net_sales'), value: profitLossStats.netSalesExclVat, color: 'text-brand', bg: 'bg-brand/10' },
                   { label: t('reports.pl_cogs'), value: profitLossStats.cogs, color: 'text-warning', bg: 'bg-warning/10' },
@@ -1341,25 +1340,25 @@ export default function Reports({ tenantId }: { tenantId: string }) {
                   { label: t('reports.pl_expenses'), value: profitLossStats.operatingExpenses, color: 'text-danger', bg: 'bg-danger/10' },
                   { label: t('reports.pl_net_profit'), value: profitLossStats.netProfit, color: profitLossStats.netProfit >= 0 ? 'text-success' : 'text-danger', bg: profitLossStats.netProfit >= 0 ? 'bg-success/10' : 'bg-danger/10', sub: t('reports.pl_margin', { n: profitLossStats.netMargin.toFixed(1) }) },
                 ].map((card, i) => (
-                  <div key={i} className="bg-surface p-3 sm:p-6 rounded-2xl border border-border shadow-sm">
-                    <p className="text-[10px] sm:text-xs font-black text-content-muted uppercase tracking-widest truncate">{card.label}</p>
-                    <h3 className={cn("text-sm sm:text-xl font-black mt-1 sm:mt-2 truncate", card.color)}><PriceDisplay amount={card.value} /></h3>
-                    {card.sub && <p className="text-[9px] sm:text-[10px] text-content-muted mt-0.5 sm:mt-1 font-bold">{card.sub}</p>}
+                  <div key={i} className="bg-surface p-3 main-640:p-6 rounded-2xl border border-border shadow-sm">
+                    <p className="text-sm font-black text-content-muted uppercase truncate">{card.label}</p>
+                    <h3 className={cn("text-sm main-640:text-xl font-black mt-1 main-640:mt-2 truncate", card.color)}><PriceDisplay amount={card.value} /></h3>
+                    {card.sub && <p className="text-sm text-content-muted mt-0.5 main-640:mt-1 font-bold">{card.sub}</p>}
                   </div>
                 ))}
               </div>
 
-              <div className="bg-surface p-4 sm:p-8 rounded-2xl border border-border shadow-sm">
-                <h3 className="text-sm sm:text-lg font-black text-content mb-6 sm:mb-8">{t('reports.pl_breakdown_title')}</h3>
-                <div className="h-64 sm:h-80">
+              <div className="bg-surface p-4 main-640:p-8 rounded-2xl border border-border shadow-sm">
+                <h3 className="text-sm main-640:text-lg font-black text-content mb-6 main-640:mb-8">{t('reports.pl_breakdown_title')}</h3>
+                <div className="h-64 main-640:h-80">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={profitLossStats.chartData}>
                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="currentColor" className="text-border" />
-                      <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 700, fill: 'currentColor' }} className="text-content-muted" />
-                      <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 700, fill: 'currentColor' }} className="text-content-muted" />
+                      <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 14, fontWeight: 700, fill: 'currentColor' }} className="text-content-muted" />
+                      <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 14, fontWeight: 700, fill: 'currentColor' }} className="text-content-muted" />
                       <Tooltip
                         cursor={{ fill: 'var(--color-surface-muted)' }}
-                        contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', fontWeight: 800, backgroundColor: 'var(--color-surface)', color: 'var(--color-content)', fontSize: '12px' }}
+                        contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', fontWeight: 800, backgroundColor: 'var(--color-surface)', color: 'var(--color-content)', fontSize: 14 }}
                         formatter={(value?: TooltipValueType) => <PriceDisplay amount={Number(value) || 0} />}
                       />
                       <Bar dataKey="value" radius={[6, 6, 0, 0]}>
@@ -1375,19 +1374,19 @@ export default function Reports({ tenantId }: { tenantId: string }) {
           )}
 
           {activeTab === 'orders' && (
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-8">
+            <div className="grid grid-cols-1 main-900:grid-cols-3 gap-4 main-640:gap-8">
               {/* Order Status Bar Chart */}
-              <div className="lg:col-span-2 bg-surface p-4 sm:p-8 rounded-2xl border border-border shadow-sm">
-                <h3 className="text-sm sm:text-lg font-black text-content mb-6 sm:mb-8">{t('reports.current_order_statuses')}</h3>
-                <div className="h-64 sm:h-80">
+              <div className="main-900:col-span-2 bg-surface p-4 main-640:p-8 rounded-2xl border border-border shadow-sm">
+                <h3 className="text-sm main-640:text-lg font-black text-content mb-6 main-640:mb-8">{t('reports.current_order_statuses')}</h3>
+                <div className="h-64 main-640:h-80">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={orderStats.statusChartData} margin={{ top: 10, right: 10, left: 0, bottom: 5 }}>
                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="currentColor" className="text-border" />
-                      <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 700, fill: 'currentColor' }} className="text-content-muted" />
-                      <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 700, fill: 'currentColor' }} className="text-content-muted" />
+                      <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 14, fontWeight: 700, fill: 'currentColor' }} className="text-content-muted" />
+                      <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 14, fontWeight: 700, fill: 'currentColor' }} className="text-content-muted" />
                       <Tooltip 
                         cursor={{ fill: 'var(--color-surface-muted)' }}
-                        contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', fontWeight: 800, backgroundColor: 'var(--color-surface)', color: 'var(--color-content)', fontSize: '12px' }}
+                        contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', fontWeight: 800, backgroundColor: 'var(--color-surface)', color: 'var(--color-content)', fontSize: 14 }}
                       />
                       <Bar
                         dataKey="value"
@@ -1415,20 +1414,20 @@ export default function Reports({ tenantId }: { tenantId: string }) {
               </div>
 
               {/* KPIs */}
-              <div className="grid grid-cols-2 lg:grid-cols-1 gap-3 sm:gap-6">
-                <div className="bg-surface p-4 sm:p-8 rounded-2xl border border-border cursor-default flex flex-col justify-between">
+              <div className="grid grid-cols-2 main-900:grid-cols-1 gap-3 main-640:gap-6">
+                <div className="bg-surface p-4 main-640:p-8 rounded-2xl border border-border cursor-default flex flex-col justify-between">
                   <div>
-                    <div className="flex items-center gap-2 sm:gap-4 mb-2 sm:mb-4">
-                      <div className="p-2 bg-warning/10 text-warning rounded-lg sm:rounded-xl shrink-0"><Clock size={16} className="sm:w-6 sm:h-6" /></div>
-                      <h4 className="font-black text-xs sm:text-base text-content">{t('reports.completion_time')}</h4>
+                    <div className="flex items-center gap-2 main-640:gap-4 mb-2 main-640:mb-4">
+                      <div className="p-2 bg-warning/10 text-warning rounded-lg main-640:rounded-xl shrink-0"><Clock size={16} className="main-640:w-6 main-640:h-6" /></div>
+                      <h4 className="font-black text-sm main-640:text-base text-content">{t('reports.completion_time')}</h4>
                     </div>
-                    <h3 className="text-lg sm:text-3xl font-black text-content">{t('reports.days_value', { n: orderStats.avgTime })}</h3>
+                    <h3 className="text-lg main-640:text-3xl font-black text-content">{t('reports.days_value', { n: orderStats.avgTime })}</h3>
                   </div>
-                  <p className="text-[9px] sm:text-xs text-content-muted font-bold mt-2">{t('reports.from_order_to_delivery')}</p>
+                  <p className="text-sm text-content-muted font-bold mt-2">{t('reports.from_order_to_delivery')}</p>
                 </div>
 
                 <div 
-                  className="bg-surface p-4 sm:p-8 rounded-2xl border border-border shadow-sm cursor-pointer hover:border-danger/30 transition-all flex flex-col justify-between"
+                  className="bg-surface p-4 main-640:p-8 rounded-2xl border border-border shadow-sm cursor-pointer hover:border-danger/30 transition-all flex flex-col justify-between"
                   onClick={() => setDrillDown({
                     title: t('reports.delayed_orders_title'),
                     data: orderStats.delayedOrders,
@@ -1441,71 +1440,71 @@ export default function Reports({ tenantId }: { tenantId: string }) {
                   })}
                 >
                   <div>
-                    <div className="flex items-center gap-2 sm:gap-4 mb-2 sm:mb-4">
-                      <div className="p-2 bg-danger/10 text-danger rounded-lg sm:rounded-xl shrink-0"><AlertTriangle size={16} className="sm:w-6 sm:h-6" /></div>
-                      <h4 className="font-black text-xs sm:text-base text-content">{t('reports.delayed_orders')}</h4>
+                    <div className="flex items-center gap-2 main-640:gap-4 mb-2 main-640:mb-4">
+                      <div className="p-2 bg-danger/10 text-danger rounded-lg main-640:rounded-xl shrink-0"><AlertTriangle size={16} className="main-640:w-6 main-640:h-6" /></div>
+                      <h4 className="font-black text-sm main-640:text-base text-content">{t('reports.delayed_orders')}</h4>
                     </div>
-                    <h3 className="text-lg sm:text-3xl font-black text-danger">{orderStats.delayedCount}</h3>
+                    <h3 className="text-lg main-640:text-3xl font-black text-danger">{orderStats.delayedCount}</h3>
                   </div>
-                  <p className="text-[9px] sm:text-xs text-content-muted font-bold mt-2">{t('reports.over_seven_working_days')}</p>
+                  <p className="text-sm text-content-muted font-bold mt-2">{t('reports.over_seven_working_days')}</p>
                 </div>
               </div>
             </div>
           )}
 
           {activeTab === 'inventory' && (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-8">
+            <div className="grid grid-cols-1 main-900:grid-cols-2 gap-4 main-640:gap-8">
               {/* Low Stock Alerts */}
-              <div className="bg-surface p-4 sm:p-8 rounded-2xl border border-border shadow-sm">
-                <div className="flex items-center justify-between mb-6 sm:mb-8">
-                  <h3 className="text-sm sm:text-lg font-black text-content flex items-center gap-1.5 sm:gap-2">
-                    <AlertTriangle className="text-danger shrink-0 sm:w-5 sm:h-5" size={18} />
+              <div className="bg-surface p-4 main-640:p-8 rounded-2xl border border-border shadow-sm">
+                <div className="flex items-center justify-between mb-6 main-640:mb-8">
+                  <h3 className="text-sm main-640:text-lg font-black text-content flex items-center gap-1.5 main-640:gap-2">
+                    <AlertTriangle className="text-danger shrink-0 main-640:w-5 main-640:h-5" size={18} />
                     {t('reports.low_stock_alerts')}
                   </h3>
-                  <span className="px-2.5 py-0.5 sm:px-3 sm:py-1 bg-danger/10 text-danger rounded-full text-[10px] sm:text-xs font-black">
+                  <span className="px-2.5 py-0.5 main-640:px-3 main-640:py-1 bg-danger/10 text-danger rounded-full text-sm font-black">
                     {t('reports.items_count', { n: inventoryStats.lowStockItems.length })}
                   </span>
                 </div>
-                <div className="space-y-3 sm:space-y-4 max-h-[320px] overflow-y-auto pr-1">
+                <div className="space-y-3 main-640:space-y-4 max-h-[320px] overflow-y-auto pr-1">
                   {inventoryStats.lowStockItems.length > 0 ? (
                     inventoryStats.lowStockItems.map(item => (
-                      <div key={item.id} className="flex items-center justify-between p-3 sm:p-4 bg-surface-muted rounded-xl sm:rounded-2xl">
-                        <div className="flex items-center gap-2 sm:gap-3">
-                          <div className="w-8 h-8 sm:w-10 sm:h-10 bg-surface rounded-lg sm:rounded-xl flex items-center justify-center text-danger shadow-sm shrink-0">
-                            <Package size={16} className="sm:w-5 sm:h-5" />
+                      <div key={item.id} className="flex items-center justify-between p-3 main-640:p-4 bg-surface-muted rounded-xl main-640:rounded-2xl">
+                        <div className="flex items-center gap-2 main-640:gap-3">
+                          <div className="w-8 h-8 main-640:w-10 main-640:h-10 bg-surface rounded-lg main-640:rounded-xl flex items-center justify-center text-danger shadow-sm shrink-0">
+                            <Package size={16} className="main-640:w-5 main-640:h-5" />
                           </div>
                           <div>
-                            <p className="text-xs sm:text-sm font-black text-content truncate max-w-[120px] sm:max-w-none">{item.name}</p>
-                            <p className="text-[9px] sm:text-[10px] text-content-muted font-bold">{t('reports.min_threshold_value', { value: item.minThreshold, unit: item.unit })}</p>
+                            <p className="text-sm font-black text-content truncate max-w-[120px] main-640:max-w-none">{item.name}</p>
+                            <p className="text-sm text-content-muted font-bold">{t('reports.min_threshold_value', { value: item.minThreshold, unit: item.unit })}</p>
                           </div>
                         </div>
                         <div className="text-left">
-                          <p className="text-xs sm:text-sm font-black text-danger">{item.quantity} {item.unit}</p>
-                          <p className="text-[9px] sm:text-[10px] text-content-muted font-bold">{t('reports.current_quantity')}</p>
+                          <p className="text-sm font-black text-danger">{item.quantity} {item.unit}</p>
+                          <p className="text-sm text-content-muted font-bold">{t('reports.current_quantity')}</p>
                         </div>
                       </div>
                     ))
                   ) : (
                     <div className="text-center py-12">
-                      <CheckCircle2 size={40} className="text-success/20 mx-auto mb-3 sm:w-12 sm:h-12" />
-                      <p className="text-content-muted font-bold text-xs sm:text-sm">{t('reports.stock_healthy')}</p>
+                      <CheckCircle2 size={40} className="text-success/20 mx-auto mb-3 main-640:w-12 main-640:h-12" />
+                      <p className="text-content-muted font-bold text-sm">{t('reports.stock_healthy')}</p>
                     </div>
                   )}
                 </div>
               </div>
 
               {/* Top Consumed Items */}
-              <div className="bg-surface p-4 sm:p-8 rounded-2xl border border-border shadow-sm">
-                <h3 className="text-sm sm:text-lg font-black text-content mb-6 sm:mb-8">{t('reports.most_available_items')}</h3>
-                <div className="h-64 sm:h-80">
+              <div className="bg-surface p-4 main-640:p-8 rounded-2xl border border-border shadow-sm">
+                <h3 className="text-sm main-640:text-lg font-black text-content mb-6 main-640:mb-8">{t('reports.most_available_items')}</h3>
+                <div className="h-64 main-640:h-80">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={inventoryStats.topItems} layout="vertical" margin={{ left: 10, right: 10 }}>
                       <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="currentColor" className="text-border" />
-                      <XAxis type="number" axisLine={false} tickLine={false} tick={{ fontSize: 9, fontWeight: 700, fill: 'currentColor' }} className="text-content-muted" />
-                      <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fontSize: 9, fontWeight: 700, fill: 'currentColor' }} className="text-content-muted" width={90} />
+                      <XAxis type="number" axisLine={false} tickLine={false} tick={{ fontSize: 14, fontWeight: 700, fill: 'currentColor' }} className="text-content-muted" />
+                      <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fontSize: 14, fontWeight: 700, fill: 'currentColor' }} className="text-content-muted" width={90} />
                       <Tooltip 
                         cursor={{ fill: 'var(--color-surface-muted)' }}
-                        contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', fontWeight: 800, backgroundColor: 'var(--color-surface)', color: 'var(--color-content)', fontSize: '12px' }}
+                        contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', fontWeight: 800, backgroundColor: 'var(--color-surface)', color: 'var(--color-content)', fontSize: 14 }}
                       />
                       <Bar dataKey="quantity" fill="var(--brand)" radius={[0, 6, 6, 0]} />
                     </BarChart>
@@ -1516,20 +1515,20 @@ export default function Reports({ tenantId }: { tenantId: string }) {
           )}
 
           {activeTab === 'staff' && (
-            <div className="space-y-4 sm:space-y-8">
+            <div className="space-y-4 main-640:space-y-8">
               {/* Detailed Employee Performance Table */}
-              <div className="bg-surface p-4 sm:p-8 rounded-2xl border border-border shadow-sm space-y-6">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="bg-surface p-4 main-640:p-8 rounded-2xl border border-border shadow-sm space-y-6">
+                <div className="flex flex-col main-640:flex-row main-640:items-center justify-between gap-4">
                   <div>
-                    <h3 className="text-base sm:text-xl font-black text-content flex items-center gap-2">
+                    <h3 className="text-base main-640:text-xl font-black text-content flex items-center gap-2">
                       <TrendingUp className="text-brand shrink-0" size={22} />
                       {t('reports.staff_performance_title')}
                     </h3>
-                    <p className="text-xs font-medium text-content-muted mt-1">
+                    <p className="text-sm font-medium text-content-muted mt-1">
                       {t('reports.staff_performance_desc')}
                     </p>
                   </div>
-                  <span className="px-3.5 py-1.5 bg-brand/10 text-brand rounded-full text-xs font-black self-start sm:self-auto">
+                  <span className="px-3.5 py-1.5 bg-brand/10 text-brand rounded-full text-sm font-black self-start main-640:self-auto">
                     {t('reports.staff_count', { n: staffWithPerformance.length })}
                   </span>
                 </div>
@@ -1539,7 +1538,7 @@ export default function Reports({ tenantId }: { tenantId: string }) {
                     breakpoint="sm"
                     cards={
                       staffWithPerformance.length === 0 ? (
-                        <div className="text-center py-8 text-content-muted font-bold text-xs sm:text-sm">
+                        <div className="text-center py-8 text-content-muted font-bold text-sm">
                           {t('reports.no_staff_registered')}
                         </div>
                       ) : staffWithPerformance.map((member) => (
@@ -1550,12 +1549,12 @@ export default function Reports({ tenantId }: { tenantId: string }) {
                             </div>
                             <div className="min-w-0">
                               <div className="font-bold text-content">{member.name}</div>
-                              <span className="text-xs font-bold text-content-muted bg-surface-muted px-2.5 py-0.5 rounded-full inline-block mt-1">
+                              <span className="text-sm font-bold text-content-muted bg-surface-muted px-2.5 py-0.5 rounded-full inline-block mt-1">
                                 {member.roleName}
                               </span>
                             </div>
                           </div>
-                          <div className="grid grid-cols-3 gap-2 text-xs">
+                          <div className="grid grid-cols-3 gap-2 text-sm">
                             <div>
                               <div className="text-content-muted font-bold">{t('staff.total_tasks')}</div>
                               <div className="font-black text-content mt-0.5">{member.totalHandled}</div>
@@ -1573,7 +1572,7 @@ export default function Reports({ tenantId }: { tenantId: string }) {
                             <div className="flex-1 h-2 bg-surface-muted rounded-full overflow-hidden">
                               <div className="h-full bg-brand transition-all" style={{ width: `${member.rate}%` }} />
                             </div>
-                            <span className="text-xs font-black text-brand">{member.rate}%</span>
+                            <span className="text-sm font-black text-brand">{member.rate}%</span>
                           </div>
                           <button
                             onClick={() => setDrillDown({
@@ -1587,7 +1586,7 @@ export default function Reports({ tenantId }: { tenantId: string }) {
                                 { key: 'status', label: t('common.status'), type: 'status' }
                               ]
                             })}
-                            className="w-full min-h-[44px] bg-brand/10 text-brand hover:bg-brand/20 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                            className="w-full min-h-[44px] bg-brand/10 text-brand hover:bg-brand/20 rounded-xl text-sm font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer"
                           >
                             <TrendingUp size={14} />
                             <span>{t('permissions.items.orders.orders_view.name')}</span>
@@ -1599,13 +1598,13 @@ export default function Reports({ tenantId }: { tenantId: string }) {
                       <table className="w-full text-right min-w-max">
                         <thead>
                           <tr className="bg-surface-muted border-b border-border">
-                            <th className="px-6 py-4 text-xs font-black text-content-muted uppercase tracking-widest">{t('common.employee')}</th>
-                            <th className="px-6 py-4 text-xs font-black text-content-muted uppercase tracking-widest">{t('common.role')}</th>
-                            <th className="px-6 py-4 text-xs font-black text-content-muted uppercase tracking-widest">{t('staff.total_tasks')}</th>
-                            <th className="px-6 py-4 text-xs font-black text-content-muted uppercase tracking-widest">{t('staff.in_progress')}</th>
-                            <th className="px-6 py-4 text-xs font-black text-content-muted uppercase tracking-widest">{t('staff.completed_tasks')}</th>
-                            <th className="px-6 py-4 text-xs font-black text-content-muted uppercase tracking-widest">{t('reports.completion_rate')}</th>
-                            <th className="px-6 py-4 text-xs font-black text-content-muted uppercase tracking-widest">{t('common.details')}</th>
+                            <th className="px-6 py-4 text-sm font-black text-content-muted uppercase">{t('common.employee')}</th>
+                            <th className="px-6 py-4 text-sm font-black text-content-muted uppercase">{t('common.role')}</th>
+                            <th className="px-6 py-4 text-sm font-black text-content-muted uppercase">{t('staff.total_tasks')}</th>
+                            <th className="px-6 py-4 text-sm font-black text-content-muted uppercase">{t('staff.in_progress')}</th>
+                            <th className="px-6 py-4 text-sm font-black text-content-muted uppercase">{t('staff.completed_tasks')}</th>
+                            <th className="px-6 py-4 text-sm font-black text-content-muted uppercase">{t('reports.completion_rate')}</th>
+                            <th className="px-6 py-4 text-sm font-black text-content-muted uppercase">{t('common.details')}</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-border">
@@ -1620,7 +1619,7 @@ export default function Reports({ tenantId }: { tenantId: string }) {
                                 </div>
                               </td>
                               <td className="px-6 py-4">
-                                <span className="text-xs font-bold text-content-muted bg-surface-muted px-2.5 py-1 rounded-full">
+                                <span className="text-sm font-bold text-content-muted bg-surface-muted px-2.5 py-1 rounded-full">
                                   {member.roleName}
                                 </span>
                               </td>
@@ -1632,7 +1631,7 @@ export default function Reports({ tenantId }: { tenantId: string }) {
                                   <div className="flex-1 h-2 bg-surface-muted rounded-full overflow-hidden">
                                     <div className="h-full bg-brand transition-all" style={{ width: `${member.rate}%` }} />
                                   </div>
-                                  <span className="text-xs font-black text-brand">{member.rate}%</span>
+                                  <span className="text-sm font-black text-brand">{member.rate}%</span>
                                 </div>
                               </td>
                               <td className="px-6 py-4">
@@ -1648,7 +1647,7 @@ export default function Reports({ tenantId }: { tenantId: string }) {
                                       { key: 'status', label: t('common.status'), type: 'status' }
                                     ]
                                   })}
-                                  className="px-3 py-1.5 bg-brand/10 text-brand hover:bg-brand/20 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 cursor-pointer"
+                                  className="px-3 py-1.5 bg-brand/10 text-brand hover:bg-brand/20 rounded-xl text-sm font-black transition-all flex items-center gap-1.5 cursor-pointer"
                                   title={t('reports.view_staff_orders')}
                                 >
                                   <TrendingUp size={14} />
@@ -1659,7 +1658,7 @@ export default function Reports({ tenantId }: { tenantId: string }) {
                           ))}
                           {staffWithPerformance.length === 0 && (
                             <tr>
-                              <td colSpan={7} className="text-center py-8 text-content-muted font-bold text-xs sm:text-sm">
+                              <td colSpan={7} className="text-center py-8 text-content-muted font-bold text-sm">
                                 {t('reports.no_staff_registered')}
                               </td>
                             </tr>
@@ -1672,19 +1671,19 @@ export default function Reports({ tenantId }: { tenantId: string }) {
               </div>
 
               {/* Staff Section */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-8">
+              <div className="grid grid-cols-1 main-900:grid-cols-2 gap-4 main-640:gap-8">
                 {/* Staff Productivity */}
-                <div className="bg-surface p-4 sm:p-8 rounded-2xl border border-border shadow-sm">
-                  <h3 className="text-sm sm:text-lg font-black text-content mb-6 sm:mb-8">{t('reports.staff_productivity')}</h3>
-                  <div className="h-64 sm:h-80">
+                <div className="bg-surface p-4 main-640:p-8 rounded-2xl border border-border shadow-sm">
+                  <h3 className="text-sm main-640:text-lg font-black text-content mb-6 main-640:mb-8">{t('reports.staff_productivity')}</h3>
+                  <div className="h-64 main-640:h-80">
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart data={staffStats.performance}>
                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="currentColor" className="text-border" />
-                        <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 700, fill: 'currentColor' }} className="text-content-muted" />
-                        <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 700, fill: 'currentColor' }} className="text-content-muted" />
+                        <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 14, fontWeight: 700, fill: 'currentColor' }} className="text-content-muted" />
+                        <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 14, fontWeight: 700, fill: 'currentColor' }} className="text-content-muted" />
                         <Tooltip 
                           cursor={{ fill: 'var(--color-surface-muted)' }}
-                          contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', fontWeight: 800, backgroundColor: 'var(--color-surface)', color: 'var(--color-content)', fontSize: '12px' }}
+                          contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', fontWeight: 800, backgroundColor: 'var(--color-surface)', color: 'var(--color-content)', fontSize: 14 }}
                         />
                         <Bar dataKey="completed" fill="var(--success)" radius={[6, 6, 0, 0]} name={t('reports.delivered_orders')} />
                       </BarChart>
@@ -1693,20 +1692,20 @@ export default function Reports({ tenantId }: { tenantId: string }) {
                 </div>
 
                 {/* Staff Sales */}
-                <div className="bg-surface p-4 sm:p-8 rounded-2xl border border-border shadow-sm">
-                  <h3 className="text-sm sm:text-lg font-black text-content mb-6 sm:mb-8">{t('reports.cashier_total_sales')}</h3>
-                  <div className="space-y-4 sm:space-y-6">
+                <div className="bg-surface p-4 main-640:p-8 rounded-2xl border border-border shadow-sm">
+                  <h3 className="text-sm main-640:text-lg font-black text-content mb-6 main-640:mb-8">{t('reports.cashier_total_sales')}</h3>
+                  <div className="space-y-4 main-640:space-y-6">
                     {staffStats.performance.filter(s => s.role === 'cashier' || s.role === 'owner' || s.role === 'admin').map((s, i) => (
-                      <div key={i} className="flex items-center gap-3 sm:gap-4">
-                        <div className="w-10 h-10 sm:w-12 sm:h-12 bg-surface-muted rounded-xl sm:rounded-2xl flex items-center justify-center text-content-muted shrink-0">
-                          <User size={20} className="sm:w-6 sm:h-6" />
+                      <div key={i} className="flex items-center gap-3 main-640:gap-4">
+                        <div className="w-10 h-10 main-640:w-12 main-640:h-12 bg-surface-muted rounded-xl main-640:rounded-2xl flex items-center justify-center text-content-muted shrink-0">
+                          <User size={20} className="main-640:w-6 main-640:h-6" />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <div className="flex justify-between items-center mb-1.5 sm:mb-2">
-                            <span className="text-xs sm:text-sm font-black text-content truncate">{s.name}</span>
-                            <span className="text-xs sm:text-sm font-black text-brand shrink-0"><PriceDisplay amount={s.sales} /></span>
+                          <div className="flex justify-between items-center mb-1.5 main-640:mb-2">
+                            <span className="text-sm font-black text-content truncate">{s.name}</span>
+                            <span className="text-sm font-black text-brand shrink-0"><PriceDisplay amount={s.sales} /></span>
                           </div>
-                          <div className="h-1.5 sm:h-2 bg-surface-muted rounded-full overflow-hidden">
+                          <div className="h-1.5 main-640:h-2 bg-surface-muted rounded-full overflow-hidden">
                             <motion.div 
                               initial={{ width: 0 }}
                               animate={{ width: `${(s.sales / Math.max(...staffStats.performance.map(x => x.sales), 1)) * 100}%` }}
@@ -1721,35 +1720,35 @@ export default function Reports({ tenantId }: { tenantId: string }) {
               </div>
 
               {/* Customer Insights Section */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-8">
+              <div className="grid grid-cols-1 main-900:grid-cols-2 gap-4 main-640:gap-8">
                 {/* Top Customers */}
-                <div className="bg-surface p-4 sm:p-8 rounded-2xl border border-border shadow-sm">
-                  <div className="flex items-center justify-between mb-6 sm:mb-8">
-                    <h3 className="text-sm sm:text-lg font-black text-content">{t('reports.top_customers')}</h3>
-                    <span className="px-2.5 py-0.5 sm:px-3 sm:py-1 bg-brand/10 text-brand rounded-full text-[10px] sm:text-xs font-black">
+                <div className="bg-surface p-4 main-640:p-8 rounded-2xl border border-border shadow-sm">
+                  <div className="flex items-center justify-between mb-6 main-640:mb-8">
+                    <h3 className="text-sm main-640:text-lg font-black text-content">{t('reports.top_customers')}</h3>
+                    <span className="px-2.5 py-0.5 main-640:px-3 main-640:py-1 bg-brand/10 text-brand rounded-full text-sm font-black">
                       {t('reports.active_customers_count', { n: customerStats.totalActiveCustomers })}
                     </span>
                   </div>
-                  <div className="space-y-3 sm:space-y-4">
+                  <div className="space-y-3 main-640:space-y-4">
                     {customerStats.topCustomers.map((customer, index) => (
-                      <div key={customer.id} className="flex items-center justify-between p-3 sm:p-4 bg-surface-muted rounded-xl sm:rounded-2xl">
-                        <div className="flex items-center gap-2 sm:gap-3">
-                          <div className="w-8 h-8 sm:w-10 sm:h-10 bg-brand text-white rounded-lg sm:rounded-xl flex items-center justify-center font-black shadow-sm text-xs sm:text-sm shrink-0">
+                      <div key={customer.id} className="flex items-center justify-between p-3 main-640:p-4 bg-surface-muted rounded-xl main-640:rounded-2xl">
+                        <div className="flex items-center gap-2 main-640:gap-3">
+                          <div className="w-8 h-8 main-640:w-10 main-640:h-10 bg-brand text-white rounded-lg main-640:rounded-xl flex items-center justify-center font-black shadow-sm text-sm shrink-0">
                             {index + 1}
                           </div>
                           <div>
-                            <p className="text-xs sm:text-sm font-black text-content truncate max-w-[120px] sm:max-w-none">{customer.name}</p>
-                            <p className="text-[9px] sm:text-[10px] text-content-muted font-bold">{t('reports.customer_orders_count', { n: customer.orderCount })}</p>
+                            <p className="text-sm font-black text-content truncate max-w-[120px] main-640:max-w-none">{customer.name}</p>
+                            <p className="text-sm text-content-muted font-bold">{t('reports.customer_orders_count', { n: customer.orderCount })}</p>
                           </div>
                         </div>
                         <div className="text-left">
-                          <p className="text-xs sm:text-sm font-black text-brand"><PriceDisplay amount={customer.totalSpent} /></p>
-                          <p className="text-[9px] sm:text-[10px] text-content-muted font-bold">{t('reports.total_purchases')}</p>
+                          <p className="text-sm font-black text-brand"><PriceDisplay amount={customer.totalSpent} /></p>
+                          <p className="text-sm text-content-muted font-bold">{t('reports.total_purchases')}</p>
                         </div>
                       </div>
                     ))}
                     {customerStats.topCustomers.length === 0 && (
-                      <div className="text-center py-8 text-content-muted font-bold text-xs sm:text-sm">
+                      <div className="text-center py-8 text-content-muted font-bold text-sm">
                         {t('reports.no_customer_data')}
                       </div>
                     )}
@@ -1757,9 +1756,9 @@ export default function Reports({ tenantId }: { tenantId: string }) {
                 </div>
 
                 {/* Customer Retention */}
-                <div className="bg-surface p-4 sm:p-8 rounded-2xl border border-border shadow-sm">
-                  <h3 className="text-sm sm:text-lg font-black text-content mb-6 sm:mb-8">{t('reports.customer_retention')}</h3>
-                  <div className="h-64 sm:h-80">
+                <div className="bg-surface p-4 main-640:p-8 rounded-2xl border border-border shadow-sm">
+                  <h3 className="text-sm main-640:text-lg font-black text-content mb-6 main-640:mb-8">{t('reports.customer_retention')}</h3>
+                  <div className="h-64 main-640:h-80">
                     <ResponsiveContainer width="100%" height="100%">
                       <PieChart>
                         <Pie
@@ -1776,9 +1775,9 @@ export default function Reports({ tenantId }: { tenantId: string }) {
                           ))}
                         </Pie>
                         <Tooltip 
-                          contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', fontWeight: 800, backgroundColor: 'var(--color-surface)', color: 'var(--color-content)', fontSize: '12px' }}
+                          contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', fontWeight: 800, backgroundColor: 'var(--color-surface)', color: 'var(--color-content)', fontSize: 14 }}
                         />
-                        <Legend verticalAlign="bottom" height={36} iconType="circle" wrapperStyle={{ fontSize: '11px', fontWeight: 700 }} />
+                        <Legend verticalAlign="bottom" height={36} iconType="circle" wrapperStyle={{ fontSize: 14, fontWeight: 700 }} />
                       </PieChart>
                     </ResponsiveContainer>
                   </div>
@@ -1788,24 +1787,24 @@ export default function Reports({ tenantId }: { tenantId: string }) {
           )}
 
           {activeTab === 'suppliers_purchases' && (
-            <div className="space-y-4 sm:space-y-8">
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
+            <div className="space-y-4 main-640:space-y-8">
+              <div className="grid grid-cols-2 main-900:grid-cols-4 gap-3 main-640:gap-6">
                 {[
                   { label: t('reports.sp_total_purchases'), value: supplierStats.totalPurchases, color: 'text-brand', bg: 'bg-brand/10' },
                   { label: t('reports.sp_total_returns'), value: supplierStats.totalPurchaseReturns, color: 'text-danger', bg: 'bg-danger/10' },
                   { label: t('reports.sp_net_purchases'), value: supplierStats.totalPurchases - supplierStats.totalPurchaseReturns, color: 'text-success', bg: 'bg-success/10' },
                   { label: t('reports.sp_outstanding_balance'), value: supplierStats.totalOutstandingBalance, color: 'text-warning', bg: 'bg-warning/10' },
                 ].map((stat, i) => (
-                  <div key={i} className="bg-surface p-3 sm:p-6 rounded-2xl border border-border shadow-sm">
-                    <p className="text-[10px] sm:text-xs font-black text-content-muted uppercase tracking-widest truncate">{stat.label}</p>
-                    <h3 className={cn("text-sm sm:text-xl font-black mt-1 sm:mt-2 truncate", stat.color)}><PriceDisplay amount={stat.value} /></h3>
+                  <div key={i} className="bg-surface p-3 main-640:p-6 rounded-2xl border border-border shadow-sm">
+                    <p className="text-sm font-black text-content-muted uppercase truncate">{stat.label}</p>
+                    <h3 className={cn("text-sm main-640:text-xl font-black mt-1 main-640:mt-2 truncate", stat.color)}><PriceDisplay amount={stat.value} /></h3>
                   </div>
                 ))}
               </div>
 
-              <div className="bg-surface p-4 sm:p-8 rounded-2xl border border-border shadow-sm">
-                <h3 className="text-sm sm:text-lg font-black text-content mb-6 sm:mb-8">{t('reports.sp_purchases_trend')}</h3>
-                <div className="h-64 sm:h-80">
+              <div className="bg-surface p-4 main-640:p-8 rounded-2xl border border-border shadow-sm">
+                <h3 className="text-sm main-640:text-lg font-black text-content mb-6 main-640:mb-8">{t('reports.sp_purchases_trend')}</h3>
+                <div className="h-64 main-640:h-80">
                   <ResponsiveContainer width="100%" height="100%">
                     <AreaChart data={supplierStats.purchasesTrend}>
                       <defs>
@@ -1815,10 +1814,10 @@ export default function Reports({ tenantId }: { tenantId: string }) {
                         </linearGradient>
                       </defs>
                       <CartesianGrid strokeDasharray="4 4" vertical={false} stroke="var(--border)" opacity={0.5} />
-                      <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 700, fill: 'var(--content-muted)' }} dy={6} />
-                      <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 700, fill: 'var(--content-muted)' }} />
+                      <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fontSize: 14, fontWeight: 700, fill: 'var(--content-muted)' }} dy={6} />
+                      <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 14, fontWeight: 700, fill: 'var(--content-muted)' }} />
                       <Tooltip
-                        contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', fontWeight: 800, backgroundColor: 'var(--color-surface)', color: 'var(--color-content)', fontSize: '12px' }}
+                        contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', fontWeight: 800, backgroundColor: 'var(--color-surface)', color: 'var(--color-content)', fontSize: 14 }}
                         formatter={(value?: TooltipValueType) => <PriceDisplay amount={Number(value) || 0} />}
                       />
                       <Area type="monotone" dataKey="total" stroke="var(--brand)" strokeWidth={3} fillOpacity={1} fill="url(#colorPurchases)" />
@@ -1827,20 +1826,20 @@ export default function Reports({ tenantId }: { tenantId: string }) {
                 </div>
               </div>
 
-              <div className="bg-surface p-4 sm:p-8 rounded-2xl border border-border shadow-sm">
-                <h3 className="text-sm sm:text-lg font-black text-content mb-6 sm:mb-8">{t('reports.sp_supplier_breakdown')}</h3>
+              <div className="bg-surface p-4 main-640:p-8 rounded-2xl border border-border shadow-sm">
+                <h3 className="text-sm main-640:text-lg font-black text-content mb-6 main-640:mb-8">{t('reports.sp_supplier_breakdown')}</h3>
                 <div className="rounded-2xl border border-border overflow-hidden">
                   <ResponsiveTable
                     breakpoint="sm"
                     cards={
                       supplierStats.supplierBreakdown.length === 0 ? (
-                        <div className="text-center py-8 text-content-muted font-bold text-xs sm:text-sm">
+                        <div className="text-center py-8 text-content-muted font-bold text-sm">
                           {t('reports.sp_no_purchases')}
                         </div>
                       ) : supplierStats.supplierBreakdown.map((s) => (
                         <div key={s.id} className="p-4 space-y-3">
                           <div className="font-bold text-content">{s.name}</div>
-                          <div className="grid grid-cols-3 gap-2 text-xs">
+                          <div className="grid grid-cols-3 gap-2 text-sm">
                             <div>
                               <div className="text-content-muted font-bold">{t('reports.sp_total_purchases')}</div>
                               <div className="font-black text-brand mt-0.5"><PriceDisplay amount={s.purchases} /></div>
@@ -1865,7 +1864,7 @@ export default function Reports({ tenantId }: { tenantId: string }) {
                                 { key: 'status', label: t('common.status'), type: 'status' }
                               ]
                             })}
-                            className="w-full min-h-[44px] bg-brand/10 text-brand hover:bg-brand/20 rounded-xl text-xs font-black transition-all cursor-pointer"
+                            className="w-full min-h-[44px] bg-brand/10 text-brand hover:bg-brand/20 rounded-xl text-sm font-black transition-all cursor-pointer"
                           >
                             {t('common.details')}
                           </button>
@@ -1876,11 +1875,11 @@ export default function Reports({ tenantId }: { tenantId: string }) {
                       <table className="w-full text-right min-w-max">
                         <thead>
                           <tr className="bg-surface-muted border-b border-border">
-                            <th className="px-6 py-4 text-xs font-black text-content-muted uppercase tracking-widest">{t('procurement.po_supplier', 'المورد')}</th>
-                            <th className="px-6 py-4 text-xs font-black text-content-muted uppercase tracking-widest">{t('reports.sp_total_purchases')}</th>
-                            <th className="px-6 py-4 text-xs font-black text-content-muted uppercase tracking-widest">{t('reports.sp_total_returns')}</th>
-                            <th className="px-6 py-4 text-xs font-black text-content-muted uppercase tracking-widest">{t('reports.sp_net_purchases')}</th>
-                            <th className="px-6 py-4 text-xs font-black text-content-muted uppercase tracking-widest">{t('common.details')}</th>
+                            <th className="px-6 py-4 text-sm font-black text-content-muted uppercase">{t('procurement.po_supplier', 'المورد')}</th>
+                            <th className="px-6 py-4 text-sm font-black text-content-muted uppercase">{t('reports.sp_total_purchases')}</th>
+                            <th className="px-6 py-4 text-sm font-black text-content-muted uppercase">{t('reports.sp_total_returns')}</th>
+                            <th className="px-6 py-4 text-sm font-black text-content-muted uppercase">{t('reports.sp_net_purchases')}</th>
+                            <th className="px-6 py-4 text-sm font-black text-content-muted uppercase">{t('common.details')}</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-border">
@@ -1902,7 +1901,7 @@ export default function Reports({ tenantId }: { tenantId: string }) {
                                       { key: 'status', label: t('common.status'), type: 'status' }
                                     ]
                                   })}
-                                  className="px-3 py-1.5 bg-brand/10 text-brand hover:bg-brand/20 rounded-xl text-xs font-black transition-all cursor-pointer"
+                                  className="px-3 py-1.5 bg-brand/10 text-brand hover:bg-brand/20 rounded-xl text-sm font-black transition-all cursor-pointer"
                                 >
                                   {t('common.details')}
                                 </button>
@@ -1911,7 +1910,7 @@ export default function Reports({ tenantId }: { tenantId: string }) {
                           ))}
                           {supplierStats.supplierBreakdown.length === 0 && (
                             <tr>
-                              <td colSpan={5} className="text-center py-8 text-content-muted font-bold text-xs sm:text-sm">
+                              <td colSpan={5} className="text-center py-8 text-content-muted font-bold text-sm">
                                 {t('reports.sp_no_purchases')}
                               </td>
                             </tr>
@@ -1926,30 +1925,30 @@ export default function Reports({ tenantId }: { tenantId: string }) {
           )}
 
           {activeTab === 'vat' && (
-            <div className="space-y-4 sm:space-y-8">
-              <div className="bg-warning/5 border border-warning/15 text-warning rounded-2xl p-4 text-xs sm:text-sm font-bold flex items-start gap-3">
+            <div className="space-y-4 main-640:space-y-8">
+              <div className="bg-warning/5 border border-warning/15 text-warning rounded-2xl p-4 text-sm font-bold flex items-start gap-3">
                 <AlertTriangle size={18} className="shrink-0 mt-0.5" />
                 <span>{t('reports.vat_estimate_disclaimer')}</span>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-6">
-                <div className="bg-surface p-4 sm:p-8 rounded-2xl border border-border shadow-sm">
-                  <p className="text-[10px] sm:text-xs font-black text-content-muted uppercase tracking-widest">{t('reports.vat_output')}</p>
-                  <h3 className="text-base sm:text-2xl font-black text-brand mt-1 sm:mt-2"><PriceDisplay amount={vatStats.outputVat} /></h3>
-                  <p className="text-[9px] sm:text-[10px] text-content-muted mt-0.5 sm:mt-1 font-bold">{t('reports.vat_output_desc')}</p>
+              <div className="grid grid-cols-1 main-640:grid-cols-3 gap-3 main-640:gap-6">
+                <div className="bg-surface p-4 main-640:p-8 rounded-2xl border border-border shadow-sm">
+                  <p className="text-sm font-black text-content-muted uppercase">{t('reports.vat_output')}</p>
+                  <h3 className="text-base main-640:text-2xl font-black text-brand mt-1 main-640:mt-2"><PriceDisplay amount={vatStats.outputVat} /></h3>
+                  <p className="text-sm text-content-muted mt-0.5 main-640:mt-1 font-bold">{t('reports.vat_output_desc')}</p>
                 </div>
-                <div className="bg-surface p-4 sm:p-8 rounded-2xl border border-border shadow-sm">
-                  <p className="text-[10px] sm:text-xs font-black text-content-muted uppercase tracking-widest">{t('reports.vat_input')}</p>
-                  <h3 className="text-base sm:text-2xl font-black text-warning mt-1 sm:mt-2"><PriceDisplay amount={vatStats.inputVat} /></h3>
-                  <p className="text-[9px] sm:text-[10px] text-content-muted mt-0.5 sm:mt-1 font-bold">{t('reports.vat_input_desc')}</p>
-                  <p role="note" className="text-[9px] sm:text-[10px] text-warning mt-1 font-black">{t('reports.vat_input_estimate_note')}</p>
+                <div className="bg-surface p-4 main-640:p-8 rounded-2xl border border-border shadow-sm">
+                  <p className="text-sm font-black text-content-muted uppercase">{t('reports.vat_input')}</p>
+                  <h3 className="text-base main-640:text-2xl font-black text-warning mt-1 main-640:mt-2"><PriceDisplay amount={vatStats.inputVat} /></h3>
+                  <p className="text-sm text-content-muted mt-0.5 main-640:mt-1 font-bold">{t('reports.vat_input_desc')}</p>
+                  <p role="note" className="text-sm text-warning mt-1 font-black">{t('reports.vat_input_estimate_note')}</p>
                 </div>
-                <div className="bg-surface p-4 sm:p-8 rounded-2xl border border-border shadow-sm">
-                  <p className="text-[10px] sm:text-xs font-black text-content-muted uppercase tracking-widest">{t('reports.vat_net_due')}</p>
-                  <h3 className={cn("text-base sm:text-2xl font-black mt-1 sm:mt-2", vatStats.netVatDue >= 0 ? 'text-danger' : 'text-success')}>
+                <div className="bg-surface p-4 main-640:p-8 rounded-2xl border border-border shadow-sm">
+                  <p className="text-sm font-black text-content-muted uppercase">{t('reports.vat_net_due')}</p>
+                  <h3 className={cn("text-base main-640:text-2xl font-black mt-1 main-640:mt-2", vatStats.netVatDue >= 0 ? 'text-danger' : 'text-success')}>
                     <PriceDisplay amount={Math.abs(vatStats.netVatDue)} />
                   </h3>
-                  <p className="text-[9px] sm:text-[10px] text-content-muted mt-0.5 sm:mt-1 font-bold">
+                  <p className="text-sm text-content-muted mt-0.5 main-640:mt-1 font-bold">
                     {vatStats.netVatDue >= 0 ? t('reports.vat_payable') : t('reports.vat_refundable')}
                   </p>
                 </div>
@@ -1958,17 +1957,17 @@ export default function Reports({ tenantId }: { tenantId: string }) {
           )}
 
           {activeTab === 'zreports' && (
-            <div className="space-y-4 sm:space-y-8">
-              <div className="bg-surface p-4 sm:p-8 rounded-2xl border border-border shadow-sm max-w-xl mx-auto text-center">
-                <div className="bg-brand/10 w-12 h-12 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl flex items-center justify-center text-brand mx-auto mb-4 sm:mb-6">
-                  <Calculator size={28} className="sm:w-8 sm:h-8" />
+            <div className="space-y-4 main-640:space-y-8">
+              <div className="bg-surface p-4 main-640:p-8 rounded-2xl border border-border shadow-sm max-w-xl mx-auto text-center">
+                <div className="bg-brand/10 w-12 h-12 main-640:w-16 main-640:h-16 rounded-xl main-640:rounded-2xl flex items-center justify-center text-brand mx-auto mb-4 main-640:mb-6">
+                  <Calculator size={28} className="main-640:w-8 main-640:h-8" />
                 </div>
-                <h3 className="text-base sm:text-xl font-black text-content mb-2">{t('reports.eod_title')}</h3>
-                <p className="text-content-muted font-bold mb-6 sm:mb-8 text-xs sm:text-sm px-4 sm:px-8">{t('reports.eod_desc')}</p>
+                <h3 className="text-base main-640:text-xl font-black text-content mb-2">{t('reports.eod_title')}</h3>
+                <p className="text-content-muted font-bold mb-6 main-640:mb-8 text-sm px-4 main-640:px-8">{t('reports.eod_desc')}</p>
                 
                 <div className="flex flex-col gap-4 max-w-sm mx-auto">
-                  <div className="space-y-1.5 sm:space-y-2 text-right">
-                    <label className="text-[10px] sm:text-xs font-black text-content-muted uppercase tracking-widest mr-2">{t('reports.select_date')}</label>
+                  <div className="space-y-1.5 main-640:space-y-2 text-right">
+                    <label className="text-sm font-black text-content-muted uppercase mr-2">{t('reports.select_date')}</label>
                     <DatePicker 
                       id="report-date-input" 
                       value={selectedZDate} 
@@ -1978,13 +1977,13 @@ export default function Reports({ tenantId }: { tenantId: string }) {
                   <button 
                     onClick={() => fetchDailyZReport(selectedZDate)}
                     disabled={loadingZ || !selectedZDate}
-                    className="w-full bg-brand text-white py-3 sm:py-4 rounded-2xl font-black text-sm sm:text-lg shadow-xl shadow-brand/20 hover:bg-brand/90 transition-all disabled:opacity-50 flex items-center justify-center gap-3"
+                    className="w-full bg-brand text-white py-3 main-640:py-4 rounded-2xl font-black text-sm main-640:text-lg shadow-xl shadow-brand/20 hover:bg-brand/90 transition-all disabled:opacity-50 flex items-center justify-center gap-3"
                   >
                     {loadingZ ? (
                       <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
                     ) : (
                       <>
-                        <FileText size={18} className="sm:w-5 sm:h-5" />
+                        <FileText size={18} className="main-640:w-5 main-640:h-5" />
                         <span>{t('reports.generate_consolidated')}</span>
                       </>
                     )}
@@ -2002,7 +2001,7 @@ export default function Reports({ tenantId }: { tenantId: string }) {
               )}
 
               {!dailyZData && !loadingZ && (
-                <div className="text-center py-12 text-content-muted font-bold text-xs sm:text-sm">
+                <div className="text-center py-12 text-content-muted font-bold text-sm">
                   {t('reports.no_report_generated')}
                 </div>
               )}
@@ -2018,7 +2017,7 @@ export default function Reports({ tenantId }: { tenantId: string }) {
       {/* Drill-down Modal */}
       <AnimatePresence>
         {drillDown && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-2 sm:p-4">
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-2 main-640:p-4">
             <motion.div 
               initial={{ opacity: 0 }} 
               animate={{ opacity: 1 }} 
@@ -2032,31 +2031,31 @@ export default function Reports({ tenantId }: { tenantId: string }) {
               exit={{ scale: 0.9, opacity: 0, y: 20 }}
               className="bg-surface w-full max-w-5xl rounded-3xl shadow-2xl relative z-10 overflow-hidden flex flex-col max-h-[90vh] border border-border"
             >
-              <div className="p-4 sm:p-8 border-b border-border flex flex-col sm:flex-row gap-4 justify-between sm:items-center bg-surface-muted/50">
-                <div className="flex items-center gap-3 sm:gap-4">
-                  <div className="p-2.5 sm:p-4 bg-brand text-white rounded-xl sm:rounded-2xl shadow-lg shadow-brand/10 shrink-0">
-                    <FileText size={20} className="sm:w-6 sm:h-6" />
+              <div className="p-4 main-640:p-8 border-b border-border flex flex-col main-640:flex-row gap-4 justify-between main-640:items-center bg-surface-muted/50">
+                <div className="flex items-center gap-3 main-640:gap-4">
+                  <div className="p-2.5 main-640:p-4 bg-brand text-white rounded-xl main-640:rounded-2xl shadow-lg shadow-brand/10 shrink-0">
+                    <FileText size={20} className="main-640:w-6 main-640:h-6" />
                   </div>
                   <div className="min-w-0">
-                    <h2 className="text-base sm:text-2xl font-black text-content truncate">{drillDown.title}</h2>
-                    <p className="text-[10px] text-content-muted font-bold uppercase tracking-widest">{t('reports.drilldown_subtitle')}</p>
+                    <h2 className="text-base main-640:text-2xl font-black text-content truncate">{drillDown.title}</h2>
+                    <p className="text-sm text-content-muted font-bold uppercase">{t('reports.drilldown_subtitle')}</p>
                   </div>
                 </div>
-                <div className="flex items-center justify-between sm:justify-end gap-3 w-full sm:w-auto border-t sm:border-0 pt-3 sm:pt-0 border-border">
+                <div className="flex items-center justify-between main-640:justify-end gap-3 w-full main-640:w-auto border-t main-640:border-0 pt-3 main-640:pt-0 border-border">
                   <button 
                     onClick={() => exportToExcel(drillDown.data, drillDown.title)}
-                    className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-success/10 px-4 py-2 sm:py-2.5 rounded-xl border border-success/20 text-xs sm:text-sm font-bold text-success hover:bg-success/20 transition-all"
+                    className="flex-1 main-640:flex-none flex items-center justify-center gap-2 bg-success/10 px-4 py-2 main-640:py-2.5 rounded-xl border border-success/20 text-sm font-bold text-success hover:bg-success/20 transition-all"
                   >
                     <FileSpreadsheet size={16} />
                     {t('dashboard.export_excel')}
                   </button>
                   <button onClick={() => setDrillDown(null)} className="p-2 hover:bg-surface rounded-full transition-colors shadow-sm shrink-0">
-                    <X size={20} className="text-content-muted sm:w-6 sm:h-6" />
+                    <X size={20} className="text-content-muted main-640:w-6 main-640:h-6" />
                   </button>
                 </div>
               </div>
 
-              <div className="flex-1 overflow-y-auto p-4 sm:p-8">
+              <div className="flex-1 overflow-y-auto p-4 main-640:p-8">
                 <div className="bg-surface rounded-2xl border border-border overflow-hidden">
                   <ResponsiveTable
                     breakpoint="sm"
@@ -2064,12 +2063,12 @@ export default function Reports({ tenantId }: { tenantId: string }) {
                       <div key={i} className="p-4 space-y-2">
                         {drillDown.columns.map((col, idx) => (
                           <div key={idx} className={cn("flex items-center justify-between gap-3 text-sm", idx === 0 && "font-black text-content")}>
-                            <span className="text-content-muted font-bold text-xs shrink-0">{col.label}</span>
+                            <span className="text-content-muted font-bold text-sm shrink-0">{col.label}</span>
                             <span className="font-bold text-content text-end">
                               {col.type === 'currency' ? <PriceDisplay amount={row[col.key]} /> :
                                col.type === 'date' ? new Date(row[col.key]).toLocaleDateString(locale) :
                                col.type === 'status' ? (
-                                 <span className="px-2 py-1 bg-surface-muted rounded-lg text-[10px] text-content-muted">
+                                 <span className="px-2 py-1 bg-surface-muted rounded-lg text-sm text-content-muted">
                                    {row[col.key]}
                                  </span>
                                ) : row[col.key]}
@@ -2080,7 +2079,7 @@ export default function Reports({ tenantId }: { tenantId: string }) {
                     ))}
                     table={
                       <table className="w-full text-right min-w-max">
-                        <thead className="bg-surface-muted text-[10px] font-black text-content-muted uppercase tracking-widest">
+                        <thead className="bg-surface-muted text-sm font-black text-content-muted uppercase">
                           <tr>
                             {drillDown.columns.map((col, idx) => (
                               <th key={idx} className="px-6 py-4">{col.label}</th>
@@ -2095,7 +2094,7 @@ export default function Reports({ tenantId }: { tenantId: string }) {
                                   {col.type === 'currency' ? <PriceDisplay amount={row[col.key]} /> :
                                    col.type === 'date' ? new Date(row[col.key]).toLocaleDateString(locale) :
                                    col.type === 'status' ? (
-                                     <span className="px-2 py-1 bg-surface-muted rounded-lg text-[10px] text-content-muted">
+                                     <span className="px-2 py-1 bg-surface-muted rounded-lg text-sm text-content-muted">
                                        {row[col.key]}
                                      </span>
                                    ) : row[col.key]}

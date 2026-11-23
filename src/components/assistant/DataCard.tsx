@@ -21,7 +21,8 @@ function Money({ amount, className, unitClassName }: { amount: unknown; classNam
   const { i18n } = useTranslation();
   const isAr = normalizeLang(i18n.language) === 'ar';
   return (
-    <span className={cn("inline-flex items-baseline gap-1.5 tabular-nums", className)} dir={isAr ? 'rtl' : 'ltr'}>
+    // One unit: the amount and its riyal sign never go to two lines (seen-responsive-layout-task.md Phase 4).
+    <span className={cn("inline-flex items-baseline gap-1.5 whitespace-nowrap tabular-nums", className)} dir={isAr ? 'rtl' : 'ltr'}>
       {!isAr && <span className={cn("text-sm font-medium text-content-muted", unitClassName)}>SAR</span>}
       <span>{formatAmount(amount)}</span>
       {isAr && <CurrencySymbol className={cn("h-[0.7em] w-auto shrink-0 self-center text-content-muted", unitClassName)} />}
@@ -103,8 +104,17 @@ function Kpi({ label, children, primary }: { label: string; children: React.Reac
   );
 }
 
+/**
+ * Two columns from 380px of the CARD's width, one under it -- so the same
+ * card is right in the 360px panel, the 440px one and the 640px wide one
+ * (seen-responsive-layout-task.md Phase 4).
+ */
 function KpiGrid({ children }: { children: React.ReactNode }) {
-  return <div className="grid grid-cols-2 gap-x-3 gap-y-4 p-4">{children}</div>;
+  return (
+    <div className="@container">
+      <div className="grid grid-cols-1 gap-x-3 gap-y-4 p-4 @[380px]:grid-cols-2">{children}</div>
+    </div>
+  );
 }
 
 interface RowData {

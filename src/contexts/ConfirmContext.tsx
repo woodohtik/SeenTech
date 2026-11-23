@@ -124,7 +124,7 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
           <div>
             {dialog.title && <h3 className="font-black text-content">{dialog.title}</h3>}
             {dialog.description && (
-              <p className="text-xs text-content-muted font-bold mt-1.5 leading-relaxed">{dialog.description}</p>
+              <p className="text-sm text-content-muted font-bold mt-1.5 leading-relaxed">{dialog.description}</p>
             )}
           </div>
 

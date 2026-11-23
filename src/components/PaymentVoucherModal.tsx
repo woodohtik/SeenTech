@@ -162,7 +162,7 @@ export default function PaymentVoucherModal({
               </div>
               <div>
                 <h2 className="text-lg font-black text-content">{t('procurement.pv_modal_title')}</h2>
-                <p className="text-xs font-bold text-content-muted">Payment Voucher formulation</p>
+                <p className="text-sm font-bold text-content-muted">Payment Voucher formulation</p>
               </div>
             </div>
             <button
@@ -177,16 +177,16 @@ export default function PaymentVoucherModal({
           <form onSubmit={handleSubmit} className="p-6 space-y-5 max-h-[75vh] overflow-y-auto">
             {/* Supplier Quick Details card */}
             <div className="bg-surface-muted p-4 border border-border rounded-2xl space-y-2">
-              <div className="flex items-center gap-2 text-content-muted font-bold text-xs">
+              <div className="flex items-center gap-2 text-content-muted font-bold text-sm">
                 <Building size={14} className="text-danger" />
                 <span>{t('procurement.pv_recipient_party')}</span>
               </div>
               <div className="flex justify-between items-end">
                 <span className="text-sm font-black text-content">{supplier.name}</span>
-                <span className="text-xs font-mono font-bold text-content-muted">{supplier.phone}</span>
+                <span className="text-sm font-mono font-bold text-content-muted">{supplier.phone}</span>
               </div>
               <div className="h-px bg-border/50 my-1.5" />
-              <div className="flex justify-between items-center text-xs">
+              <div className="flex justify-between items-center text-sm">
                 <span className="font-bold text-content-muted">{t('procurement.pv_current_balance')}</span>
                 <span className="font-black text-danger text-sm">
                   <PriceDisplay amount={supplier.balance} />
@@ -196,12 +196,12 @@ export default function PaymentVoucherModal({
 
             {/* Input - Amount to payout */}
             <div className="space-y-1.5">
-              <label className="text-xs font-black text-content-muted uppercase tracking-wide block mr-1">
+              <label className="text-sm font-black text-content-muted uppercase block mr-1">
                 {t('procurement.pv_payout_amount')} <span className="text-danger">*</span>
               </label>
               <div className="relative">
                 {/* Currency badge positioned safely on the far left */}
-                <div className="absolute left-3 top-1/2 -translate-y-1/2 bg-surface-muted border border-border text-content-muted font-extrabold text-[11px] rounded-lg px-2.5 py-1.5 pointer-events-none select-none z-10">
+                <div className="absolute left-3 top-1/2 -translate-y-1/2 bg-surface-muted border border-border text-content-muted font-extrabold text-sm rounded-lg px-2.5 py-1.5 pointer-events-none select-none z-10">
                   ﷼
                 </div>
                 <input
@@ -223,7 +223,7 @@ export default function PaymentVoucherModal({
                   autoFocus
                 />
               </div>
-              <div className="flex justify-between text-[10px] text-content-muted font-bold mt-1 px-1">
+              <div className="flex justify-between text-sm text-content-muted font-bold mt-1 px-1">
                 <span>{t('procurement.pv_amount_hint')}</span>
                 {supplier.balance > 0 && (
                   <button
@@ -239,7 +239,7 @@ export default function PaymentVoucherModal({
 
             {/* Selection - Payment Method */}
             <div className="space-y-1.5">
-              <label className="text-xs font-black text-content-muted uppercase tracking-wide block mr-1">
+              <label className="text-sm font-black text-content-muted uppercase block mr-1">
                 {t('procurement.pv_payment_method')}
               </label>
               <div className="grid grid-cols-2 gap-3">
@@ -247,7 +247,7 @@ export default function PaymentVoucherModal({
                   type="button"
                   onClick={() => setPaymentMethod('cash')}
                   className={cn(
-                    "py-3 rounded-xl border font-bold text-xs flex flex-col items-center justify-center gap-1.5 transition-all cursor-pointer",
+                    "py-3 rounded-xl border font-bold text-sm flex flex-col items-center justify-center gap-1.5 transition-all cursor-pointer",
                     paymentMethod === 'cash'
                       ? "border-danger bg-danger/10 text-danger shadow-md shadow-danger/5"
                       : "border-border hover:border-border text-content-muted"
@@ -261,7 +261,7 @@ export default function PaymentVoucherModal({
                   type="button"
                   onClick={() => setPaymentMethod('bank_transfer')}
                   className={cn(
-                    "py-3 rounded-xl border font-bold text-xs flex flex-col items-center justify-center gap-1.5 transition-all cursor-pointer",
+                    "py-3 rounded-xl border font-bold text-sm flex flex-col items-center justify-center gap-1.5 transition-all cursor-pointer",
                     paymentMethod === 'bank_transfer'
                       ? "border-danger bg-danger/10 text-danger shadow-md shadow-danger/5"
                       : "border-border hover:border-border text-content-muted"
@@ -276,7 +276,7 @@ export default function PaymentVoucherModal({
             {/* Input - Voucher Date */}
             <div className="grid grid-cols-1 gap-4">
               <div className="space-y-1.5">
-                <label className="text-xs font-black text-content-muted uppercase tracking-wide block mr-1 flex items-center gap-1">
+                <label className="text-sm font-black text-content-muted uppercase block mr-1 flex items-center gap-1">
                   <Calendar size={13} />
                   <span>{t('procurement.pv_voucher_date')}</span>
                 </label>
@@ -286,7 +286,7 @@ export default function PaymentVoucherModal({
 
             {/* Input - Notes */}
             <div className="space-y-1.5">
-              <label className="text-xs font-black text-content-muted uppercase tracking-wide block mr-1 flex items-center gap-1">
+              <label className="text-sm font-black text-content-muted uppercase block mr-1 flex items-center gap-1">
                 <FileText size={13} />
                 <span>{t('procurement.pv_notes_label')}</span>
               </label>
@@ -294,7 +294,7 @@ export default function PaymentVoucherModal({
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 rows={2}
-                className="w-full px-4 py-3 bg-surface-muted border border-border focus:border-danger focus:bg-surface rounded-xl outline-none text-xs font-semibold text-content-muted resize-none h-16 leading-relaxed"
+                className="w-full px-4 py-3 bg-surface-muted border border-border focus:border-danger focus:bg-surface rounded-xl outline-none text-sm font-semibold text-content-muted resize-none h-16 leading-relaxed"
                 placeholder={t('procurement.pv_notes_placeholder')}
               />
             </div>
@@ -305,14 +305,14 @@ export default function PaymentVoucherModal({
                 type="button"
                 onClick={onClose}
                 disabled={isSubmitting}
-                className="flex-1 border border-border hover:bg-surface-muted text-content-muted py-3 rounded-xl font-bold text-xs transition-colors cursor-pointer disabled:opacity-50"
+                className="flex-1 border border-border hover:bg-surface-muted text-content-muted py-3 rounded-xl font-bold text-sm transition-colors cursor-pointer disabled:opacity-50"
               >
                 {t('procurement.pv_cancel')}
               </button>
               <button
                 type="submit"
                 disabled={isSubmitting || !amount}
-                className="flex-[2] bg-danger hover:bg-danger/90 text-white py-3 rounded-xl font-bold text-xs shadow-lg shadow-danger/10 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                className="flex-[2] bg-danger hover:bg-danger/90 text-white py-3 rounded-xl font-bold text-sm shadow-lg shadow-danger/10 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
               >
                 {isSubmitting ? (
                   <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
@@ -338,7 +338,7 @@ export default function PaymentVoucherModal({
           <div className="flex justify-between items-center mb-6 print:hidden">
             <button
               onClick={handlePrint}
-              className="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-black text-xs shadow-md shadow-slate-900/15 flex items-center gap-1.5 transition-all cursor-pointer"
+              className="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-black text-sm shadow-md shadow-slate-900/15 flex items-center gap-1.5 transition-all cursor-pointer"
             >
               <Printer size={14} />
               <span>{t('procurement.pv_print')}</span>
@@ -354,18 +354,18 @@ export default function PaymentVoucherModal({
           </div>
 
           {/* Slipped Printable Area */}
-          <div id="voucher-print-container" className={cn("bg-white border border-slate-100 rounded-3xl p-5 text-xs print:border-none print:p-0", isRtl ? "text-right" : "text-left")}>
+          <div id="voucher-print-container" className={cn("bg-white border border-slate-100 rounded-3xl p-5 text-sm print:border-none print:p-0", isRtl ? "text-right" : "text-left")}>
             
             {/* Stamp Stamp */}
             <div className="text-center py-4 border-b border-dashed border-slate-300">
-              <h2 className="text-base font-black text-slate-950 tracking-tight leading-none">{tenantName}</h2>
-              <p className="text-[10px] text-slate-500 font-bold uppercase mt-1">{t('procurement.pv_receipt_subtitle')}</p>
+              <h2 className="text-base font-black text-slate-950 leading-none">{tenantName}</h2>
+              <p className="text-sm text-slate-500 font-bold uppercase mt-1">{t('procurement.pv_receipt_subtitle')}</p>
               <h1 className="text-lg font-black text-red-600 mt-2.5">{t('procurement.pv_receipt_title')}</h1>
-              <p className="text-[9px] text-slate-500 font-sans tracking-widest font-black uppercase">PAYMENT VOUCHER</p>
+              <p className="text-sm text-slate-500 font-sans font-black uppercase">PAYMENT VOUCHER</p>
             </div>
 
             {/* Metadata Body info */}
-            <div className="py-4 border-b border-dashed border-slate-200 space-y-2 text-[11px]">
+            <div className="py-4 border-b border-dashed border-slate-200 space-y-2 text-sm">
               <div className="flex justify-between">
                 <span className="text-slate-500">{t('procurement.pv_voucher_no')}</span>
                 <span className="font-mono font-black text-slate-950">#{issuedVoucher.voucherNo}</span>
@@ -389,15 +389,15 @@ export default function PaymentVoucherModal({
 
             {/* The financial accounting figures */}
             <div className="py-5 border-b border-dashed border-slate-200 text-center bg-red-50/40 rounded-2xl border border-red-100/50 my-3">
-              <p className="text-xs font-bold text-slate-500 mb-1">{t('procurement.pv_approved_amount')}</p>
-              <h3 className="text-2xl font-black text-red-600 font-mono tracking-tight text-center flex items-center justify-center gap-1.5">
+              <p className="text-sm font-bold text-slate-500 mb-1">{t('procurement.pv_approved_amount')}</p>
+              <h3 className="text-2xl font-black text-red-600 font-mono text-center flex items-center justify-center gap-1.5">
                 <PriceDisplay amount={issuedVoucher.amount} />
               </h3>
-              <p className="text-[10px] font-bold text-slate-500 mt-1">{t('procurement.pv_paid_note')}</p>
+              <p className="text-sm font-bold text-slate-500 mt-1">{t('procurement.pv_paid_note')}</p>
             </div>
 
             {/* Recipient Details */}
-            <div className="py-4 border-b border-dashed border-slate-200 space-y-2 text-[11px]">
+            <div className="py-4 border-b border-dashed border-slate-200 space-y-2 text-sm">
               <div className="flex justify-between">
                 <span className="text-slate-500">{t('procurement.pv_receiving_party')}</span>
                 <span className="font-black text-slate-900">{issuedVoucher.supplierName}</span>
@@ -419,7 +419,7 @@ export default function PaymentVoucherModal({
             </div>
 
             {/* Live final figures */}
-            <div className="py-4 space-y-1.5 text-[11px] bg-slate-50/50 rounded-2xl px-4 mt-3 border border-slate-100">
+            <div className="py-4 space-y-1.5 text-sm bg-slate-50/50 rounded-2xl px-4 mt-3 border border-slate-100">
               <div className="flex justify-between text-slate-500">
                 <span>{t('procurement.pv_balance_before')}</span>
                 <span className="font-mono font-semibold"><PriceDisplay amount={issuedVoucher.supplierBalanceAfter + issuedVoucher.amount} /></span>
@@ -436,7 +436,7 @@ export default function PaymentVoucherModal({
             </div>
 
             {/* Hand-signature slots */}
-            <div className="grid grid-cols-2 gap-4 pt-8 text-center text-[10px] border-t border-dotted border-slate-200 mt-6">
+            <div className="grid grid-cols-2 gap-4 pt-8 text-center text-sm border-t border-dotted border-slate-200 mt-6">
               <div>
                 <p className="text-slate-500 font-bold">{t('procurement.pv_recipient_signature')}</p>
                 <div className="h-10 mt-2 border-b border-dashed border-slate-200" />
@@ -450,7 +450,7 @@ export default function PaymentVoucherModal({
             </div>
 
             {/* footer signature line */}
-            <div className="text-center text-[9px] text-slate-500 font-bold mt-8 border-t border-slate-100 pt-3">
+            <div className="text-center text-sm text-slate-500 font-bold mt-8 border-t border-slate-100 pt-3">
               {t('procurement.pv_footer')}
             </div>
 
@@ -458,7 +458,7 @@ export default function PaymentVoucherModal({
 
           <button
             onClick={onClose}
-            className="w-full mt-5 border border-slate-200 hover:bg-slate-100 text-slate-700 py-3 rounded-2xl font-black text-xs transition-colors cursor-pointer print:hidden"
+            className="w-full mt-5 border border-slate-200 hover:bg-slate-100 text-slate-700 py-3 rounded-2xl font-black text-sm transition-colors cursor-pointer print:hidden"
           >
             {t('procurement.pv_close')}
           </button>

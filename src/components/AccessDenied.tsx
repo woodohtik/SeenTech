@@ -33,7 +33,7 @@ export default function AccessDenied({ userRole, requiredRoles, redirectPath }: 
       {/* CSS enter animations: this screen can show before the motion library
           has loaded (seen-performance-first-open-login-task.md Phase 2.4). */}
       <div className="seen-enter-pop relative mb-6">
-        <div className="w-28 h-28 md:w-32 md:h-32 bg-danger/10 text-danger rounded-3xl flex items-center justify-center shadow-xl shadow-danger/10 border border-danger/20">
+        <div className="w-28 h-28 main-720:w-32 main-720:h-32 bg-danger/10 text-danger rounded-3xl flex items-center justify-center shadow-xl shadow-danger/10 border border-danger/20">
           <ShieldAlert size={56} className="animate-pulse" />
         </div>
         <div className="absolute -bottom-2 -right-2 bg-surface p-2 rounded-2xl shadow-md border border-border text-danger">
@@ -45,28 +45,28 @@ export default function AccessDenied({ userRole, requiredRoles, redirectPath }: 
         className="seen-enter-rise max-w-md mx-auto space-y-3"
         style={{ ['--seen-rise' as string]: '20px', animationDelay: '0.1s' }}
       >
-        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-danger/10 text-danger text-xs font-black tracking-wide border border-danger/20">
+        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-danger/10 text-danger text-sm font-black border border-danger/20">
           <span>{t('permissions.error_403_forbidden')}</span>
         </div>
 
-        <h1 className="text-2xl md:text-3xl font-black text-content tracking-tight">
+        <h1 className="text-2xl main-720:text-3xl font-black text-content">
           {t('permissions.access_denied_title')}
         </h1>
 
-        <p className="text-sm md:text-base text-content-muted leading-relaxed font-medium">
+        <p className="text-sm main-720:text-base text-content-muted leading-relaxed font-medium">
           {t('permissions.access_denied_desc', { role: userRole || t('orders.not_specified') })}
         </p>
 
         {requiredRoles && requiredRoles.length > 0 && (
-          <div className="mt-4 p-3 bg-surface-muted rounded-xl border border-border text-xs text-content-muted font-mono">
+          <div className="mt-4 p-3 bg-surface-muted rounded-xl border border-border text-sm text-content-muted font-mono">
             {t('permissions.required_roles')} <span className="font-bold text-brand">{requiredRoles.join(' | ')}</span>
           </div>
         )}
 
-        <div className="pt-6 flex flex-col sm:flex-row items-center justify-center gap-3">
+        <div className="pt-6 flex flex-col main-640:flex-row items-center justify-center gap-3">
           <button
             onClick={handleReturnHome}
-            className="w-full sm:w-auto px-6 py-3 bg-brand text-white font-bold rounded-xl shadow-lg shadow-brand/20 hover:bg-brand/90 active:scale-95 transition-all flex items-center justify-center gap-2 text-sm cursor-pointer"
+            className="w-full main-640:w-auto px-6 py-3 bg-brand text-white font-bold rounded-xl shadow-lg shadow-brand/20 hover:bg-brand/90 active:scale-95 transition-all flex items-center justify-center gap-2 text-sm cursor-pointer"
           >
             <Home size={18} />
             <span>{t('permissions.back_to_allowed_area')}</span>
@@ -74,7 +74,7 @@ export default function AccessDenied({ userRole, requiredRoles, redirectPath }: 
 
           <button
             onClick={() => navigate(-1)}
-            className="w-full sm:w-auto px-5 py-3 bg-surface text-content border border-border font-bold rounded-xl hover:bg-surface-muted active:scale-95 transition-all flex items-center justify-center gap-2 text-sm cursor-pointer"
+            className="w-full main-640:w-auto px-5 py-3 bg-surface text-content border border-border font-bold rounded-xl hover:bg-surface-muted active:scale-95 transition-all flex items-center justify-center gap-2 text-sm cursor-pointer"
           >
             <ArrowRight size={18} />
             <span>{t('common.previous_page')}</span>
@@ -83,7 +83,7 @@ export default function AccessDenied({ userRole, requiredRoles, redirectPath }: 
       </div>
 
       {/* Backend Security Assurance Notice */}
-      <div className="mt-12 text-[11px] text-content-muted/80 max-w-sm border-t border-border/50 pt-4">
+      <div className="mt-12 text-sm text-content-muted/80 max-w-sm border-t border-border/50 pt-4">
         🔒 {t('permissions.server_side_enforcement_notice')}
       </div>
     </div>

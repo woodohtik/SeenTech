@@ -139,13 +139,13 @@ function TailorCommissionRow({
   const [value, setValue] = useState<string>(tailor.commission_value?.toString() || '0');
 
   return (
-    <div className="p-6 hover:bg-surface-muted/50 transition-colors flex flex-col md:flex-row md:items-center gap-6">
+    <div className="p-6 hover:bg-surface-muted/50 transition-colors flex flex-col main-720:flex-row main-720:items-center gap-6">
       <div className="flex-1">
         <h3 className="font-bold text-content text-lg">{tailor.name}</h3>
         <p className="text-sm text-content-muted mt-1" dir="ltr">{tailor.phone}</p>
       </div>
 
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 flex-1 max-w-2xl">
+      <div className="flex flex-col main-640:flex-row items-stretch main-640:items-center gap-4 flex-1 max-w-2xl">
         {/* Radio Buttons for Type */}
         <div className="flex bg-surface-muted p-1 rounded-xl">
           <button

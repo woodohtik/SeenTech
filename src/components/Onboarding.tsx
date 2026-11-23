@@ -507,7 +507,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
           type="button"
           onClick={() => logout()}
           className={cn(
-            "absolute top-0 flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-content-muted hover:text-danger hover:bg-danger/10 transition-all",
+            "absolute top-0 flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-bold text-content-muted hover:text-danger hover:bg-danger/10 transition-all",
             dir === 'rtl' ? "left-0" : "right-0"
           )}
         >
@@ -521,7 +521,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
               <div className="w-10 h-10 sm:w-12 sm:h-12 bg-brand rounded-2xl flex items-center justify-center shadow-lg shadow-brand/20">
                 <ShieldCheck className="text-white sm:w-7 sm:h-7" size={24} />
               </div>
-              <h1 className="text-xl sm:text-2xl font-black text-content tracking-tight">Seen System</h1>
+              <h1 className="text-xl sm:text-2xl font-black text-content">Seen System</h1>
             </div>
 
             {/* Form Stepper */}
@@ -543,7 +543,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
                     </div>
                     <div className="absolute -bottom-8 sm:-bottom-10 whitespace-nowrap text-center">
                       <p className={cn(
-                        "text-[10px] sm:text-xs font-black uppercase tracking-wider transition-colors",
+                        "text-sm font-black uppercase transition-colors",
                         isActive ? "text-brand" : "text-content-muted"
                       )}>{s.title}</p>
                     </div>
@@ -579,7 +579,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
                       </div>
 
                       <div className="space-y-2">
-                        <label htmlFor="onboarding-shopName" className="text-xs font-bold text-content uppercase tracking-widest flex items-center gap-2">
+                        <label htmlFor="onboarding-shopName" className="text-sm font-bold text-content flex items-center gap-2">
                           {t('onboarding.fields.shop_name')}
                         </label>
                         <div className={cn(
@@ -598,11 +598,11 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
                             className="flex-1 w-full bg-transparent border-none py-2.5 sm:py-3 px-3 text-sm sm:text-base font-bold outline-none ring-0 placeholder:text-content-muted text-content"
                           />
                         </div>
-                        {errors.shopName && <p className="text-xs text-danger font-bold mt-1 ps-2">{errors.shopName.message as string}</p>}
+                        {errors.shopName && <p className="text-sm text-danger font-bold mt-1 ps-2">{errors.shopName.message as string}</p>}
                       </div>
 
                       <div className="space-y-2">
-                        <label htmlFor="onboarding-phone" className="text-xs font-bold text-content uppercase tracking-widest flex items-center gap-2">
+                        <label htmlFor="onboarding-phone" className="text-sm font-bold text-content flex items-center gap-2">
                           {t('settings_page.profile.phone')}
                         </label>
                         <div className={cn(
@@ -621,11 +621,11 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
                             className="flex-1 w-full bg-transparent border-none py-2.5 sm:py-3 px-3 text-sm sm:text-base font-bold outline-none ring-0 placeholder:text-content-muted text-content"
                           />
                         </div>
-                        {errors.phone && <p className="text-xs text-danger font-bold mt-1 ps-2">{errors.phone.message as string}</p>}
+                        {errors.phone && <p className="text-sm text-danger font-bold mt-1 ps-2">{errors.phone.message as string}</p>}
                       </div>
 
                       <div className="md:col-span-2 space-y-2">
-                        <label className="text-xs font-bold text-content uppercase tracking-widest flex items-center gap-2">
+                        <label className="text-sm font-bold text-content flex items-center gap-2">
                           {t('onboarding.fields.activity_type')}
                         </label>
                         <Controller
@@ -654,7 +654,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
                       </div>
 
                       <div className="md:col-span-2 space-y-2">
-                        <label className="text-xs font-bold text-content uppercase tracking-widest block">{t('onboarding.fields.logo')}</label>
+                        <label className="text-sm font-bold text-content block">{t('onboarding.fields.logo')}</label>
                         <input 
                           type="file" 
                           id="logo-upload" 
@@ -674,7 +674,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
                             )}
                           </div>
                           <div className={cn("flex-1 min-w-0", i18n.language === 'en' ? "text-left" : "text-right")}>
-                            <h3 className="font-bold text-content text-xs truncate group-hover:text-brand transition-colors">
+                            <h3 className="font-bold text-content text-sm truncate group-hover:text-brand transition-colors">
                               {formData.logoUrl ? t('onboarding.fields.logo_uploaded') : t('onboarding.fields.logo_upload')}
                             </h3>
                           </div>
@@ -688,7 +688,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
                       </div>
 
                       <div className="space-y-2">
-                        <label htmlFor="onboarding-taxNumber" className="text-xs font-bold text-content uppercase tracking-widest flex items-center gap-2">
+                        <label htmlFor="onboarding-taxNumber" className="text-sm font-bold text-content flex items-center gap-2">
                           {t('onboarding.fields.tax_number')}
                         </label>
                         <div className={cn(
@@ -708,16 +708,16 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
                             className="flex-1 min-w-0 bg-transparent border-none py-2.5 sm:py-3 px-3 text-sm sm:text-base font-bold outline-none ring-0 placeholder:text-content-muted text-content"
                           />
                           {checkVatValid(watch('taxNumber')) && (
-                            <div className="mx-2 bg-success/10 text-success px-2.5 py-0.5 rounded-full text-[10px] font-black flex items-center gap-1 shrink-0">
+                            <div className="mx-2 bg-success/10 text-success px-2.5 py-0.5 rounded-full text-sm font-black flex items-center gap-1 shrink-0">
                               <Check size={10} /> {t('common.verified')}
                             </div>
                           )}
                         </div>
-                        {errors.taxNumber && <p className="text-xs text-danger font-bold mt-1 ps-2">{errors.taxNumber.message as string}</p>}
+                        {errors.taxNumber && <p className="text-sm text-danger font-bold mt-1 ps-2">{errors.taxNumber.message as string}</p>}
                       </div>
 
                       <div className="space-y-2">
-                        <label className="text-xs font-bold text-content uppercase tracking-widest flex items-center gap-2">
+                        <label className="text-sm font-bold text-content flex items-center gap-2">
                           {t('onboarding.fields.tax_status')}
                         </label>
                         <Controller
@@ -757,7 +757,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
                       </div>
 
                       <div className="md:col-span-2 space-y-2">
-                        <label htmlFor="onboarding-address" className={cn("text-xs font-bold text-content uppercase tracking-widest", i18n.language === 'en' ? "ps-1" : "pe-1")}>{t('onboarding.fields.address')}</label>
+                        <label htmlFor="onboarding-address" className={cn("text-sm font-bold text-content uppercase", i18n.language === 'en' ? "ps-1" : "pe-1")}>{t('onboarding.fields.address')}</label>
                         <div className={cn(
                           "group flex items-center bg-white border rounded-xl overflow-hidden focus-within:border-brand transition-all shadow-sm focus-within:ring-1 focus-within:ring-brand/30",
                           errors.address ? "border-danger bg-danger/10/30" : "border-border"
@@ -774,11 +774,11 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
                             className="flex-1 w-full bg-transparent border-none py-2.5 sm:py-3 px-3 text-sm sm:text-base font-bold outline-none ring-0 placeholder:text-content-muted text-content"
                           />
                         </div>
-                        {errors.address && <p className="text-xs text-danger font-bold mt-1 ps-2">{errors.address.message as string}</p>}
+                        {errors.address && <p className="text-sm text-danger font-bold mt-1 ps-2">{errors.address.message as string}</p>}
                       </div>
 
                       <div className="space-y-2">
-                        <label htmlFor="onboarding-city" className={cn("text-xs font-bold text-content uppercase tracking-widest", i18n.language === 'en' ? "ps-1" : "pe-1")}>{t('onboarding.fields.city')}</label>
+                        <label htmlFor="onboarding-city" className={cn("text-sm font-bold text-content uppercase", i18n.language === 'en' ? "ps-1" : "pe-1")}>{t('onboarding.fields.city')}</label>
                         <input id="onboarding-city" 
                           {...register('city')}
                           placeholder={t('onboarding.fields.city_placeholder')}
@@ -787,11 +787,11 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
                             errors.city && "border-danger bg-danger/10/30"
                           )}
                         />
-                        {errors.city && <p className="text-xs text-danger font-bold mt-1 ps-2">{errors.city.message as string}</p>}
+                        {errors.city && <p className="text-sm text-danger font-bold mt-1 ps-2">{errors.city.message as string}</p>}
                       </div>
 
                       <div className="space-y-2">
-                        <label htmlFor="onboarding-country" className={cn("text-xs font-bold text-content uppercase tracking-widest", i18n.language === 'en' ? "ps-1" : "pe-1")}>{t('onboarding.fields.country')}</label>
+                        <label htmlFor="onboarding-country" className={cn("text-sm font-bold text-content uppercase", i18n.language === 'en' ? "ps-1" : "pe-1")}>{t('onboarding.fields.country')}</label>
                         <input id="onboarding-country" 
                           {...register('country')}
                           placeholder={t('onboarding.fields.country_placeholder')}
@@ -800,7 +800,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
                             errors.country && "border-danger bg-danger/10/30"
                           )}
                         />
-                        {errors.country && <p className="text-xs text-danger font-bold mt-1 ps-2">{errors.country.message as string}</p>}
+                        {errors.country && <p className="text-sm text-danger font-bold mt-1 ps-2">{errors.country.message as string}</p>}
                       </div>
 
                       <div className="md:col-span-2 space-y-4 sm:space-y-6">
@@ -836,8 +836,8 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
                                 <Navigation size={16} />
                               </div>
                               <div className="flex-1 min-w-0">
-                                <p className="text-[10px] font-black text-content-muted uppercase tracking-wider mb-0.5">{t('onboarding.fields.location_selected')}</p>
-                                <p className="text-xs font-bold text-content line-clamp-2 leading-snug">
+                                <p className="text-sm font-black text-content-muted mb-0.5">{t('onboarding.fields.location_selected')}</p>
+                                <p className="text-sm font-bold text-content line-clamp-2 leading-snug">
                                   {formData.address || t('onboarding.fields.location_manual')}
                                 </p>
                               </div>
@@ -867,7 +867,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
                       </div>
 
                       <div className="md:col-span-2 space-y-2">
-                        <label className={cn("text-xs font-bold text-content uppercase tracking-widest", i18n.language === 'en' ? "ps-1" : "pe-1")}>{t('onboarding.fields.language')}</label>
+                        <label className={cn("text-sm font-bold text-content uppercase", i18n.language === 'en' ? "ps-1" : "pe-1")}>{t('onboarding.fields.language')}</label>
                         <Controller
                           control={control}
                           name="language"
@@ -887,7 +887,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
                       </div>
 
                       <div className="md:col-span-2 space-y-2">
-                         <label htmlFor="onboarding-invoiceDefaults" className={cn("text-xs font-bold text-content uppercase tracking-widest", i18n.language === 'en' ? "ps-1" : "pe-1")}>{t('onboarding.fields.invoice_terms')}</label>
+                         <label htmlFor="onboarding-invoiceDefaults" className={cn("text-sm font-bold text-content uppercase", i18n.language === 'en' ? "ps-1" : "pe-1")}>{t('onboarding.fields.invoice_terms')}</label>
                          <textarea id="onboarding-invoiceDefaults" 
                            {...register('invoiceDefaults')}
                            placeholder={t('onboarding.fields.invoice_terms_placeholder')}
@@ -938,7 +938,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
 
         {/* Support Microcopy */}
         <div className="mt-10 text-center opacity-40">
-          <p className="text-xs font-black uppercase tracking-[0.2em] text-content-muted" dir="ltr">
+          <p className="text-sm font-black text-content-muted" dir="ltr">
             Powered by Seen System &copy; 2026
           </p>
         </div>

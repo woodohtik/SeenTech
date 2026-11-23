@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { FormGrid } from './ui/FormGrid';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -558,12 +559,12 @@ export default function Settings({ tenantId }: SettingsProps) {
    * handle it), and it also disabled `position: sticky` on the desktop settings
    * sidebar. `min-w-0` is what actually keeps the flex children in check.
    *
-   * pb-20 is repeated per breakpoint because `sm:p-5` / `lg:p-8` reset
+   * pb-20 is repeated per breakpoint because `main-640:p-5` / `main-900:p-8` reset
    * padding-bottom, which would otherwise drop the bottom breathing room.
    */
   return (
     <div id="tour-settings-panel" className={cn(
-      "p-3 sm:p-5 lg:p-8 pb-20 sm:pb-20 lg:pb-20 max-w-7xl mx-auto space-y-6 lg:space-y-8 w-full min-w-0",
+      "p-3 main-640:p-5 main-900:p-8 pb-20 main-640:pb-20 main-900:pb-20 max-w-7xl mx-auto space-y-6 main-900:space-y-8 w-full min-w-0",
       isRtl ? "text-right" : "text-left"
     )} dir={isRtl ? "rtl" : "ltr"}>
       <Header 
@@ -573,7 +574,7 @@ export default function Settings({ tenantId }: SettingsProps) {
       />
 
       {/* Horizontal Scrollable Tabs Selector */}
-      <div className="relative -mx-3 px-3 sm:mx-0 sm:px-0">
+      <div className="relative -mx-3 px-3 main-640:mx-0 main-640:px-0">
         <div className="pointer-events-none absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-surface to-transparent z-10" />
         <div className="pointer-events-none absolute inset-y-0 left-0 w-8 bg-gradient-to-r from-surface to-transparent z-10" />
         <div ref={tabsContainerRef} className="flex gap-2 overflow-x-auto pb-3 pt-1 scrollbar-none">
@@ -586,7 +587,7 @@ export default function Settings({ tenantId }: SettingsProps) {
               type="button"
               onClick={() => setActiveTab(tab.id)}
               className={cn(
-                "flex items-center gap-2 px-4 py-2.5 rounded-full text-xs font-black whitespace-nowrap transition-all duration-300 border shrink-0 cursor-pointer",
+                "flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-black whitespace-nowrap transition-all duration-300 border shrink-0 cursor-pointer",
                 isActive
                   ? cn(
                       "bg-brand text-white border-brand shadow-md shadow-brand/15",
@@ -616,10 +617,10 @@ export default function Settings({ tenantId }: SettingsProps) {
               className="w-full"
             >
               {activeTab === 'profile' && (
-                <form onSubmit={handleSubmit(onSave)} className="bg-surface p-4 sm:p-6 lg:p-8 rounded-2xl lg:rounded-3xl border border-border shadow-xl shadow-brand/5 space-y-6 lg:space-y-8 w-full">
-                  <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5 lg:gap-8 border-b border-border pb-6">
+                <form onSubmit={handleSubmit(onSave)} className="bg-surface p-4 main-640:p-6 main-900:p-8 rounded-2xl main-900:rounded-3xl border border-border shadow-xl shadow-brand/5 space-y-6 main-900:space-y-8 w-full">
+                  <div className="flex flex-col main-640:flex-row items-center main-640:items-start gap-5 main-900:gap-8 border-b border-border pb-6">
                     <div className="relative group shrink-0">
-                      <div className="w-28 h-28 sm:w-36 sm:h-36 bg-surface-muted rounded-2xl sm:rounded-3xl border-2 border-dashed border-border flex items-center justify-center overflow-hidden transition-all group-hover:border-brand/40 group-hover:bg-brand/5">
+                      <div className="w-28 h-28 main-640:w-36 main-640:h-36 bg-surface-muted rounded-2xl main-640:rounded-3xl border-2 border-dashed border-border flex items-center justify-center overflow-hidden transition-all group-hover:border-brand/40 group-hover:bg-brand/5">
                         {logoPreview ? (
                           <img src={logoPreview} alt="Logo" className="w-full h-full object-cover" />
                         ) : (
@@ -641,22 +642,23 @@ export default function Settings({ tenantId }: SettingsProps) {
                         </button>
                       )}
                     </div>
-                    <div className={cn("text-center py-1 space-y-1.5 flex-1", isRtl ? "sm:text-right" : "sm:text-left")}>
-                      <h3 className="text-xl sm:text-2xl font-black text-content">{t('settings_page.profile.store_identity', 'هوية المتجر')}</h3>
-                      <p className="text-xs sm:text-sm text-content-muted font-medium leading-relaxed max-w-sm">
+                    <div className={cn("text-center py-1 space-y-1.5 flex-1", isRtl ? "main-640:text-right" : "main-640:text-left")}>
+                      <h3 className="text-xl main-640:text-2xl font-black text-content">{t('settings_page.profile.store_identity', 'هوية المتجر')}</h3>
+                      <p className="text-sm text-content-muted font-medium leading-relaxed max-w-sm">
                         {t('settings_page.profile.store_identity_desc', 'قم بتحميل شعار متجرك وتعديل المعلومات الأساسية التي تظهر لعملائك في النظام وعلى الفواتير الضريبية.')}
                       </p>
-                      <div className="flex flex-wrap justify-center sm:justify-start gap-2 pt-1">
-                         <span className="px-2.5 py-0.5 bg-surface-muted rounded-full text-[10px] font-black text-content-muted uppercase tracking-tighter border border-border">Base64 Support</span>
-                         <span className="px-2.5 py-0.5 bg-brand/5 rounded-full text-[10px] font-black text-brand uppercase tracking-tighter border border-brand/10">Bilingual Print</span>
+                      <div className="flex flex-wrap justify-center main-640:justify-start gap-2 pt-1">
+                         <span className="px-2.5 py-0.5 bg-surface-muted rounded-full text-sm font-black text-content-muted uppercase border border-border">Base64 Support</span>
+                         <span className="px-2.5 py-0.5 bg-brand/5 rounded-full text-sm font-black text-brand uppercase border border-brand/10">Bilingual Print</span>
                       </div>
                     </div>
                   </div>
                   
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+                  {/* The shop profile: one column, two from 640px of the FORM's width (FormGrid). */}
+                  <FormGrid columns={2}>
                     <div className="space-y-1.5">
                       <div className="flex items-center justify-between px-1">
-                        <label className="text-[10px] font-black text-content-muted uppercase tracking-normal sm:tracking-[0.2em]">{t('settings_page.profile.store_name', 'اسم المنشأة التجاري')} <span className="text-danger">*</span></label>
+                        <label className="text-sm font-black text-content-muted">{t('settings_page.profile.store_name', 'اسم المنشأة التجاري')} <span className="text-danger">*</span></label>
                         <HelpCircle size={14} className="text-content-muted/80 cursor-help" />
                       </div>
                       <IconInput 
@@ -668,7 +670,7 @@ export default function Settings({ tenantId }: SettingsProps) {
                     </div>
                     <div className="space-y-1.5">
                       <div className="flex items-center justify-between px-1">
-                        <label className="text-[10px] font-black text-content-muted uppercase tracking-normal sm:tracking-[0.2em]">{t('settings_page.profile.phone', 'رقم التواصل الموحد')}</label>
+                        <label className="text-sm font-black text-content-muted">{t('settings_page.profile.phone', 'رقم التواصل الموحد')}</label>
                         <HelpCircle size={14} className="text-content-muted/80 cursor-help" />
                       </div>
                       <IconInput 
@@ -679,10 +681,10 @@ export default function Settings({ tenantId }: SettingsProps) {
                         error={errors.phone?.message}
                       />
                     </div>
-                    <div className="sm:col-span-2 space-y-1.5">
+                    <div className="main-640:col-span-2 space-y-1.5">
                       <div className="flex flex-wrap items-center justify-between gap-1 px-1">
-                        <label className="text-[10px] font-black text-content-muted uppercase tracking-normal sm:tracking-[0.2em]">{t('settings_page.profile.email_protected', 'البريد الإلكتروني (غير قابل للتعديل)')}</label>
-                        <span className="text-[10px] text-content-muted font-black bg-surface-muted rounded px-2 py-0.5 select-none shrink-0" dir={isRtl ? "rtl" : "ltr"}>{t('settings_page.profile.official_protected', 'رسمي ومحمي')}</span>
+                        <label className="text-sm font-black text-content-muted">{t('settings_page.profile.email_protected', 'البريد الإلكتروني (غير قابل للتعديل)')}</label>
+                        <span className="text-sm text-content-muted font-black bg-surface-muted rounded px-2 py-0.5 select-none shrink-0" dir={isRtl ? "rtl" : "ltr"}>{t('settings_page.profile.official_protected', 'رسمي ومحمي')}</span>
                       </div>
                       <IconInput
                         type="email"
@@ -693,9 +695,9 @@ export default function Settings({ tenantId }: SettingsProps) {
                         placeholder={t('settings_page.profile.no_email', 'لا يوجد بريد إلكتروني')}
                       />
                     </div>
-                    <div className="sm:col-span-2 space-y-1.5">
+                    <div className="main-640:col-span-2 space-y-1.5">
                       <div className="flex items-center justify-between px-1">
-                        <label className="text-[10px] font-black text-content-muted uppercase tracking-normal sm:tracking-[0.2em]">{t('settings_page.profile.address', 'العنوان التفصيلي')} <span className="text-danger">*</span></label>
+                        <label className="text-sm font-black text-content-muted">{t('settings_page.profile.address', 'العنوان التفصيلي')} <span className="text-danger">*</span></label>
                         <HelpCircle size={14} className="text-content-muted/80 cursor-help" />
                       </div>
                       <IconInput
@@ -708,7 +710,7 @@ export default function Settings({ tenantId }: SettingsProps) {
                       <button
                         type="button"
                         onClick={() => setIsLocationPickerOpen(true)}
-                        className="text-xs font-bold text-brand hover:text-brand/80 transition-colors flex items-center gap-1.5 px-1"
+                        className="text-sm font-bold text-brand hover:text-brand/80 transition-colors flex items-center gap-1.5 px-1"
                       >
                         <MapPin size={13} />
                         {t('settings_page.profile.pick_on_map', 'تحديد على الخريطة')}
@@ -716,7 +718,7 @@ export default function Settings({ tenantId }: SettingsProps) {
                     </div>
                     <div className="space-y-1.5">
                       <div className="flex items-center justify-between px-1">
-                        <label className="text-[10px] font-black text-content-muted uppercase tracking-normal sm:tracking-[0.2em]">{t('settings_page.profile.city', 'المدينة')}</label>
+                        <label className="text-sm font-black text-content-muted">{t('settings_page.profile.city', 'المدينة')}</label>
                         <HelpCircle size={14} className="text-content-muted/80 cursor-help" />
                       </div>
                       <IconInput
@@ -728,7 +730,7 @@ export default function Settings({ tenantId }: SettingsProps) {
                     </div>
                     <div className="space-y-1.5">
                       <div className="flex items-center justify-between px-1">
-                        <label className="text-[10px] font-black text-content-muted uppercase tracking-normal sm:tracking-[0.2em]">{t('settings_page.profile.postal_code', 'الرمز البريدي')}</label>
+                        <label className="text-sm font-black text-content-muted">{t('settings_page.profile.postal_code', 'الرمز البريدي')}</label>
                         <HelpCircle size={14} className="text-content-muted/80 cursor-help" />
                       </div>
                       <IconInput
@@ -739,9 +741,9 @@ export default function Settings({ tenantId }: SettingsProps) {
                         dir="ltr"
                       />
                     </div>
-                    <div className="sm:col-span-2 space-y-1.5">
+                    <div className="main-640:col-span-2 space-y-1.5">
                       <div className="flex items-center justify-between px-1">
-                        <label className="text-[10px] font-black text-content-muted uppercase tracking-normal sm:tracking-[0.2em]">{t('settings_page.profile.commercial_register', 'رقم السجل التجاري (CR)')} <span className="text-danger">*</span></label>
+                        <label className="text-sm font-black text-content-muted">{t('settings_page.profile.commercial_register', 'رقم السجل التجاري (CR)')} <span className="text-danger">*</span></label>
                         <HelpCircle size={14} className="text-content-muted/80 cursor-help" />
                       </div>
                       <IconInput
@@ -758,7 +760,7 @@ export default function Settings({ tenantId }: SettingsProps) {
                     {hasBodyMeasurements && (
                     <div className="space-y-1.5">
                       <div className="flex items-center justify-between px-1">
-                        <label className="text-[10px] font-black text-content-muted uppercase tracking-normal sm:tracking-[0.2em]">{t('settings_page.profile.measurement_unit', 'وحدة القياس الافتراضية للمقاسات')}</label>
+                        <label className="text-sm font-black text-content-muted">{t('settings_page.profile.measurement_unit', 'وحدة القياس الافتراضية للمقاسات')}</label>
                         <HelpCircle size={14} className="text-content-muted/80 cursor-help" />
                       </div>
                       <select
@@ -770,23 +772,23 @@ export default function Settings({ tenantId }: SettingsProps) {
                       </select>
                     </div>
                     )}
-                  </div>
+                  </FormGrid>
 
                   {/* The fabric estimate is the thobe formula: only for an activity that uses it (Phase 6). */}
                   {estimatesFabric && (
                   <div className="pt-5 border-t border-border space-y-3">
                     <div className="px-1">
                       <h4 className="text-sm font-black text-content">{t('settings_page.fabric_estimate.title')}</h4>
-                      <p className="text-xs text-content-muted font-bold mt-1">{t('settings_page.fabric_estimate.desc')}</p>
+                      <p className="text-sm text-content-muted font-bold mt-1">{t('settings_page.fabric_estimate.desc')}</p>
                     </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 main-640:grid-cols-3 gap-4">
                       {([
                         ['wasteCm', 'settings_page.fabric_estimate.waste_cm'],
                         ['defaultWidthCm', 'settings_page.fabric_estimate.default_width_cm'],
                         ['narrowWidthCm', 'settings_page.fabric_estimate.narrow_width_cm'],
                       ] as const).map(([field, labelKey]) => (
                         <div key={field} className="space-y-1.5">
-                          <label htmlFor={`fabric-estimate-${field}`} className="block px-1 text-[10px] font-black text-content-muted uppercase tracking-normal sm:tracking-[0.2em]">
+                          <label htmlFor={`fabric-estimate-${field}`} className="block px-1 text-sm font-black text-content-muted">
                             {t(labelKey)}
                           </label>
                           <input
@@ -809,25 +811,25 @@ export default function Settings({ tenantId }: SettingsProps) {
                   </div>
                   )}
 
-                  <div className="pt-5 border-t border-border flex flex-col sm:flex-row justify-end items-stretch sm:items-center gap-3 w-full">
+                  <div className="pt-5 border-t border-border flex flex-col main-640:flex-row justify-end items-stretch main-640:items-center gap-3 w-full">
                     {saveSuccess && (
                       <motion.div
                         initial={{ opacity: 0, scale: 0.9 }}
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.9 }}
-                        className="flex items-center gap-2 px-3.5 py-2 bg-success/10 text-success border border-success/20 rounded-xl text-xs font-bold"
+                        className="flex items-center gap-2 px-3.5 py-2 bg-success/10 text-success border border-success/20 rounded-xl text-sm font-bold"
                       >
                         <CheckCircle2 size={16} />
                         <span>{t('settings_page.profile.save_success', 'تم حفظ البيانات بنجاح')}</span>
                       </motion.div>
                     )}
-                    <p className={cn("text-[10px] text-content-muted font-bold hidden md:block", isRtl ? "text-right" : "text-left")}>{t('settings_page.profile.save_notice', 'يتم حفظ هذه البيانات تلقائياً وتنعكس على جميع فروع المتجر')}</p>
+                    <p className={cn("text-sm text-content-muted font-bold hidden main-720:block", isRtl ? "text-right" : "text-left")}>{t('settings_page.profile.save_notice', 'يتم حفظ هذه البيانات تلقائياً وتنعكس على جميع فروع المتجر')}</p>
                     {canEdit && (
                       <button 
                         type="submit"
                         disabled={isSubmitting}
                         className={cn(
-                          "px-6 sm:px-8 py-3 rounded-xl font-black transition-all shadow-lg disabled:opacity-50 hover:scale-102 active:scale-98 flex items-center justify-center gap-2 text-white cursor-pointer text-sm",
+                          "px-6 main-640:px-8 py-3 rounded-xl font-black transition-all shadow-lg disabled:opacity-50 hover:scale-102 active:scale-98 flex items-center justify-center gap-2 text-white cursor-pointer text-sm",
                           saveSuccess ? "bg-success shadow-success/20" : "bg-brand hover:bg-brand/90 shadow-brand/20"
                         )}
                       >
@@ -850,14 +852,14 @@ export default function Settings({ tenantId }: SettingsProps) {
               )}
 
               {activeTab === 'staff' && hasPermission('staff.manage') && (
-                <div className="space-y-5 sm:space-y-6">
-                  <div className={cn("bg-surface-muted/30 p-4 sm:p-6 rounded-2xl border border-border flex flex-col sm:flex-row items-center gap-4 sm:gap-6 text-center", isRtl ? "sm:text-right" : "sm:text-left")}>
-                    <div className="w-12 h-12 sm:w-14 sm:h-14 bg-brand/10 text-brand rounded-2xl flex items-center justify-center shadow-inner shrink-0">
+                <div className="space-y-5 main-640:space-y-6">
+                  <div className={cn("bg-surface-muted/30 p-4 main-640:p-6 rounded-2xl border border-border flex flex-col main-640:flex-row items-center gap-4 main-640:gap-6 text-center", isRtl ? "main-640:text-right" : "main-640:text-left")}>
+                    <div className="w-12 h-12 main-640:w-14 main-640:h-14 bg-brand/10 text-brand rounded-2xl flex items-center justify-center shadow-inner shrink-0">
                       <Shield size={24} />
                     </div>
                     <div className="space-y-1 min-w-0">
-                      <h4 className="text-base sm:text-lg font-black text-content">{t('settings_page.staff.title', 'طاقم الموظفين')}</h4>
-                      <p className="text-xs sm:text-sm text-content-muted font-medium">{t('settings_page.staff.subtitle', 'قم بإضافة الموظفين وتعيين الفروع والأدوار الوظيفية لهم في النظام.')}</p>
+                      <h4 className="text-base main-640:text-lg font-black text-content">{t('settings_page.staff.title', 'طاقم الموظفين')}</h4>
+                      <p className="text-sm text-content-muted font-medium">{t('settings_page.staff.subtitle', 'قم بإضافة الموظفين وتعيين الفروع والأدوار الوظيفية لهم في النظام.')}</p>
                     </div>
                   </div>
                   {/* No overflow-hidden: the staff view has its own horizontal
@@ -869,37 +871,37 @@ export default function Settings({ tenantId }: SettingsProps) {
               )}
 
               {activeTab === 'appearance' && (
-                <div className="bg-surface p-4 sm:p-6 lg:p-8 rounded-2xl lg:rounded-3xl border border-border shadow-xl shadow-brand/5 space-y-6 sm:space-y-8">
+                <div className="bg-surface p-4 main-640:p-6 main-900:p-8 rounded-2xl main-900:rounded-3xl border border-border shadow-xl shadow-brand/5 space-y-6 main-640:space-y-8">
                   <div className="flex items-center gap-4 border-b border-border pb-6">
                     <div className="p-3 bg-brand/10 text-brand rounded-2xl shadow-inner shrink-0">
                       <Palette size={28} />
                     </div>
                     <div>
-                      <h3 className="text-xl sm:text-2xl font-black text-content">{t('settings_page.appearance.title', 'هوية النظام البصرية')}</h3>
-                      <p className="text-xs sm:text-sm text-content-muted font-medium mt-0.5">{t('settings_page.appearance.subtitle', 'خصص ألوان الواجهة والخطوط لتناسب العلامة التجارية لمتجرك')}</p>
+                      <h3 className="text-xl main-640:text-2xl font-black text-content">{t('settings_page.appearance.title', 'هوية النظام البصرية')}</h3>
+                      <p className="text-sm text-content-muted font-medium mt-0.5">{t('settings_page.appearance.subtitle', 'خصص ألوان الواجهة والخطوط لتناسب العلامة التجارية لمتجرك')}</p>
                     </div>
                   </div>
                   
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
-                    <div className="bg-surface-muted/30 p-4 sm:p-6 rounded-2xl border border-border space-y-4">
+                  <div className="grid grid-cols-1 main-720:grid-cols-2 gap-4 main-640:gap-6">
+                    <div className="bg-surface-muted/30 p-4 main-640:p-6 rounded-2xl border border-border space-y-4">
                       <div className="flex items-center gap-3">
                         <div className="p-2 bg-brand text-white rounded-lg">
                           <Palette size={18} />
                         </div>
-                        <h4 className="font-black text-content uppercase tracking-widest text-xs">{t('settings_page.appearance.theme_title', 'ثيم الواجهة (Themes)')}</h4>
+                        <h4 className="font-black text-content uppercase text-sm">{t('settings_page.appearance.theme_title', 'ثيم الواجهة (Themes)')}</h4>
                       </div>
-                      <p className="text-xs text-content-muted font-medium px-1">{t('settings_page.appearance.theme_desc', 'اختر الثيم الذي يرتاح له موظفوك أثناء العمل الطويل على النظام.')}</p>
+                      <p className="text-sm text-content-muted font-medium px-1">{t('settings_page.appearance.theme_desc', 'اختر الثيم الذي يرتاح له موظفوك أثناء العمل الطويل على النظام.')}</p>
                       <ThemeSwitcher />
                     </div>
 
-                    <div className="bg-surface-muted/30 p-4 sm:p-6 rounded-2xl border border-border space-y-4">
+                    <div className="bg-surface-muted/30 p-4 main-640:p-6 rounded-2xl border border-border space-y-4">
                       <div className="flex items-center gap-3">
                         <div className="p-2 bg-brand text-white rounded-lg">
                           <HelpCircle size={18} />
                         </div>
-                        <h4 className="font-black text-content uppercase tracking-widest text-xs">{t('settings_page.appearance.tour_title', 'الجولة الإرشادية التفاعلية')}</h4>
+                        <h4 className="font-black text-content uppercase text-sm">{t('settings_page.appearance.tour_title', 'الجولة الإرشادية التفاعلية')}</h4>
                       </div>
-                      <p className="text-xs text-content-muted font-medium">{t('settings_page.appearance.tour_desc', 'إذا كنت بحاجة لإعادة استكشاف وظائف النظام وتدريب الموظفين الجدد، يمكنك إعادة تشغيل الجولة الإرشادية في أي وقت.')}</p>
+                      <p className="text-sm text-content-muted font-medium">{t('settings_page.appearance.tour_desc', 'إذا كنت بحاجة لإعادة استكشاف وظائف النظام وتدريب الموظفين الجدد، يمكنك إعادة تشغيل الجولة الإرشادية في أي وقت.')}</p>
                       <button
                         type="button"
                         onClick={() => window.dispatchEvent(new CustomEvent('start_onboarding_tour'))}
@@ -918,24 +920,24 @@ export default function Settings({ tenantId }: SettingsProps) {
               )}
 
               {activeTab === 'tax' && hasPermission('settings.tax') && (
-                <form onSubmit={handleSubmit(onSave)} className="bg-surface p-4 sm:p-6 lg:p-8 rounded-2xl lg:rounded-3xl border border-border shadow-xl shadow-brand/5 space-y-6 w-full">
-                  <div className={cn("flex flex-col sm:flex-row items-center sm:items-start gap-4 border-b border-border pb-6 text-center", isRtl ? "sm:text-right" : "sm:text-left")}>
+                <form onSubmit={handleSubmit(onSave)} className="bg-surface p-4 main-640:p-6 main-900:p-8 rounded-2xl main-900:rounded-3xl border border-border shadow-xl shadow-brand/5 space-y-6 w-full">
+                  <div className={cn("flex flex-col main-640:flex-row items-center main-640:items-start gap-4 border-b border-border pb-6 text-center", isRtl ? "main-640:text-right" : "main-640:text-left")}>
                     <div className="p-3 bg-brand/10 text-brand rounded-2xl shadow-inner shrink-0">
                       <FileText size={28} />
                     </div>
                     <div>
-                      <h3 className="text-xl sm:text-2xl font-black text-content">{t('settings_page.tax.title', 'الامتثال الضريبي')}</h3>
-                      <p className="text-xs sm:text-sm text-content-muted font-medium mt-0.5">{t('settings_page.tax.subtitle', 'إدارة معايير هيئة الزكاة والضريبة والجمارك (ZATCA)')}</p>
+                      <h3 className="text-xl main-640:text-2xl font-black text-content">{t('settings_page.tax.title', 'الامتثال الضريبي')}</h3>
+                      <p className="text-sm text-content-muted font-medium mt-0.5">{t('settings_page.tax.subtitle', 'إدارة معايير هيئة الزكاة والضريبة والجمارك (ZATCA)')}</p>
                     </div>
                   </div>
 
                   <div className="space-y-6 w-full">
                     <label className={cn(
-                      "flex flex-col sm:flex-row items-stretch sm:items-center justify-between p-4 sm:p-6 rounded-2xl border-2 cursor-pointer transition-all gap-4 group",
+                      "flex flex-col main-640:flex-row items-stretch main-640:items-center justify-between p-4 main-640:p-6 rounded-2xl border-2 cursor-pointer transition-all gap-4 group",
                       taxEnabled ? "border-brand bg-brand/5 shadow-md shadow-brand/5" : "border-border hover:border-brand/20 bg-surface-muted/30"
                     )}>
                       <div className={cn("max-w-xl", isRtl ? "text-right" : "text-left")}>
-                        <h4 className="text-base sm:text-lg font-black text-content flex items-center gap-2 sm:gap-3">
+                        <h4 className="text-base main-640:text-lg font-black text-content flex items-center gap-2 main-640:gap-3">
                           {t('settings_page.tax.enabled', 'وضع الفوترة الإلكترونية المتقدمة')}
                           {taxEnabled && (
                             <motion.span initial={{ scale: 0 }} animate={{ scale: 1 }} className="bg-success text-white p-1 rounded-full">
@@ -943,9 +945,9 @@ export default function Settings({ tenantId }: SettingsProps) {
                             </motion.span>
                           )}
                         </h4>
-                        <p className="text-xs sm:text-sm text-content-muted mt-1.5 font-medium leading-relaxed">{t('settings_page.tax.enabled_desc', 'تفعيل الضريبة يضمن توافق متجرك مع متطلبات المرحلة الثانية من الفوترة الإلكترونية، بما في ذلك التوقيع الرقمي ورمز الاستجابة السريع المحمي.')}</p>
+                        <p className="text-sm text-content-muted mt-1.5 font-medium leading-relaxed">{t('settings_page.tax.enabled_desc', 'تفعيل الضريبة يضمن توافق متجرك مع متطلبات المرحلة الثانية من الفوترة الإلكترونية، بما في ذلك التوقيع الرقمي ورمز الاستجابة السريع المحمي.')}</p>
                       </div>
-                      <div className="relative flex justify-end sm:justify-start shrink-0">
+                      <div className="relative flex justify-end main-640:justify-start shrink-0">
                         <input type="checkbox" {...register('taxSettings.enabled')} className="sr-only" />
                         <div className={cn(
                           "w-14 h-7.5 rounded-full transition-all relative overflow-hidden",
@@ -953,7 +955,7 @@ export default function Settings({ tenantId }: SettingsProps) {
                         )}>
                           <div className={cn(
                             "absolute top-1 w-5.5 h-5.5 rounded-full bg-white transition-all shadow-md",
-                            taxEnabled ? "left-1" : "right-1 text-content-muted flex items-center justify-center text-[8px]"
+                            taxEnabled ? "left-1" : "right-1 text-content-muted flex items-center justify-center text-sm"
                           )} />
                         </div>
                       </div>
@@ -965,7 +967,7 @@ export default function Settings({ tenantId }: SettingsProps) {
                           initial={{ opacity: 0, scale: 0.98 }}
                           animate={{ opacity: 1, scale: 1 }}
                           exit={{ opacity: 0, scale: 0.98 }}
-                          className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 bg-surface-muted/30 p-4 sm:p-6 rounded-2xl border border-border/50"
+                          className="grid grid-cols-1 main-640:grid-cols-2 gap-4 main-640:gap-6 bg-surface-muted/30 p-4 main-640:p-6 rounded-2xl border border-border/50"
                         >
                           <IconInput
                             type="text"
@@ -978,7 +980,7 @@ export default function Settings({ tenantId }: SettingsProps) {
                               const val = e.target.value.replace(/\D/g, '').slice(0, 15);
                               setValue('taxSettings.trn', val, { shouldValidate: true });
                             }}
-                            className="text-left tracking-widest"
+                            className="text-left"
                             error={errors.taxSettings?.trn?.message}
                             dir="ltr"
                           />
@@ -990,10 +992,10 @@ export default function Settings({ tenantId }: SettingsProps) {
                             placeholder={t('settings_page.tax.legal_name_placeholder', 'الاسم المسجل في الشهادة الضريبية')}
                             error={errors.taxSettings?.legalName?.message}
                           />
-                          <div className="space-y-1.5 sm:col-span-2">
+                          <div className="space-y-1.5 main-640:col-span-2">
                              <div className="flex flex-wrap items-center justify-between gap-1.5 px-1">
-                                <label className="text-[10px] font-black text-content-muted uppercase tracking-normal sm:tracking-[0.2em]">{t('settings_page.tax.vat_rate', 'نسبة الضريبة القياسية')}</label>
-                                <span className="text-[10px] font-black text-brand bg-brand/10 px-2 py-0.5 rounded-full shrink-0">{t('settings_page.tax.saudi_vat_note', 'المملكة العربية السعودية: 15%')}</span>
+                                <label className="text-sm font-black text-content-muted">{t('settings_page.tax.vat_rate', 'نسبة الضريبة القياسية')}</label>
+                                <span className="text-sm font-black text-brand bg-brand/10 px-2 py-0.5 rounded-full shrink-0">{t('settings_page.tax.saudi_vat_note', 'المملكة العربية السعودية: 15%')}</span>
                              </div>
                             <IconInput
                               type="number"
@@ -1002,12 +1004,12 @@ export default function Settings({ tenantId }: SettingsProps) {
                               error={errors.taxSettings?.vatRate?.message}
                               min="0.01" max="100" step="any"
                             />
-                            <p className="text-[11px] text-content-muted font-bold px-1">{t('settings_page.tax.vat_rate_hint')}</p>
+                            <p className="text-sm text-content-muted font-bold px-1">{t('settings_page.tax.vat_rate_hint')}</p>
                           </div>
 
-                          <div className="space-y-3 sm:col-span-2 border-t border-border/50 pt-4">
-                            <label className="text-[10px] font-black text-content-muted uppercase tracking-normal sm:tracking-[0.2em] px-1">{t('settings_page.tax.calculation_method', 'طريقة احتساب ضريبة الأصناف المخصصة')}</label>
-                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                          <div className="space-y-3 main-640:col-span-2 border-t border-border/50 pt-4">
+                            <label className="text-sm font-black text-content-muted px-1">{t('settings_page.tax.calculation_method', 'طريقة احتساب ضريبة الأصناف المخصصة')}</label>
+                            <div className="grid grid-cols-1 main-640:grid-cols-3 gap-3">
                               {[
                                 { id: 'inclusive', label: t('settings_page.tax.inclusive', 'شامل الضريبة'), desc: t('settings_page.tax.inclusive_desc', 'سعر الصنف شامل لضريبة القيمة المضافة') },
                                 { id: 'exclusive', label: t('settings_page.tax.exclusive', 'غير شامل الضريبة'), desc: t('settings_page.tax.exclusive_desc', 'يتم احتساب الضريبة بشكل إضافي فوق سعر الصنف') },
@@ -1024,8 +1026,8 @@ export default function Settings({ tenantId }: SettingsProps) {
                                       : "border-border hover:border-brand/20 bg-surface"
                                   )}
                                 >
-                                  <span className="text-xs sm:text-sm font-black text-content">{option.label}</span>
-                                  <span className="text-[11px] text-content-muted font-medium">{option.desc}</span>
+                                  <span className="text-sm font-black text-content">{option.label}</span>
+                                  <span className="text-sm text-content-muted font-medium">{option.desc}</span>
                                 </div>
                               ))}
                             </div>
@@ -1038,26 +1040,26 @@ export default function Settings({ tenantId }: SettingsProps) {
                     {Object.keys(errors).length > 0 && (
                       <div className="p-3.5 bg-danger/5 border border-danger/10 rounded-xl flex items-center gap-3 text-danger">
                         <AlertCircle size={18} className="shrink-0" />
-                        <div className="text-xs sm:text-sm font-bold">
+                        <div className="text-sm font-bold">
                           {t('settings_page.tax.form_errors', 'يوجد أخطاء في البيانات المدخلة. يرجى التأكد من ملء جميع الحقول المطلوبة (بما في ذلك الاسم والعنوان في تبويب الملف الشخصي).')}
                         </div>
                       </div>
                     )}
                   </div>
 
-                  <div className="pt-5 border-t border-border flex flex-col sm:flex-row justify-end items-stretch sm:items-center gap-3 w-full">
+                  <div className="pt-5 border-t border-border flex flex-col main-640:flex-row justify-end items-stretch main-640:items-center gap-3 w-full">
                     {saveSuccess && (
                       <motion.div
                         initial={{ opacity: 0, scale: 0.9 }}
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.9 }}
-                        className="flex items-center gap-2 px-3.5 py-2 bg-success/10 text-success border border-success/20 rounded-xl text-xs font-bold"
+                        className="flex items-center gap-2 px-3.5 py-2 bg-success/10 text-success border border-success/20 rounded-xl text-sm font-bold"
                       >
                         <CheckCircle2 size={16} />
                         <span>{t('settings_page.tax.save_success', 'تم حفظ البيانات الضريبية بنجاح')}</span>
                       </motion.div>
                     )}
-                     <p className={cn("text-[10px] text-warning font-bold max-w-xs leading-tight hidden md:block", isRtl ? "text-right" : "text-left")}>
+                     <p className={cn("text-sm text-warning font-bold max-w-xs leading-tight hidden main-720:block", isRtl ? "text-right" : "text-left")}>
                         {t('settings_page.tax.saudi_trn_warning', 'تأكد من صحة الرقم الضريبي؛ أي خطأ قد يؤدي إلى رفض الفاتورة من قبل منصة فاتورة.')}
                      </p>
                     {canEdit && (
@@ -1065,7 +1067,7 @@ export default function Settings({ tenantId }: SettingsProps) {
                         type="submit"
                         disabled={isSubmitting}
                         className={cn(
-                          "px-6 sm:px-8 py-3 rounded-xl font-black transition-all shadow-lg disabled:opacity-50 hover:scale-102 active:scale-98 flex items-center justify-center gap-2 text-white cursor-pointer text-sm",
+                          "px-6 main-640:px-8 py-3 rounded-xl font-black transition-all shadow-lg disabled:opacity-50 hover:scale-102 active:scale-98 flex items-center justify-center gap-2 text-white cursor-pointer text-sm",
                           saveSuccess ? "bg-success shadow-success/20" : "bg-brand hover:bg-brand/90 shadow-brand/20"
                         )}
                       >
@@ -1105,14 +1107,14 @@ export default function Settings({ tenantId }: SettingsProps) {
               )}
 
               {activeTab === 'notifications' && canViewNotifications && (
-                <form onSubmit={handleSubmit(onSave)} className="bg-surface p-5 sm:p-8 md:p-10 rounded-2xl border border-border shadow-xl shadow-brand/5 space-y-6 md:space-y-10 w-full">
-                   <div className={cn("flex flex-col sm:flex-row items-center sm:items-start gap-4 border-b border-border pb-6 sm:pb-8 text-center", isRtl ? "sm:text-right" : "sm:text-left")}>
+                <form onSubmit={handleSubmit(onSave)} className="bg-surface p-5 main-640:p-8 main-720:p-10 rounded-2xl border border-border shadow-xl shadow-brand/5 space-y-6 main-720:space-y-10 w-full">
+                   <div className={cn("flex flex-col main-640:flex-row items-center main-640:items-start gap-4 border-b border-border pb-6 main-640:pb-8 text-center", isRtl ? "main-640:text-right" : "main-640:text-left")}>
                       <div className="p-4 bg-warning/10 text-warning rounded-2xl shadow-inner">
                         <Bell size={32} />
                       </div>
                       <div>
                         <h3 className="text-2xl font-black text-content">{t('settings_page.notifications.title', 'إشعارات النظام والبريد')}</h3>
-                        <p className="text-sm text-content-muted font-medium mt-1 uppercase tracking-tight">{t('settings_page.notifications.subtitle', 'تحكم في تنبيهات المتصفح وإشعارات الجوال')}</p>
+                        <p className="text-sm text-content-muted font-medium mt-1 uppercase">{t('settings_page.notifications.subtitle', 'تحكم في تنبيهات المتصفح وإشعارات الجوال')}</p>
                       </div>
                     </div>
 
@@ -1123,8 +1125,8 @@ export default function Settings({ tenantId }: SettingsProps) {
                         { field: 'notificationSettings.dailyClose', title: t('settings_page.notifications.daily_close_title', 'تقارير الإغلاق اليومية'), desc: t('settings_page.notifications.daily_close_desc', 'ملخص بالأرباح والخسائر والمبيعات فور إغلاق الوردية.'), icon: FileText, color: 'text-success' },
                         { field: 'notificationSettings.tomorrowDelivery', title: t('settings_page.notifications.tomorrow_delivery_title', 'مواعيد تسليم الغد'), desc: t('settings_page.notifications.tomorrow_delivery_desc', 'تنبيه لقائمة العملاء الذين يجب تسليم طلباتهم في اليوم التالي.'), icon: Bell, color: 'text-warning' },
                       ].map((item) => (
-                        <label key={item.title} className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between p-5 sm:p-8 bg-surface-muted/30 hover:bg-surface border-2 border-transparent hover:border-border rounded-2xl transition-all group gap-4 cursor-pointer">
-                          <div className={cn("flex flex-col sm:flex-row items-center sm:items-start gap-4 text-center", isRtl ? "sm:text-right" : "sm:text-left")}>
+                        <label key={item.title} className="flex flex-col main-640:flex-row items-stretch main-640:items-center justify-between p-5 main-640:p-8 bg-surface-muted/30 hover:bg-surface border-2 border-transparent hover:border-border rounded-2xl transition-all group gap-4 cursor-pointer">
+                          <div className={cn("flex flex-col main-640:flex-row items-center main-640:items-start gap-4 text-center", isRtl ? "main-640:text-right" : "main-640:text-left")}>
                             <div className={cn("p-4 bg-white rounded-2xl shadow-sm transition-transform group-hover:scale-110 shrink-0", item.color)}>
                               <item.icon size={26} />
                             </div>
@@ -1133,7 +1135,7 @@ export default function Settings({ tenantId }: SettingsProps) {
                               <p className="text-sm text-content-muted font-medium leading-relaxed max-w-md">{item.desc}</p>
                             </div>
                           </div>
-                          <div className="flex justify-end sm:justify-start">
+                          <div className="flex justify-end main-640:justify-start">
                             <span className="relative inline-flex items-center">
                               <input type="checkbox" className="sr-only peer" {...register(item.field as any)} />
                               <div className="w-14 h-7 bg-border peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[3px] after:start-[3px] after:bg-white after:border-border after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brand"></div>
@@ -1144,13 +1146,13 @@ export default function Settings({ tenantId }: SettingsProps) {
                     </div>
 
                     {canEdit && (
-                      <div className="pt-5 border-t border-border flex flex-col sm:flex-row justify-end items-stretch sm:items-center gap-3 w-full">
+                      <div className="pt-5 border-t border-border flex flex-col main-640:flex-row justify-end items-stretch main-640:items-center gap-3 w-full">
                         {saveSuccess && (
                           <motion.div
                             initial={{ opacity: 0, scale: 0.9 }}
                             animate={{ opacity: 1, scale: 1 }}
                             exit={{ opacity: 0, scale: 0.9 }}
-                            className="flex items-center gap-2 px-3.5 py-2 bg-success/10 text-success border border-success/20 rounded-xl text-xs font-bold"
+                            className="flex items-center gap-2 px-3.5 py-2 bg-success/10 text-success border border-success/20 rounded-xl text-sm font-bold"
                           >
                             <CheckCircle2 size={16} />
                             <span>{t('settings_page.notifications.save_success', 'تم حفظ إعدادات التنبيهات بنجاح')}</span>
@@ -1160,7 +1162,7 @@ export default function Settings({ tenantId }: SettingsProps) {
                           type="submit"
                           disabled={isSubmitting}
                           className={cn(
-                            "px-6 sm:px-8 py-3 rounded-xl font-black transition-all shadow-lg disabled:opacity-50 hover:scale-102 active:scale-98 flex items-center justify-center gap-2 text-white cursor-pointer text-sm",
+                            "px-6 main-640:px-8 py-3 rounded-xl font-black transition-all shadow-lg disabled:opacity-50 hover:scale-102 active:scale-98 flex items-center justify-center gap-2 text-white cursor-pointer text-sm",
                             saveSuccess ? "bg-success shadow-success/20" : "bg-brand hover:bg-brand/90 shadow-brand/20"
                           )}
                         >
@@ -1182,40 +1184,40 @@ export default function Settings({ tenantId }: SettingsProps) {
                 </React.Suspense>
               )}
               {activeTab === 'data' && (currentStaff?.role === 'owner' || currentStaff?.role === 'super_admin') && (
-                <div className="bg-surface p-5 sm:p-8 md:p-10 rounded-2xl border border-border shadow-xl shadow-brand/5 space-y-6 md:space-y-10 w-full">
-                   <div className={cn("flex flex-col sm:flex-row items-center sm:items-start gap-4 border-b border-border pb-6 sm:pb-8 text-center", isRtl ? "sm:text-right" : "sm:text-left")}>
+                <div className="bg-surface p-5 main-640:p-8 main-720:p-10 rounded-2xl border border-border shadow-xl shadow-brand/5 space-y-6 main-720:space-y-10 w-full">
+                   <div className={cn("flex flex-col main-640:flex-row items-center main-640:items-start gap-4 border-b border-border pb-6 main-640:pb-8 text-center", isRtl ? "main-640:text-right" : "main-640:text-left")}>
                       <div className="p-4 bg-danger/10 text-danger rounded-2xl shadow-inner">
                         <Database size={32} />
                       </div>
                       <div>
                         <h3 className="text-2xl font-black text-content">{t('settings_page.data.title', 'إدارة البيانات وسرية المعلومات')}</h3>
-                        <p className="text-sm text-content-muted font-medium mt-1 uppercase tracking-tight">{t('settings_page.data.subtitle', 'التحكم في سجلات النظام والبيانات المؤرشفة')}</p>
+                        <p className="text-sm text-content-muted font-medium mt-1 uppercase">{t('settings_page.data.subtitle', 'التحكم في سجلات النظام والبيانات المؤرشفة')}</p>
                       </div>
                     </div>
 
-                    <div className="space-y-6 md:space-y-8 w-full">
-                      <div className={cn("p-5 sm:p-10 bg-danger/5 rounded-2xl border-2 border-dashed border-danger/20 space-y-6", isRtl ? "text-right" : "text-left")}>
-                        <div className={cn("flex flex-col sm:flex-row items-center gap-4 text-danger text-center", isRtl ? "sm:text-right" : "sm:text-left")}>
+                    <div className="space-y-6 main-720:space-y-8 w-full">
+                      <div className={cn("p-5 main-640:p-10 bg-danger/5 rounded-2xl border-2 border-dashed border-danger/20 space-y-6", isRtl ? "text-right" : "text-left")}>
+                        <div className={cn("flex flex-col main-640:flex-row items-center gap-4 text-danger text-center", isRtl ? "main-640:text-right" : "main-640:text-left")}>
                           <div className="p-3 bg-danger text-white rounded-2xl shadow-lg shadow-danger/20">
                             <AlertCircle size={28} />
                           </div>
-                          <h4 className="text-lg sm:text-2xl font-black tracking-tight">{t('settings_page.data.critical_zone', 'المنطقة الخطرة (Critical Zone)')}</h4>
+                          <h4 className="text-lg main-640:text-2xl font-black">{t('settings_page.data.critical_zone', 'المنطقة الخطرة (Critical Zone)')}</h4>
                         </div>
-                        <p className={cn("text-sm sm:text-base text-danger/80 font-bold leading-relaxed max-w-2xl text-center", isRtl ? "sm:text-right" : "sm:text-left")}>
+                        <p className={cn("text-sm main-640:text-base text-danger/80 font-bold leading-relaxed max-w-2xl text-center", isRtl ? "main-640:text-right" : "main-640:text-left")}>
                           {t('settings_page.data.critical_desc', 'حذف البيانات التجريبية سيمسح جميع السجلات التي تم تمييزها كـ "بيانات اختبار". هذا الإجراء مفيد جداً قبل الانتقال لبيئة التشغيل الفعلية (Go-Live) لتصفير عداد الطلبات والعملاء الوهميين.')}
                         </p>
-                        <div className="pt-2 flex justify-center sm:justify-start">
+                        <div className="pt-2 flex justify-center main-640:justify-start">
                           <button
                             onClick={() => setShowResetConfirm(true)}
                             disabled={isDeletingTestData}
-                            className="flex items-center justify-center gap-2 sm:gap-3 bg-danger text-white w-full sm:w-auto px-5 sm:px-6 py-3.5 sm:py-4 rounded-xl font-black hover:bg-danger/90 transition-all shadow-xl shadow-danger/20 disabled:opacity-50 hover:scale-[1.02] active:scale-[0.98]"
+                            className="flex items-center justify-center gap-2 main-640:gap-3 bg-danger text-white w-full main-640:w-auto px-5 main-640:px-6 py-3.5 main-640:py-4 rounded-xl font-black hover:bg-danger/90 transition-all shadow-xl shadow-danger/20 disabled:opacity-50 hover:scale-[1.02] active:scale-[0.98]"
                           >
                             {isDeletingTestData ? (
-                              <div className="w-5 h-5 sm:w-6 sm:h-6 border-4 border-white/30 border-t-white rounded-full animate-spin shrink-0" />
+                              <div className="w-5 h-5 main-640:w-6 main-640:h-6 border-4 border-white/30 border-t-white rounded-full animate-spin shrink-0" />
                             ) : (
                               <Trash2 size={20} className="shrink-0" />
                             )}
-                            <span className="text-sm sm:text-lg">{t('settings_page.data.reset_system', 'تصفير النظام وحذف البيانات التجريبية')}</span>
+                            <span className="text-sm main-640:text-lg">{t('settings_page.data.reset_system', 'تصفير النظام وحذف البيانات التجريبية')}</span>
                           </button>
                         </div>
                       </div>
@@ -1223,7 +1225,7 @@ export default function Settings({ tenantId }: SettingsProps) {
                       <button
                         onClick={() => setShowAuditModal(true)}
                         className={cn(
-                          "w-full flex items-center gap-5 p-5 sm:p-8 bg-surface rounded-2xl border-2 border-border border-dashed hover:border-success/40 hover:bg-success/5 transition-all group cursor-pointer",
+                          "w-full flex items-center gap-5 p-5 main-640:p-8 bg-surface rounded-2xl border-2 border-border border-dashed hover:border-success/40 hover:bg-success/5 transition-all group cursor-pointer",
                           isRtl ? "text-right" : "text-left"
                         )}
                       >
@@ -1232,7 +1234,7 @@ export default function Settings({ tenantId }: SettingsProps) {
                         </div>
                         <div className="min-w-0">
                           <p className="font-black text-content">{t('settings_page.data.audit_title', 'سجلات تدقيق العمليات (Audit)')}</p>
-                          <p className="text-xs text-content-muted font-bold mt-1">{t('settings_page.data.audit_desc', 'اضغط لفتح وعرض سجلات الموظفين والعمليات الحساسة')}</p>
+                          <p className="text-sm text-content-muted font-bold mt-1">{t('settings_page.data.audit_desc', 'اضغط لفتح وعرض سجلات الموظفين والعمليات الحساسة')}</p>
                         </div>
                       </button>
                     </div>
@@ -1278,7 +1280,7 @@ export default function Settings({ tenantId }: SettingsProps) {
               </div>
               <div>
                 <h3 className="font-black text-content">{t('settings_page.data.reset_confirm_title', 'تصفير النظام؟')}</h3>
-                <p className="text-xs text-content-muted font-bold mt-1.5 leading-relaxed">
+                <p className="text-sm text-content-muted font-bold mt-1.5 leading-relaxed">
                   {t('settings_page.data.delete_test_confirm')}
                 </p>
               </div>
@@ -1332,7 +1334,7 @@ export default function Settings({ tenantId }: SettingsProps) {
                 <h3 className="font-black text-content">
                   {resetResult.type === 'success' ? t('settings_page.data.reset_result_success_title', 'تم بنجاح') : t('settings_page.data.reset_result_error_title', 'حدث خطأ')}
                 </h3>
-                <p className="text-xs text-content-muted font-bold mt-1.5 leading-relaxed">{resetResult.message}</p>
+                <p className="text-sm text-content-muted font-bold mt-1.5 leading-relaxed">{resetResult.message}</p>
               </div>
               <button
                 onClick={() => setResetResult(null)}
@@ -1359,14 +1361,14 @@ export default function Settings({ tenantId }: SettingsProps) {
               className={cn("bg-surface w-full max-w-4xl h-[80vh] flex flex-col rounded-3xl border border-border shadow-2xl overflow-hidden", isRtl ? "text-right" : "text-left")}
             >
               {/* Modal Header */}
-              <div className="p-5 sm:p-6 border-b border-border flex items-center justify-between bg-surface-muted/50">
+              <div className="p-5 main-640:p-6 border-b border-border flex items-center justify-between bg-surface-muted/50">
                 <div className="flex items-center gap-3">
                   <div className="p-3 bg-success/10 text-success rounded-2xl shrink-0">
                     <FileText size={24} />
                   </div>
                   <div>
                     <h3 className="text-xl font-black text-content">{t('settings_page.data.audit_logs_modal_title', 'سجلات تدقيق العمليات (Audit Logs)')}</h3>
-                    <p className="text-xs text-content-muted font-bold mt-0.5">{t('settings_page.data.audit_logs_modal_desc', 'تتبع عمليات الموظفين والتغييرات في النظام في الوقت الفعلي')}</p>
+                    <p className="text-sm text-content-muted font-bold mt-0.5">{t('settings_page.data.audit_logs_modal_desc', 'تتبع عمليات الموظفين والتغييرات في النظام في الوقت الفعلي')}</p>
                   </div>
                 </div>
                 <button 
@@ -1378,7 +1380,7 @@ export default function Settings({ tenantId }: SettingsProps) {
               </div>
 
               {/* Search Bar */}
-              <div className="p-4 sm:p-6 border-b border-border bg-surface flex flex-col sm:flex-row gap-3">
+              <div className="p-4 main-640:p-6 border-b border-border bg-surface flex flex-col main-640:flex-row gap-3">
                 <IconInput
                   type="text"
                   startIcon={Search}
@@ -1390,7 +1392,7 @@ export default function Settings({ tenantId }: SettingsProps) {
                 <button
                   onClick={fetchAuditLogs}
                   disabled={loadingLogs}
-                  className="px-5 py-3 bg-brand/5 hover:bg-brand text-brand hover:text-white rounded-2xl text-xs font-black transition-all cursor-pointer border border-brand/10 disabled:opacity-50 flex items-center justify-center gap-2"
+                  className="px-5 py-3 bg-brand/5 hover:bg-brand text-brand hover:text-white rounded-2xl text-sm font-black transition-all cursor-pointer border border-brand/10 disabled:opacity-50 flex items-center justify-center gap-2"
                 >
                   {loadingLogs ? (
                     <div className="w-4 h-4 border-2 border-brand/30 border-t-brand rounded-full animate-spin" />
@@ -1402,7 +1404,7 @@ export default function Settings({ tenantId }: SettingsProps) {
               </div>
 
               {/* Logs Content */}
-              <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 custom-scrollbar">
+              <div className="flex-1 overflow-y-auto p-4 main-640:p-6 space-y-4 custom-scrollbar">
                 {loadingLogs ? (
                   <div className="h-full flex flex-col items-center justify-center space-y-3">
                     <div className="w-12 h-12 border-4 border-brand/30 border-t-brand rounded-full animate-spin" />
@@ -1427,17 +1429,17 @@ export default function Settings({ tenantId }: SettingsProps) {
                         );
                       })
                       .map((log) => (
-                        <div key={log.id} className={cn("p-4 bg-surface-muted/30 border border-border/60 rounded-2xl flex flex-col sm:flex-row sm:items-start justify-between gap-3", isRtl ? "text-right" : "text-left")}>
+                        <div key={log.id} className={cn("p-4 bg-surface-muted/30 border border-border/60 rounded-2xl flex flex-col main-640:flex-row main-640:items-start justify-between gap-3", isRtl ? "text-right" : "text-left")}>
                           <div className="space-y-1.5 flex-1 min-w-0">
                             <div className="flex items-center gap-2.5 flex-wrap">
                               <span className="font-black text-sm text-content flex items-center gap-1">
                                 {log.staff_name}
                               </span>
-                              <span className="text-[10px] bg-brand/5 text-brand px-2 py-0.5 rounded-full font-black border border-brand/10">
+                              <span className="text-sm bg-brand/5 text-brand px-2 py-0.5 rounded-full font-black border border-brand/10">
                                 {log.action}
                               </span>
                               {log.branch_name && (
-                                <span className="text-[10px] bg-warning/5 text-warning px-2 py-0.5 rounded-full font-black border border-warning/10">
+                                <span className="text-sm bg-warning/5 text-warning px-2 py-0.5 rounded-full font-black border border-warning/10">
                                   {log.branch_name}
                                 </span>
                               )}
@@ -1446,7 +1448,7 @@ export default function Settings({ tenantId }: SettingsProps) {
                               {log.details}
                             </p>
                           </div>
-                          <div className={cn("shrink-0 text-[10px] font-bold text-content-muted flex items-center gap-1.5", isRtl ? "justify-end text-right" : "justify-start text-left")}>
+                          <div className={cn("shrink-0 text-sm font-bold text-content-muted flex items-center gap-1.5", isRtl ? "justify-end text-right" : "justify-start text-left")}>
                             <span>{new Date(log.occurred_at).toLocaleString(localeOf(i18n.language))}</span>
                           </div>
                         </div>

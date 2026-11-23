@@ -294,14 +294,14 @@ export default function ShiftClosingModal({ shift, tenantId, onClose, onClosed }
       >
         <form onSubmit={handleSubmit} className="flex flex-col h-full">
           {/* Header (Fixed) */}
-          <div className="sticky top-0 z-10 flex items-center justify-between p-4 sm:p-6 border-b border-[var(--border)] bg-[var(--surface)] shrink-0">
+          <div className="sticky top-0 z-10 flex items-center justify-between p-4 main-640:p-6 border-b border-[var(--border)] bg-[var(--surface)] shrink-0">
             <div className="flex items-center gap-3">
               <div className="p-2.5 bg-brand/10 text-brand rounded-2xl">
                 <Calculator size={22} />
               </div>
               <div>
-                <h2 className="text-base sm:text-lg font-black text-content">{t('shift_closing.title')}</h2>
-                <p className="text-xs text-content-muted font-bold mt-0.5">{t('shift_closing.desc')}</p>
+                <h2 className="text-base main-640:text-lg font-black text-content">{t('shift_closing.title')}</h2>
+                <p className="text-sm text-content-muted font-bold mt-0.5">{t('shift_closing.desc')}</p>
               </div>
             </div>
             <button type="button" onClick={onClose} aria-label={t('common.close')} className="p-2 hover:bg-surface-muted rounded-full transition-colors shadow-sm text-content-muted cursor-pointer">
@@ -310,36 +310,36 @@ export default function ShiftClosingModal({ shift, tenantId, onClose, onClosed }
           </div>
 
           {/* Body (Scrollable) */}
-          <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 sm:space-y-6">
+          <div className="flex-1 overflow-y-auto p-4 main-640:p-6 space-y-4 main-640:space-y-6">
             <div className="bg-surface-muted p-4 rounded-2xl space-y-2">
-              <div className="flex justify-between text-xs sm:text-sm font-bold text-content-muted">
+              <div className="flex justify-between text-sm font-bold text-content-muted">
                 <span>{t('shift_closing.opening_balance')}</span>
                 <span><PriceDisplay amount={cashLines.opening} /></span>
               </div>
-              <div className="flex justify-between text-xs sm:text-sm font-bold text-content-muted">
+              <div className="flex justify-between text-sm font-bold text-content-muted">
                 <span>{t('shift_closing.cash_sales')}</span>
                 <span className="text-success">+<PriceDisplay amount={cashLines.cash} /></span>
               </div>
-              <div className="flex justify-between text-xs sm:text-sm font-bold text-content-muted">
+              <div className="flex justify-between text-sm font-bold text-content-muted">
                 <span>{t('shift_closing.cash_returns')}</span>
                 <span className="text-danger">-<PriceDisplay amount={cashLines.cashReturns} /></span>
               </div>
-              <div className="flex justify-between text-xs sm:text-sm font-bold text-content-muted">
+              <div className="flex justify-between text-sm font-bold text-content-muted">
                 <span>{t('shift_closing.cash_deposits')}</span>
                 <span className="text-success">+<PriceDisplay amount={cashLines.deposits} /></span>
               </div>
-              <div className="flex justify-between text-xs sm:text-sm font-bold text-content-muted">
+              <div className="flex justify-between text-sm font-bold text-content-muted">
                 <span>{t('shift_closing.cash_withdrawals')}</span>
                 <span className="text-danger">-<PriceDisplay amount={cashLines.withdrawals} /></span>
               </div>
-              <div className="pt-2 border-t border-border flex justify-between text-sm sm:text-base font-black text-content">
+              <div className="pt-2 border-t border-border flex justify-between text-sm main-640:text-base font-black text-content">
                 <span>{t('shift_closing.expected_cash')}</span>
                 <span><PriceDisplay amount={expectedCash} /></span>
               </div>
             </div>
 
             <div className="space-y-2">
-              <label className="text-xs font-black text-content-muted uppercase tracking-widest ml-1">{t('shift_closing.actual_cash_label')}</label>
+              <label className="text-sm font-black text-content-muted uppercase ml-1">{t('shift_closing.actual_cash_label')}</label>
               <input 
                 type="number"
                 required
@@ -347,7 +347,7 @@ export default function ShiftClosingModal({ shift, tenantId, onClose, onClosed }
                 step="0.01"
                 value={actualCash}
                 onChange={(e) => setActualCash(e.target.value)}
-                className="w-full px-4 py-2.5 bg-surface border border-border rounded-xl outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand font-bold text-base sm:text-lg text-center text-content"
+                className="w-full px-4 py-2.5 bg-surface border border-border rounded-xl outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand font-bold text-base main-640:text-lg text-center text-content"
                 placeholder="0.00"
               />
             </div>
@@ -368,7 +368,7 @@ export default function ShiftClosingModal({ shift, tenantId, onClose, onClosed }
                     <AlertTriangle className="text-danger" size={18} />
                   )}
                   <span className={cn(
-                    "font-black text-xs sm:text-sm",
+                    "font-black text-sm",
                     discrepancy === 0 ? "text-success" : "text-danger"
                   )}>
                     {discrepancy === 0 ? t('shift_closing.match_status') : discrepancy > 0 ? <span className="flex items-center gap-1">{t('shift_closing.surplus')} <PriceDisplay amount={Math.abs(discrepancy)} /></span> : <span className="flex items-center gap-1">{t('shift_closing.shortage')} <PriceDisplay amount={Math.abs(discrepancy)} /></span>}
@@ -380,7 +380,7 @@ export default function ShiftClosingModal({ shift, tenantId, onClose, onClosed }
                     required
                     value={reason}
                     onChange={(e) => setReason(e.target.value)}
-                    className="w-full p-3 bg-surface border border-border rounded-xl outline-none transition-all focus:ring-2 focus:ring-danger/20 focus:border-danger font-bold text-xs sm:text-sm resize-none text-content"
+                    className="w-full p-3 bg-surface border border-border rounded-xl outline-none transition-all focus:ring-2 focus:ring-danger/20 focus:border-danger font-bold text-sm resize-none text-content"
                     placeholder={t('shift_closing.reason_placeholder')}
                     rows={2}
                   />
@@ -390,16 +390,16 @@ export default function ShiftClosingModal({ shift, tenantId, onClose, onClosed }
           </div>
 
           {/* Footer (Fixed) */}
-          <div className="sticky bottom-0 z-10 px-4 pt-4 pb-[calc(1rem+env(safe-area-inset-bottom))] sm:px-6 sm:pt-6 sm:pb-[calc(1.5rem+env(safe-area-inset-bottom))] border-t border-[var(--border)] bg-[var(--surface)] shrink-0">
+          <div className="sticky bottom-0 z-10 px-4 pt-4 pb-[calc(1rem+env(safe-area-inset-bottom))] main-640:px-6 main-640:pt-6 main-640:pb-[calc(1.5rem+env(safe-area-inset-bottom))] border-t border-[var(--border)] bg-[var(--surface)] shrink-0">
             {!canCloseThisShift && (
-              <p className="text-danger text-xs font-bold text-center mb-2">
+              <p className="text-danger text-sm font-bold text-center mb-2">
                 {t('shift_closing.not_authorized', 'لا تملك صلاحية إغلاق وردية موظف آخر')}
               </p>
             )}
             <button
               type="submit"
               disabled={isSubmitting || !actualCash || (hasDiscrepancy && !reason) || !canCloseThisShift}
-              className="w-full bg-brand text-white py-3 sm:py-3.5 rounded-2xl font-black text-sm sm:text-base hover:bg-brand/90 transition-all shadow-lg shadow-brand/20 disabled:opacity-50 cursor-pointer"
+              className="w-full bg-brand text-white py-3 main-640:py-3.5 rounded-2xl font-black text-sm main-640:text-base hover:bg-brand/90 transition-all shadow-lg shadow-brand/20 disabled:opacity-50 cursor-pointer"
             >
               {isSubmitting ? t('shift_closing.closing_shift') : t('shift_closing.confirm_close')}
             </button>

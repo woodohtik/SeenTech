@@ -85,7 +85,7 @@ export default function VisualMeasurements({ values, onChange, readOnly }: Visua
               <div className={cn("mb-3 flex items-center justify-center transition-transform", isSelected && "scale-110 text-brand")}>
                 <opt.icon />
               </div>
-              <span className="text-xs font-bold">{t(opt.labelKey)}</span>
+              <span className="text-sm font-bold">{t(opt.labelKey)}</span>
               {isSelected && (
                 <div className="absolute top-2 right-2">
                   <Check size={14} className="text-brand" strokeWidth={3} />

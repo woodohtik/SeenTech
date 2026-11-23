@@ -210,8 +210,8 @@ export default function ForcePinSetup({ tenantId, onSuccess }: ForcePinSetupProp
               <Shield size={28} className="text-white" />
             </div>
             <div>
-              <h1 className="text-xl font-bold tracking-tight">{t('staff.force_pin.title')}</h1>
-              <p className="text-xs text-white/80 mt-1">{t('staff.force_pin.subtitle')}</p>
+              <h1 className="text-xl font-bold">{t('staff.force_pin.title')}</h1>
+              <p className="text-sm text-white/80 mt-1">{t('staff.force_pin.subtitle')}</p>
             </div>
           </div>
         </div>
@@ -231,7 +231,7 @@ export default function ForcePinSetup({ tenantId, onSuccess }: ForcePinSetupProp
                 </div>
                 <div>
                   <h2 className="text-lg font-bold text-content">{t('staff.force_pin.success_title')}</h2>
-                  <p className="text-xs text-content-muted mt-1">{t('staff.force_pin.success_desc')}</p>
+                  <p className="text-sm text-content-muted mt-1">{t('staff.force_pin.success_desc')}</p>
                 </div>
               </motion.div>
             ) : (
@@ -244,7 +244,7 @@ export default function ForcePinSetup({ tenantId, onSuccess }: ForcePinSetupProp
                 <div className="bg-surface-muted/50 rounded-xl p-4 border border-border flex items-center justify-between">
                   <div className="space-y-0.5">
                     <label htmlFor="enable_pin_toggle" className="text-sm font-bold text-content cursor-pointer">{t('staff.force_pin.enable_toggle')}</label>
-                    <p className="text-xs text-content-muted">{t('staff.force_pin.enable_toggle_desc')}</p>
+                    <p className="text-sm text-content-muted">{t('staff.force_pin.enable_toggle_desc')}</p>
                   </div>
                   <button
                     id="enable_pin_toggle"
@@ -280,7 +280,7 @@ export default function ForcePinSetup({ tenantId, onSuccess }: ForcePinSetupProp
                   >
                     <div className="space-y-1.5">
                       <div className="flex justify-between items-center px-1">
-                        <label htmlFor="force_pin_new" className="text-xs font-bold text-content-muted flex items-center gap-1.5">
+                        <label htmlFor="force_pin_new" className="text-sm font-bold text-content-muted flex items-center gap-1.5">
                           <Lock size={14} className="text-brand" />
                           {t('staff.force_pin.new_pin_label')}
                         </label>
@@ -288,7 +288,7 @@ export default function ForcePinSetup({ tenantId, onSuccess }: ForcePinSetupProp
                           type="button"
                           onClick={() => setShowPin(!showPin)}
                           aria-label={showPin ? t('common.hide') : t('common.show')}
-                          className="text-xs text-content-muted hover:text-brand transition-colors flex items-center gap-1"
+                          className="text-sm text-content-muted hover:text-brand transition-colors flex items-center gap-1"
                         >
                           {showPin ? <EyeOff size={13} /> : <Eye size={13} />}
                           <span>{showPin ? t('common.hide') : t('common.show')}</span>
@@ -317,7 +317,7 @@ export default function ForcePinSetup({ tenantId, onSuccess }: ForcePinSetupProp
                     </div>
 
                     <div className="space-y-1.5">
-                      <label htmlFor="force_pin_confirm" className="text-xs font-bold text-content-muted ms-1 flex items-center gap-1.5">
+                      <label htmlFor="force_pin_confirm" className="text-sm font-bold text-content-muted ms-1 flex items-center gap-1.5">
                         <CheckCircle2 size={14} className="text-brand" />
                         {t('staff.force_pin.confirm_pin_label')}
                       </label>
@@ -352,7 +352,7 @@ export default function ForcePinSetup({ tenantId, onSuccess }: ForcePinSetupProp
                     aria-live="polite"
                     initial={{ opacity: 0, y: -5 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="flex items-start gap-2.5 text-danger text-xs font-semibold bg-danger/10 p-3 rounded-xl border border-danger/20"
+                    className="flex items-start gap-2.5 text-danger text-sm font-semibold bg-danger/10 p-3 rounded-xl border border-danger/20"
                   >
                     <AlertCircle size={16} className="mt-0.5 flex-shrink-0" />
                     <span>{error}</span>
@@ -369,7 +369,7 @@ export default function ForcePinSetup({ tenantId, onSuccess }: ForcePinSetupProp
                   <span>{enablePin ? t('staff.force_pin.save_and_enable') : t('staff.force_pin.continue_without_pin')}</span>
                 </button>
 
-                <p className="text-center text-[10px] text-content-muted leading-relaxed px-2">
+                <p className="text-center text-sm text-content-muted leading-relaxed px-2">
                   {enablePin
                     ? t('staff.force_pin.note_enabled')
                     : t('staff.force_pin.note_disabled')}

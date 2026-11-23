@@ -225,7 +225,7 @@ export default function TenantAnalyticsDashboard() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 bg-surface p-6 rounded-2xl border border-border shadow-sm">
+      <div className="flex flex-col main-720:flex-row items-start main-720:items-center justify-between gap-4 bg-surface p-6 rounded-2xl border border-border shadow-sm">
         <div className="flex items-center gap-4">
           <Link 
             to="/admin/tailors"
@@ -237,7 +237,7 @@ export default function TenantAnalyticsDashboard() {
             <h1 className="text-2xl font-black text-content flex items-center gap-3">
               {data.tenant.name || data.tenant.store_name}
               {data.health.churnRisk === 'high' && (
-                <span className="flex items-center gap-1.5 px-2.5 py-1 bg-danger/10 text-danger text-xs rounded-lg font-bold">
+                <span className="flex items-center gap-1.5 px-2.5 py-1 bg-danger/10 text-danger text-sm rounded-lg font-bold">
                   <AlertTriangle size={14} />
                   {t('saas.churn_risk')}
                 </span>
@@ -253,10 +253,10 @@ export default function TenantAnalyticsDashboard() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 main-1024:grid-cols-3 gap-6">
         
         {/* Left/Main Column - Wide Data */}
-        <div className="xl:col-span-2 space-y-6">
+        <div className="main-1024:col-span-2 space-y-6">
           
           {/* Financial Analytics Grid */}
           <div>
@@ -264,7 +264,7 @@ export default function TenantAnalyticsDashboard() {
               <DollarSign className="text-brand" size={20} />
               {t('saas.financial_analytics_30d')}
             </h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 main-720:grid-cols-3 gap-4">
               <StatCard 
                 title={t('dashboard.total_revenue')}
                 value={<PriceDisplay amount={data.finance.totalRevenue} />}
@@ -297,7 +297,7 @@ export default function TenantAnalyticsDashboard() {
               <Users className="text-brand" size={20} />
               {t('saas.team_and_system_activity')}
             </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 main-720:grid-cols-2 gap-4">
               <StatCard 
                 title={t('saas.total_staff')}
                 value={data.staff.total.toString()}
@@ -368,7 +368,7 @@ export default function TenantAnalyticsDashboard() {
                 <Activity className="text-success" size={20} />
                 {t('saas.online_now')}
               </div>
-              <span className="bg-success/10 text-success text-xs font-black px-2.5 py-1 rounded-lg">
+              <span className="bg-success/10 text-success text-sm font-black px-2.5 py-1 rounded-lg">
                 {data.staff.activeNow.length} {t('saas.status_active')}
               </span>
             </h3>
@@ -390,7 +390,7 @@ export default function TenantAnalyticsDashboard() {
                     </div>
                     <div>
                       <h4 className="font-bold text-sm text-content">{staff.name}</h4>
-                      <p className="text-xs text-content-muted flex items-center gap-1">
+                      <p className="text-sm text-content-muted flex items-center gap-1">
                         <Clock size={10} />
                         {t('saas.last_activity_at', { time: new Date(staff.lastSeen).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' }) })}
                       </p>
@@ -432,7 +432,7 @@ function StatCard({
           <Icon size={24} />
         </div>
         {trend && (
-          <div className={cn("flex items-center gap-1 text-xs font-bold px-2 py-1 rounded-lg", 
+          <div className={cn("flex items-center gap-1 text-sm font-bold px-2 py-1 rounded-lg", 
             trend === 'up' ? "bg-success/10 text-success" : "bg-danger/10 text-danger"
           )}>
             {trend === 'up' ? <TrendingUp size={14} /> : <TrendingDown size={14} />}

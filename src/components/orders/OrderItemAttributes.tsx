@@ -63,7 +63,7 @@ export default function OrderItemAttributes({
   const entries = attributeEntries(attributes, fields, i18n.language);
   if (entries.length === 0) return null;
   return (
-    <dl className={cn('grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1.5 text-xs font-bold', className)}>
+    <dl className={cn('grid grid-cols-1 main-640:grid-cols-2 gap-x-4 gap-y-1.5 text-sm font-bold', className)}>
       {entries.map((e) => (
         <div key={e.key} className="flex items-baseline gap-1.5 min-w-0">
           <dt className="text-content-muted shrink-0">{e.label}:</dt>

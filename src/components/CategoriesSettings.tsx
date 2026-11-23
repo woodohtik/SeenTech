@@ -139,14 +139,14 @@ function CategorySection({
   };
 
   return (
-    <div className="bg-surface p-4 sm:p-6 lg:p-8 rounded-2xl lg:rounded-3xl border border-border shadow-xl shadow-brand/5 space-y-5 w-full">
+    <div className="bg-surface p-4 main-640:p-6 main-900:p-8 rounded-2xl main-900:rounded-3xl border border-border shadow-xl shadow-brand/5 space-y-5 w-full">
       <div className={cn('flex items-center gap-3 border-b border-border pb-5', dir === 'rtl' ? 'text-right' : 'text-left')}>
         <div className="p-3 bg-brand/10 text-brand rounded-2xl shadow-inner shrink-0">
           <Icon size={24} />
         </div>
         <div>
-          <h3 className="text-lg sm:text-xl font-black text-content">{title}</h3>
-          <p className="text-xs sm:text-sm text-content-muted font-medium mt-0.5">{subtitle}</p>
+          <h3 className="text-lg main-640:text-xl font-black text-content">{title}</h3>
+          <p className="text-sm text-content-muted font-medium mt-0.5">{subtitle}</p>
         </div>
       </div>
 

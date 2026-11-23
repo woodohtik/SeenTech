@@ -121,14 +121,14 @@ export default function ThobeMeasurementSelector({ values, onChange, readOnly = 
         <div className="pb-3 mb-3 border-b border-border flex items-center justify-between gap-2">
           <div className="min-w-0">
             <h2 className="text-base font-black text-content">{t('measurements.visual_selector_title')}</h2>
-            <p className="text-xs text-content-muted font-bold truncate">{t('measurements.visual_selector_desc')}</p>
+            <p className="text-sm text-content-muted font-bold truncate">{t('measurements.visual_selector_desc')}</p>
           </div>
           <div className="flex items-center gap-2 shrink-0">
             {isSpeechRecognitionSupported() && (
               <button
                 type="button"
                 onClick={() => setWizardOpen(true)}
-                className="min-h-[40px] flex items-center justify-center gap-1.5 px-3 rounded-xl border border-brand/30 bg-brand/5 text-brand text-xs font-bold hover:bg-brand/10 transition-colors"
+                className="min-h-[40px] flex items-center justify-center gap-1.5 px-3 rounded-xl border border-brand/30 bg-brand/5 text-brand text-sm font-bold hover:bg-brand/10 transition-colors"
               >
                 <Mic size={16} /> <span className="hidden sm:inline">{t('measurements.voice_fill_button', 'تعبئة المقاسات بالصوت')}</span>
               </button>
@@ -372,7 +372,7 @@ export default function ThobeMeasurementSelector({ values, onChange, readOnly = 
         {fabricEstimate && !readOnly && (
           <p role="status" className="mt-2 text-center text-sm font-black text-brand select-text" dir="auto">
             {estimatedMeters === null
-              ? <span className="text-xs font-bold text-content-muted">{t('measurements.fabric_estimate_missing')}</span>
+              ? <span className="text-sm font-bold text-content-muted">{t('measurements.fabric_estimate_missing')}</span>
               : t('measurements.fabric_estimate_line', { meters: estimatedMeters.toFixed(2), yards: metersToYards(estimatedMeters).toFixed(2) })}
           </p>
         )}
@@ -401,7 +401,7 @@ export default function ThobeMeasurementSelector({ values, onChange, readOnly = 
             )}
           >
             <div className="flex items-center justify-between gap-1">
-              <label htmlFor={`thobe-part-${part}`} className="block text-[11px] leading-4 font-black text-content-muted truncate">
+              <label htmlFor={`thobe-part-${part}`} className="block text-sm leading-4 font-black text-content-muted truncate">
                 {t(measurementLabelKey(part))}
               </label>
               {isInstructionMode && (
@@ -450,7 +450,7 @@ export default function ThobeMeasurementSelector({ values, onChange, readOnly = 
                 placeholder="0.0"
                 className="w-full min-w-0 h-7 min-h-0 bg-transparent border-none p-0 text-lg font-black text-content focus:ring-0 focus:outline-none placeholder:text-content-muted/30"
               />
-              <span className="text-xs font-bold text-content-muted shrink-0">{t(unitLabelKey(measurementUnit))}</span>
+              <span className="text-sm font-bold text-content-muted shrink-0">{t(unitLabelKey(measurementUnit))}</span>
             </div>
             {(isActive || hintOpen) && (
               // Floats under the field, so the other fields never shift.
@@ -460,7 +460,7 @@ export default function ThobeMeasurementSelector({ values, onChange, readOnly = 
                 onMouseDown={(e) => e.preventDefault()}
               >
                 {hintOpen && (
-                  <p className="w-full text-xs text-warning bg-surface p-2 rounded-lg font-bold leading-relaxed border border-warning/30 shadow-lg">
+                  <p className="w-full text-sm text-warning bg-surface p-2 rounded-lg font-bold leading-relaxed border border-warning/30 shadow-lg">
                     {t(measurementHintKey(part))}
                   </p>
                 )}

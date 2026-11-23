@@ -78,7 +78,7 @@ export default function SubscriptionExpiryBanner({ tenantId }: { tenantId: strin
     >
       <AlertTriangle size={18} aria-hidden="true" className="shrink-0" />
       <span className="flex-1 min-w-0">{text}</span>
-      <Link to="/settings?tab=billing" className="rounded-xl bg-brand px-3 py-1.5 text-xs font-black text-white">
+      <Link to="/settings?tab=billing" className="rounded-xl bg-brand px-3 py-1.5 text-sm font-black text-white">
         {t('subscription.expiry_banner_action')}
       </Link>
     </div>

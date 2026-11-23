@@ -493,7 +493,7 @@ function LayoutShell({ children, role, tenantId, currentStaff, onLock, isLocked 
                             to={`/settings?tab=${subTab.id}`}
                             onClick={() => setIsMobileMenuOpen(false)}
                             className={cn(
-                              "flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold transition-all duration-150 w-full",
+                              "flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-bold transition-all duration-150 w-full",
                               isRtl ? "text-right" : "text-left",
                               isSubTabActive 
                                 ? "bg-brand/5 text-brand font-black" 
@@ -527,17 +527,21 @@ function LayoutShell({ children, role, tenantId, currentStaff, onLock, isLocked 
             style={{ top: impersonationTenantId ? IMPERSONATION_BANNER_HEIGHT : 0 }}
             dir={isRtl ? 'rtl' : 'ltr'}
           >
-            <div className="flex items-center gap-3">
+            <div className="flex min-w-0 items-center gap-3">
               <button
                 id="tour-mobile-menu-btn"
                 data-tour="mobile-menu-btn"
+                type="button"
+                aria-label={t('common.menu', 'القائمة')}
+                aria-expanded={isMobileMenuOpen}
+                aria-controls="tour-sidebar"
                 onClick={() => setIsMobileMenuOpen(true)}
                 className="p-2.5 bg-surface-muted hover:bg-border/60 text-content rounded-2xl transition-all active:scale-95 border border-border/40 flex items-center justify-center shadow-sm cursor-pointer"
               >
                 <Menu size={22} />
               </button>
               
-              <div className="flex items-center gap-2.5">
+              <div className="flex min-w-0 items-center gap-2.5">
                 {tenantLogo ? (
                   <img src={tenantLogo} alt="Logo" className="w-10 h-10 rounded-2xl object-cover border border-border/60 shadow-sm shrink-0" />
                 ) : (
@@ -545,11 +549,11 @@ function LayoutShell({ children, role, tenantId, currentStaff, onLock, isLocked 
                     {tenantName?.charAt(0).toUpperCase()}
                   </div>
                 )}
-                <div className="flex flex-col text-right rtl:text-right ltr:text-left">
+                <div className="flex min-w-0 flex-col text-start">
                   <span className="font-black text-content truncate max-w-[150px] text-sm leading-tight">{tenantName}</span>
                   <div className="flex items-center gap-1.5 mt-0.5 justify-start rtl:justify-start ltr:justify-start">
                     <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse shadow-[0_0_6px_rgba(16,185,129,0.5)]" />
-                    <span className="text-[9px] text-success font-bold uppercase tracking-wider leading-none">
+                    <span className="text-sm text-success font-bold uppercase leading-none">
                       {t('saas.status_active')}
                     </span>
                   </div>
@@ -557,10 +561,10 @@ function LayoutShell({ children, role, tenantId, currentStaff, onLock, isLocked 
               </div>
             </div>
             
-            <div className="flex items-center gap-3">
+            <div className="flex shrink-0 items-center gap-3">
               <div className={cn("hidden sm:flex flex-col", isRtl ? "items-start ml-2" : "items-end mr-2")}>
-                <span className="text-xs font-black text-content leading-none">{currentStaff?.name || dbUser?.display_name || dbUser?.email || 'User'}</span>
-                <span className="text-[10px] font-bold text-content-muted uppercase tracking-tighter mt-1">
+                <span className="text-sm font-black text-content leading-none">{currentStaff?.name || dbUser?.display_name || dbUser?.email || 'User'}</span>
+                <span className="text-sm font-bold text-content-muted uppercase mt-1">
                   {effectiveRole === 'owner'
                     ? t('common.roles.owner')
                     : effectiveRole === 'cashier'

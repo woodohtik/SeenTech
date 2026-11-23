@@ -183,34 +183,34 @@ export default function ProductVariantsSection({ tenantId, itemId, branches, bas
     <div className="bg-surface-muted/50 p-6 rounded-2xl border border-border space-y-4">
       <div className="flex items-center gap-2">
         <Layers size={18} className="text-brand" />
-        <h3 className="text-sm font-black text-content uppercase tracking-widest text-brand">
+        <h3 className="text-sm font-black text-content uppercase text-brand">
           {t("inventory.variants.section_title", "السمات (الألوان، المقاسات...)")}
         </h3>
       </div>
 
       {isLoading ? (
-        <p className="text-xs text-content-muted">{t("common.loading", "جارٍ التحميل...")}</p>
+        <p className="text-sm text-content-muted">{t("common.loading", "جارٍ التحميل...")}</p>
       ) : (
         <div className="space-y-2">
           {variants.map((variant) => (
             <div
               key={variant.id}
-              className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 rounded-xl border border-border bg-surface"
+              className="flex flex-col main-640:flex-row main-640:items-center justify-between gap-3 p-3 rounded-xl border border-border bg-surface"
             >
               <div className="min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className="font-bold text-content">{variant.name}</span>
                   {Object.entries(variant.options || {}).map(([key, value]) => (
-                    <span key={key} className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-surface-muted text-content-muted">
+                    <span key={key} className="text-sm font-bold px-2 py-0.5 rounded-full bg-surface-muted text-content-muted">
                       {key}: {value}
                     </span>
                   ))}
                 </div>
-                <p className="text-xs text-content-muted mt-1">
+                <p className="text-sm text-content-muted mt-1">
                   SKU: {variant.sku} · {t("inventory.variants.total_stock", "المخزون الإجمالي")}: {totalStock(variant)}
                 </p>
               </div>
-              <div className="flex items-center gap-1 shrink-0 self-end sm:self-auto">
+              <div className="flex items-center gap-1 shrink-0 self-end main-640:self-auto">
                 <button
                   type="button"
                   onClick={() => startEdit(variant)}
@@ -232,7 +232,7 @@ export default function ProductVariantsSection({ tenantId, itemId, branches, bas
           ))}
 
           {variants.length === 0 && !isBuilding && !editingId && (
-            <p className="text-xs text-content-muted">{t("inventory.variants.empty", "لا توجد سمات لهذا المنتج بعد.")}</p>
+            <p className="text-sm text-content-muted">{t("inventory.variants.empty", "لا توجد سمات لهذا المنتج بعد.")}</p>
           )}
         </div>
       )}
@@ -240,9 +240,9 @@ export default function ProductVariantsSection({ tenantId, itemId, branches, bas
       {/* Editing one already-saved variant. */}
       {editingId ? (
         <div className="p-4 rounded-xl border-2 border-brand/40 bg-brand/5 space-y-3">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 main-640:grid-cols-2 gap-3">
             <div className="space-y-1">
-              <label className="text-[10px] font-black text-content-muted uppercase px-1">
+              <label className="text-sm font-black text-content-muted uppercase px-1">
                 {t("inventory.variants.name_label", "اسم السمة")}
               </label>
               <input
@@ -252,7 +252,7 @@ export default function ProductVariantsSection({ tenantId, itemId, branches, bas
               />
             </div>
             <div className="space-y-1">
-              <label className="text-[10px] font-black text-content-muted uppercase px-1">SKU</label>
+              <label className="text-sm font-black text-content-muted uppercase px-1">SKU</label>
               <input
                 value={editForm.sku}
                 onChange={(e) => setEditForm({ ...editForm, sku: e.target.value })}
@@ -262,7 +262,7 @@ export default function ProductVariantsSection({ tenantId, itemId, branches, bas
           </div>
 
           <div className="space-y-2">
-            <label className="text-[10px] font-black text-content-muted uppercase px-1 block">
+            <label className="text-sm font-black text-content-muted uppercase px-1 block">
               {t("inventory.variants.options_label", "الخصائص (مفتاح : قيمة)")}
             </label>
             {editForm.options.map((row, index) => (
@@ -288,14 +288,14 @@ export default function ProductVariantsSection({ tenantId, itemId, branches, bas
                 </button>
               </div>
             ))}
-            <button type="button" onClick={addEditOptionRow} className="text-xs font-bold text-brand hover:underline">
+            <button type="button" onClick={addEditOptionRow} className="text-sm font-bold text-brand hover:underline">
               + {t("inventory.variants.add_option", "إضافة خاصية")}
             </button>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 main-640:grid-cols-2 gap-3">
             <div className="space-y-1">
-              <label className="text-[10px] font-black text-content-muted uppercase px-1">
+              <label className="text-sm font-black text-content-muted uppercase px-1">
                 {t("inventory.barcode", "الباركود")}
               </label>
               <input
@@ -305,7 +305,7 @@ export default function ProductVariantsSection({ tenantId, itemId, branches, bas
               />
             </div>
             <div className="space-y-1">
-              <label className="text-[10px] font-black text-content-muted uppercase px-1">
+              <label className="text-sm font-black text-content-muted uppercase px-1">
                 {t("inventory.variants.price_adjustment", "فرق السعر")}
               </label>
               <input

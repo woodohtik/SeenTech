@@ -441,18 +441,18 @@ export default function SuperAdminDashboard() {
     <div className="space-y-8 font-sans" dir={isRtl ? 'rtl' : 'ltr'}>
       
       {/* Visual Elegant Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-6 border-b border-border/60">
+      <div className="flex flex-col main-720:flex-row main-720:items-center justify-between gap-6 pb-6 border-b border-border/60">
         <div>
-          <h2 className="text-3xl font-black text-content tracking-tight">{t('saas.platform_dashboard_title', 'لوحة تحكم المنصة 🚀')}</h2>
+          <h2 className="text-3xl font-black text-content">{t('saas.platform_dashboard_title', 'لوحة تحكم المنصة 🚀')}</h2>
           <p className="text-content-muted font-bold mt-1 text-sm">
             {t('saas.console_welcome_line', { name: userName, count: tenants.length })}
           </p>
         </div>
         
         <div className="flex items-center gap-3">
-          <div className="hidden lg:flex items-center gap-2 px-4 py-2 bg-success/5 border border-success/10 rounded-2xl">
+          <div className="hidden main-900:flex items-center gap-2 px-4 py-2 bg-success/5 border border-success/10 rounded-2xl">
             <div className="w-2 h-2 rounded-full bg-success animate-pulse" />
-            <span className="text-[10px] font-black text-success uppercase tracking-widest leading-none">
+            <span className="text-sm font-black text-success uppercase leading-none">
               {t('saas.engine_status_stable')}
             </span>
           </div>
@@ -482,7 +482,7 @@ export default function SuperAdminDashboard() {
               key={tab.id}
               onClick={() => setActiveTab(tab.id as TabType)}
               className={cn(
-                "flex items-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl text-xs font-black transition-all cursor-pointer whitespace-nowrap",
+                "flex items-center gap-2 px-4 main-640:px-6 py-2.5 main-640:py-3 rounded-xl text-sm font-black transition-all cursor-pointer whitespace-nowrap",
                 activeTab === tab.id 
                   ? "bg-brand text-white shadow-md shadow-brand/15" 
                   : "text-content-muted hover:bg-surface-muted hover:text-content"
@@ -507,7 +507,7 @@ export default function SuperAdminDashboard() {
             className="space-y-8"
           >
             {/* KPI grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 main-640:grid-cols-2 main-900:grid-cols-4 gap-6">
               {stats.map((stat, i) => (
                 <motion.div
                   key={stat.label}
@@ -521,31 +521,31 @@ export default function SuperAdminDashboard() {
                       <stat.icon size={22} />
                     </div>
                     <div className={cn(
-                      "flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black",
+                      "flex items-center gap-1 px-2.5 py-1 rounded-full text-sm font-black",
                       stat.isPositive ? "bg-success/5 text-success" : "bg-danger/5 text-danger"
                     )}>
                       {stat.isPositive ? <ArrowUpRight size={10} /> : <ArrowDownRight size={10} />}
                       <span>{stat.trend}</span>
                     </div>
                   </div>
-                  <div className="text-2xl font-black text-content mb-1 tracking-tight">{stat.value}</div>
-                  <div className="text-xs font-bold text-content-muted">{stat.label}</div>
+                  <div className="text-2xl font-black text-content mb-1">{stat.value}</div>
+                  <div className="text-sm font-bold text-content-muted">{stat.label}</div>
                 </motion.div>
               ))}
             </div>
 
             {/* Charts Section */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 main-900:grid-cols-3 gap-8">
               
               {/* MRR Timeline Chart */}
-              <div className="lg:col-span-2 bg-surface p-8 rounded-2xl border border-border shadow-sm">
+              <div className="main-900:col-span-2 bg-surface p-8 rounded-2xl border border-border shadow-sm">
                 <div className="flex items-center justify-between mb-8">
                   <div>
                     <h3 className="text-lg font-black text-content flex items-center gap-2">
                       <TrendingUp className="text-brand" size={20} />
                       <span>{t('saas.recurring_revenue_growth', 'نمو الإيرادات المتكررة')}</span>
                     </h3>
-                    <p className="text-content-muted font-bold text-xs mt-1">
+                    <p className="text-content-muted font-bold text-sm mt-1">
                       {t('saas.mrr_chart_subtitle')}
                     </p>
                   </div>
@@ -560,11 +560,11 @@ export default function SuperAdminDashboard() {
                         </linearGradient>
                       </defs>
                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" />
-                      <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: 'var(--content-muted)', fontSize: 11, fontWeight: 700 }} dy={8} />
-                      <YAxis axisLine={false} tickLine={false} tick={{ fill: 'var(--content-muted)', fontSize: 11, fontWeight: 700 }} dx={-8} />
+                      <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: 'var(--content-muted)', fontSize: 14, fontWeight: 700 }} dy={8} />
+                      <YAxis axisLine={false} tickLine={false} tick={{ fill: 'var(--content-muted)', fontSize: 14, fontWeight: 700 }} dx={-8} />
                       <Tooltip 
                         contentStyle={{ backgroundColor: 'var(--surface)', borderRadius: '16px', border: '1px solid var(--border)', padding: '12px', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.05)' }}
-                        itemStyle={{ fontWeight: 800, fontSize: '13px' }}
+                        itemStyle={{ fontWeight: 800, fontSize: 14 }}
                       />
                       <Area type="monotone" dataKey="mrr" name="MRR" stroke="var(--bg-brand)" strokeWidth={3} fillOpacity={1} fill="url(#colorMrr)" />
                     </AreaChart>
@@ -578,13 +578,13 @@ export default function SuperAdminDashboard() {
                   <PieChartIcon className="text-brand" size={20} />
                   <span>{t('saas.plan_distribution', 'توزيع الباقات')}</span>
                 </h3>
-                <p className="text-content-muted font-bold text-xs mb-6">
+                <p className="text-content-muted font-bold text-sm mb-6">
                   {t('saas.plan_distribution_subtitle')}
                 </p>
                 
                 <div className="flex-1 min-h-[220px] relative flex items-center justify-center">
                   <div className="absolute flex flex-col items-center">
-                    <span className="text-xs text-content-muted font-black">{t('saas.active_short')}</span>
+                    <span className="text-sm text-content-muted font-black">{t('saas.active_short')}</span>
                     <span className="text-2xl font-black text-content mt-0.5">{activeTenantsCount}</span>
                   </div>
                   <ResponsiveContainer width="100%" height="100%">
@@ -604,7 +604,7 @@ export default function SuperAdminDashboard() {
                       </Pie>
                       <Tooltip 
                          contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.05)' }}
-                         itemStyle={{ fontWeight: 800, fontSize: '12px' }}
+                         itemStyle={{ fontWeight: 800, fontSize: 14 }}
                       />
                     </PieChart>
                   </ResponsiveContainer>
@@ -615,13 +615,13 @@ export default function SuperAdminDashboard() {
                     <div key={plan.name} className="flex items-center justify-between p-3 bg-surface-muted rounded-xl border border-border/40">
                       <div className="flex items-center gap-2.5">
                         <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: plan.color }} />
-                        <span className="text-xs font-black text-content capitalize">{plan.name}</span>
+                        <span className="text-sm font-black text-content capitalize">{plan.name}</span>
                       </div>
-                      <span className="text-xs font-black text-brand">{plan.value} {t('saas.tenant_count_label', 'عملاء')}</span>
+                      <span className="text-sm font-black text-brand">{plan.value} {t('saas.tenant_count_label', 'عملاء')}</span>
                     </div>
                   ))}
                   {planDistribution.length === 0 && (
-                    <div className="text-center text-xs text-content-muted font-bold py-4">
+                    <div className="text-center text-sm text-content-muted font-bold py-4">
                       {t('saas.no_subscription_data')}
                     </div>
                   )}
@@ -640,7 +640,7 @@ export default function SuperAdminDashboard() {
             exit={{ opacity: 0, y: -10 }}
             className="space-y-8"
           >
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 main-720:grid-cols-3 gap-6">
               {[
                 { label: t('saas.arpu_label', 'ARPU (متوسط الدخل لكل مشترك)'), value: <PriceDisplay amount={arpu} />, icon: MousePointer2, color: 'text-info', bg: 'bg-info/5' },
                 { label: t('saas.arr_label', 'ARR (الإيراد السنوي المتكرر)'), value: <PriceDisplay amount={arr} />, icon: TrendingUp, color: 'text-success', bg: 'bg-success/5' },
@@ -651,9 +651,9 @@ export default function SuperAdminDashboard() {
                     <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center", m.bg, m.color)}>
                       <m.icon size={20} />
                     </div>
-                    <span className="text-xs font-black text-content-muted uppercase tracking-widest">{m.label}</span>
+                    <span className="text-sm font-black text-content-muted uppercase">{m.label}</span>
                   </div>
-                  <div className="text-3xl font-black text-content tracking-tight">{m.value}</div>
+                  <div className="text-3xl font-black text-content">{m.value}</div>
                 </div>
               ))}
             </div>
@@ -661,30 +661,30 @@ export default function SuperAdminDashboard() {
             {/* Plans comparison overview */}
             <div className="bg-surface p-8 rounded-2xl border border-border shadow-sm">
               <h3 className="text-lg font-black text-content mb-2">{t('saas.plans_performance_title')}</h3>
-              <p className="text-content-muted font-bold text-xs mb-6">
+              <p className="text-content-muted font-bold text-sm mb-6">
                 {t('saas.plans_performance_subtitle')}
               </p>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 main-720:grid-cols-2 main-900:grid-cols-3 gap-6">
                 {plansList.map((plan) => {
                   const subscriberCount = tenants.filter(t => t.planId === plan.id && (t.status === 'active' || t.status === 'onboarding')).length;
                   const planmrr = subscriberCount * (plan.price || 0);
                   return (
                     <div key={plan.id} className="p-6 bg-surface-muted rounded-2xl border border-border flex flex-col justify-between">
                       <div>
-                        <span className="text-[10px] font-black text-content-muted uppercase tracking-widest">Plan Name</span>
+                        <span className="text-sm font-black text-content-muted uppercase">Plan Name</span>
                         <h4 className="text-base font-black text-content mt-1 capitalize">{plan.name}</h4>
-                        <div className="text-xs text-content-muted font-bold mt-2">
+                        <div className="text-sm text-content-muted font-bold mt-2">
                           Price: <PriceDisplay amount={plan.price} /> / Mo
                         </div>
                       </div>
                       <div className="border-t border-border mt-6 pt-4 flex items-center justify-between">
                         <div>
-                          <span className="text-[10px] font-black text-content-muted uppercase tracking-widest">{t('saas.kpi_active_subscribers')}</span>
+                          <span className="text-sm font-black text-content-muted uppercase">{t('saas.kpi_active_subscribers')}</span>
                           <div className="text-base font-black text-content mt-0.5">{subscriberCount}</div>
                         </div>
                         <div className="text-right">
-                          <span className="text-[10px] font-black text-content-muted uppercase tracking-widest">Monthly Yield</span>
+                          <span className="text-sm font-black text-content-muted uppercase">Monthly Yield</span>
                           <div className="text-base font-black text-success mt-0.5"><PriceDisplay amount={planmrr} /></div>
                         </div>
                       </div>
@@ -706,13 +706,13 @@ export default function SuperAdminDashboard() {
             className="space-y-8"
           >
             {/* Real measurement grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 main-720:grid-cols-2 main-900:grid-cols-4 gap-6">
               
               {/* Latency measurement */}
               <div className="bg-surface p-6 rounded-2xl border border-border shadow-sm flex flex-col justify-between">
                 <div>
                   <div className="flex justify-between items-start mb-4">
-                    <span className="text-[10px] font-black text-content-muted uppercase tracking-widest leading-none">Database Latency</span>
+                    <span className="text-sm font-black text-content-muted uppercase leading-none">Database Latency</span>
                     <button
                       disabled={testingLatency}
                       onClick={measureLatency}
@@ -723,7 +723,7 @@ export default function SuperAdminDashboard() {
                       <RefreshCw size={14} className={cn(testingLatency && "animate-spin")} />
                     </button>
                   </div>
-                  <div className="text-3xl font-black text-success tracking-tight">
+                  <div className="text-3xl font-black text-success">
                     {dbLatency ? `${dbLatency}ms` : '---'}
                   </div>
                 </div>
@@ -734,7 +734,7 @@ export default function SuperAdminDashboard() {
                     className="h-full bg-success" 
                   />
                 </div>
-                <span className="text-[10px] font-bold text-content-muted mt-2">Real round-trip query performance</span>
+                <span className="text-sm font-bold text-content-muted mt-2">Real round-trip query performance</span>
               </div>
 
               {[
@@ -745,9 +745,9 @@ export default function SuperAdminDashboard() {
                 <div key={i} className="bg-surface p-6 rounded-2xl border border-border shadow-sm flex flex-col justify-between">
                   <div>
                     <div className="flex justify-between items-start mb-4">
-                      <span className="text-[10px] font-black text-content-muted uppercase tracking-widest leading-none">{p.label}</span>
+                      <span className="text-sm font-black text-content-muted uppercase leading-none">{p.label}</span>
                     </div>
-                    <div className={cn("text-3xl font-black tracking-tight", p.color)}>
+                    <div className={cn("text-3xl font-black", p.color)}>
                       {p.value}
                     </div>
                   </div>
@@ -758,7 +758,7 @@ export default function SuperAdminDashboard() {
                       className={cn("h-full", p.bg)} 
                     />
                   </div>
-                  <span className="text-[10px] font-bold text-content-muted mt-2">Simulated telemetry sensor</span>
+                  <span className="text-sm font-bold text-content-muted mt-2">Simulated telemetry sensor</span>
                 </div>
               ))}
             </div>
@@ -771,7 +771,7 @@ export default function SuperAdminDashboard() {
                     <History className="text-brand" size={20} />
                     <span>{t('saas.system_activity_log', 'سجل نشاط النظام التفصيلي')}</span>
                   </h3>
-                  <p className="text-content-muted font-bold text-xs mt-1">
+                  <p className="text-content-muted font-bold text-sm mt-1">
                     {t('saas.activity_log_subtitle')}
                   </p>
                 </div>
@@ -779,34 +779,34 @@ export default function SuperAdminDashboard() {
               
               <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2">
                 {activityLogs.map((log) => (
-                  <div key={log.id} className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 bg-surface-muted/30 rounded-xl border border-border/80 group hover:border-brand/20 transition-all gap-4">
+                  <div key={log.id} className="flex flex-col main-640:flex-row items-start main-640:items-center justify-between p-4 bg-surface-muted/30 rounded-xl border border-border/80 group hover:border-brand/20 transition-all gap-4">
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 bg-brand/5 text-brand rounded-lg flex items-center justify-center shrink-0">
                         <Activity size={16} />
                       </div>
                       <div>
-                        <div className="text-xs font-black text-content">
+                        <div className="text-sm font-black text-content">
                           <Trans
                             i18nKey="saas.activity_log_entry"
                             values={{ staff: log.staffName, action: log.action }}
                             components={{ s: <span className="text-brand font-black" />, a: <span className="text-success font-black" /> }}
                           />
                         </div>
-                        <p className="text-[10px] text-content-muted font-bold mt-1 leading-none">{log.details}</p>
+                        <p className="text-sm text-content-muted font-bold mt-1 leading-none">{log.details}</p>
                       </div>
                     </div>
                     <div className="text-right rtl:text-right ltr:text-left shrink-0">
-                      <span className="text-[9px] font-black text-content-muted uppercase tracking-wider block">
+                      <span className="text-sm font-black text-content-muted uppercase block">
                         {new Date(log.timestamp || '').toLocaleTimeString(localeOf(i18n.language))}
                       </span>
-                      <span className="text-[9px] font-bold text-brand mt-1 uppercase tracking-wider block">
+                      <span className="text-sm font-bold text-brand mt-1 uppercase block">
                         Shop ID: {log.tenantId}
                       </span>
                     </div>
                   </div>
                 ))}
                 {activityLogs.length === 0 && (
-                  <div className="text-center py-8 text-xs text-content-muted font-bold">
+                  <div className="text-center py-8 text-sm text-content-muted font-bold">
                     {t('saas.no_activity_logs')}
                   </div>
                 )}
@@ -827,13 +827,13 @@ export default function SuperAdminDashboard() {
             className="space-y-8"
           >
             {/* Security Alert Header */}
-            <div className="bg-danger/5 p-8 rounded-2xl border border-danger/10 flex flex-col md:flex-row items-start md:items-center gap-6">
+            <div className="bg-danger/5 p-8 rounded-2xl border border-danger/10 flex flex-col main-720:flex-row items-start main-720:items-center gap-6">
               <div className="w-16 h-16 bg-danger/10 text-danger rounded-2xl flex items-center justify-center shrink-0">
                 <Shield size={32} />
               </div>
               <div>
                 <h3 className="text-lg font-black text-danger mb-1">{t('saas.security_center_title', 'مركز مراقبة الأمان والنزاهة')}</h3>
-                <p className="text-danger/80 font-bold leading-relaxed max-w-2xl text-xs">
+                <p className="text-danger/80 font-bold leading-relaxed max-w-2xl text-sm">
                   {t('saas.security_center_desc', 'هذا القسم مخصص لمراقبة الأحداث الأمنية، محاولات الدخول، وتعديلات البيانات الحساسة على مستوى المنصة ككل. أي تغيير في هذا القسم يتم توثيقه في سجل التدقيق الأبدي.')}
                 </p>
               </div>
@@ -841,7 +841,7 @@ export default function SuperAdminDashboard() {
 
             {/* Audit list and search filters */}
             <div className="bg-surface p-8 rounded-2xl border border-border shadow-sm">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+              <div className="flex flex-col main-640:flex-row main-640:items-center justify-between gap-4 mb-6">
                 <div>
                   <h3 className="text-base font-black text-content flex items-center gap-2">
                     <Lock className="text-danger" size={18} />
@@ -856,13 +856,13 @@ export default function SuperAdminDashboard() {
                     placeholder={t('saas.search_audit_placeholder')}
                     value={auditSearch}
                     onChange={(e) => setAuditSearch(e.target.value)}
-                    containerClassName="w-full sm:w-64"
+                    containerClassName="w-full main-640:w-64"
                   />
 
                   <SmartSelect
                     value={auditTypeFilter}
                     onChange={(v) => setAuditTypeFilter(v)}
-                    className="w-auto min-w-[160px] rounded-xl px-3 py-2 text-xs"
+                    className="w-auto min-w-[160px] rounded-xl px-3 py-2 text-sm"
                     options={[
                       { value: 'all', label: t('saas.audit_filter_all_types') },
                       { value: 'security', label: t('saas.audit_filter_security') },
@@ -880,22 +880,22 @@ export default function SuperAdminDashboard() {
                       <AlertCircle size={14} />
                     </div>
                     <div className="flex-1">
-                      <div className="text-xs font-black text-content">
+                      <div className="text-sm font-black text-content">
                         {log.action} - <span className="text-danger font-bold">{log.performedByEmail}</span>
                       </div>
-                      <p className="text-[10px] text-content-muted font-bold mt-1">{log.details}</p>
+                      <p className="text-sm text-content-muted font-bold mt-1">{log.details}</p>
                       <div className="mt-3 flex items-center gap-3">
-                        <span className="text-[9px] font-black text-content-muted uppercase tracking-wider">
+                        <span className="text-sm font-black text-content-muted uppercase">
                           {new Date(log.timestamp).toLocaleString(localeOf(i18n.language))}
                         </span>
                         <span className="w-1 h-1 bg-border rounded-full" />
-                        <span className="text-[9px] font-black text-danger uppercase tracking-wider">{t('common.type')}: {log.type}</span>
+                        <span className="text-sm font-black text-danger uppercase">{t('common.type')}: {log.type}</span>
                       </div>
                     </div>
                   </div>
                 ))}
                 {auditLogs.length === 0 && (
-                  <div className="text-center py-8 text-xs text-content-muted font-bold">
+                  <div className="text-center py-8 text-sm text-content-muted font-bold">
                     {t('saas.no_matching_audit_records')}
                   </div>
                 )}
@@ -918,7 +918,7 @@ export default function SuperAdminDashboard() {
             <div className="bg-surface p-6 rounded-2xl border border-border shadow-sm flex items-center justify-between">
               <div>
                 <h3 className="text-lg font-black text-content">{t('saas.plans_tab_title')}</h3>
-                <p className="text-content-muted font-bold text-xs mt-1">{t('saas.plans_tab_subtitle')}</p>
+                <p className="text-content-muted font-bold text-sm mt-1">{t('saas.plans_tab_subtitle')}</p>
               </div>
               <button
                 onClick={() => setPlanModalMode('create')}
@@ -931,7 +931,7 @@ export default function SuperAdminDashboard() {
             <div className="bg-surface rounded-2xl border border-border shadow-sm overflow-hidden overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="bg-surface-muted text-[10px] font-black text-content-muted uppercase tracking-widest border-b border-border">
+                  <tr className="bg-surface-muted text-sm font-black text-content-muted uppercase border-b border-border">
                     <th className="p-4 text-start">{t('saas.plans_col_name')}</th>
                     <th className="p-4 text-center">{t('saas.plans_col_price')}</th>
                     <th className="p-4 text-center">{t('saas.plans_col_max_staff')}</th>
@@ -949,14 +949,14 @@ export default function SuperAdminDashboard() {
                       <td className="p-4 text-center font-mono">{plan.max_staff}</td>
                       <td className="p-4 text-center">
                         <span className="font-mono">{plan.max_orders}</span>
-                        <span className="block text-[9px] text-content-muted font-bold mt-0.5">{t('saas.plans_max_orders_hint')}</span>
+                        <span className="block text-sm text-content-muted font-bold mt-0.5">{t('saas.plans_max_orders_hint')}</span>
                       </td>
                       <td className="p-4 text-center text-content-muted font-bold">{(plan.features || []).length}</td>
                       <td className="p-4 text-center">
                         <button
                           onClick={() => handleTogglePlanActive(plan)}
                           className={cn(
-                            "px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wide cursor-pointer",
+                            "px-3 py-1 rounded-full text-sm font-black uppercase cursor-pointer",
                             plan.is_active ? "bg-success/10 text-success" : "bg-danger/10 text-danger"
                           )}
                         >
@@ -999,7 +999,7 @@ export default function SuperAdminDashboard() {
             <div className="bg-surface p-6 rounded-2xl border border-border shadow-sm flex items-center justify-between">
               <div>
                 <h3 className="text-lg font-black text-content">{t('saas.coupons_tab_title', 'كوبونات الخصم')}</h3>
-                <p className="text-content-muted font-bold text-xs mt-1">{t('saas.coupons_tab_subtitle', 'أنشئ كود خصم تعطيه لعميل عند الاتفاق على تخفيض سعر اشتراكه')}</p>
+                <p className="text-content-muted font-bold text-sm mt-1">{t('saas.coupons_tab_subtitle', 'أنشئ كود خصم تعطيه لعميل عند الاتفاق على تخفيض سعر اشتراكه')}</p>
               </div>
               <button
                 onClick={() => setCouponModalOpen(true)}
@@ -1012,7 +1012,7 @@ export default function SuperAdminDashboard() {
             <div className="bg-surface rounded-2xl border border-border shadow-sm overflow-hidden overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="bg-surface-muted text-[10px] font-black text-content-muted uppercase tracking-widest border-b border-border">
+                  <tr className="bg-surface-muted text-sm font-black text-content-muted uppercase border-b border-border">
                     <th className="p-4 text-start">{t('saas.coupons_col_code', 'الكود')}</th>
                     <th className="p-4 text-center">{t('saas.coupons_col_discount', 'الخصم')}</th>
                     <th className="p-4 text-center">{t('saas.coupons_col_restriction', 'مخصَّص لـ')}</th>
@@ -1044,14 +1044,14 @@ export default function SuperAdminDashboard() {
                         <td className="p-4 text-center font-mono text-brand font-black">
                           {coupon.discount_type === 'percentage' ? `${coupon.discount_value}%` : <PriceDisplay amount={coupon.discount_value} />}
                         </td>
-                        <td className="p-4 text-center text-xs font-bold text-content-muted">
+                        <td className="p-4 text-center text-sm font-bold text-content-muted">
                           {restrictedTenant ? restrictedTenant.name : t('saas.coupons_restriction_any_tenant', 'أي تاجر')}
-                          {restrictedPlan && <span className="block text-[10px] mt-0.5">{restrictedPlan.name}</span>}
+                          {restrictedPlan && <span className="block text-sm mt-0.5">{restrictedPlan.name}</span>}
                         </td>
                         <td className="p-4 text-center font-mono">
                           {coupon.redemption_count}{coupon.max_redemptions != null ? ` / ${coupon.max_redemptions}` : ''}
                         </td>
-                        <td className={cn("p-4 text-center text-xs font-bold", expired ? "text-danger" : "text-content-muted")}>
+                        <td className={cn("p-4 text-center text-sm font-bold", expired ? "text-danger" : "text-content-muted")}>
                           {coupon.expires_at ? new Date(coupon.expires_at).toLocaleDateString(localeOf(i18n.language)) : t('saas.coupons_no_expiry', 'بلا انتهاء')}
                         </td>
                         <td className="p-4 text-center">
@@ -1059,7 +1059,7 @@ export default function SuperAdminDashboard() {
                             onClick={() => handleToggleCouponActive(coupon)}
                             disabled={updatingCouponId === coupon.id}
                             className={cn(
-                              "px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wide cursor-pointer disabled:opacity-50",
+                              "px-3 py-1 rounded-full text-sm font-black uppercase cursor-pointer disabled:opacity-50",
                               coupon.is_active ? "bg-success/10 text-success" : "bg-danger/10 text-danger"
                             )}
                           >
@@ -1087,21 +1087,21 @@ export default function SuperAdminDashboard() {
 
       {/* Sticky Support Widget */}
       <div className="sticky bottom-6 z-20 flex justify-center w-full px-4">
-        <div className="bg-white/95 backdrop-blur-md border border-border p-2 sm:p-3 rounded-2xl shadow-xl flex items-center justify-between sm:justify-start gap-2 sm:gap-3 ring-1 ring-black/5 w-full sm:w-auto max-w-md sm:max-w-none">
-          <div className="flex items-center gap-2 sm:gap-3">
-            <div className="hidden sm:flex -space-x-4 pr-2 border-l border-border ml-2 rtl:border-l-0 rtl:border-r rtl:ml-0 rtl:mr-2">
+        <div className="bg-white/95 backdrop-blur-md border border-border p-2 main-640:p-3 rounded-2xl shadow-xl flex items-center justify-between main-640:justify-start gap-2 main-640:gap-3 ring-1 ring-black/5 w-full main-640:w-auto max-w-md main-640:max-w-none">
+          <div className="flex items-center gap-2 main-640:gap-3">
+            <div className="hidden main-640:flex -space-x-4 pr-2 border-l border-border ml-2 rtl:border-l-0 rtl:border-r rtl:ml-0 rtl:mr-2">
               {[1, 2, 3].map(i => (
-                <div key={i} className="w-8 h-8 sm:w-10 sm:h-10 rounded-full border-2 border-surface bg-brand text-white flex items-center justify-center text-[10px] sm:text-xs font-black ring-2 ring-brand/10">
+                <div key={i} className="w-8 h-8 main-640:w-10 main-640:h-10 rounded-full border-2 border-surface bg-brand text-white flex items-center justify-center text-sm font-black ring-2 ring-brand/10">
                   {i}
                 </div>
               ))}
             </div>
-            <div className="px-2 sm:px-4">
-              <p className="text-[11px] sm:text-xs font-black text-content leading-tight">{t('saas.live_tech_support', 'دعم فني مباشر')}</p>
-              <p className="text-[9px] sm:text-[10px] font-bold text-success leading-tight mt-0.5">{t('saas.active_now_green', 'متواجدون الآن')}</p>
+            <div className="px-2 main-640:px-4">
+              <p className="text-sm font-black text-content leading-tight">{t('saas.live_tech_support', 'دعم فني مباشر')}</p>
+              <p className="text-sm font-bold text-success leading-tight mt-0.5">{t('saas.active_now_green', 'متواجدون الآن')}</p>
             </div>
           </div>
-          <button className="px-4 py-2.5 sm:px-8 sm:py-3 bg-brand text-white rounded-xl font-black text-[10px] sm:text-xs shadow-md shadow-brand/15 hover:scale-105 active:scale-95 transition-all cursor-pointer whitespace-nowrap shrink-0">
+          <button className="px-4 py-2.5 main-640:px-8 main-640:py-3 bg-brand text-white rounded-xl font-black text-sm shadow-md shadow-brand/15 hover:scale-105 active:scale-95 transition-all cursor-pointer whitespace-nowrap shrink-0">
             {t('saas.open_support_ticket', 'فتح تذكرة')}
           </button>
         </div>
@@ -1226,7 +1226,7 @@ const PlanFormModal = ({
   };
 
   return (
-    <div className="fixed inset-0 z-[200] flex items-center justify-center p-2 sm:p-4">
+    <div className="fixed inset-0 z-[200] flex items-center justify-center p-2 main-640:p-4">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-md" onClick={onClose} />
       <motion.div
         initial={{ scale: 0.9, opacity: 0, y: 20 }}
@@ -1234,7 +1234,7 @@ const PlanFormModal = ({
         exit={{ scale: 0.9, opacity: 0, y: 20 }}
         className="bg-surface w-full max-w-lg rounded-3xl shadow-2xl relative z-10 overflow-hidden flex flex-col max-h-[90vh]"
       >
-        <div className="p-4 sm:p-6 border-b border-border flex justify-between items-center bg-surface-muted/50">
+        <div className="p-4 main-640:p-6 border-b border-border flex justify-between items-center bg-surface-muted/50">
           <h2 className="text-lg font-black text-content">
             {t(mode === 'create' ? 'saas.plan_modal_title_create' : 'saas.plan_modal_title_edit')}
           </h2>
@@ -1243,9 +1243,9 @@ const PlanFormModal = ({
           </button>
         </div>
 
-        <div className="p-4 sm:p-6 space-y-4 overflow-y-auto">
+        <div className="p-4 main-640:p-6 space-y-4 overflow-y-auto">
           <div className="space-y-1.5">
-            <label className="text-[10px] font-black text-content-muted uppercase tracking-widest">{t('saas.plan_field_id')}</label>
+            <label className="text-sm font-black text-content-muted uppercase">{t('saas.plan_field_id')}</label>
             <input
               type="text"
               value={id}
@@ -1257,59 +1257,59 @@ const PlanFormModal = ({
                 errors.id && "border-danger"
               )}
             />
-            {mode === 'edit' && <p className="text-[10px] text-content-muted font-bold">{t('saas.plan_field_id_locked_hint')}</p>}
-            {errors.id && <p className="text-[10px] text-danger font-bold">{fieldErrorText(errors.id)}</p>}
+            {mode === 'edit' && <p className="text-sm text-content-muted font-bold">{t('saas.plan_field_id_locked_hint')}</p>}
+            {errors.id && <p className="text-sm text-danger font-bold">{fieldErrorText(errors.id)}</p>}
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-[10px] font-black text-content-muted uppercase tracking-widest">{t('saas.plan_field_name')}</label>
+            <label className="text-sm font-black text-content-muted uppercase">{t('saas.plan_field_name')}</label>
             <input
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
               className={cn("w-full bg-surface border border-border rounded-xl px-3.5 py-2.5 text-sm font-bold outline-none", errors.name && "border-danger")}
             />
-            {errors.name && <p className="text-[10px] text-danger font-bold">{fieldErrorText(errors.name)}</p>}
+            {errors.name && <p className="text-sm text-danger font-bold">{fieldErrorText(errors.name)}</p>}
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-[10px] font-black text-content-muted uppercase tracking-widest">{t('saas.plan_field_price')}</label>
+            <label className="text-sm font-black text-content-muted uppercase">{t('saas.plan_field_price')}</label>
             <input
               type="number"
               value={price}
               onChange={(e) => setPrice(e.target.value)}
               className={cn("w-full bg-surface border border-border rounded-xl px-3.5 py-2.5 text-sm font-bold outline-none", errors.price && "border-danger")}
             />
-            {errors.price && <p className="text-[10px] text-danger font-bold">{fieldErrorText(errors.price)}</p>}
+            {errors.price && <p className="text-sm text-danger font-bold">{fieldErrorText(errors.price)}</p>}
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <label className="text-[10px] font-black text-content-muted uppercase tracking-widest">{t('saas.plan_field_max_staff')}</label>
+              <label className="text-sm font-black text-content-muted uppercase">{t('saas.plan_field_max_staff')}</label>
               <input
                 type="number"
                 value={maxStaff}
                 onChange={(e) => setMaxStaff(e.target.value)}
                 className={cn("w-full bg-surface border border-border rounded-xl px-3.5 py-2.5 text-sm font-bold outline-none", errors.maxStaff && "border-danger")}
               />
-              <p className="text-[9px] text-content-muted font-bold">{t('saas.plan_field_max_staff_hint')}</p>
-              {errors.maxStaff && <p className="text-[10px] text-danger font-bold">{fieldErrorText(errors.maxStaff)}</p>}
+              <p className="text-sm text-content-muted font-bold">{t('saas.plan_field_max_staff_hint')}</p>
+              {errors.maxStaff && <p className="text-sm text-danger font-bold">{fieldErrorText(errors.maxStaff)}</p>}
             </div>
             <div className="space-y-1.5">
-              <label className="text-[10px] font-black text-content-muted uppercase tracking-widest">{t('saas.plan_field_max_orders')}</label>
+              <label className="text-sm font-black text-content-muted uppercase">{t('saas.plan_field_max_orders')}</label>
               <input
                 type="number"
                 value={maxOrders}
                 onChange={(e) => setMaxOrders(e.target.value)}
                 className={cn("w-full bg-surface border border-border rounded-xl px-3.5 py-2.5 text-sm font-bold outline-none", errors.maxOrders && "border-danger")}
               />
-              <p className="text-[9px] text-content-muted font-bold">{t('saas.plan_field_max_orders_hint')}</p>
-              {errors.maxOrders && <p className="text-[10px] text-danger font-bold">{fieldErrorText(errors.maxOrders)}</p>}
+              <p className="text-sm text-content-muted font-bold">{t('saas.plan_field_max_orders_hint')}</p>
+              {errors.maxOrders && <p className="text-sm text-danger font-bold">{fieldErrorText(errors.maxOrders)}</p>}
             </div>
           </div>
 
           <div className="space-y-1.5">
-            <label htmlFor="plan-billing-period" className="text-[10px] font-black text-content-muted uppercase tracking-widest">{t('saas.plan_field_billing_period')}</label>
+            <label htmlFor="plan-billing-period" className="text-sm font-black text-content-muted uppercase">{t('saas.plan_field_billing_period')}</label>
             <select
               id="plan-billing-period"
               value={billingPeriod}
@@ -1319,11 +1319,11 @@ const PlanFormModal = ({
               <option value="year">{t('saas.plan_billing_period_year')}</option>
               <option value="month">{t('saas.plan_billing_period_month')}</option>
             </select>
-            <p className="text-[9px] text-content-muted font-bold">{t('saas.plan_field_billing_period_hint')}</p>
+            <p className="text-sm text-content-muted font-bold">{t('saas.plan_field_billing_period_hint')}</p>
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-[10px] font-black text-content-muted uppercase tracking-widest">{t('saas.plan_field_features')}</label>
+            <label className="text-sm font-black text-content-muted uppercase">{t('saas.plan_field_features')}</label>
             <div className="space-y-2">
               {features.map((feature, index) => (
                 <div key={index} className="flex items-center gap-2">
@@ -1347,7 +1347,7 @@ const PlanFormModal = ({
             <button
               type="button"
               onClick={handleFeatureAdd}
-              className="flex items-center gap-1.5 text-xs font-bold text-brand hover:text-brand/80 transition-colors mt-1"
+              className="flex items-center gap-1.5 text-sm font-bold text-brand hover:text-brand/80 transition-colors mt-1"
             >
               <Plus size={14} />
               {t('saas.plan_feature_add')}
@@ -1355,7 +1355,7 @@ const PlanFormModal = ({
           </div>
 
           <div className="flex items-center justify-between bg-surface-muted p-3.5 rounded-xl border border-border">
-            <label className="text-xs font-black text-content">{t('saas.plan_field_active')}</label>
+            <label className="text-sm font-black text-content">{t('saas.plan_field_active')}</label>
             <label className="relative inline-flex items-center cursor-pointer">
               <input
                 type="checkbox"
@@ -1368,7 +1368,7 @@ const PlanFormModal = ({
           </div>
         </div>
 
-        <div className="sticky bottom-0 shrink-0 p-4 sm:p-6 border-t border-border bg-surface flex justify-end gap-3">
+        <div className="sticky bottom-0 shrink-0 p-4 main-640:p-6 border-t border-border bg-surface flex justify-end gap-3">
           <button
             onClick={onClose}
             className="px-6 py-2.5 bg-surface-muted text-content hover:bg-surface border border-border rounded-xl font-bold text-sm transition-all cursor-pointer"
@@ -1464,7 +1464,7 @@ const CouponFormModal = ({
   };
 
   return (
-    <div className="fixed inset-0 z-[200] flex items-center justify-center p-2 sm:p-4">
+    <div className="fixed inset-0 z-[200] flex items-center justify-center p-2 main-640:p-4">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-md" onClick={onClose} />
       <motion.div
         initial={{ scale: 0.9, opacity: 0, y: 20 }}
@@ -1472,16 +1472,16 @@ const CouponFormModal = ({
         exit={{ scale: 0.9, opacity: 0, y: 20 }}
         className="bg-surface w-full max-w-lg rounded-3xl shadow-2xl relative z-10 overflow-hidden flex flex-col max-h-[90vh]"
       >
-        <div className="p-4 sm:p-6 border-b border-border flex justify-between items-center bg-surface-muted/50">
+        <div className="p-4 main-640:p-6 border-b border-border flex justify-between items-center bg-surface-muted/50">
           <h2 className="text-lg font-black text-content">{t('saas.coupon_modal_title', 'كوبون خصم جديد')}</h2>
           <button aria-label={t('common.close')} onClick={onClose} className="p-2 hover:bg-surface rounded-full transition-colors min-w-11 min-h-11 inline-flex items-center justify-center">
             <X size={20} className="text-content-muted" />
           </button>
         </div>
 
-        <div className="p-4 sm:p-6 space-y-4 overflow-y-auto">
+        <div className="p-4 main-640:p-6 space-y-4 overflow-y-auto">
           <div className="space-y-1.5">
-            <label className="text-[10px] font-black text-content-muted uppercase tracking-widest">{t('saas.coupon_field_code', 'الكود')}</label>
+            <label className="text-sm font-black text-content-muted uppercase">{t('saas.coupon_field_code', 'الكود')}</label>
             <input
               type="text"
               value={code}
@@ -1493,11 +1493,11 @@ const CouponFormModal = ({
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <label className="text-[10px] font-black text-content-muted uppercase tracking-widest">{t('saas.coupon_field_discount_type', 'نوع الخصم')}</label>
+              <label className="text-sm font-black text-content-muted uppercase">{t('saas.coupon_field_discount_type', 'نوع الخصم')}</label>
               <SmartSelect options={discountTypeOptions} value={discountType} onChange={(v) => setDiscountType(v as 'percentage' | 'fixed')} />
             </div>
             <div className="space-y-1.5">
-              <label className="text-[10px] font-black text-content-muted uppercase tracking-widest">{t('saas.coupon_field_discount_value', 'القيمة')}</label>
+              <label className="text-sm font-black text-content-muted uppercase">{t('saas.coupon_field_discount_value', 'القيمة')}</label>
               <input
                 type="number"
                 value={discountValue}
@@ -1506,21 +1506,21 @@ const CouponFormModal = ({
               />
             </div>
           </div>
-          {error && <p className="text-[11px] text-danger font-bold">{error}</p>}
+          {error && <p className="text-sm text-danger font-bold">{error}</p>}
 
           <div className="space-y-1.5">
-            <label className="text-[10px] font-black text-content-muted uppercase tracking-widest">{t('saas.coupon_field_tenant', 'مخصَّص لتاجر (اختياري)')}</label>
+            <label className="text-sm font-black text-content-muted uppercase">{t('saas.coupon_field_tenant', 'مخصَّص لتاجر (اختياري)')}</label>
             <SmartSelect options={tenantOptions} value={restrictedTenantId} onChange={setRestrictedTenantId} searchPlaceholder={t('common.search')} />
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-[10px] font-black text-content-muted uppercase tracking-widest">{t('saas.coupon_field_plan', 'مخصَّص لباقة (اختياري)')}</label>
+            <label className="text-sm font-black text-content-muted uppercase">{t('saas.coupon_field_plan', 'مخصَّص لباقة (اختياري)')}</label>
             <SmartSelect options={planOptions} value={planId} onChange={setPlanId} />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <label className="text-[10px] font-black text-content-muted uppercase tracking-widest">{t('saas.coupon_field_max_redemptions', 'الحد الأقصى للاستخدام')}</label>
+              <label className="text-sm font-black text-content-muted uppercase">{t('saas.coupon_field_max_redemptions', 'الحد الأقصى للاستخدام')}</label>
               <input
                 type="number"
                 value={maxRedemptions}
@@ -1530,7 +1530,7 @@ const CouponFormModal = ({
               />
             </div>
             <div className="space-y-1.5">
-              <label className="text-[10px] font-black text-content-muted uppercase tracking-widest">{t('saas.coupon_field_expiry', 'تاريخ الانتهاء')}</label>
+              <label className="text-sm font-black text-content-muted uppercase">{t('saas.coupon_field_expiry', 'تاريخ الانتهاء')}</label>
               <input
                 type="date"
                 value={expiresAt}
@@ -1541,7 +1541,7 @@ const CouponFormModal = ({
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-[10px] font-black text-content-muted uppercase tracking-widest">{t('saas.coupon_field_notes', 'ملاحظة داخلية (اختياري)')}</label>
+            <label className="text-sm font-black text-content-muted uppercase">{t('saas.coupon_field_notes', 'ملاحظة داخلية (اختياري)')}</label>
             <textarea
               rows={2}
               value={notes}
@@ -1552,7 +1552,7 @@ const CouponFormModal = ({
           </div>
         </div>
 
-        <div className="sticky bottom-0 shrink-0 p-4 sm:p-6 border-t border-border bg-surface flex justify-end gap-3">
+        <div className="sticky bottom-0 shrink-0 p-4 main-640:p-6 border-t border-border bg-surface flex justify-end gap-3">
           <button
             onClick={onClose}
             className="px-6 py-2.5 bg-surface-muted text-content hover:bg-surface border border-border rounded-xl font-bold text-sm transition-all cursor-pointer"

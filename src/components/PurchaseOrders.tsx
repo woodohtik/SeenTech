@@ -554,21 +554,21 @@ export default function PurchaseOrders({
 
   return (
     <div className="space-y-6 font-sans">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-surface p-6 rounded-3xl border border-border">
+      <div className="flex flex-col main-640:flex-row justify-between items-start main-640:items-center gap-4 bg-surface p-6 rounded-3xl border border-border">
         <div>
           <h2 className="text-xl font-bold text-content flex items-center gap-2">
             <ArrowLeftRight className="text-brand" size={24} />
             <span>{t('procurement.po_movement_title', 'حركة المشتريات والمرتجعات')}</span>
           </h2>
-          <p className="text-xs text-content-muted mt-1">{t('procurement.po_movement_subtitle', 'تتبع وإدارة فواتير المشتريات المباشرة ومرتجعات الموردين مع التزامن الآلي للمخازن وحسابات الموردين.')}</p>
+          <p className="text-sm text-content-muted mt-1">{t('procurement.po_movement_subtitle', 'تتبع وإدارة فواتير المشتريات المباشرة ومرتجعات الموردين مع التزامن الآلي للمخازن وحسابات الموردين.')}</p>
         </div>
-        <div className="flex gap-3 w-full sm:w-auto">
+        <div className="flex gap-3 w-full main-640:w-auto">
           <button 
             onClick={() => {
               setModalType('purchase');
               setIsModalOpen(true);
             }}
-            className="flex-1 sm:flex-initial bg-brand text-white px-5 py-3 rounded-2xl font-black text-sm flex items-center justify-center gap-2 hover:bg-brand/95 transition-all shadow-lg shadow-brand/10 active:scale-95 duration-100"
+            className="flex-1 main-640:flex-initial bg-brand text-white px-5 py-3 rounded-2xl font-black text-sm flex items-center justify-center gap-2 hover:bg-brand/95 transition-all shadow-lg shadow-brand/10 active:scale-95 duration-100"
           >
             <Plus size={18} />
             <span>{t('procurement.create_po', 'إنشاء أمر شراء')}</span>
@@ -578,7 +578,7 @@ export default function PurchaseOrders({
               setModalType('return');
               setIsModalOpen(true);
             }}
-            className="flex-1 sm:flex-initial bg-danger text-white px-5 py-3 rounded-2xl font-black text-sm flex items-center justify-center gap-2 hover:bg-danger/95 transition-all shadow-lg shadow-danger/10 active:scale-95 duration-100"
+            className="flex-1 main-640:flex-initial bg-danger text-white px-5 py-3 rounded-2xl font-black text-sm flex items-center justify-center gap-2 hover:bg-danger/95 transition-all shadow-lg shadow-danger/10 active:scale-95 duration-100"
           >
             <Plus size={18} />
             <span>{t('procurement.create_return_order', 'أمر إرجاع بضاعة')}</span>
@@ -587,7 +587,7 @@ export default function PurchaseOrders({
       </div>
 
       {/* Filter and Search Bar */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-center">
+      <div className="grid grid-cols-1 main-720:grid-cols-4 gap-4 items-center">
         {/* Search Input */}
         <IconInput
           type="text"
@@ -595,7 +595,7 @@ export default function PurchaseOrders({
           placeholder={t('procurement.search_po_placeholder', 'بحث برقم السند أو اسم المورد...')}
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          containerClassName="lg:col-span-2"
+          containerClassName="main-900:col-span-2"
         />
 
         {/* Type Filter Buttons */}
@@ -603,7 +603,7 @@ export default function PurchaseOrders({
           <button
             onClick={() => setTypeFilter('all')}
             className={cn(
-              "flex-1 text-center py-2 text-xs font-black rounded-xl transition-all",
+              "flex-1 text-center py-2 text-sm font-black rounded-xl transition-all",
               typeFilter === 'all' ? "bg-brand/10 text-brand font-extrabold" : "text-content-muted hover:text-content"
             )}
           >
@@ -612,7 +612,7 @@ export default function PurchaseOrders({
           <button
             onClick={() => setTypeFilter('purchase')}
             className={cn(
-              "flex-1 text-center py-2 text-xs font-black rounded-xl transition-all",
+              "flex-1 text-center py-2 text-sm font-black rounded-xl transition-all",
               typeFilter === 'purchase' ? "bg-brand text-white font-extrabold shadow" : "text-content-muted hover:text-content"
             )}
           >
@@ -621,7 +621,7 @@ export default function PurchaseOrders({
           <button
             onClick={() => setTypeFilter('return')}
             className={cn(
-              "flex-1 text-center py-2 text-xs font-black rounded-xl transition-all",
+              "flex-1 text-center py-2 text-sm font-black rounded-xl transition-all",
               typeFilter === 'return' ? "bg-danger text-white font-extrabold shadow" : "text-content-muted hover:text-content"
             )}
           >
@@ -634,7 +634,7 @@ export default function PurchaseOrders({
           <button
             onClick={() => setStatusFilter('all')}
             className={cn(
-              "flex-1 text-center py-2 text-[10px] sm:text-xs font-black rounded-xl transition-all",
+              "flex-1 text-center py-2 text-sm font-black rounded-xl transition-all",
               statusFilter === 'all' ? "bg-brand/10 text-brand" : "text-content-muted hover:text-content"
             )}
           >
@@ -643,7 +643,7 @@ export default function PurchaseOrders({
           <button
             onClick={() => setStatusFilter('draft')}
             className={cn(
-              "flex-1 text-center py-2 text-[10px] sm:text-xs font-black rounded-xl transition-all",
+              "flex-1 text-center py-2 text-sm font-black rounded-xl transition-all",
               statusFilter === 'draft' ? "bg-surface-muted text-content" : "text-content-muted hover:text-content"
             )}
           >
@@ -652,7 +652,7 @@ export default function PurchaseOrders({
           <button
             onClick={() => setStatusFilter('confirmed')}
             className={cn(
-              "flex-1 text-center py-2 text-[10px] sm:text-xs font-black rounded-xl transition-all",
+              "flex-1 text-center py-2 text-sm font-black rounded-xl transition-all",
               statusFilter === 'confirmed' ? "bg-success/10 text-success" : "text-content-muted hover:text-content"
             )}
           >
@@ -664,17 +664,17 @@ export default function PurchaseOrders({
       {/* Main Data Table & Mobile Cards */}
       <div className="bg-surface rounded-2xl border border-border overflow-hidden shadow-sm">
         {/* Desktop Table View */}
-        <div className="hidden md:block overflow-x-auto whitespace-nowrap scrollbar-hide">
+        <div className="hidden main-720:block overflow-x-auto whitespace-nowrap scrollbar-hide">
           <table className="w-full text-right min-w-max">
             <thead className="bg-surface-muted text-content-muted border-b border-border">
               <tr>
-                <th className="px-6 py-4 font-black text-xs uppercase tracking-wider">{t('procurement.po_type', 'نوع السند')}</th>
-                <th className="px-6 py-4 font-black text-xs uppercase tracking-wider">{t('procurement.po_number', 'رقم السند')}</th>
-                <th className="px-6 py-4 font-black text-xs uppercase tracking-wider">{t('procurement.po_supplier', 'المورد')}</th>
-                <th className="px-6 py-4 font-black text-xs uppercase tracking-wider">{t('procurement.po_amount', 'مبلغ السند')}</th>
-                <th className="px-6 py-4 font-black text-xs uppercase tracking-wider">{t('procurement.po_date', 'التاريخ')}</th>
-                <th className="px-6 py-4 font-black text-xs uppercase tracking-wider">{t('procurement.po_status', 'الحالة')}</th>
-                <th className="px-6 py-4 font-black text-xs uppercase tracking-wider"></th>
+                <th className="px-6 py-4 font-black text-sm uppercase">{t('procurement.po_type', 'نوع السند')}</th>
+                <th className="px-6 py-4 font-black text-sm uppercase">{t('procurement.po_number', 'رقم السند')}</th>
+                <th className="px-6 py-4 font-black text-sm uppercase">{t('procurement.po_supplier', 'المورد')}</th>
+                <th className="px-6 py-4 font-black text-sm uppercase">{t('procurement.po_amount', 'مبلغ السند')}</th>
+                <th className="px-6 py-4 font-black text-sm uppercase">{t('procurement.po_date', 'التاريخ')}</th>
+                <th className="px-6 py-4 font-black text-sm uppercase">{t('procurement.po_status', 'الحالة')}</th>
+                <th className="px-6 py-4 font-black text-sm uppercase"></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
@@ -685,25 +685,25 @@ export default function PurchaseOrders({
                   <tr key={po.id} className="text-content hover:bg-surface-muted/40 transition-colors">
                     <td className="px-6 py-4 font-bold text-sm">
                       {poType === 'purchase' ? (
-                        <span className="px-2.5 py-1 text-xs font-black bg-brand/10 text-brand border border-brand/10 rounded-full">{t('procurement.po_type_purchase', 'أمر شراء')}</span>
+                        <span className="px-2.5 py-1 text-sm font-black bg-brand/10 text-brand border border-brand/10 rounded-full">{t('procurement.po_type_purchase', 'أمر شراء')}</span>
                       ) : (
-                        <span className="px-2.5 py-1 text-xs font-black bg-danger/10 text-danger border border-danger/10 rounded-full">{t('procurement.po_type_return', 'أمر إرجاع')}</span>
+                        <span className="px-2.5 py-1 text-sm font-black bg-danger/10 text-danger border border-danger/10 rounded-full">{t('procurement.po_type_return', 'أمر إرجاع')}</span>
                       )}
                     </td>
                     <td className="px-6 py-4 font-mono font-bold text-sm text-content-muted">{po.poNumber || (po as any).po_number || po.id.slice(0, 8)}</td>
                     <td className="px-6 py-4 font-black text-sm text-content">{po.supplierName}</td>
                     <td className="px-6 py-4 font-black text-sm text-brand"><PriceDisplay amount={po.totalAmount} /></td>
-                    <td className="px-6 py-4 text-xs font-bold text-content-muted">{new Date(po.orderDate).toLocaleDateString(localeOf())}</td>
+                    <td className="px-6 py-4 text-sm font-bold text-content-muted">{new Date(po.orderDate).toLocaleDateString(localeOf())}</td>
                     <td className="px-6 py-4">
                       {poStatus === 'confirmed' || poStatus === 'received' || poStatus === 'returned' ? (
                         <div className="flex items-center gap-1.5 text-success bg-success/10 px-3 py-1 rounded-full w-fit border border-success/10">
                           <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse"></span>
-                          <span className="text-[10px] font-black">{t('procurement.po_status_confirmed', 'مؤكد ومرحل')}</span>
+                          <span className="text-sm font-black">{t('procurement.po_status_confirmed', 'مؤكد ومرحل')}</span>
                         </div>
                       ) : (
                         <div className="flex items-center gap-1.5 text-content-muted bg-surface-muted px-3 py-1 rounded-full w-fit">
                           <span className="w-1.5 h-1.5 rounded-full bg-content-muted"></span>
-                          <span className="text-[10px] font-black">{t('procurement.po_status_draft', 'مسودة')}</span>
+                          <span className="text-sm font-black">{t('procurement.po_status_draft', 'مسودة')}</span>
                         </div>
                       )}
                     </td>
@@ -743,21 +743,21 @@ export default function PurchaseOrders({
         </div>
 
         {/* Mobile Cards View */}
-        <div className={cn("block md:hidden divide-y divide-border", isRtl ? "text-right" : "text-left")} dir={dir}>
+        <div className={cn("block main-720:hidden divide-y divide-border", isRtl ? "text-right" : "text-left")} dir={dir}>
           {filteredOrders.map(po => {
             const poType = po.orderType || (po as any).order_type || 'purchase';
             const poStatus = po.status || 'draft';
             return (
               <div key={po.id} className="p-4 space-y-3 hover:bg-surface-muted/10 transition-colors">
                 <div className="flex items-center justify-between gap-2">
-                  <span className="text-[10px] text-content-muted font-bold">
+                  <span className="text-sm text-content-muted font-bold">
                     {new Date(po.orderDate).toLocaleDateString(localeOf())}
                   </span>
                   <div>
                     {poType === 'purchase' ? (
-                      <span className="px-2 py-0.5 text-[9px] font-black bg-brand/10 text-brand rounded-full">{t('procurement.po_type_purchase', 'أمر شراء')}</span>
+                      <span className="px-2 py-0.5 text-sm font-black bg-brand/10 text-brand rounded-full">{t('procurement.po_type_purchase', 'أمر شراء')}</span>
                     ) : (
-                      <span className="px-2 py-0.5 text-[9px] font-black bg-danger/10 text-danger rounded-full">{t('procurement.po_type_return', 'أمر إرجاع')}</span>
+                      <span className="px-2 py-0.5 text-sm font-black bg-danger/10 text-danger rounded-full">{t('procurement.po_type_return', 'أمر إرجاع')}</span>
                     )}
                   </div>
                 </div>
@@ -765,12 +765,12 @@ export default function PurchaseOrders({
                 <div className="flex items-start justify-between gap-2">
                   <div>
                     <h3 className="font-black text-content text-sm">{po.supplierName}</h3>
-                    <p className="text-[10px] text-content-muted font-mono mt-0.5">
+                    <p className="text-sm text-content-muted font-mono mt-0.5">
                       {t('procurement.po_number', 'رقم السند')}: {po.poNumber || (po as any).po_number || po.id.slice(0, 8)}
                     </p>
                   </div>
                   <div className="text-left">
-                    <span className="text-xs text-content-muted block text-[10px] font-bold">{t('procurement.po_amount', 'القيمة')}</span>
+                    <span className="text-sm text-content-muted block font-bold">{t('procurement.po_amount', 'القيمة')}</span>
                     <span className="text-sm font-black text-brand">
                       <PriceDisplay amount={po.totalAmount} />
                     </span>
@@ -782,12 +782,12 @@ export default function PurchaseOrders({
                     {poStatus === 'confirmed' || poStatus === 'received' || poStatus === 'returned' ? (
                       <div className="flex items-center gap-1 text-success bg-success/10 px-2.5 py-0.5 rounded-full border border-success/10">
                         <span className="w-1 h-1 rounded-full bg-success"></span>
-                        <span className="text-[9px] font-black">{t('procurement.po_status_confirmed', 'مؤكد ومرحل')}</span>
+                        <span className="text-sm font-black">{t('procurement.po_status_confirmed', 'مؤكد ومرحل')}</span>
                       </div>
                     ) : (
                       <div className="flex items-center gap-1 text-content-muted bg-surface-muted px-2.5 py-0.5 rounded-full">
                         <span className="w-1 h-1 rounded-full bg-content-muted"></span>
-                        <span className="text-[9px] font-black">{t('procurement.po_status_draft', 'مسودة')}</span>
+                        <span className="text-sm font-black">{t('procurement.po_status_draft', 'مسودة')}</span>
                       </div>
                     )}
                   </div>
@@ -796,7 +796,7 @@ export default function PurchaseOrders({
                     {poType === 'purchase' && poStatus === 'received' && (
                       <button
                         onClick={() => handleStartReturnFromOrder(po)}
-                        className="flex items-center justify-center gap-1.5 bg-danger/10 text-danger px-3 py-1.5 rounded-xl text-[10px] font-black hover:bg-danger hover:text-white transition-all cursor-pointer min-h-[38px]"
+                        className="flex items-center justify-center gap-1.5 bg-danger/10 text-danger px-3 py-1.5 rounded-xl text-sm font-black hover:bg-danger hover:text-white transition-all cursor-pointer min-h-[38px]"
                       >
                         <RotateCcw size={13} />
                         <span>{t('procurement.return_goods', 'إرجاع بضاعة')}</span>
@@ -804,7 +804,7 @@ export default function PurchaseOrders({
                     )}
                     <button
                       onClick={() => setSelectedOrder(po)}
-                      className="flex items-center justify-center gap-1.5 bg-brand/10 text-brand px-3 py-1.5 rounded-xl text-[10px] font-black hover:bg-brand hover:text-white transition-all cursor-pointer min-h-[38px]"
+                      className="flex items-center justify-center gap-1.5 bg-brand/10 text-brand px-3 py-1.5 rounded-xl text-sm font-black hover:bg-brand hover:text-white transition-all cursor-pointer min-h-[38px]"
                     >
                       <Eye size={13} />
                       <span>{t('procurement.po_detail_title', 'عرض التفاصيل')}</span>
@@ -818,7 +818,7 @@ export default function PurchaseOrders({
           {filteredOrders.length === 0 && (
             <div className="p-8 text-center text-content-muted bg-surface-muted/30">
               <Package className="mx-auto mb-3 opacity-20" size={40} />
-              <p className="text-xs font-bold">{t('procurement.po_no_data', 'لم يعثر على أي مستندات شراء تطابق الفلترة الحالية')}</p>
+              <p className="text-sm font-bold">{t('procurement.po_no_data', 'لم يعثر على أي مستندات شراء تطابق الفلترة الحالية')}</p>
             </div>
           )}
         </div>
@@ -826,20 +826,20 @@ export default function PurchaseOrders({
 
       {/* Detail view / Confirmation modal */}
       {selectedOrder && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center z-50 overflow-y-auto p-0 sm:p-4">
-          <div className="bg-surface rounded-t-3xl sm:rounded-3xl shadow-2xl w-full max-w-3xl overflow-hidden border border-border flex flex-col max-h-[90vh] sm:max-h-[85vh] animate-in fade-in zoom-in duration-150">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-end main-640:items-center justify-center z-50 overflow-y-auto p-0 main-640:p-4">
+          <div className="bg-surface rounded-t-3xl main-640:rounded-3xl shadow-2xl w-full max-w-3xl overflow-hidden border border-border flex flex-col max-h-[90vh] main-640:max-h-[85vh] animate-in fade-in zoom-in duration-150">
             <div className="p-6 border-b border-border flex justify-between items-center bg-surface-muted/40">
               <div>
                 <div className="flex items-center gap-3">
                   <h2 className="text-lg font-black text-content">{t('procurement.po_detail_title', 'عرض تفاصيل المستند')}</h2>
                   <span className={cn(
-                    "text-xs font-black px-2.5 py-1 rounded-full",
+                    "text-sm font-black px-2.5 py-1 rounded-full",
                     (selectedOrder.orderType || (selectedOrder as any).order_type) === 'purchase' ? "bg-brand/15 text-brand" : "bg-danger/15 text-danger"
                   )}>
                     {(selectedOrder.orderType || (selectedOrder as any).order_type) === 'purchase' ? t('procurement.po_type_purchase', 'أمر شراء') : t('procurement.po_type_return', 'أمر إرجاع')}
                   </span>
                 </div>
-                <p className="text-xs text-content-muted mt-1">{t('procurement.po_number', 'رقم السند')}: <span className="font-mono font-bold text-content">{selectedOrder.poNumber || (selectedOrder as any).po_number || selectedOrder.id}</span></p>
+                <p className="text-sm text-content-muted mt-1">{t('procurement.po_number', 'رقم السند')}: <span className="font-mono font-bold text-content">{selectedOrder.poNumber || (selectedOrder as any).po_number || selectedOrder.id}</span></p>
               </div>
               <button 
                 onClick={() => setSelectedOrder(null)} 
@@ -851,34 +851,34 @@ export default function PurchaseOrders({
 
             <div id="po-detail-print-area" className="p-6 overflow-y-auto flex-1 space-y-6">
               {selectedOrder.status === 'draft' && (
-                <div className="text-center text-xs font-black text-warning uppercase tracking-widest print:block">
+                <div className="text-center text-sm font-black text-warning uppercase print:block">
                   {t('procurement.po_status_draft', 'مسودة')}
                 </div>
               )}
               {/* Order Info Cards */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 main-720:grid-cols-3 gap-4">
                 <div className="p-4 bg-surface-muted/50 rounded-2xl border border-border">
-                  <span className="text-[10px] font-black uppercase text-content-muted">{t('procurement.po_responsible_supplier', 'المورد المسؤول')}</span>
+                  <span className="text-sm font-black uppercase text-content-muted">{t('procurement.po_responsible_supplier', 'المورد المسؤول')}</span>
                   <p className="text-sm font-black text-content mt-1">{selectedOrder.supplierName}</p>
                 </div>
                 <div className="p-4 bg-surface-muted/50 rounded-2xl border border-border">
-                  <span className="text-[10px] font-black uppercase text-content-muted">{t('procurement.po_date', 'التاريخ')}</span>
+                  <span className="text-sm font-black uppercase text-content-muted">{t('procurement.po_date', 'التاريخ')}</span>
                   <p className="text-sm font-black text-content mt-1">{new Date(selectedOrder.orderDate).toLocaleDateString(localeOf())}</p>
                 </div>
                 <div className="p-4 bg-surface-muted/50 rounded-2xl border border-border">
-                  <span className="text-[10px] font-black uppercase text-content-muted">{t('procurement.po_status_lbl', 'حالة السند')}</span>
+                  <span className="text-sm font-black uppercase text-content-muted">{t('procurement.po_status_lbl', 'حالة السند')}</span>
                   <div className="mt-1">
                     {(selectedOrder.status || 'draft') === 'confirmed' || (selectedOrder.status || 'draft') === 'received' ? (
-                      <span className="text-success text-xs font-black bg-success/15 px-2.5 py-1 rounded-full">{t('procurement.po_status_confirmed_desc', 'مؤكد ومرحل للمخزن')}</span>
+                      <span className="text-success text-sm font-black bg-success/15 px-2.5 py-1 rounded-full">{t('procurement.po_status_confirmed_desc', 'مؤكد ومرحل للمخزن')}</span>
                     ) : (
-                      <span className="text-content-muted text-xs font-black bg-surface-muted px-2.5 py-1 rounded-full">{t('procurement.po_status_draft_desc', 'مسودة (انتظار التأكيد)')}</span>
+                      <span className="text-content-muted text-sm font-black bg-surface-muted px-2.5 py-1 rounded-full">{t('procurement.po_status_draft_desc', 'مسودة (انتظار التأكيد)')}</span>
                     )}
                   </div>
                 </div>
               </div>
 
               {selectedOrder.notes && (
-                <div className="p-4 bg-warning/5 border border-warning/10 rounded-2xl text-xs text-content">
+                <div className="p-4 bg-warning/5 border border-warning/10 rounded-2xl text-sm text-content">
                   <span className="font-black text-warning">{t('procurement.po_notes', 'ملاحظات')}:</span> {selectedOrder.notes}
                 </div>
               )}
@@ -891,7 +891,7 @@ export default function PurchaseOrders({
                     <div key={index} className="p-3 flex items-center justify-between gap-3">
                       <div className="min-w-0">
                         <div className="text-sm font-bold text-content truncate">{item.name}</div>
-                        <div className="text-xs text-content-muted mt-0.5">{item.quantity} {t(`inventory.unit_${item.unit}`, item.unit)} &times; <PriceDisplay amount={item.pricePerUnit} /></div>
+                        <div className="text-sm text-content-muted mt-0.5">{item.quantity} {t(`inventory.unit_${item.unit}`, item.unit)} &times; <PriceDisplay amount={item.pricePerUnit} /></div>
                       </div>
                       <div className="text-sm font-black text-brand shrink-0"><PriceDisplay amount={item.total} /></div>
                     </div>
@@ -900,10 +900,10 @@ export default function PurchaseOrders({
                     <table className="w-full text-right min-w-max">
                       <thead className="bg-surface-muted text-content-muted">
                         <tr>
-                          <th className="p-3 text-xs font-black">{t('procurement.item_name', 'اسم المنتج / الصنف')}</th>
-                          <th className="p-3 text-xs font-black">{t('procurement.quantity', 'الكمية')}</th>
-                          <th className="p-3 text-xs font-black">{t('procurement.price_per_unit', 'السعر للوحدة')}</th>
-                          <th className="p-3 text-xs font-black">{t('procurement.total', 'الإجمالي')}</th>
+                          <th className="p-3 text-sm font-black">{t('procurement.item_name', 'اسم المنتج / الصنف')}</th>
+                          <th className="p-3 text-sm font-black">{t('procurement.quantity', 'الكمية')}</th>
+                          <th className="p-3 text-sm font-black">{t('procurement.price_per_unit', 'السعر للوحدة')}</th>
+                          <th className="p-3 text-sm font-black">{t('procurement.total', 'الإجمالي')}</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-border">
@@ -922,21 +922,21 @@ export default function PurchaseOrders({
               </div>
             </div>
 
-            <div className="p-6 border-t border-border bg-surface-muted/40 flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div className="p-6 border-t border-border bg-surface-muted/40 flex flex-col main-640:flex-row justify-between items-center gap-4">
               <div className="text-lg font-bold text-content">
                 {t('procurement.total_po_amount', 'إجمالي قيمة السند')}: <span className="text-brand font-black text-2xl mr-2"><PriceDisplay amount={selectedOrder.totalAmount} /></span>
               </div>
-              <div className="flex gap-3 w-full sm:w-auto">
+              <div className="flex gap-3 w-full main-640:w-auto">
                 <button
                   onClick={() => setSelectedOrder(null)}
-                  className="flex-1 sm:flex-initial px-6 py-3 bg-surface border border-border hover:bg-surface-muted rounded-xl text-xs font-black transition-all"
+                  className="flex-1 main-640:flex-initial px-6 py-3 bg-surface border border-border hover:bg-surface-muted rounded-xl text-sm font-black transition-all"
                 >
                   {t('procurement.close_detail_modal', 'إغلاق نافذة التفاصيل')}
                 </button>
                 <button
                   onClick={() => handlePrintPO(selectedOrder)}
                   disabled={isPrintingPO}
-                  className="flex-1 sm:flex-initial px-6 py-3 bg-surface border border-border hover:bg-surface-muted rounded-xl text-xs font-black transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                  className="flex-1 main-640:flex-initial px-6 py-3 bg-surface border border-border hover:bg-surface-muted rounded-xl text-sm font-black transition-all flex items-center justify-center gap-2 disabled:opacity-50"
                 >
                   <Printer size={16} />
                   <span>{t('procurement.print_voucher', 'طباعة السند')}</span>
@@ -945,7 +945,7 @@ export default function PurchaseOrders({
                   <button
                     onClick={() => handleConfirmOrder(selectedOrder)}
                     disabled={isConfirming}
-                    className="flex-1 sm:flex-initial bg-success text-white px-8 py-3 rounded-xl font-black text-xs flex items-center justify-center gap-2 hover:bg-success/90 transition-all shadow-lg active:scale-95 disabled:opacity-50"
+                    className="flex-1 main-640:flex-initial bg-success text-white px-8 py-3 rounded-xl font-black text-sm flex items-center justify-center gap-2 hover:bg-success/90 transition-all shadow-lg active:scale-95 disabled:opacity-50"
                   >
                     {isConfirming ? (
                       <span>{t('procurement.processing', 'جاري المعالجة...')}</span>
@@ -963,7 +963,7 @@ export default function PurchaseOrders({
                       handleStartReturnFromOrder(selectedOrder);
                       setSelectedOrder(null);
                     }}
-                    className="flex-1 sm:flex-initial bg-danger text-white px-8 py-3 rounded-xl font-black text-xs flex items-center justify-center gap-2 hover:bg-danger/90 transition-all shadow-lg active:scale-95"
+                    className="flex-1 main-640:flex-initial bg-danger text-white px-8 py-3 rounded-xl font-black text-sm flex items-center justify-center gap-2 hover:bg-danger/90 transition-all shadow-lg active:scale-95"
                   >
                     <RotateCcw size={16} />
                     <span>{t('procurement.return_goods', 'إرجاع بضاعة')}</span>
@@ -977,14 +977,14 @@ export default function PurchaseOrders({
 
       {/* Create Order Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center z-50 overflow-y-auto p-0 sm:p-4">
-          <div className="bg-surface rounded-t-3xl sm:rounded-3xl shadow-2xl w-full max-w-2xl overflow-hidden border border-border flex flex-col max-h-[92vh] sm:max-h-[90vh] animate-in fade-in zoom-in duration-150">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-end main-640:items-center justify-center z-50 overflow-y-auto p-0 main-640:p-4">
+          <div className="bg-surface rounded-t-3xl main-640:rounded-3xl shadow-2xl w-full max-w-2xl overflow-hidden border border-border flex flex-col max-h-[92vh] main-640:max-h-[90vh] animate-in fade-in zoom-in duration-150">
             <div className="p-6 border-b border-border flex justify-between items-center bg-surface-muted/50">
               <div>
                 <h2 className="text-xl font-black text-content">
                   {modalType === 'purchase' ? t('procurement.register_new_po', 'تسجيل أمر شراء جديد') : t('procurement.register_po_return', 'تسجيل مرتجع مشتريات')}
                 </h2>
-                <p className="text-xs text-content-muted mt-1">
+                <p className="text-sm text-content-muted mt-1">
                   {t('procurement.register_po_subtitle', 'قم باختيار المورد وتحديد قائمة الأصناف والأسعار لبناء فاتورة.')}
                 </p>
               </div>
@@ -999,7 +999,7 @@ export default function PurchaseOrders({
             
             <div className="p-6 overflow-y-auto flex-1 space-y-6">
               <div className="space-y-2">
-                <label className="block text-xs font-black text-content-muted uppercase tracking-widest">{t('procurement.supplier', 'المورد')}</label>
+                <label className="block text-sm font-black text-content-muted uppercase">{t('procurement.supplier', 'المورد')}</label>
                 <SmartSelect 
                   value={selectedSupplier}
                   onChange={(val) => setSelectedSupplier(val)}
@@ -1010,8 +1010,8 @@ export default function PurchaseOrders({
 
               <div className="bg-surface-muted/40 p-4 rounded-2xl border border-border space-y-4">
                 <h3 className="font-bold text-sm text-content">{t('procurement.add_items_to_invoice', 'إضافة أصناف لقائمة الفاتورة')}</h3>
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                  <div className="md:col-span-2">
+                <div className="grid grid-cols-1 main-720:grid-cols-4 gap-4">
+                  <div className="main-720:col-span-2">
                     <SmartSelect
                       value={selectedItem}
                       onChange={(val) => {
@@ -1033,13 +1033,13 @@ export default function PurchaseOrders({
                       disabled={modalType === 'return' && !selectedSupplier}
                     />
                     {modalType === 'return' && !selectedSupplier && (
-                      <p className="text-[10px] font-bold text-content-muted mt-1.5 px-1">{t('procurement.select_supplier_first', 'اختر المورد أولاً لعرض الأصناف المشتراة منه')}</p>
+                      <p className="text-sm font-bold text-content-muted mt-1.5 px-1">{t('procurement.select_supplier_first', 'اختر المورد أولاً لعرض الأصناف المشتراة منه')}</p>
                     )}
                     {modalType === 'return' && selectedSupplier && itemSelectOptions.length === 0 && (
-                      <p className="text-[10px] font-bold text-danger mt-1.5 px-1">{t('procurement.no_purchased_items_from_supplier', 'لا توجد أصناف تم شراؤها من هذا المورد بعد')}</p>
+                      <p className="text-sm font-bold text-danger mt-1.5 px-1">{t('procurement.no_purchased_items_from_supplier', 'لا توجد أصناف تم شراؤها من هذا المورد بعد')}</p>
                     )}
                     {modalType === 'return' && Object.keys(itemVariantsByItem).length > 0 && (
-                      <p className="text-[10px] text-content-muted mt-1.5 px-1">
+                      <p className="text-sm text-content-muted mt-1.5 px-1">
                         {t('inventory.variants.po_return_not_supported', 'مرتجعات المنتجات ذات السمات غير مدعومة بعد -- عدّل مخزونها يدوياً من شاشة المخزون.')}
                       </p>
                     )}
@@ -1055,7 +1055,7 @@ export default function PurchaseOrders({
                     )}
                   </div>
                   <div className="space-y-2">
-                    <label className="block text-xs font-black text-content-muted uppercase tracking-widest">
+                    <label className="block text-sm font-black text-content-muted uppercase">
                       {t('procurement.quantity', 'الكمية')}
                       {selectedInvItem && ` (${t(`inventory.unit_${selectedInvItem.unit}`, selectedInvItem.unit)})`}
                     </label>
@@ -1068,7 +1068,7 @@ export default function PurchaseOrders({
                     />
                   </div>
                   <div className="space-y-2">
-                    <label className="block text-xs font-black text-content-muted uppercase tracking-widest">{t('procurement.price_per_unit_short', 'السعر / وحدة')}</label>
+                    <label className="block text-sm font-black text-content-muted uppercase">{t('procurement.price_per_unit_short', 'السعر / وحدة')}</label>
                     <input
                       type="number"
                       placeholder="0.00"
@@ -1086,7 +1086,7 @@ export default function PurchaseOrders({
 
                 {lineIsRoll && modalType === 'purchase' && (
                   <div className="space-y-2">
-                    <label htmlFor="po-line-roll-content" className="block text-xs font-black text-content-muted uppercase tracking-widest">
+                    <label htmlFor="po-line-roll-content" className="block text-sm font-black text-content-muted uppercase">
                       {t('inventory.roll_content_this_shipment')}
                     </label>
                     <div className="flex gap-2 max-w-xs">
@@ -1108,7 +1108,7 @@ export default function PurchaseOrders({
                             aria-pressed={lineContentUnit === u}
                             onClick={() => setLineContentUnit(u)}
                             className={cn(
-                              'px-3 rounded-lg text-xs font-black transition-all',
+                              'px-3 rounded-lg text-sm font-black transition-all',
                               lineContentUnit === u ? 'bg-brand text-white' : 'text-content-muted hover:bg-surface-muted'
                             )}
                           >
@@ -1118,7 +1118,7 @@ export default function PurchaseOrders({
                       </div>
                     </div>
                     {quantity > 0 && lineRollContent > 0 && (
-                      <p className="text-xs font-bold text-content-muted" dir="auto">
+                      <p className="text-sm font-bold text-content-muted" dir="auto">
                         {t('inventory.roll_total_line', {
                           count: quantity,
                           rollUnit: t(`inventory.unit_${selectedInvItem.unit}`),
@@ -1134,7 +1134,7 @@ export default function PurchaseOrders({
 
                 {isAddingNewItem && (
                   <div className="p-4 rounded-xl border-2 border-brand/40 bg-brand/5 space-y-3">
-                    <h4 className="text-xs font-black text-brand uppercase tracking-widest">{t('procurement.add_new_item_option', '+ إضافة منتج جديد')}</h4>
+                    <h4 className="text-sm font-black text-brand uppercase">{t('procurement.add_new_item_option', '+ إضافة منتج جديد')}</h4>
                     <input
                       autoFocus
                       value={newItemName}
@@ -1167,13 +1167,13 @@ export default function PurchaseOrders({
                               value={newItemCategoryPicker.newLabel}
                               onChange={(e) => newItemCategoryPicker.setNewLabel(e.target.value)}
                               placeholder={t('settings_page.categories.new_name_placeholder', 'اسم الفئة الجديدة')}
-                              className="flex-1 bg-transparent outline-none font-bold text-content text-xs"
+                              className="flex-1 bg-transparent outline-none font-bold text-content text-sm"
                             />
                             <button
                               type="button"
                               onClick={() => newItemCategoryPicker.confirmAdd((key) => { setNewItemCategoryKey(key); setNewItemUnit(isFabricCategory(key) ? 'roll' : 'piece'); }).catch(() => {})}
                               disabled={!newItemCategoryPicker.newLabel.trim() || newItemCategoryPicker.saving}
-                              className="min-h-[28px] px-2 rounded-lg bg-brand text-white font-bold text-[10px] disabled:opacity-50"
+                              className="min-h-[28px] px-2 rounded-lg bg-brand text-white font-bold text-sm disabled:opacity-50"
                             >
                               {t('common.add', 'إضافة')}
                             </button>
@@ -1207,7 +1207,7 @@ export default function PurchaseOrders({
                               aria-pressed={newItemContentUnit === u}
                               onClick={() => setNewItemContentUnit(u)}
                               className={cn(
-                                'px-3 rounded-lg text-xs font-black transition-all',
+                                'px-3 rounded-lg text-sm font-black transition-all',
                                 newItemContentUnit === u ? 'bg-brand text-white' : 'text-content-muted hover:bg-surface-muted'
                               )}
                             >
@@ -1240,14 +1240,14 @@ export default function PurchaseOrders({
                         type="button"
                         onClick={handleSaveNewItem}
                         disabled={savingNewItem || newItemIncomplete}
-                        className="flex-1 bg-brand text-white py-2.5 rounded-xl font-bold text-xs disabled:opacity-50"
+                        className="flex-1 bg-brand text-white py-2.5 rounded-xl font-bold text-sm disabled:opacity-50"
                       >
                         {savingNewItem ? t('common.saving', 'جارٍ الحفظ...') : t('procurement.create_and_add_item', 'إنشاء وإضافة للقائمة')}
                       </button>
                       <button
                         type="button"
                         onClick={cancelAddNewItem}
-                        className="px-4 py-2.5 rounded-xl text-content-muted font-bold text-xs hover:bg-surface"
+                        className="px-4 py-2.5 rounded-xl text-content-muted font-bold text-sm hover:bg-surface"
                       >
                         {t('common.cancel', 'إلغاء')}
                       </button>
@@ -1258,7 +1258,7 @@ export default function PurchaseOrders({
                 <button
                   onClick={handleAddItem}
                   disabled={!selectedItem || quantity <= 0 || pricePerUnit <= 0 || lineRateInvalid || (selectedItemVariants.length > 0 && !selectedVariantId)}
-                  className="w-full bg-brand/10 text-brand py-3 rounded-xl font-bold text-xs hover:bg-brand hover:text-white transition-all disabled:opacity-50"
+                  className="w-full bg-brand/10 text-brand py-3 rounded-xl font-bold text-sm hover:bg-brand hover:text-white transition-all disabled:opacity-50"
                 >
                   {t('procurement.add_item_to_doc_list', 'أضف الصنف لقائمة المستند')}
                 </button>
@@ -1272,7 +1272,7 @@ export default function PurchaseOrders({
                       <div key={idx} className="p-3 flex items-center justify-between gap-2">
                         <div className="min-w-0">
                           <div className="text-sm font-bold truncate">{item.name}</div>
-                          <div className="text-xs text-content-muted mt-0.5">{item.quantity} {t(`inventory.unit_${item.unit}`, item.unit)} &times; <PriceDisplay amount={item.pricePerUnit} /></div>
+                          <div className="text-sm text-content-muted mt-0.5">{item.quantity} {t(`inventory.unit_${item.unit}`, item.unit)} &times; <PriceDisplay amount={item.pricePerUnit} /></div>
                           <div className="text-sm font-black text-brand mt-0.5"><PriceDisplay amount={item.total} /></div>
                         </div>
                         <button
@@ -1288,10 +1288,10 @@ export default function PurchaseOrders({
                       <table className="w-full text-right min-w-max">
                         <thead className="bg-surface-muted text-content-muted">
                           <tr>
-                            <th className="p-3 text-xs font-black">{t('procurement.item', 'الصنف')}</th>
-                            <th className="p-3 text-xs font-black">{t('procurement.quantity', 'الكمية')}</th>
-                            <th className="p-3 text-xs font-black">{t('procurement.price', 'السعر')}</th>
-                            <th className="p-3 text-xs font-black">{t('procurement.total', 'الإجمالي')}</th>
+                            <th className="p-3 text-sm font-black">{t('procurement.item', 'الصنف')}</th>
+                            <th className="p-3 text-sm font-black">{t('procurement.quantity', 'الكمية')}</th>
+                            <th className="p-3 text-sm font-black">{t('procurement.price', 'السعر')}</th>
+                            <th className="p-3 text-sm font-black">{t('procurement.total', 'الإجمالي')}</th>
                             <th className="p-3"></th>
                           </tr>
                         </thead>
@@ -1299,8 +1299,8 @@ export default function PurchaseOrders({
                           {items.map((item, idx) => (
                             <tr key={idx} className="hover:bg-surface-muted/30">
                               <td className="p-3 text-sm font-bold">{item.name}</td>
-                              <td className="p-3 text-xs font-bold">{item.quantity} {t(`inventory.unit_${item.unit}`, item.unit)}</td>
-                              <td className="p-3 text-xs font-bold"><PriceDisplay amount={item.pricePerUnit} /></td>
+                              <td className="p-3 text-sm font-bold">{item.quantity} {t(`inventory.unit_${item.unit}`, item.unit)}</td>
+                              <td className="p-3 text-sm font-bold"><PriceDisplay amount={item.pricePerUnit} /></td>
                               <td className="p-3 text-sm font-black text-brand"><PriceDisplay amount={item.total} /></td>
                               <td className="p-3 text-left">
                                 <button
@@ -1321,7 +1321,7 @@ export default function PurchaseOrders({
               )}
 
               <div className="space-y-1">
-                <label htmlFor="po-doc-notes" className="text-xs font-black text-content-muted uppercase">{t('procurement.doc_notes', 'ملاحظات المستند')}</label>
+                <label htmlFor="po-doc-notes" className="text-sm font-black text-content-muted uppercase">{t('procurement.doc_notes', 'ملاحظات المستند')}</label>
                 <textarea
                   id="po-doc-notes"
                   value={notes}
@@ -1332,22 +1332,22 @@ export default function PurchaseOrders({
               </div>
             </div>
             
-            <div className="p-6 border-t border-border bg-surface-muted/50 flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div className="p-6 border-t border-border bg-surface-muted/50 flex flex-col main-640:flex-row justify-between items-center gap-4">
               <div className="text-lg font-bold text-content">
                 {t('procurement.total_list', 'إجمالي القائمة')}: <span className="text-brand font-black"><PriceDisplay amount={items.reduce((sum, item) => sum + item.total, 0)} /></span>
               </div>
-              <div className="flex gap-3 w-full sm:w-auto">
+              <div className="flex gap-3 w-full main-640:w-auto">
                 <button
                   onClick={() => handleCreateOrder(false)}
                   disabled={isSubmitting || items.length === 0 || !selectedSupplier}
-                  className="flex-1 sm:flex-initial bg-surface-muted text-content px-5 py-3 rounded-xl font-bold text-xs hover:bg-border transition-colors disabled:opacity-50"
+                  className="flex-1 main-640:flex-initial bg-surface-muted text-content px-5 py-3 rounded-xl font-bold text-sm hover:bg-border transition-colors disabled:opacity-50"
                 >
                   {isSubmitting ? t('procurement.saving_loading', 'جاري الحفظ...') : t('procurement.save_as_draft', 'حفظ كمسودة (بدون ترحيل)')}
                 </button>
                 <button 
                   onClick={() => handleCreateOrder(true)}
                   disabled={isSubmitting || items.length === 0 || !selectedSupplier}
-                  className="flex-1 sm:flex-initial bg-success text-white px-6 py-3 rounded-xl font-black text-xs hover:bg-success/90 transition-colors disabled:opacity-50"
+                  className="flex-1 main-640:flex-initial bg-success text-white px-6 py-3 rounded-xl font-black text-sm hover:bg-success/90 transition-colors disabled:opacity-50"
                 >
                   {isSubmitting ? t('procurement.saving_loading', 'جاري الحفظ...') : t('procurement.save_confirm_sync', 'حفظ وتأكيد السند (ترحيل آلي)')}
                 </button>

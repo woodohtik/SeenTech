@@ -196,7 +196,7 @@ export function DatePicker({ value, onChange, id, className, placeholder, trigge
               <X size={14} />
             </span>
           )}
-          <span className="text-[10px] text-brand bg-brand/10 hover:bg-brand/20 transition-all rounded-lg px-2 py-0.5">
+          <span className="text-sm text-brand bg-brand/10 hover:bg-brand/20 transition-all rounded-lg px-2 py-0.5">
             {t('common.date_picker.change')}
           </span>
         </div>
@@ -228,7 +228,7 @@ export function DatePicker({ value, onChange, id, className, placeholder, trigge
                 <ChevronRight size={16} />
               </button>
 
-              <span className="text-xs font-black text-content uppercase tracking-wider">
+              <span className="text-sm font-black text-content uppercase">
                 {months[month]} {year}
               </span>
 
@@ -247,7 +247,7 @@ export function DatePicker({ value, onChange, id, className, placeholder, trigge
               {weekDays.map((wd, index) => (
                 <span 
                   key={index} 
-                  className="text-[10px] font-black text-content-muted uppercase tracking-wider py-1"
+                  className="text-sm font-black text-content-muted uppercase py-1"
                 >
                   {wd}
                 </span>
@@ -268,7 +268,7 @@ export function DatePicker({ value, onChange, id, className, placeholder, trigge
                     aria-current={isTodayStr ? 'date' : undefined}
                     aria-selected={isSelected}
                     className={cn(
-                      "h-10 w-10 mx-auto flex items-center justify-center text-xs font-bold rounded-xl transition-all outline-none cursor-pointer",
+                      "h-10 w-10 mx-auto flex items-center justify-center text-sm font-bold rounded-xl transition-all outline-none cursor-pointer",
                       cell.isCurrentMonth 
                         ? "text-content hover:bg-brand/10 hover:text-brand" 
                         : "text-content-muted/30 hover:bg-surface-muted",
@@ -287,14 +287,14 @@ export function DatePicker({ value, onChange, id, className, placeholder, trigge
               <button
                 type="button"
                 onClick={() => handleSelectDay(formatDateString(new Date()))}
-                className="text-[10px] font-black text-brand hover:underline"
+                className="text-sm font-black text-brand hover:underline"
               >
                 {t('common.date_picker.today')}
               </button>
               <button
                 type="button"
                 onClick={() => setIsOpen(false)}
-                className="text-[10px] font-black text-content-muted hover:text-content"
+                className="text-sm font-black text-content-muted hover:text-content"
               >
                 {t('common.date_picker.close')}
               </button>

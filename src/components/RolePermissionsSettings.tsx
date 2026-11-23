@@ -389,7 +389,7 @@ export const RolePermissionsSettings: React.FC<RolePermissionsSettingsProps> = (
   return (
     <div className="space-y-8" dir={dir}>
       {/* Top Banner Header */}
-      <div className="bg-gradient-to-r from-brand/10 via-surface to-brand/5 p-6 md:p-8 rounded-2xl border border-brand/20 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+      <div className="bg-gradient-to-r from-brand/10 via-surface to-brand/5 p-6 main-720:p-8 rounded-2xl border border-brand/20 shadow-sm flex flex-col main-720:flex-row justify-between items-start main-720:items-center gap-6">
         <div className="space-y-2">
           <div className="flex items-center gap-3">
             <div className="p-3 bg-brand text-white rounded-2xl shadow-lg shadow-brand/20">
@@ -398,12 +398,12 @@ export const RolePermissionsSettings: React.FC<RolePermissionsSettingsProps> = (
             <div>
               <h2 className="text-2xl font-black text-content flex items-center gap-2">
                 {isSuperAdmin ? t('permissions.title_super_admin') : t('permissions.title_tenant')}
-                <span className="text-xs bg-success/10 text-success px-3 py-1 rounded-full border border-success/20 font-bold flex items-center gap-1.5">
+                <span className="text-sm bg-success/10 text-success px-3 py-1 rounded-full border border-success/20 font-bold flex items-center gap-1.5">
                   <span className="w-2 h-2 rounded-full bg-success animate-ping"></span>
                   {isSuperAdmin ? t('permissions.badge_super_admin') : t('permissions.badge_tenant')}
                 </span>
               </h2>
-              <p className="text-xs text-content-muted font-bold mt-1">
+              <p className="text-sm text-content-muted font-bold mt-1">
                 {isSuperAdmin 
                   ? t('permissions.subtitle_super_admin')
                   : t('permissions.subtitle_tenant')
@@ -413,10 +413,10 @@ export const RolePermissionsSettings: React.FC<RolePermissionsSettingsProps> = (
           </div>
         </div>
 
-        <div className="flex items-center gap-3 w-full md:w-auto justify-end">
+        <div className="flex items-center gap-3 w-full main-720:w-auto justify-end">
           <button
             onClick={() => setShowCreateRoleModal(true)}
-            className="px-5 py-3 bg-surface hover:bg-surface-muted text-content font-bold text-xs rounded-2xl border border-border flex items-center gap-2 transition-all shadow-sm"
+            className="px-5 py-3 bg-surface hover:bg-surface-muted text-content font-bold text-sm rounded-2xl border border-border flex items-center gap-2 transition-all shadow-sm"
           >
             <Plus size={16} className="text-brand" />
             <span>{t('settings_page.staff.add_custom_role')}</span>
@@ -426,7 +426,7 @@ export const RolePermissionsSettings: React.FC<RolePermissionsSettingsProps> = (
             onClick={handleSaveChanges}
             disabled={saving || !hasChanges || selectedRole?.roleKey === 'owner'}
             className={cn(
-              "px-6 py-3 rounded-2xl text-xs font-black transition-all flex items-center gap-2 shadow-lg",
+              "px-6 py-3 rounded-2xl text-sm font-black transition-all flex items-center gap-2 shadow-lg",
               hasChanges 
                 ? "bg-brand text-white shadow-brand/20 hover:bg-brand/90 scale-105" 
                 : "bg-surface-muted text-content-muted border border-border opacity-60 cursor-not-allowed"
@@ -462,15 +462,15 @@ export const RolePermissionsSettings: React.FC<RolePermissionsSettingsProps> = (
         });
 
         return (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          <div className="grid grid-cols-1 main-900:grid-cols-12 gap-8">
             {/* Sidebar Role Selector Tabs */}
-            <div className="lg:col-span-4 space-y-4">
+            <div className="main-900:col-span-4 space-y-4">
               <div className="bg-surface rounded-2xl border border-border shadow-sm p-5 space-y-4">
                 <div className="flex items-center justify-between pb-3 border-b border-border">
-                  <h3 className="text-xs font-black text-content-muted uppercase tracking-wider">
+                  <h3 className="text-sm font-black text-content-muted uppercase">
                     {isSuperAdmin ? t('permissions.roles_list_super_admin') : t('permissions.roles_list_tenant')}
                   </h3>
-                  <span className="text-[10px] bg-brand/10 text-brand px-2.5 py-1 rounded-full font-black">
+                  <span className="text-sm bg-brand/10 text-brand px-2.5 py-1 rounded-full font-black">
                     {t('permissions.roles_count', { n: displayedRoles.length })}
                   </span>
                 </div>
@@ -481,7 +481,7 @@ export const RolePermissionsSettings: React.FC<RolePermissionsSettingsProps> = (
                       type="button"
                       onClick={() => setRoleCategoryFilter('all')}
                       className={cn(
-                        "flex-1 py-1.5 text-[11px] font-black rounded-xl transition-all",
+                        "flex-1 py-1.5 text-sm font-black rounded-xl transition-all",
                         roleCategoryFilter === 'all' 
                           ? "bg-surface text-content shadow-sm" 
                           : "text-content-muted hover:text-content"
@@ -493,14 +493,14 @@ export const RolePermissionsSettings: React.FC<RolePermissionsSettingsProps> = (
                       type="button"
                       onClick={() => setRoleCategoryFilter('merchant')}
                       className={cn(
-                        "flex-1 py-1.5 text-[11px] font-black rounded-xl transition-all flex items-center justify-center gap-1",
+                        "flex-1 py-1.5 text-sm font-black rounded-xl transition-all flex items-center justify-center gap-1",
                         roleCategoryFilter === 'merchant' 
                           ? "bg-brand text-white shadow-sm" 
                           : "text-content-muted hover:text-content"
                       )}
                     >
                       <span>{t('permissions.filter_merchants')}</span>
-                      <span className="text-[9px] opacity-80">
+                      <span className="text-sm opacity-80">
                         ({roles.filter(r => (r.category || (isSaaSRole(r.roleKey) ? 'saas' : 'merchant')) === 'merchant').length})
                       </span>
                     </button>
@@ -508,14 +508,14 @@ export const RolePermissionsSettings: React.FC<RolePermissionsSettingsProps> = (
                       type="button"
                       onClick={() => setRoleCategoryFilter('saas')}
                       className={cn(
-                        "flex-1 py-1.5 text-[11px] font-black rounded-xl transition-all flex items-center justify-center gap-1",
+                        "flex-1 py-1.5 text-sm font-black rounded-xl transition-all flex items-center justify-center gap-1",
                         roleCategoryFilter === 'saas' 
                           ? "bg-purple-600 text-white shadow-sm" 
                           : "text-content-muted hover:text-content"
                       )}
                     >
                       <span>{t('permissions.filter_saas')}</span>
-                      <span className="text-[9px] opacity-80">
+                      <span className="text-sm opacity-80">
                         ({roles.filter(r => (r.category || (isSaaSRole(r.roleKey) ? 'saas' : 'merchant')) === 'saas').length})
                       </span>
                     </button>
@@ -563,13 +563,13 @@ export const RolePermissionsSettings: React.FC<RolePermissionsSettingsProps> = (
                             <div className="flex items-center gap-2 flex-wrap">
                               <span className="text-sm font-black text-content truncate">{role.name}</span>
                               {isOwner && (
-                                <span className="text-[9px] bg-warning/10 text-warning px-2 py-0.5 rounded-full font-bold">
+                                <span className="text-sm bg-warning/10 text-warning px-2 py-0.5 rounded-full font-bold">
                                   {t('permissions.badge_full_access')}
                                 </span>
                               )}
                               {isSuperAdmin && (
                                 <span className={cn(
-                                  "text-[9px] px-2 py-0.5 rounded-full font-black border",
+                                  "text-sm px-2 py-0.5 rounded-full font-black border",
                                   isSaas
                                     ? "bg-purple-500/10 text-purple-600 border-purple-500/20"
                                     : "bg-info/10 text-info border-info/20"
@@ -578,27 +578,27 @@ export const RolePermissionsSettings: React.FC<RolePermissionsSettingsProps> = (
                                 </span>
                               )}
                               {!isOwner && isTenantCustom && !isSuperAdmin && (
-                                <span className="text-[9px] bg-success/10 text-success px-2 py-0.5 rounded-full font-bold">
+                                <span className="text-sm bg-success/10 text-success px-2 py-0.5 rounded-full font-bold">
                                   {t('permissions.badge_custom_to_store')}
                                 </span>
                               )}
                               {!isOwner && !isTenantCustom && !isSuperAdmin && (
-                                <span className="text-[9px] bg-brand/10 text-brand px-2 py-0.5 rounded-full font-bold">
+                                <span className="text-sm bg-brand/10 text-brand px-2 py-0.5 rounded-full font-bold">
                                   {t('permissions.badge_standard_template')}
                                 </span>
                               )}
                             </div>
-                            <p className="text-[11px] text-content-muted font-bold truncate mt-0.5">
+                            <p className="text-sm text-content-muted font-bold truncate mt-0.5">
                               {role.description || t('permissions.no_description')}
                             </p>
                           </div>
                         </div>
 
                         <div className="text-left shrink-0">
-                          <div className="text-xs font-black text-brand">
+                          <div className="text-sm font-black text-brand">
                             {enabledCount} / {totalCount}
                           </div>
-                          <div className="text-[9px] text-content-muted font-bold mt-0.5">{t('permissions.enabled_permissions_label')}</div>
+                          <div className="text-sm text-content-muted font-bold mt-0.5">{t('permissions.enabled_permissions_label')}</div>
                         </div>
                       </button>
                     );
@@ -607,36 +607,36 @@ export const RolePermissionsSettings: React.FC<RolePermissionsSettingsProps> = (
               </div>
 
           <div className="p-5 bg-warning/5 rounded-2xl border border-warning/20 text-right space-y-2">
-            <div className="flex items-center gap-2 text-warning font-black text-xs">
+            <div className="flex items-center gap-2 text-warning font-black text-sm">
               <Info size={16} />
               <span>{t('permissions.owner_note_title')}</span>
             </div>
-            <p className="text-[11px] text-content-muted font-medium leading-relaxed">
+            <p className="text-sm text-content-muted font-medium leading-relaxed">
               {t('permissions.owner_note_desc')}
             </p>
           </div>
         </div>
 
         {/* Permission Matrix Toggles */}
-        <div className="lg:col-span-8 space-y-6">
+        <div className="main-900:col-span-8 space-y-6">
           {selectedRole ? (
-            <div className="bg-surface rounded-2xl border border-border shadow-sm p-6 md:p-8 space-y-6">
+            <div className="bg-surface rounded-2xl border border-border shadow-sm p-6 main-720:p-8 space-y-6">
               {/* Role Header Controls */}
-              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 pb-6 border-b border-border">
+              <div className="flex flex-col main-720:flex-row justify-between items-start main-720:items-center gap-4 pb-6 border-b border-border">
                 <div>
                   <h3 className="text-xl font-black text-content flex items-center gap-2">
                     {t('permissions.edit_permissions_for')} <span className="text-brand">{selectedRole.name}</span>
                   </h3>
-                  <p className="text-xs text-content-muted font-bold mt-1">
+                  <p className="text-sm text-content-muted font-bold mt-1">
                     {selectedRole.description}
                   </p>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
+                <div className="flex flex-wrap items-center gap-2 w-full main-720:w-auto">
                   <button
                     onClick={() => handleSelectAll(selectedCategory)}
                     disabled={isReadOnlyRole}
-                    className="px-3.5 py-2 bg-surface-muted hover:bg-border text-content text-xs font-bold rounded-xl border border-border transition-all flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed"
+                    className="px-3.5 py-2 bg-surface-muted hover:bg-border text-content text-sm font-bold rounded-xl border border-border transition-all flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed"
                   >
                     <CheckSquare size={14} className="text-brand" />
                     <span>{t('inventory.select_all')}</span>
@@ -645,7 +645,7 @@ export const RolePermissionsSettings: React.FC<RolePermissionsSettingsProps> = (
                   <button
                     onClick={() => handleDeselectAll(selectedCategory)}
                     disabled={isReadOnlyRole}
-                    className="px-3.5 py-2 bg-surface-muted hover:bg-border text-content text-xs font-bold rounded-xl border border-border transition-all flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed"
+                    className="px-3.5 py-2 bg-surface-muted hover:bg-border text-content text-sm font-bold rounded-xl border border-border transition-all flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed"
                   >
                     <Square size={14} className="text-content-muted" />
                     <span>{t('customers.deselect_all')}</span>
@@ -654,7 +654,7 @@ export const RolePermissionsSettings: React.FC<RolePermissionsSettingsProps> = (
                   <button
                     onClick={handleResetToDefault}
                     disabled={isReadOnlyRole}
-                    className="px-3.5 py-2 bg-warning/10 hover:bg-warning/20 text-warning text-xs font-bold rounded-xl border border-warning/20 transition-all flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed"
+                    className="px-3.5 py-2 bg-warning/10 hover:bg-warning/20 text-warning text-sm font-bold rounded-xl border border-warning/20 transition-all flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed"
                   >
                     <RotateCcw size={14} />
                     <span>{t('permissions.default_button')}</span>
@@ -677,20 +677,20 @@ export const RolePermissionsSettings: React.FC<RolePermissionsSettingsProps> = (
                         setNewRoleDesc(t('permissions.suggested_custom_role_desc', { role: selectedRole.name }));
                         setShowCreateRoleModal(true);
                       }}
-                      className="px-4 py-2 bg-brand text-white font-black text-xs rounded-xl shadow-sm hover:bg-brand/90 transition-all flex items-center gap-1.5 cursor-pointer"
+                      className="px-4 py-2 bg-brand text-white font-black text-sm rounded-xl shadow-sm hover:bg-brand/90 transition-all flex items-center gap-1.5 cursor-pointer"
                     >
                       <Plus size={14} />
                       <span>{t('permissions.create_role_from_this')}</span>
                     </button>
                   </div>
-                  <p className="text-xs text-content-muted font-bold leading-relaxed">
+                  <p className="text-sm text-content-muted font-bold leading-relaxed">
                     {t('permissions.protected_default_note')}
                   </p>
                 </div>
               )}
 
               {/* Filters Bar */}
-              <div className="flex flex-col md:flex-row items-center gap-4">
+              <div className="flex flex-col main-720:flex-row items-center gap-4">
                 <IconInput
                   type="text"
                   startIcon={Search}
@@ -709,11 +709,11 @@ export const RolePermissionsSettings: React.FC<RolePermissionsSettingsProps> = (
                   containerClassName="flex-1 w-full"
                 />
 
-                <div className="flex items-center gap-1.5 overflow-x-auto w-full md:w-auto pb-2 md:pb-0 scrollbar-none">
+                <div className="flex items-center gap-1.5 overflow-x-auto w-full main-720:w-auto pb-2 main-720:pb-0 scrollbar-none">
                   <button
                     onClick={() => setSelectedCategory('all')}
                     className={cn(
-                      "px-4 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap shrink-0",
+                      "px-4 py-2.5 rounded-xl text-sm font-bold transition-all whitespace-nowrap shrink-0",
                       selectedCategory === 'all'
                         ? "bg-brand text-white font-black shadow-md shadow-brand/10"
                         : "bg-surface-muted text-content-muted hover:text-content"
@@ -728,7 +728,7 @@ export const RolePermissionsSettings: React.FC<RolePermissionsSettingsProps> = (
                         key={cat}
                         onClick={() => setSelectedCategory(cat)}
                         className={cn(
-                          "px-4 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap shrink-0",
+                          "px-4 py-2.5 rounded-xl text-sm font-bold transition-all whitespace-nowrap shrink-0",
                           selectedCategory === cat
                             ? "bg-brand text-white font-black shadow-md shadow-brand/10"
                             : "bg-surface-muted text-content-muted hover:text-content"
@@ -752,16 +752,16 @@ export const RolePermissionsSettings: React.FC<RolePermissionsSettingsProps> = (
                     return (
                       <div key={category} className="space-y-3 bg-surface-muted/30 p-5 rounded-3xl border border-border/80">
                         <div className="flex items-center justify-between pb-2 border-b border-border/50">
-                          <h4 className="text-xs font-black text-brand flex items-center gap-2 uppercase tracking-wider">
+                          <h4 className="text-sm font-black text-brand flex items-center gap-2 uppercase">
                             <span className="w-2.5 h-2.5 rounded-full bg-brand"></span>
                             {getTransCat(category)}
                           </h4>
-                          <span className="text-[10px] text-content-muted font-bold">
+                          <span className="text-sm text-content-muted font-bold">
                             {categoryPerms.filter(p => permissionsState[p.id as PermissionKey]).length} / {categoryPerms.length} {t('settings.staff.permissions.enabled')}
                           </span>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div className="grid grid-cols-1 main-720:grid-cols-2 gap-3">
                           {categoryPerms.map(perm => {
                             const isEnabled = permissionsState[perm.id as PermissionKey] === true;
 
@@ -778,15 +778,15 @@ export const RolePermissionsSettings: React.FC<RolePermissionsSettingsProps> = (
                                 )}
                               >
                                 <div className="space-y-1">
-                                  <div className="text-xs font-black text-content group-hover:text-brand transition-colors flex items-center gap-2 flex-wrap">
+                                  <div className="text-sm font-black text-content group-hover:text-brand transition-colors flex items-center gap-2 flex-wrap">
                                     <span>{getTransPermName(perm.id, perm.categoryKey, perm.name)}</span>
                                     {perm.id.endsWith('.view') && (
-                                      <span className="text-[9px] bg-info/10 text-info px-2 py-0.2 rounded font-bold">
+                                      <span className="text-sm bg-info/10 text-info px-2 py-0.2 rounded font-bold">
                                         {t('settings.staff.permissions.view_badge')}
                                       </span>
                                     )}
                                   </div>
-                                  <p className="text-[10px] text-content-muted font-bold leading-relaxed">
+                                  <p className="text-sm text-content-muted font-bold leading-relaxed">
                                     {getTransPermDesc(perm.id, perm.categoryKey, perm.description)}
                                   </p>
                                 </div>
@@ -819,7 +819,7 @@ export const RolePermissionsSettings: React.FC<RolePermissionsSettingsProps> = (
               {/* Bottom Actions Bar */}
               {hasChanges && (
                 <div className="sticky bottom-4 bg-brand/95 backdrop-blur-md text-white p-4 rounded-2xl shadow-xl flex items-center justify-between gap-4 border border-brand/20 animate-bounce-short">
-                  <div className="flex items-center gap-2 text-xs font-bold">
+                  <div className="flex items-center gap-2 text-sm font-bold">
                     <Sparkles size={18} />
                     <span>{t('permissions.unsaved_banner', { role: selectedRole.name })}</span>
                   </div>
@@ -830,14 +830,14 @@ export const RolePermissionsSettings: React.FC<RolePermissionsSettingsProps> = (
                         setPermissionsState((selectedRole.permissions || {}) as PermissionsMap);
                         setHasChanges(false);
                       }}
-                      className="px-4 py-2 bg-surface/20 hover:bg-surface/30 text-white rounded-xl text-xs font-bold transition-all"
+                      className="px-4 py-2 bg-surface/20 hover:bg-surface/30 text-white rounded-xl text-sm font-bold transition-all"
                     >
                       {t('permissions.discard_changes')}
                     </button>
                     <button
                       onClick={handleSaveChanges}
                       disabled={saving}
-                      className="px-5 py-2 bg-surface text-brand font-black rounded-xl text-xs transition-all hover:bg-surface shadow-md"
+                      className="px-5 py-2 bg-surface text-brand font-black rounded-xl text-sm transition-all hover:bg-surface shadow-md"
                     >
                       {saving ? t('common.saving') : t('permissions.save_permissions_now')}
                     </button>
@@ -877,25 +877,25 @@ export const RolePermissionsSettings: React.FC<RolePermissionsSettingsProps> = (
 
               <form onSubmit={handleCreateCustomRole} className="space-y-4">
                 <div className="space-y-1.5">
-                  <label className="text-xs font-black text-content-muted">{t('permissions.custom_role_name_label')}</label>
+                  <label className="text-sm font-black text-content-muted">{t('permissions.custom_role_name_label')}</label>
                   <input
                     type="text"
                     required
                     placeholder={t('permissions.custom_role_name_placeholder')}
                     value={newRoleName}
                     onChange={(e) => setNewRoleName(e.target.value)}
-                    className="w-full bg-surface-muted border border-border rounded-2xl p-3.5 text-xs font-bold text-content focus:border-brand outline-none"
+                    className="w-full bg-surface-muted border border-border rounded-2xl p-3.5 text-sm font-bold text-content focus:border-brand outline-none"
                   />
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-xs font-black text-content-muted">{t('permissions.custom_role_desc_label')}</label>
+                  <label className="text-sm font-black text-content-muted">{t('permissions.custom_role_desc_label')}</label>
                   <textarea
                     rows={3}
                     placeholder={t('permissions.custom_role_desc_placeholder')}
                     value={newRoleDesc}
                     onChange={(e) => setNewRoleDesc(e.target.value)}
-                    className="w-full bg-surface-muted border border-border rounded-2xl p-3.5 text-xs font-bold text-content focus:border-brand outline-none resize-none"
+                    className="w-full bg-surface-muted border border-border rounded-2xl p-3.5 text-sm font-bold text-content focus:border-brand outline-none resize-none"
                   />
                 </div>
 
@@ -903,14 +903,14 @@ export const RolePermissionsSettings: React.FC<RolePermissionsSettingsProps> = (
                   <button
                     type="button"
                     onClick={() => setShowCreateRoleModal(false)}
-                    className="px-5 py-2.5 bg-surface-muted hover:bg-border text-content text-xs font-bold rounded-xl transition-all"
+                    className="px-5 py-2.5 bg-surface-muted hover:bg-border text-content text-sm font-bold rounded-xl transition-all"
                   >
                     {t('common.cancel')}
                   </button>
                   <button
                     type="submit"
                     disabled={saving || !newRoleName.trim()}
-                    className="px-6 py-2.5 bg-brand text-white text-xs font-black rounded-xl transition-all shadow-md shadow-brand/10 disabled:opacity-50"
+                    className="px-6 py-2.5 bg-brand text-white text-sm font-black rounded-xl transition-all shadow-md shadow-brand/10 disabled:opacity-50"
                   >
                     {saving ? t('settings_page.staff.seeding_roles') : t('permissions.create_custom_role_submit')}
                   </button>

@@ -779,7 +779,7 @@ export default function AdminTailors() {
 
   return (
     <div className="space-y-10">
-      <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+      <header className="flex flex-col main-720:flex-row justify-between items-start main-720:items-center gap-6">
         <div>
           <h2 className="text-3xl font-black text-content flex items-center gap-3">
             <Users className="text-brand" size={32} />
@@ -790,7 +790,7 @@ export default function AdminTailors() {
       </header>
 
       {/* Top Graphical Stats Panel */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 main-900:grid-cols-3 gap-6">
         {/* Active Subscribers */}
         <div className="bg-surface p-6 rounded-3xl border border-border shadow-sm flex flex-col justify-between">
           <div className="flex justify-between items-start mb-4">
@@ -880,8 +880,8 @@ export default function AdminTailors() {
           className="space-y-10"
         >
           {/* Filters & Actions */}
-          <div className="bg-surface p-6 rounded-2xl border border-border shadow-sm flex flex-col md:flex-row justify-between items-center gap-4">
-            <div className="flex flex-col sm:flex-row flex-1 gap-4 w-full md:w-auto">
+          <div className="bg-surface p-6 rounded-2xl border border-border shadow-sm flex flex-col main-720:flex-row justify-between items-center gap-4">
+            <div className="flex flex-col main-640:flex-row flex-1 gap-4 w-full main-720:w-auto">
               <div className="flex-1 max-w-sm">
                 <IconInput 
                   type="text"
@@ -952,10 +952,10 @@ export default function AdminTailors() {
                 </div>
               )}
               {tenants.filter(t => !!t.trashedAt).map(tenant => (
-                <div key={tenant.id} className="p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div key={tenant.id} className="p-5 flex flex-col main-640:flex-row main-640:items-center justify-between gap-3">
                   <div className="min-w-0">
                     <h4 className="text-sm font-black text-content leading-tight">{tenant.name}</h4>
-                    <p className="text-xs text-content-muted mt-0.5 font-bold">
+                    <p className="text-sm text-content-muted mt-0.5 font-bold">
                       {tenant.ownerEmail} · {t('saas.tenants.trashed_at_label', 'نُقل للسلة')}: {tenant.trashedAt ? new Date(tenant.trashedAt).toLocaleDateString(localeOf(i18n.language)) : '-'}
                     </p>
                   </div>
@@ -964,7 +964,7 @@ export default function AdminTailors() {
                       type="button"
                       disabled={exportingTenantId === tenant.id || deletingTenantId === tenant.id}
                       onClick={() => handleExportTenant(tenant)}
-                      className="flex items-center gap-1.5 px-4 py-2 bg-surface-muted text-content border border-border rounded-xl text-xs font-black hover:bg-border transition-all disabled:opacity-50"
+                      className="flex items-center gap-1.5 px-4 py-2 bg-surface-muted text-content border border-border rounded-xl text-sm font-black hover:bg-border transition-all disabled:opacity-50"
                     >
                       <Download size={14} />
                       {t('saas.tenants.export_shop_data')}
@@ -972,7 +972,7 @@ export default function AdminTailors() {
                     <button
                       disabled={deletingTenantId === tenant.id}
                       onClick={() => handleRestoreTenant(tenant)}
-                      className="flex items-center gap-1.5 px-4 py-2 bg-success/10 text-success border border-success/20 rounded-xl text-xs font-black hover:bg-success/20 transition-all disabled:opacity-50"
+                      className="flex items-center gap-1.5 px-4 py-2 bg-success/10 text-success border border-success/20 rounded-xl text-sm font-black hover:bg-success/20 transition-all disabled:opacity-50"
                     >
                       <RotateCcw size={14} />
                       {t('saas.tenants.restore', 'استعادة')}
@@ -980,7 +980,7 @@ export default function AdminTailors() {
                     <button
                       disabled={deletingTenantId === tenant.id}
                       onClick={() => handlePermanentlyDeleteTenant(tenant)}
-                      className="flex items-center gap-1.5 px-4 py-2 bg-danger/10 text-danger border border-danger/20 rounded-xl text-xs font-black hover:bg-danger/20 transition-all disabled:opacity-50"
+                      className="flex items-center gap-1.5 px-4 py-2 bg-danger/10 text-danger border border-danger/20 rounded-xl text-sm font-black hover:bg-danger/20 transition-all disabled:opacity-50"
                     >
                       <Trash2 size={14} />
                       {t('saas.tenants.permanent_delete', 'حذف نهائي')}
@@ -1001,7 +1001,7 @@ export default function AdminTailors() {
               </h3>
               <div className="bg-surface rounded-3xl border border-border shadow-sm overflow-hidden">
                 <table className="w-full text-right">
-                  <thead className="bg-surface-muted text-content-muted text-[10px] font-black uppercase tracking-widest border-b border-border">
+                  <thead className="bg-surface-muted text-content-muted text-sm font-black uppercase border-b border-border">
                     <tr>
                       <th className="px-8 py-5">{t('saas.tenants.col_shop')}</th>
                       <th className="px-8 py-5">{t('saas.tenants.col_vertical', 'النشاط')}</th>
@@ -1053,27 +1053,27 @@ export default function AdminTailors() {
                             </div>
                           </td>
                           <td className="px-8 py-6">
-                            <span className="px-3 py-1 rounded-full text-[10px] font-black bg-surface-muted text-content border border-border whitespace-nowrap">
+                            <span className="px-3 py-1 rounded-full text-sm font-black bg-surface-muted text-content border border-border whitespace-nowrap">
                               {verticalName((tenant as any).vertical)}
                             </span>
                           </td>
                           <td className="px-8 py-6">
                             <div className="text-sm font-bold text-content">{tenant.ownerEmail}</div>
-                            <div className="text-[10px] text-brand font-black mt-0.5">{tenant.phone}</div>
+                            <div className="text-sm text-brand font-black mt-0.5">{tenant.phone}</div>
                           </td>
                           <td className="px-8 py-6">
-                            <span className="px-3 py-1 rounded-full text-[10px] font-black uppercase bg-brand/5 text-brand border border-brand/10">
+                            <span className="px-3 py-1 rounded-full text-sm font-black uppercase bg-brand/5 text-brand border border-brand/10">
                               {getPlanName(tenant.planId)}
                             </span>
                           </td>
                           <td className="px-8 py-6 text-center">
                             {isActive ? (
-                              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase bg-success/10 text-success border border-success/20">
+                              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-black uppercase bg-success/10 text-success border border-success/20">
                                 <BadgeCheck size={12} />
                                 {t('common.active')}
                               </span>
                             ) : (
-                              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase bg-danger/10 text-danger border border-danger/20">
+                              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-black uppercase bg-danger/10 text-danger border border-danger/20">
                                 <Ban size={12} />
                                 {t('settings_page.staff.permissions.disabled')}
                               </span>
@@ -1185,7 +1185,7 @@ export default function AdminTailors() {
                 {/* The shop's activity -- the platform admin may change it while the
                     shop has no orders (admin_change_tenant_vertical, logged). */}
                 <div className="flex flex-wrap items-center gap-3 bg-surface-muted p-4 rounded-2xl border border-border">
-                  <span className="text-xs font-bold text-content-muted">{t('saas.tenants.col_vertical', 'النشاط')}</span>
+                  <span className="text-sm font-bold text-content-muted">{t('saas.tenants.col_vertical', 'النشاط')}</span>
                   <SmartSelect
                     value={(selectedTenant as any).vertical || 'mens_tailoring'}
                     disabled={changingVertical}
@@ -1193,25 +1193,25 @@ export default function AdminTailors() {
                     className="w-auto min-w-[200px] rounded-xl"
                     options={verticals.map((v) => ({ value: v.key, label: verticalName(v.key) }))}
                   />
-                  <span className="text-[11px] text-content-muted font-bold">{t('saas.tenants.vertical_change_hint', 'يُسمح بالتغيير فقط لمحل بلا طلبات، ويُسجَّل في سجل التدقيق.')}</span>
+                  <span className="text-sm text-content-muted font-bold">{t('saas.tenants.vertical_change_hint', 'يُسمح بالتغيير فقط لمحل بلا طلبات، ويُسجَّل في سجل التدقيق.')}</span>
                 </div>
                 
                 {/* Statistics Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 main-720:grid-cols-3 gap-6">
                   <div className="bg-surface-muted p-6 rounded-3xl border border-border">
-                    <p className="text-xs text-content-muted font-bold mb-1">{t('saas.tenants.total_sales_30d')}</p>
+                    <p className="text-sm text-content-muted font-bold mb-1">{t('saas.tenants.total_sales_30d')}</p>
                     <div className="text-2xl font-black text-content">
                       <PriceDisplay amount={tenantStats?.summary.totalSales || 0} />
                     </div>
                   </div>
                   <div className="bg-surface-muted p-6 rounded-3xl border border-border">
-                    <p className="text-xs text-content-muted font-bold mb-1">{t('saas.tenants.total_orders_30d')}</p>
+                    <p className="text-sm text-content-muted font-bold mb-1">{t('saas.tenants.total_orders_30d')}</p>
                     <div className="text-2xl font-black text-content">
                       {t('saas.tenants.orders_value', { value: tenantStats?.summary.totalOrders || 0 })}
                     </div>
                   </div>
                   <div className="bg-surface-muted p-6 rounded-3xl border border-border">
-                    <p className="text-xs text-content-muted font-bold mb-1">{t('saas.tenants.subscription_age')}</p>
+                    <p className="text-sm text-content-muted font-bold mb-1">{t('saas.tenants.subscription_age')}</p>
                     <div className="text-2xl font-black text-content">
                       {t('saas.tenants.days_value', { days: Math.ceil((new Date().getTime() - new Date(selectedTenant.createdAt).getTime()) / (1000 * 60 * 60 * 24)) })}
                     </div>
@@ -1220,7 +1220,7 @@ export default function AdminTailors() {
 
                 {/* Subscriptions Section */}
                 <div className="space-y-4">
-                  <h4 className="text-sm font-bold text-content-muted uppercase tracking-wider flex items-center gap-2">
+                  <h4 className="text-sm font-bold text-content-muted uppercase flex items-center gap-2">
                     <CreditCard size={16} />
                     {t('saas.tenants.subscription_details')}
                   </h4>
@@ -1228,14 +1228,14 @@ export default function AdminTailors() {
                     {(() => {
                       const info = getSubscriptionInfo(selectedTenant);
                       return (
-                        <div className="flex flex-col md:flex-row gap-8 items-center">
+                        <div className="flex flex-col main-720:flex-row gap-8 items-center">
                           <div className="flex-1 space-y-2">
                             <div className="flex justify-between items-end">
                               <div>
                                 <p className="text-sm font-bold text-content">{info.type}</p>
-                                <p className="text-xs text-content-muted">{t('saas.tenants.remaining_until_expiry', { days: info.daysLeft })}</p>
+                                <p className="text-sm text-content-muted">{t('saas.tenants.remaining_until_expiry', { days: info.daysLeft })}</p>
                               </div>
-                              <span className={`text-xs font-black uppercase tracking-widest ${info.isTrial ? 'text-warning' : 'text-success'}`}>
+                              <span className={`text-sm font-black uppercase ${info.isTrial ? 'text-warning' : 'text-success'}`}>
                                 {info.type}
                               </span>
                             </div>
@@ -1246,17 +1246,17 @@ export default function AdminTailors() {
                                 className={`h-full ${info.isTrial ? 'bg-warning' : 'bg-success'}`}
                               />
                             </div>
-                            <div className="flex justify-between items-center text-[10px] text-content-muted font-bold">
+                            <div className="flex justify-between items-center text-sm text-content-muted font-bold">
                               <span>{t('saas.tenants.join_date_value', { date: new Date(selectedTenant.createdAt).toLocaleDateString(localeOf(i18n.language)) })}</span>
                               <span>{t('saas.tenants.expected_expiry_value', { date: info.expiryDate.toLocaleDateString(localeOf(i18n.language)) })}</span>
                             </div>
                           </div>
-                          <div className="w-full md:w-auto">
+                          <div className="w-full main-720:w-auto">
                             {selectedTenant.status !== 'active' ? (
                               <button 
                                 onClick={() => handleActivateSubscription(selectedTenant)}
                                 disabled={loading}
-                                className="w-full md:w-56 bg-success text-white py-4 rounded-2xl font-bold hover:bg-success/90 transition-all shadow-lg shadow-success/10 flex items-center justify-center gap-2"
+                                className="w-full main-720:w-56 bg-success text-white py-4 rounded-2xl font-bold hover:bg-success/90 transition-all shadow-lg shadow-success/10 flex items-center justify-center gap-2"
                               >
                                 <UserCheck size={20} />
                                 {t('saas.tenants.activate_subscription')}
@@ -1265,7 +1265,7 @@ export default function AdminTailors() {
                               <button 
                                 onClick={() => handleRenewSubscription(selectedTenant)}
                                 disabled={loading}
-                                className="w-full md:w-56 bg-brand text-white py-4 rounded-2xl font-bold hover:bg-brand/90 transition-all shadow-lg shadow-brand/10 flex items-center justify-center gap-2"
+                                className="w-full main-720:w-56 bg-brand text-white py-4 rounded-2xl font-bold hover:bg-brand/90 transition-all shadow-lg shadow-brand/10 flex items-center justify-center gap-2"
                               >
                                 <Calendar size={20} />
                                 {t('saas.tenants.renew_subscription_year')}
@@ -1279,9 +1279,9 @@ export default function AdminTailors() {
                 </div>
 
                 {/* Performance Charts */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 main-720:grid-cols-2 gap-6">
                   <div className="space-y-4">
-                    <h4 className="text-sm font-bold text-content-muted uppercase tracking-wider flex items-center gap-2 px-2">
+                    <h4 className="text-sm font-bold text-content-muted uppercase flex items-center gap-2 px-2">
                        <TrendingUp size={16} />
                        {t('saas.tenants.daily_sales_volume')}
                     </h4>
@@ -1300,12 +1300,12 @@ export default function AdminTailors() {
                               dataKey="date" 
                               axisLine={false} 
                               tickLine={false} 
-                              tick={{fontSize: 10, fill: 'var(--content-muted)'}}
+                              tick={{fontSize: 14, fill: 'var(--content-muted)'}}
                             />
                             <YAxis 
                               axisLine={false} 
                               tickLine={false} 
-                              tick={{fontSize: 10, fill: 'var(--content-muted)'}}
+                              tick={{fontSize: 14, fill: 'var(--content-muted)'}}
                             />
                             <Tooltip 
                               contentStyle={{ borderRadius: '1rem', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }}
@@ -1329,7 +1329,7 @@ export default function AdminTailors() {
                   </div>
 
                   <div className="space-y-4">
-                    <h4 className="text-sm font-bold text-content-muted uppercase tracking-wider flex items-center gap-2 px-2">
+                    <h4 className="text-sm font-bold text-content-muted uppercase flex items-center gap-2 px-2">
                        <ShoppingBag size={16} />
                        {t('saas.tenants.daily_orders_count')}
                     </h4>
@@ -1342,12 +1342,12 @@ export default function AdminTailors() {
                               dataKey="date" 
                               axisLine={false} 
                               tickLine={false} 
-                              tick={{fontSize: 10, fill: 'var(--content-muted)'}}
+                              tick={{fontSize: 14, fill: 'var(--content-muted)'}}
                             />
                             <YAxis 
                               axisLine={false} 
                               tickLine={false} 
-                              tick={{fontSize: 10, fill: 'var(--content-muted)'}}
+                              tick={{fontSize: 14, fill: 'var(--content-muted)'}}
                             />
                             <Tooltip 
                               contentStyle={{ borderRadius: '1rem', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }}
@@ -1368,24 +1368,24 @@ export default function AdminTailors() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 main-720:grid-cols-2 gap-6">
                   {/* Contact Info */}
                   <div className="space-y-4">
-                    <h4 className="text-sm font-bold text-content-muted uppercase tracking-wider flex items-center gap-2 px-2">
+                    <h4 className="text-sm font-bold text-content-muted uppercase flex items-center gap-2 px-2">
                       <Mail size={16} />
                       {t('saas.tenants.contact_info')}
                     </h4>
                     <div className="bg-surface-muted p-4 rounded-2xl border border-border space-y-3 shadow-inner">
                       <div>
-                        <p className="text-[10px] text-content-muted font-bold">{t('common.email')}</p>
+                        <p className="text-sm text-content-muted font-bold">{t('common.email')}</p>
                         <p className="text-sm font-medium text-content">{selectedTenant.ownerEmail}</p>
                       </div>
                       <div>
-                        <p className="text-[10px] text-content-muted font-bold">{t('login.phone')}</p>
+                        <p className="text-sm text-content-muted font-bold">{t('login.phone')}</p>
                         <p className="text-sm font-medium text-content">{selectedTenant.phone}</p>
                       </div>
                       <div>
-                        <p className="text-[10px] text-content-muted font-bold">{t('procurement.address')}</p>
+                        <p className="text-sm text-content-muted font-bold">{t('procurement.address')}</p>
                         <p className="text-sm font-medium text-content">{selectedTenant.address || t('orders.not_specified')}</p>
                       </div>
                     </div>
@@ -1393,21 +1393,21 @@ export default function AdminTailors() {
 
                   {/* Business Info */}
                   <div className="space-y-4">
-                    <h4 className="text-sm font-bold text-content-muted uppercase tracking-wider flex items-center gap-2 px-2">
+                    <h4 className="text-sm font-bold text-content-muted uppercase flex items-center gap-2 px-2">
                       <FileText size={16} />
                       {t('saas.tenants.licenses_and_taxes')}
                     </h4>
                     <div className="bg-surface-muted p-4 rounded-2xl border border-border space-y-3 shadow-inner">
                       <div>
-                        <p className="text-[10px] text-content-muted font-bold">{t('saas.tenants.commercial_register')}</p>
+                        <p className="text-sm text-content-muted font-bold">{t('saas.tenants.commercial_register')}</p>
                         <p className="text-sm font-medium text-content">{selectedTenant.commercialRegister || t('common.not_available')}</p>
                       </div>
                       <div>
-                        <p className="text-[10px] text-content-muted font-bold">{t('customers.trn')}</p>
+                        <p className="text-sm text-content-muted font-bold">{t('customers.trn')}</p>
                         <p className="text-sm font-medium text-content">{selectedTenant.vatNumber || t('common.not_available')}</p>
                       </div>
                       <div>
-                        <p className="text-[10px] text-content-muted font-bold">{t('saas.tenants.join_date')}</p>
+                        <p className="text-sm text-content-muted font-bold">{t('saas.tenants.join_date')}</p>
                         <p className="text-sm font-medium text-content">
                           {new Date(selectedTenant.createdAt).toLocaleDateString(localeOf(i18n.language))}
                         </p>
@@ -1422,8 +1422,8 @@ export default function AdminTailors() {
                       <Bot size={16} />
                     </div>
                     <div>
-                      <div className="text-xs font-black text-content">{t('saas.tenants.assistant_toggle_label')}</div>
-                      <div className="text-[10px] text-content-muted font-bold mt-0.5">{t('saas.tenants.assistant_toggle_desc')}</div>
+                      <div className="text-sm font-black text-content">{t('saas.tenants.assistant_toggle_label')}</div>
+                      <div className="text-sm text-content-muted font-bold mt-0.5">{t('saas.tenants.assistant_toggle_desc')}</div>
                     </div>
                   </div>
                   <label className={cn("relative inline-flex items-center shrink-0", updatingAssistantTenantId === selectedTenant.id ? "opacity-50 pointer-events-none" : "cursor-pointer")}>
@@ -1498,7 +1498,7 @@ export default function AdminTailors() {
                   </div>
                   <div>
                     <h3 className="font-black text-content text-lg">{t('saas.tenants.activity_log_title')}</h3>
-                    <p className="text-xs text-content-muted font-bold mt-0.5">{drawerTenant.name}</p>
+                    <p className="text-sm text-content-muted font-bold mt-0.5">{drawerTenant.name}</p>
                   </div>
                 </div>
                 <button
@@ -1586,7 +1586,7 @@ export default function AdminTailors() {
                   <ShieldAlert size={18} />
                   {t('saas.tenants.stealth_login')}
                   {!(userRole === 'super_admin' || userRole === 'owner' as any || (dbUser as any)?.can_stealth_login === true || (dbUser as any)?.stealth_login_enabled === true) && (
-                    <span className="text-[10px] bg-danger/20 text-danger px-1.5 py-0.5 rounded ml-1">{t('saas.tenants.locked_badge')}</span>
+                    <span className="text-sm bg-danger/20 text-danger px-1.5 py-0.5 rounded ml-1">{t('saas.tenants.locked_badge')}</span>
                   )}
                 </button>
               </div>

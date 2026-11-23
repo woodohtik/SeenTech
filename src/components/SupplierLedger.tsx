@@ -268,7 +268,7 @@ export default function SupplierLedger({
     <div className="space-y-6 font-sans text-right" dir={dir}>
       
       {/* Top action header for Ledger view */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 print:hidden">
+      <div className="flex flex-col main-720:flex-row justify-between items-start main-720:items-center gap-4 print:hidden">
         <div className="flex items-center gap-3">
           <button
             onClick={onBack}
@@ -279,23 +279,23 @@ export default function SupplierLedger({
           <div>
             <div className="flex items-center gap-2">
               <h1 className="text-xl font-black text-content">{t('procurement.supplier_ledger_title', 'كشف حساب المورد والمستندات المتبادلة')}</h1>
-              <span className="bg-surface-muted border border-border text-content-muted px-2.5 py-1 rounded-full text-[10px] font-black">{t('procurement.subsidiary_ledger', 'دفتر الأستاذ المساعد')}</span>
+              <span className="bg-surface-muted border border-border text-content-muted px-2.5 py-1 rounded-full text-sm font-black">{t('procurement.subsidiary_ledger', 'دفتر الأستاذ المساعد')}</span>
             </div>
-            <p className="text-xs font-bold text-content-muted mt-0.5">{t('procurement.supplier_ledger_subtitle', 'مراجعة كاملة لجميع الديون والمشتريات وتواريخ الدفع في')} {supplier.name}</p>
+            <p className="text-sm font-bold text-content-muted mt-0.5">{t('procurement.supplier_ledger_subtitle', 'مراجعة كاملة لجميع الديون والمشتريات وتواريخ الدفع في')} {supplier.name}</p>
           </div>
         </div>
 
-        <div className="flex items-center gap-2 flex-wrap w-full md:w-auto">
+        <div className="flex items-center gap-2 flex-wrap w-full main-720:w-auto">
           <button
             onClick={handleWhatsAppShare}
-            className="flex-1 min-w-[160px] md:flex-none md:w-auto h-10 px-4 py-2 bg-success hover:bg-success/90 text-white rounded-xl text-xs font-black shadow-md shadow-success/10 flex items-center justify-center gap-2 transition-all cursor-pointer"
+            className="flex-1 min-w-[160px] main-720:flex-none main-720:w-auto h-10 px-4 py-2 bg-success hover:bg-success/90 text-white rounded-xl text-sm font-black shadow-md shadow-success/10 flex items-center justify-center gap-2 transition-all cursor-pointer"
           >
             <MessageCircle size={16} />
             <span>{t('procurement.send_whatsapp_pdf', 'إرسال كشف الحساب عبر واتساب')}</span>
           </button>
           <button
             onClick={() => void handleAttachLedgerPdf()}
-            className="flex-1 min-w-[140px] md:flex-none md:w-auto h-10 px-4 py-2 bg-surface border border-border text-content-muted hover:text-content rounded-xl text-xs font-black flex items-center justify-center gap-2 transition-all cursor-pointer"
+            className="flex-1 min-w-[140px] main-720:flex-none main-720:w-auto h-10 px-4 py-2 bg-surface border border-border text-content-muted hover:text-content rounded-xl text-sm font-black flex items-center justify-center gap-2 transition-all cursor-pointer"
           >
             <Paperclip size={16} />
             <span>{t('procurement.attach_ledger_pdf', 'إرفاق كملف PDF أيضاً')}</span>
@@ -303,7 +303,7 @@ export default function SupplierLedger({
 
           <button
             onClick={() => setIsVoucherOpen(true)}
-            className="flex-1 min-w-[140px] md:flex-none md:w-auto h-10 px-4 py-2 bg-danger hover:bg-danger/90 text-white rounded-xl text-xs font-black shadow-md shadow-danger/10 flex items-center justify-center gap-2 transition-all cursor-pointer"
+            className="flex-1 min-w-[140px] main-720:flex-none main-720:w-auto h-10 px-4 py-2 bg-danger hover:bg-danger/90 text-white rounded-xl text-sm font-black shadow-md shadow-danger/10 flex items-center justify-center gap-2 transition-all cursor-pointer"
           >
             <Plus size={16} />
             <span>{t('procurement.issue_payment_voucher', 'إصدار سند صرف (سداد)')}</span>
@@ -311,7 +311,7 @@ export default function SupplierLedger({
 
           <button
             onClick={handlePrintA4}
-            className="flex-1 min-w-[120px] md:flex-none md:w-auto h-10 px-4 py-2 bg-brand hover:bg-brand/90 text-white rounded-xl text-xs font-black shadow-md shadow-brand/10 flex items-center justify-center gap-2 transition-all cursor-pointer"
+            className="flex-1 min-w-[120px] main-720:flex-none main-720:w-auto h-10 px-4 py-2 bg-brand hover:bg-brand/90 text-white rounded-xl text-sm font-black shadow-md shadow-brand/10 flex items-center justify-center gap-2 transition-all cursor-pointer"
           >
             <Printer size={16} />
             <span>{t('procurement.print_a4', 'طباعة كشف A4')}</span>
@@ -324,24 +324,24 @@ export default function SupplierLedger({
         <div className="flex justify-between items-center">
           <div>
             <h1 className="text-2xl font-black">{tenantName}</h1>
-            <p className="text-xs font-bold text-content-muted mt-1">{t('procurement.detailed_statement_partners', 'كشف حركـات الحساب التفصيلي للشركاء والموردين')}</p>
+            <p className="text-sm font-bold text-content-muted mt-1">{t('procurement.detailed_statement_partners', 'كشف حركـات الحساب التفصيلي للشركاء والموردين')}</p>
           </div>
-          <div className="text-left font-mono text-[9px] text-content-muted">
+          <div className="text-left font-mono text-sm text-content-muted">
             <p>{t('procurement.printed_on', 'Printed on')}: {new Date().toLocaleString(localeOf())}</p>
             <p>System Ref: Seen-POS-Ledger</p>
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-6 mt-6 pt-6 border-t border-border text-xs leading-relaxed">
+        <div className="grid grid-cols-2 gap-6 mt-6 pt-6 border-t border-border text-sm leading-relaxed">
           <div>
-            <p className="font-extrabold text-content-muted uppercase tracking-wider mb-1">{t('procurement.supplier_details_query', 'تفاصيل المورد المستعلم عنه')}:</p>
+            <p className="font-extrabold text-content-muted uppercase mb-1">{t('procurement.supplier_details_query', 'تفاصيل المورد المستعلم عنه')}:</p>
             <p className="text-sm font-black text-content">{supplier.name}</p>
             {supplier.phone && <p className="font-semibold text-content-muted">{t('procurement.phone', 'هاتف')}: <span className="font-mono">{supplier.phone}</span></p>}
             {supplier.taxNumber && <p className="font-semibold text-content-muted">{t('procurement.tax_number_lbl', 'الرقم الضريبي للمورد')}: <span className="font-mono">{supplier.taxNumber}</span></p>}
             {supplier.address && <p className="font-semibold text-content-muted">{t('procurement.address', 'العنوان')}: {supplier.address}</p>}
           </div>
           <div className="bg-surface-muted border border-border p-4 rounded-2xl flex flex-col justify-between items-end text-left h-full">
-            <span className="font-black text-content-muted text-[10px] uppercase">{t('procurement.total_balance_due_desc', 'إجمالي الرصيد المستحق في الذمة')}:</span>
+            <span className="font-black text-content-muted text-sm uppercase">{t('procurement.total_balance_due_desc', 'إجمالي الرصيد المستحق في الذمة')}:</span>
             <span className="text-2xl font-black text-danger font-mono mt-1 flex items-center gap-1">
               {supplier.balance.toFixed(2)} <CurrencySymbol className="h-[1.1em] w-auto inline-block" />
             </span>
@@ -350,12 +350,12 @@ export default function SupplierLedger({
       </div>
 
       {/* Account Highlights Metrics Board */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 print:grid-cols-4 print:gap-3">
+      <div className="grid grid-cols-1 main-720:grid-cols-4 gap-4 print:grid-cols-4 print:gap-3">
         
         {/* Metric Column 1 */}
         <div className="bg-surface border border-border p-5 rounded-3xl shadow-sm flex items-center justify-between">
           <div>
-            <span className="text-[10px] font-black text-content-muted block uppercase mb-1">{t('procurement.total_purchases_credit', 'إجمالي المشتريات (دائن)')}</span>
+            <span className="text-sm font-black text-content-muted block uppercase mb-1">{t('procurement.total_purchases_credit', 'إجمالي المشتريات (دائن)')}</span>
             <span className="text-xl font-black text-content font-mono">
               <PriceDisplay amount={totalCredit} />
             </span>
@@ -368,7 +368,7 @@ export default function SupplierLedger({
         {/* Metric Column 2 */}
         <div className="bg-surface border border-border p-5 rounded-3xl shadow-sm flex items-center justify-between">
           <div>
-            <span className="text-[10px] font-black text-content-muted block uppercase mb-1">{t('procurement.total_payments_debit', 'إجمالي المدفوعات (مدين)')}</span>
+            <span className="text-sm font-black text-content-muted block uppercase mb-1">{t('procurement.total_payments_debit', 'إجمالي المدفوعات (مدين)')}</span>
             <span className="text-xl font-black text-danger font-mono">
               <PriceDisplay amount={totalDebit} />
             </span>
@@ -379,9 +379,9 @@ export default function SupplierLedger({
         </div>
 
         {/* Metric Column 3 */}
-        <div className="bg-surface border border-border p-5 rounded-3xl shadow-sm flex items-center justify-between col-span-1 md:col-span-2">
+        <div className="bg-surface border border-border p-5 rounded-3xl shadow-sm flex items-center justify-between col-span-1 main-720:col-span-2">
           <div>
-            <span className="text-[10px] font-black text-content-muted block uppercase mb-1">{t('procurement.final_balance_due_supplier', 'الرصيد النهائي المستحق للمورد')}</span>
+            <span className="text-sm font-black text-content-muted block uppercase mb-1">{t('procurement.final_balance_due_supplier', 'الرصيد النهائي المستحق للمورد')}</span>
             <span className="text-2xl font-black text-content font-mono">
               <PriceDisplay amount={supplier.balance} />
             </span>
@@ -394,7 +394,7 @@ export default function SupplierLedger({
 
       {/* Filter and Date Selector Controls (Hidden during print) */}
       <div className="bg-surface border border-border p-5 rounded-3xl shadow-sm space-y-4 print:hidden">
-        <div className="flex flex-col md:flex-row gap-3">
+        <div className="flex flex-col main-720:flex-row gap-3">
           
           <IconInput
             type="text"
@@ -410,7 +410,7 @@ export default function SupplierLedger({
             value={typeFilter}
             onChange={(v) => setTypeFilter(v as typeof typeFilter)}
             startIcon={Filter}
-            className="w-full md:w-56 h-10 rounded-xl text-xs"
+            className="w-full main-720:w-56 h-10 rounded-xl text-sm"
             options={[
               { value: 'all', label: t('procurement.filter_all_tx', 'كل الحركات المالية (دائن وملف)') },
               { value: 'purchase', label: t('procurement.filter_purchases', 'عمليات المشتريات (متأخرات في فواتير)') },
@@ -421,7 +421,7 @@ export default function SupplierLedger({
         </div>
 
         {/* Date Filters row */}
-        <div className="flex flex-wrap items-center gap-3 pt-3 border-t border-border text-xs font-bold text-content-muted">
+        <div className="flex flex-wrap items-center gap-3 pt-3 border-t border-border text-sm font-bold text-content-muted">
           <div className="min-w-[150px]">
             <DatePicker value={startDate} onChange={setStartDate} placeholder={t('procurement.filter_date_start', 'تصفية التاريخ:')} />
           </div>
@@ -450,20 +450,20 @@ export default function SupplierLedger({
       {loading ? (
         <div className="bg-surface border border-border p-12 text-center text-content-muted rounded-3xl shadow-sm flex flex-col items-center justify-center gap-3">
           <div className="w-8 h-8 border-3 border-border border-t-brand rounded-full animate-spin" />
-          <p className="text-xs font-bold">{t('procurement.loading_ledger', 'جاري تحميل حركات كشف الحساب والمستندات...')}</p>
+          <p className="text-sm font-bold">{t('procurement.loading_ledger', 'جاري تحميل حركات كشف الحساب والمستندات...')}</p>
         </div>
       ) : (
         <div className="bg-surface border border-border rounded-3xl shadow-sm overflow-hidden print:border-none print:shadow-none">
           <div className="p-5 border-b border-border flex justify-between items-center print:hidden bg-surface-muted/50">
             <h3 className="font-black text-content text-sm">{t('procurement.matching_ledger_movements', 'بيانات حركة كشف الحساب المتوافقة')}</h3>
-            <span className="text-xs font-mono font-bold text-content-muted">{t('procurement.total_records', 'مجموع القيود')}: {filteredTransactions.length} {t('procurement.financial_record', 'قيد مالي')}</span>
+            <span className="text-sm font-mono font-bold text-content-muted">{t('procurement.total_records', 'مجموع القيود')}: {filteredTransactions.length} {t('procurement.financial_record', 'قيد مالي')}</span>
           </div>
 
           {/* Chronological list table (Desktop only) */}
-          <div className="hidden md:block overflow-x-auto">
-            <table className="w-full text-right border-collapse whitespace-nowrap text-xs md:text-sm">
+          <div className="hidden main-720:block overflow-x-auto">
+            <table className="w-full text-right border-collapse whitespace-nowrap text-sm">
               <thead>
-                <tr className="bg-surface-muted/60 text-[11px] font-black text-content-muted uppercase tracking-wider border-b border-border/50 print:bg-surface-muted">
+                <tr className="bg-surface-muted/60 text-sm font-black text-content-muted uppercase border-b border-border/50 print:bg-surface-muted">
                   <th className="p-4 text-right">{t('procurement.date_time', 'التاريخ / الوقت')}</th>
                   <th className="p-4 text-right">{t('procurement.reference_doc', 'المرجع / السند')}</th>
                   <th className="p-4 text-right">{t('procurement.doc_description', 'أطراف ووصف العمليات المستندية')}</th>
@@ -482,11 +482,11 @@ export default function SupplierLedger({
                     <tr key={tx.id} className="hover:bg-surface-muted/40 transition-colors">
                       <td className="p-4 text-content-muted font-medium">
                         <div>{txDate.toLocaleDateString(localeOf())}</div>
-                        <div className="text-[10px] text-content-muted font-mono mt-0.5">{txDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</div>
+                        <div className="text-sm text-content-muted font-mono mt-0.5">{txDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</div>
                       </td>
                       <td className="p-4 font-mono font-black text-content uppercase">
                         <span className={cn(
-                          "px-2 py-1 rounded-md text-[10px]",
+                          "px-2 py-1 rounded-md text-sm",
                           tx.type === 'payment' ? "bg-danger/10 text-danger border border-danger/20" :
                           tx.type === 'purchase' ? "bg-surface-muted text-content-muted border border-border" :
                           "bg-warning/10 text-warning border border-warning/20"
@@ -543,7 +543,7 @@ export default function SupplierLedger({
                     <td colSpan={7} className="p-12 text-center text-content-muted font-bold bg-surface">
                       <div className="flex flex-col items-center justify-center gap-2">
                         <AlertCircle className="opacity-25" size={40} />
-                        <p className="text-xs text-content-muted">{t('procurement.no_financial_movements', 'لا توجد حركات مالية مطابقة للقيد المستعلم عنه حالياً')}</p>
+                        <p className="text-sm text-content-muted">{t('procurement.no_financial_movements', 'لا توجد حركات مالية مطابقة للقيد المستعلم عنه حالياً')}</p>
                       </div>
                     </td>
                   </tr>
@@ -553,7 +553,7 @@ export default function SupplierLedger({
           </div>
 
           {/* Mobile Card Layout (Mobile only) */}
-          <div className="block md:hidden divide-y divide-border print:hidden">
+          <div className="block main-720:hidden divide-y divide-border print:hidden">
             {filteredTransactions.map((tx) => {
               const txDate = new Date(tx.date);
               
@@ -562,7 +562,7 @@ export default function SupplierLedger({
                   <div className="flex items-center justify-between gap-2">
                     <DateTimeDisplay date={txDate} showTime={true} size="xs" />
                     <span className={cn(
-                      "px-2 py-0.5 rounded-md text-[10px] font-mono font-bold uppercase",
+                      "px-2 py-0.5 rounded-md text-sm font-mono font-bold uppercase",
                       tx.type === 'payment' ? "bg-danger/10 text-danger border border-danger/20" :
                       tx.type === 'purchase' ? "bg-surface-muted text-content-muted border border-border" :
                       "bg-warning/10 text-warning border border-warning/20"
@@ -571,33 +571,33 @@ export default function SupplierLedger({
                     </span>
                   </div>
 
-                  <p className="text-xs text-content font-semibold leading-relaxed">
+                  <p className="text-sm text-content font-semibold leading-relaxed">
                     {tx.notes}
                   </p>
 
                   <div className="grid grid-cols-3 gap-2 bg-surface-muted/50 p-2.5 rounded-xl text-center">
                     <div className="flex flex-col gap-0.5">
-                      <span className="text-[9px] text-content-muted font-bold">{t('procurement.paid_debit', 'المدفوع (مدين)')}</span>
-                      <span className="font-mono font-bold text-xs text-danger">
+                      <span className="text-sm text-content-muted font-bold">{t('procurement.paid_debit', 'المدفوع (مدين)')}</span>
+                      <span className="font-mono font-bold text-sm text-danger">
                         {tx.debit > 0 ? `-${tx.debit.toFixed(2)}` : '—'}
                       </span>
                     </div>
                     <div className="flex flex-col gap-0.5 border-r border-border">
-                      <span className="text-[9px] text-content-muted font-bold">{t('procurement.due_credit', 'المطلوب (دائن)')}</span>
-                      <span className="font-mono font-bold text-xs text-content">
+                      <span className="text-sm text-content-muted font-bold">{t('procurement.due_credit', 'المطلوب (دائن)')}</span>
+                      <span className="font-mono font-bold text-sm text-content">
                         {tx.credit > 0 ? `+${tx.credit.toFixed(2)}` : '—'}
                       </span>
                     </div>
                     <div className="flex flex-col gap-0.5 border-r border-border">
-                      <span className="text-[9px] text-content-muted font-bold">{t('procurement.balance_due', 'الرصيد المستحق')}</span>
-                      <span className="font-mono font-black text-xs text-content flex items-center gap-1">
+                      <span className="text-sm text-content-muted font-bold">{t('procurement.balance_due', 'الرصيد المستحق')}</span>
+                      <span className="font-mono font-black text-sm text-content flex items-center gap-1">
                         {tx.running_balance.toFixed(2)} <CurrencySymbol className="h-[1.1em] w-auto inline-block" />
                       </span>
                     </div>
                   </div>
                   <button
                     onClick={() => void handlePrintTransaction(tx)}
-                    className="w-full min-h-[40px] flex items-center justify-center gap-1.5 text-content-muted hover:text-brand hover:bg-brand/10 rounded-xl transition-colors cursor-pointer text-xs font-bold border border-border"
+                    className="w-full min-h-[40px] flex items-center justify-center gap-1.5 text-content-muted hover:text-brand hover:bg-brand/10 rounded-xl transition-colors cursor-pointer text-sm font-bold border border-border"
                   >
                     <Printer size={14} />
                     <span>{t('procurement.print_action', 'طباعة')}</span>
@@ -607,7 +607,7 @@ export default function SupplierLedger({
             })}
 
             {filteredTransactions.length === 0 && (
-              <div className="p-8 text-center text-content-muted font-bold text-xs">
+              <div className="p-8 text-center text-content-muted font-bold text-sm">
                 {t('procurement.no_financial_movements', 'لا توجد حركات مالية مطابقة للقيد المستعلم عنه حالياً')}
               </div>
             )}
@@ -648,24 +648,24 @@ export default function SupplierLedger({
           <div className="flex justify-between items-center">
             <div>
               <h1 className="text-2xl font-black text-content">{tenantName}</h1>
-              <p className="text-xs font-bold text-content-muted mt-1">{t('procurement.detailed_statement_partners')}</p>
+              <p className="text-sm font-bold text-content-muted mt-1">{t('procurement.detailed_statement_partners')}</p>
             </div>
-            <div className="text-left font-mono text-[9px] text-content-muted">
+            <div className="text-left font-mono text-sm text-content-muted">
               <p>{t('procurement.extraction_date')}: {new Date().toLocaleString(locale)}</p>
               <p>{t('procurement.system_label')}: Seen-POS</p>
             </div>
           </div>
           
-          <div className="grid grid-cols-2 gap-4 mt-6 pt-4 border-t border-border text-xs">
+          <div className="grid grid-cols-2 gap-4 mt-6 pt-4 border-t border-border text-sm">
             <div>
-              <p className="font-extrabold text-content-muted uppercase tracking-wider mb-1">{t('procurement.supplier_details')}:</p>
+              <p className="font-extrabold text-content-muted uppercase mb-1">{t('procurement.supplier_details')}:</p>
               <p className="text-sm font-black text-content">{supplier.name}</p>
               {supplier.phone && <p className="font-semibold text-content-muted">{t('procurement.phone')}: <span className="font-mono">{supplier.phone}</span></p>}
               {supplier.taxNumber && <p className="font-semibold text-content-muted">{t('procurement.tax_number_lbl')}: <span className="font-mono">{supplier.taxNumber}</span></p>}
               {supplier.address && <p className="font-semibold text-content-muted">{t('procurement.address')}: {supplier.address}</p>}
             </div>
             <div className="bg-surface-muted p-4 rounded-2xl flex flex-col justify-between items-end text-left h-full border border-border">
-              <span className="font-black text-content-muted text-[10px] uppercase">{t('procurement.total_balance_due_desc')}:</span>
+              <span className="font-black text-content-muted text-sm uppercase">{t('procurement.total_balance_due_desc')}:</span>
               <span className="text-2xl font-black text-danger font-mono mt-1 flex items-center gap-1">
                 {supplier.balance.toFixed(2)} <CurrencySymbol className="h-[1.1em] w-auto inline-block" />
               </span>
@@ -676,19 +676,19 @@ export default function SupplierLedger({
         {/* Accounting aggregates */}
         <div className="grid grid-cols-3 gap-3">
           <div className="bg-surface-muted p-3 rounded-xl border border-border">
-            <span className="text-[9px] font-black text-content-muted block mb-1">{t('procurement.total_purchases_credit')}</span>
+            <span className="text-sm font-black text-content-muted block mb-1">{t('procurement.total_purchases_credit')}</span>
             <span className="text-sm font-black text-content font-mono flex items-center gap-1">
               {totalCredit.toFixed(2)} <CurrencySymbol className="h-[1.1em] w-auto inline-block" />
             </span>
           </div>
           <div className="bg-surface-muted p-3 rounded-xl border border-border">
-            <span className="text-[9px] font-black text-content-muted block mb-1">{t('procurement.total_payments_debit')}</span>
+            <span className="text-sm font-black text-content-muted block mb-1">{t('procurement.total_payments_debit')}</span>
             <span className="text-sm font-black text-danger font-mono flex items-center gap-1">
               {totalDebit.toFixed(2)} <CurrencySymbol className="h-[1.1em] w-auto inline-block" />
             </span>
           </div>
           <div className="bg-brand/10 p-3 rounded-xl border border-brand/20">
-            <span className="text-[9px] font-black text-brand block mb-1">{t('procurement.final_balance_due_supplier')}</span>
+            <span className="text-sm font-black text-brand block mb-1">{t('procurement.final_balance_due_supplier')}</span>
             <span className="text-sm font-black text-content font-mono flex items-center gap-1">
               {supplier.balance.toFixed(2)} <CurrencySymbol className="h-[1.1em] w-auto inline-block" />
             </span>
@@ -697,9 +697,9 @@ export default function SupplierLedger({
 
         {/* Transactions */}
         <div className="border border-border rounded-2xl overflow-hidden mt-4">
-          <table className="w-full text-right border-collapse text-xs whitespace-nowrap">
+          <table className="w-full text-right border-collapse text-sm whitespace-nowrap">
             <thead>
-              <tr className="bg-surface-muted/80 text-[10px] font-black text-content-muted uppercase tracking-wider border-b border-border">
+              <tr className="bg-surface-muted/80 text-sm font-black text-content-muted uppercase border-b border-border">
                 <th className="p-3 text-right">{t('common.date')}</th>
                 <th className="p-3 text-right">{t('procurement.reference')}</th>
                 <th className="p-3 text-right">{t('procurement.description_statement')}</th>
@@ -719,7 +719,7 @@ export default function SupplierLedger({
                     <td className="p-3 font-mono font-black text-content">
                       {tx.reference_number}
                     </td>
-                    <td className="p-3 font-semibold text-content whitespace-normal leading-relaxed max-w-xs text-[11px]">
+                    <td className="p-3 font-semibold text-content whitespace-normal leading-relaxed max-w-xs text-sm">
                       {tx.notes}
                     </td>
                     <td className="p-3 text-center font-mono font-bold text-danger">
@@ -738,7 +738,7 @@ export default function SupplierLedger({
           </table>
         </div>
         
-        <div className="text-[10px] text-content-muted font-bold text-center mt-6 pt-4 border-t border-border">
+        <div className="text-sm text-content-muted font-bold text-center mt-6 pt-4 border-t border-border">
           {t('procurement.ledger_footer_note')}
         </div>
       </div>

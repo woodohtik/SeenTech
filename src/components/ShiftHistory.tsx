@@ -125,19 +125,19 @@ export default function ShiftHistory({ tenantId, staffId, isManager }: ShiftHist
 
   return (
     <div className="p-6 space-y-6 font-sans bg-surface" dir={isRtl ? 'rtl' : 'ltr'}>
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+      <div className="flex flex-col main-720:flex-row justify-between items-start main-720:items-center gap-4">
         <div>
           <h2 className="text-2xl font-black text-content">{t('shift_history.title')}</h2>
           <p className="text-content-muted mt-1">{t('shift_history.desc')}</p>
         </div>
-        <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+        <div className="flex flex-col main-640:flex-row gap-3 w-full main-720:w-auto">
           <IconInput
             type="text"
             startIcon={Search}
             placeholder={t('shift_history.search_employee')}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            containerClassName="flex-1 md:w-64"
+            containerClassName="flex-1 main-720:w-64"
           />
           <div className="min-w-[150px]">
             <DatePicker value={dateFilter} onChange={setDateFilter} />
@@ -150,14 +150,14 @@ export default function ShiftHistory({ tenantId, staffId, isManager }: ShiftHist
           <table className={cn("w-full min-w-max", isRtl ? "text-right" : "text-left")}>
             <thead className="bg-surface-muted border-b border-border">
               <tr>
-                <th className="px-6 py-4 text-xs font-black text-content-muted uppercase tracking-wider">{t('shift_history.employee')}</th>
-                <th className="px-6 py-4 text-xs font-black text-content-muted uppercase tracking-wider">{t('shift_history.start_time')}</th>
-                <th className="px-6 py-4 text-xs font-black text-content-muted uppercase tracking-wider">{t('shift_history.end_time')}</th>
-                <th className="px-6 py-4 text-xs font-black text-content-muted uppercase tracking-wider">{t('shift_history.status')}</th>
-                <th className="px-6 py-4 text-xs font-black text-content-muted uppercase tracking-wider">{t('shift_history.expected')}</th>
-                <th className="px-6 py-4 text-xs font-black text-content-muted uppercase tracking-wider">{t('shift_history.actual')}</th>
-                <th className="px-6 py-4 text-xs font-black text-content-muted uppercase tracking-wider">{t('shift_history.discrepancy')}</th>
-                <th className="px-6 py-4 text-xs font-black text-content-muted uppercase tracking-wider">{t('shift_history.actions')}</th>
+                <th className="px-6 py-4 text-sm font-black text-content-muted uppercase">{t('shift_history.employee')}</th>
+                <th className="px-6 py-4 text-sm font-black text-content-muted uppercase">{t('shift_history.start_time')}</th>
+                <th className="px-6 py-4 text-sm font-black text-content-muted uppercase">{t('shift_history.end_time')}</th>
+                <th className="px-6 py-4 text-sm font-black text-content-muted uppercase">{t('shift_history.status')}</th>
+                <th className="px-6 py-4 text-sm font-black text-content-muted uppercase">{t('shift_history.expected')}</th>
+                <th className="px-6 py-4 text-sm font-black text-content-muted uppercase">{t('shift_history.actual')}</th>
+                <th className="px-6 py-4 text-sm font-black text-content-muted uppercase">{t('shift_history.discrepancy')}</th>
+                <th className="px-6 py-4 text-sm font-black text-content-muted uppercase">{t('shift_history.actions')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
@@ -172,7 +172,7 @@ export default function ShiftHistory({ tenantId, staffId, isManager }: ShiftHist
                   </td>
                   <td className="px-6 py-4">
                     <span className={cn(
-                      "px-3 py-1 rounded-full text-xs font-bold",
+                      "px-3 py-1 rounded-full text-sm font-bold",
                       shift.status === 'open' ? "bg-success/10 text-success" : "bg-content-muted/10 text-content-muted"
                     )}>
                       {shift.status === 'open' ? t('shift_history.open') : t('shift_history.closed')}

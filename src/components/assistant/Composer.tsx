@@ -71,7 +71,7 @@ export function Composer({ value, onChange, onSend, onStop, isSending, limitMess
             }
           }}
           placeholder={t(isLimited ? 'ai.input_placeholder_limit' : isSending ? 'ai.input_placeholder_busy' : 'ai.input_placeholder')}
-          className="flex-1 min-w-0 min-h-0 self-center resize-none bg-transparent border-0 p-0 py-2 text-[15px] leading-[1.65] text-content placeholder:text-content-muted outline-none focus:ring-0 focus:outline-none disabled:text-content-muted"
+          className="flex-1 min-w-0 min-h-12 self-center resize-none bg-transparent border-0 p-0 py-2 text-[15px] leading-[1.65] text-content placeholder:text-content-muted outline-none focus:ring-0 focus:outline-none disabled:text-content-muted"
         />
 
         {!isLimited && (

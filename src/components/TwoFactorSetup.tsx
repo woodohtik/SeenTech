@@ -127,7 +127,7 @@ export default function TwoFactorSetup() {
         </div>
         <div>
           <h3 className="text-lg font-black text-content">{t('saas.mfa_title', 'التحقق الثنائي (2FA)')}</h3>
-          <p className="text-content-muted font-bold text-xs mt-1">
+          <p className="text-content-muted font-bold text-sm mt-1">
             {verifiedFactorId
               ? t('saas.mfa_status_enabled', 'مفعَّل على حسابك')
               : t('saas.mfa_status_disabled', 'غير مفعَّل -- حسابك محمي بكلمة المرور فقط')}
@@ -140,7 +140,7 @@ export default function TwoFactorSetup() {
           <button
             onClick={disableMfa}
             disabled={busy}
-            className="px-4 py-2.5 bg-danger/5 text-danger border border-danger/20 rounded-xl text-xs font-black hover:bg-danger/10 transition-all cursor-pointer disabled:opacity-50"
+            className="px-4 py-2.5 bg-danger/5 text-danger border border-danger/20 rounded-xl text-sm font-black hover:bg-danger/10 transition-all cursor-pointer disabled:opacity-50"
           >
             {t('saas.mfa_disable_button', 'تعطيل التحقق الثنائي')}
           </button>
@@ -148,7 +148,7 @@ export default function TwoFactorSetup() {
           <button
             onClick={startEnroll}
             disabled={busy}
-            className="px-4 py-2.5 bg-brand text-white rounded-xl text-xs font-black hover:bg-brand/90 transition-all cursor-pointer disabled:opacity-50"
+            className="px-4 py-2.5 bg-brand text-white rounded-xl text-sm font-black hover:bg-brand/90 transition-all cursor-pointer disabled:opacity-50"
           >
             {t('saas.mfa_enable_button', 'تفعيل التحقق الثنائي')}
           </button>
@@ -157,15 +157,15 @@ export default function TwoFactorSetup() {
 
       {enrolling && (
         <div className="space-y-4 p-4 bg-surface-muted rounded-2xl border border-border">
-          <p className="text-xs font-bold text-content-muted">
+          <p className="text-sm font-bold text-content-muted">
             {t('saas.mfa_scan_instruction', 'امسح رمز QR بتطبيق مصادقة (Google Authenticator أو ما شابه)، ثم أدخل الرمز المكوّن من 6 أرقام.')}
           </p>
           <img src={enrolling.qrCode} alt="TOTP QR" className="w-40 h-40 mx-auto bg-white p-2 rounded-xl border border-border" />
           <div className="text-center">
-            <span className="text-[10px] font-black text-content-muted uppercase tracking-wider block mb-1">
+            <span className="text-sm font-black text-content-muted uppercase block mb-1">
               {t('saas.mfa_manual_secret', 'أو أدخل هذا الرمز يدوياً')}
             </span>
-            <span className="font-mono text-xs text-content dir-ltr select-all">{enrolling.secret}</span>
+            <span className="font-mono text-sm text-content dir-ltr select-all">{enrolling.secret}</span>
           </div>
           <input
             type="text"
@@ -180,14 +180,14 @@ export default function TwoFactorSetup() {
             <button
               onClick={cancelEnroll}
               disabled={busy}
-              className="flex-1 py-2.5 bg-surface border border-border text-content font-bold rounded-xl text-xs transition-all cursor-pointer disabled:opacity-50"
+              className="flex-1 py-2.5 bg-surface border border-border text-content font-bold rounded-xl text-sm transition-all cursor-pointer disabled:opacity-50"
             >
               {t('common.cancel')}
             </button>
             <button
               onClick={verifyEnroll}
               disabled={busy || code.length !== 6}
-              className="flex-1 py-2.5 bg-brand text-white font-black rounded-xl text-xs transition-all cursor-pointer disabled:opacity-50"
+              className="flex-1 py-2.5 bg-brand text-white font-black rounded-xl text-sm transition-all cursor-pointer disabled:opacity-50"
             >
               {t('saas.mfa_verify_button', 'تأكيد التفعيل')}
             </button>

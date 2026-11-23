@@ -168,7 +168,7 @@ export default function UserPreferencesMenu({
               <span className="text-sm font-black text-content truncate">
                 {effectiveName}
               </span>
-              <span className="text-[10px] font-bold text-brand uppercase tracking-widest mt-0.5">
+              <span className="text-sm font-bold text-brand uppercase mt-0.5">
                 {effectiveRole === 'owner' 
                   ? t('common.roles.owner') 
                   : effectiveRole === 'cashier' 
@@ -209,7 +209,7 @@ export default function UserPreferencesMenu({
           >
             {/* Context Header */}
             <div className="px-3 py-2 border-b border-border mb-1.5">
-              <p className="text-xs font-black text-content-muted uppercase tracking-widest">{t('common.user_preferences')}</p>
+              <p className="text-sm font-black text-content-muted uppercase">{t('common.user_preferences')}</p>
             </div>
 
             {/* Menu Items */}
@@ -229,7 +229,7 @@ export default function UserPreferencesMenu({
                 <LayoutGrid size={18} className="text-brand" />
                 <div className={cn("flex-1 flex flex-col", isRtl ? "text-right" : "text-left")}>
                   <span className="font-bold">{t('common.navigation_style')}</span>
-                  <span className="text-[10px] text-content-muted">
+                  <span className="text-sm text-content-muted">
                     {layoutMode === 'grid' ? t('common.layout_grid') : t('common.layout_sidebar')}
                   </span>
                 </div>
@@ -238,7 +238,7 @@ export default function UserPreferencesMenu({
 
             {/* 3. Language Switcher - Direct Picker */}
             <div className="flex flex-col gap-1 p-2 bg-surface-muted/60 rounded-2xl border border-border/80">
-              <div className="flex items-center gap-2 px-2 pb-1 text-xs font-black text-content-muted">
+              <div className="flex items-center gap-2 px-2 pb-1 text-sm font-black text-content-muted">
                 <Globe size={14} className="text-brand" />
                 <span>{t('common.language')}</span>
               </div>
@@ -256,7 +256,7 @@ export default function UserPreferencesMenu({
                         changeAppLanguage(lang.code);
                       }}
                       className={cn(
-                        "flex flex-col items-center justify-center p-1.5 rounded-xl text-[11px] font-black transition-all cursor-pointer border",
+                        "flex flex-col items-center justify-center p-1.5 rounded-xl text-sm font-black transition-all cursor-pointer border",
                         isActive 
                           ? "bg-brand text-white border-brand shadow-sm" 
                           : "bg-surface hover:bg-brand/5 text-content-muted hover:text-content border-border/60 hover:border-brand/40"
@@ -285,7 +285,7 @@ export default function UserPreferencesMenu({
               )}
               <div className={cn("flex-1 flex flex-col", isRtl ? "text-right" : "text-left")}>
                 <span className="font-bold">{t('common.theme_mode')}</span>
-                <span className="text-[10px] text-content-muted">
+                <span className="text-sm text-content-muted">
                   {getThemeLabel(theme)}
                 </span>
               </div>
@@ -313,7 +313,7 @@ export default function UserPreferencesMenu({
                 )}
                 <div className={cn("flex-1 flex flex-col", isRtl ? "text-right" : "text-left")}>
                   <span className="font-bold">{t('common.new_order_push_label')}</span>
-                  <span className="text-[10px] text-content-muted">
+                  <span className="text-sm text-content-muted">
                     {newOrderPushLoading
                       ? t('common.new_order_push_loading')
                       : newOrderPushEnabled
@@ -338,7 +338,7 @@ export default function UserPreferencesMenu({
               <Compass size={18} className="text-brand" />
               <div className={cn("flex-1 flex flex-col", isRtl ? "text-right" : "text-left")}>
                 <span className="font-bold">{t('settings_page.appearance.restart_tour')}</span>
-                <span className="text-[10px] text-content-muted">{t('settings_page.appearance.restart_tour_desc')}</span>
+                <span className="text-sm text-content-muted">{t('settings_page.appearance.restart_tour_desc')}</span>
               </div>
             </button>
 
@@ -359,7 +359,7 @@ export default function UserPreferencesMenu({
                 <Lock size={18} />
                 <div className={cn("flex-1 flex flex-col", isRtl ? "text-right" : "text-left")}>
                   <span>{t('common.lock_screen')}</span>
-                  <span className="text-[9px] font-bold opacity-80 uppercase tracking-widest">{t('common.lock_desc', 'SCREEN LOCK')}</span>
+                  <span className="text-sm font-bold opacity-80 uppercase">{t('common.lock_desc', 'SCREEN LOCK')}</span>
                 </div>
               </button>
             )}
@@ -378,7 +378,7 @@ export default function UserPreferencesMenu({
               <LogOut size={18} />
               <div className={cn("flex-1 flex flex-col", isRtl ? "text-right" : "text-left")}>
                 <span>{t('common.logout_account')}</span>
-                <span className="text-[9px] font-bold opacity-80 uppercase tracking-widest">{t('common.logout_desc', 'LOG OUT')}</span>
+                <span className="text-sm font-bold opacity-80 uppercase">{t('common.logout_desc', 'LOG OUT')}</span>
               </div>
             </button>
 

@@ -43,7 +43,7 @@ const EMPTY_FORM: ArticleFormState = {
 // Reused everywhere this screen renders a plain text input/select/textarea --
 // this app's Tailwind reset otherwise leaves them borderless/invisible.
 // Copied verbatim from src/components/forms/CustomerForm.tsx's own pattern.
-const FIELD_CLASS = 'mt-1 block w-full rounded-md border-border shadow-sm focus:border-info focus:ring-info sm:text-sm';
+const FIELD_CLASS = 'mt-1 block w-full rounded-md border-border shadow-sm focus:border-info focus:ring-info main-640:text-sm';
 
 /** `status === 'published' ? 'منشورة' : 'مجدولة لـ <formatted publishDate>'`. */
 function statusLabel(article: ArticleListItem): string {
@@ -289,7 +289,7 @@ export default function AdminBlogEditor(): React.JSX.Element {
     return (
       <div className="space-y-10">
         {toastBanner}
-        <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+        <header className="flex flex-col main-720:flex-row justify-between items-start main-720:items-center gap-6">
           <div>
             <h2 className="text-3xl font-black text-content flex items-center gap-3">
               <Pencil className="text-brand" size={32} />
@@ -302,8 +302,8 @@ export default function AdminBlogEditor(): React.JSX.Element {
         </header>
 
         <Card className="rounded-3xl p-8 space-y-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="md:col-span-2">
+          <div className="grid grid-cols-1 main-720:grid-cols-2 gap-6">
+            <div className="main-720:col-span-2">
               <label htmlFor="admin-blog-title" className="block text-sm font-bold text-content-muted mb-1.5">العنوان</label>
               <input
                 id="admin-blog-title"
@@ -313,7 +313,7 @@ export default function AdminBlogEditor(): React.JSX.Element {
               />
             </div>
 
-            <div className="md:col-span-2">
+            <div className="main-720:col-span-2">
               <label htmlFor="admin-blog-meta" className="block text-sm font-bold text-content-muted mb-1.5">الوصف التعريفي</label>
               <textarea
                 id="admin-blog-meta"
@@ -349,7 +349,7 @@ export default function AdminBlogEditor(): React.JSX.Element {
               />
             </div>
 
-            <div className="md:col-span-2">
+            <div className="main-720:col-span-2">
               <label htmlFor="admin-blog-related" className="block text-sm font-bold text-content-muted mb-1.5">مقالات ذات صلة</label>
               <select
                 id="admin-blog-related"
@@ -364,7 +364,7 @@ export default function AdminBlogEditor(): React.JSX.Element {
               </select>
             </div>
 
-            <div className="md:col-span-2">
+            <div className="main-720:col-span-2">
               <label htmlFor="admin-blog-body" className="block text-sm font-bold text-content-muted mb-1.5">المحتوى (Markdown)</label>
               <textarea
                 id="admin-blog-body"
@@ -400,7 +400,7 @@ export default function AdminBlogEditor(): React.JSX.Element {
   return (
     <div className="space-y-10">
       {toastBanner}
-      <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+      <header className="flex flex-col main-720:flex-row justify-between items-start main-720:items-center gap-6">
         <div>
           <h2 className="text-3xl font-black text-content flex items-center gap-3">
             <FileText className="text-brand" size={32} />
@@ -434,7 +434,7 @@ export default function AdminBlogEditor(): React.JSX.Element {
           </div>
         ) : (
           <table className="w-full text-right">
-            <thead className="bg-surface-muted text-content-muted text-[10px] font-black uppercase tracking-widest border-b border-border">
+            <thead className="bg-surface-muted text-content-muted text-sm font-black uppercase border-b border-border">
               <tr>
                 <th className="px-8 py-5">العنوان</th>
                 <th className="px-8 py-5">الحالة</th>
@@ -446,10 +446,10 @@ export default function AdminBlogEditor(): React.JSX.Element {
                 <tr key={article.slug} className="hover:bg-surface-muted/30 transition-all">
                   {confirmingDeleteSlug === article.slug ? (
                     <td colSpan={3} className="px-8 py-6">
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div className="flex flex-col main-640:flex-row main-640:items-center justify-between gap-3">
                         <div className="min-w-0">
                           <p className="font-black text-content text-sm">تأكيد الحذف</p>
-                          <p className="text-xs text-content-muted mt-0.5 font-bold">{`هل تريد حذف "${article.title}"؟ قد تشير إليها مقالات أخرى.`}</p>
+                          <p className="text-sm text-content-muted mt-0.5 font-bold">{`هل تريد حذف "${article.title}"؟ قد تشير إليها مقالات أخرى.`}</p>
                         </div>
                         <div className="flex items-center gap-2 shrink-0">
                           <Button type="button" variant="danger" size="sm" onClick={() => handleDelete(article.slug)}>نعم، حذف</Button>
@@ -462,12 +462,12 @@ export default function AdminBlogEditor(): React.JSX.Element {
                       <td className="px-8 py-6 font-black text-content">{article.title}</td>
                       <td className="px-8 py-6">
                         {article.status === 'published' ? (
-                          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase bg-success/10 text-success border border-success/20">
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-black uppercase bg-success/10 text-success border border-success/20">
                             <BadgeCheck size={12} />
                             {statusLabel(article)}
                           </span>
                         ) : (
-                          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase bg-warning/10 text-warning border border-warning/20">
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-black uppercase bg-warning/10 text-warning border border-warning/20">
                             <Clock size={12} />
                             {statusLabel(article)}
                           </span>

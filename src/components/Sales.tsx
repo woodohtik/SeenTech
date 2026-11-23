@@ -324,15 +324,15 @@ export default function Sales({ tenantId }: { tenantId: string }) {
     <div className="flex flex-col h-full font-sans bg-surface" dir={isRtl ? 'rtl' : 'ltr'}>
       {/* Header & Top Tabs */}
       <div className="bg-surface border-b border-border shrink-0">
-        <div className="px-4 sm:px-6 py-3.5 sm:py-4 flex flex-col gap-3 sm:gap-4">
+        <div className="px-4 main-640:px-6 py-3.5 main-640:py-4 flex flex-col gap-3 main-640:gap-4">
           <div className="flex justify-between items-center w-full">
-            <h1 className="text-lg sm:text-2xl font-black text-content tracking-tight">{t('sales.title')}</h1>
+            <h1 className="text-lg main-640:text-2xl font-black text-content">{t('sales.title')}</h1>
             
             {/* Quick cash drawer badge for mobile, compact */}
             {activeShift && (
               <button
                 onClick={() => setIsCashDrawerDetailsOpen(true)}
-                className="flex md:hidden items-center gap-1.5 bg-success/10 text-success px-3 py-1.5 rounded-xl border border-success/20 text-xs font-black cursor-pointer shadow-sm active:scale-95"
+                className="flex main-720:hidden items-center gap-1.5 bg-success/10 text-success px-3 py-1.5 rounded-xl border border-success/20 text-sm font-black cursor-pointer shadow-sm active:scale-95"
               >
                 <Wallet size={14} className="text-success shrink-0" />
                 <span>
@@ -343,9 +343,9 @@ export default function Sales({ tenantId }: { tenantId: string }) {
           </div>
 
           {activeShift && (
-            <div id="tour-pos-shift" data-tour="pos-shift" className="flex flex-col md:flex-row md:items-center justify-between gap-3 bg-surface-muted/40 p-3 sm:p-3.5 rounded-2xl border border-border/70 shadow-sm">
+            <div id="tour-pos-shift" data-tour="pos-shift" className="flex flex-col main-720:flex-row main-720:items-center justify-between gap-3 bg-surface-muted/40 p-3 main-640:p-3.5 rounded-2xl border border-border/70 shadow-sm">
               {/* Active Shift Details */}
-              <div className="text-xs sm:text-sm text-content-muted flex items-center gap-2">
+              <div className="text-sm text-content-muted flex items-center gap-2">
                 <Clock className="text-brand shrink-0" size={16} />
                 <span className="leading-relaxed">
                   {t('sales.active_shift')}: <span className="font-black text-content">{activeShift.staffName}</span> 
@@ -354,32 +354,32 @@ export default function Sales({ tenantId }: { tenantId: string }) {
                 </span>
               </div>
 
-              <div className="flex items-center justify-between md:justify-end gap-2 mt-1 md:mt-0 pt-2.5 md:pt-0 border-t md:border-t-0 border-border/50">
+              <div className="flex items-center justify-between main-720:justify-end gap-2 mt-1 main-720:mt-0 pt-2.5 main-720:pt-0 border-t main-720:border-t-0 border-border/50">
                 {/* Desktop Cash Drawer */}
                 <button
                   onClick={() => setIsCashDrawerDetailsOpen(true)}
-                  className="hidden md:flex items-center gap-2 bg-success/10 text-success px-3.5 py-1.5 rounded-xl border border-success/20 shadow-sm hover:bg-success/20 transition-all cursor-pointer active:scale-95 shrink-0"
+                  className="hidden main-720:flex items-center gap-2 bg-success/10 text-success px-3.5 py-1.5 rounded-xl border border-success/20 shadow-sm hover:bg-success/20 transition-all cursor-pointer active:scale-95 shrink-0"
                   title={t('sales.cash_drawer_tooltip')}
                 >
                   <Wallet size={16} className="text-success shrink-0" />
-                  <span className="text-xs font-bold text-success">{t('sales.cash_drawer')}:</span>
+                  <span className="text-sm font-bold text-success">{t('sales.cash_drawer')}:</span>
                   <span className="text-sm font-black text-success">
                     <PriceDisplay amount={cashDrawerBalance} />
                   </span>
                 </button>
 
                 {canManageShifts && (
-                  <div className="flex items-center gap-2 w-full md:w-auto shrink-0">
+                  <div className="flex flex-wrap items-center gap-2 w-full main-720:w-auto min-w-0">
                     <button 
                       onClick={() => setIsCashOperationsModalOpen(true)}
-                      className="flex-1 md:flex-none text-brand bg-brand/10 hover:bg-brand/20 border border-brand/20 px-3.5 py-2 md:py-1.5 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer min-h-[36px] whitespace-nowrap"
+                      className="flex-1 main-720:flex-none text-brand bg-brand/10 hover:bg-brand/20 border border-brand/20 px-3.5 py-2 main-720:py-1.5 rounded-xl text-sm font-black transition-all flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer min-h-11 whitespace-nowrap"
                     >
                       <DollarSign size={14} />
                       <span>{t('sales.cash_operations')}</span>
                     </button>
                     <button 
                       onClick={handleCloseShift}
-                      className="flex-1 md:flex-none bg-brand text-white hover:bg-brand/90 px-3.5 py-2 md:py-1.5 rounded-xl text-xs font-black shadow-sm transition-all active:scale-95 cursor-pointer min-h-[36px] whitespace-nowrap"
+                      className="flex-1 main-720:flex-none bg-brand text-white hover:bg-brand/90 px-3.5 py-2 main-720:py-1.5 rounded-xl text-sm font-black shadow-sm transition-all active:scale-95 cursor-pointer min-h-11 whitespace-nowrap"
                     >
                       {t('sales.close_shift')}
                     </button>
@@ -391,11 +391,11 @@ export default function Sales({ tenantId }: { tenantId: string }) {
         </div>
         
         {/* Primary Top Tabs */}
-        <div id="tour-pos-tabs" data-tour="pos-tabs" className="flex px-4 sm:px-6 gap-4 sm:gap-6 border-b border-border/60 overflow-x-auto scrollbar-hide whitespace-nowrap scroll-smooth">
+        <div id="tour-pos-tabs" data-tour="pos-tabs" className="flex px-4 main-640:px-6 gap-4 main-640:gap-6 border-b border-border/60 overflow-x-auto scrollbar-hide whitespace-nowrap scroll-smooth">
           <button
             onClick={() => handleTopTabChange('pos')}
             className={cn(
-              "pb-3.5 text-xs sm:text-sm font-black flex items-center gap-2 border-b-2 transition-all shrink-0 cursor-pointer",
+              "pb-3.5 text-sm font-black flex items-center gap-2 border-b-2 transition-all shrink-0 cursor-pointer",
               activeTopTab === 'pos' ? "border-brand text-brand" : "border-transparent text-content-muted hover:text-content"
             )}
           >
@@ -405,7 +405,7 @@ export default function Sales({ tenantId }: { tenantId: string }) {
           <button
             onClick={() => handleTopTabChange('returns')}
             className={cn(
-              "pb-3.5 text-xs sm:text-sm font-black flex items-center gap-2 border-b-2 transition-all shrink-0 cursor-pointer",
+              "pb-3.5 text-sm font-black flex items-center gap-2 border-b-2 transition-all shrink-0 cursor-pointer",
               activeTopTab === 'returns' ? "border-brand text-brand" : "border-transparent text-content-muted hover:text-content"
             )}
           >
@@ -416,7 +416,7 @@ export default function Sales({ tenantId }: { tenantId: string }) {
             <button
               onClick={() => handleTopTabChange('shifts')}
               className={cn(
-                "pb-3.5 text-xs sm:text-sm font-black flex items-center gap-2 border-b-2 transition-all shrink-0 cursor-pointer",
+                "pb-3.5 text-sm font-black flex items-center gap-2 border-b-2 transition-all shrink-0 cursor-pointer",
                 activeTopTab === 'shifts' ? "border-brand text-brand" : "border-transparent text-content-muted hover:text-content"
               )}
             >
@@ -427,13 +427,13 @@ export default function Sales({ tenantId }: { tenantId: string }) {
         </div>
 
         {/* Sub Tabs */}
-        <div id="tour-pos-subtabs" data-tour="pos-subtabs" className="flex px-4 sm:px-6 gap-2 sm:gap-2.5 py-2.5 bg-surface-muted/40 overflow-x-auto scrollbar-hide scroll-smooth w-full border-b border-border/50">
+        <div id="tour-pos-subtabs" data-tour="pos-subtabs" className="flex px-4 main-640:px-6 gap-2 main-640:gap-2.5 py-2.5 bg-surface-muted/40 overflow-x-auto scrollbar-hide scroll-smooth w-full border-b border-border/50">
           {activeTopTab === 'pos' && (
             <>
               <button
                 onClick={() => setActiveSubTab('pos_main')}
                 className={cn(
-                  "px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-xl text-xs sm:text-sm font-black transition-all shrink-0 whitespace-nowrap cursor-pointer",
+                  "px-3.5 py-1.5 main-640:px-4 main-640:py-2 rounded-xl text-sm font-black transition-all shrink-0 whitespace-nowrap cursor-pointer",
                   activeSubTab === 'pos_main' ? "bg-brand text-white shadow-sm" : "bg-surface text-content-muted border border-border hover:border-brand/40 hover:text-content"
                 )}
               >
@@ -442,7 +442,7 @@ export default function Sales({ tenantId }: { tenantId: string }) {
               <button
                 onClick={() => setActiveSubTab('sales_record')}
                 className={cn(
-                  "px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-xl text-xs sm:text-sm font-black transition-all shrink-0 whitespace-nowrap cursor-pointer",
+                  "px-3.5 py-1.5 main-640:px-4 main-640:py-2 rounded-xl text-sm font-black transition-all shrink-0 whitespace-nowrap cursor-pointer",
                   activeSubTab === 'sales_record' ? "bg-brand text-white shadow-sm" : "bg-surface text-content-muted border border-border hover:border-brand/40 hover:text-content"
                 )}
               >
@@ -451,7 +451,7 @@ export default function Sales({ tenantId }: { tenantId: string }) {
               <button
                 onClick={() => setActiveSubTab('credit_notes')}
                 className={cn(
-                  "px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-xl text-xs sm:text-sm font-black transition-all shrink-0 whitespace-nowrap cursor-pointer",
+                  "px-3.5 py-1.5 main-640:px-4 main-640:py-2 rounded-xl text-sm font-black transition-all shrink-0 whitespace-nowrap cursor-pointer",
                   activeSubTab === 'credit_notes' ? "bg-brand text-white shadow-sm" : "bg-surface text-content-muted border border-border hover:border-brand/40 hover:text-content"
                 )}
               >
@@ -464,7 +464,7 @@ export default function Sales({ tenantId }: { tenantId: string }) {
               <button
                 onClick={() => setActiveSubTab('returns_main')}
                 className={cn(
-                  "px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-xl text-xs sm:text-sm font-black transition-all shrink-0 whitespace-nowrap cursor-pointer",
+                  "px-3.5 py-1.5 main-640:px-4 main-640:py-2 rounded-xl text-sm font-black transition-all shrink-0 whitespace-nowrap cursor-pointer",
                   activeSubTab === 'returns_main' ? "bg-brand text-white shadow-sm" : "bg-surface text-content-muted border border-border hover:border-brand/40 hover:text-content"
                 )}
               >
@@ -473,7 +473,7 @@ export default function Sales({ tenantId }: { tenantId: string }) {
               <button
                 onClick={() => setActiveSubTab('returns_record')}
                 className={cn(
-                  "px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-xl text-xs sm:text-sm font-black transition-all shrink-0 whitespace-nowrap cursor-pointer",
+                  "px-3.5 py-1.5 main-640:px-4 main-640:py-2 rounded-xl text-sm font-black transition-all shrink-0 whitespace-nowrap cursor-pointer",
                   activeSubTab === 'returns_record' ? "bg-brand text-white shadow-sm" : "bg-surface text-content-muted border border-border hover:border-brand/40 hover:text-content"
                 )}
               >
@@ -486,7 +486,7 @@ export default function Sales({ tenantId }: { tenantId: string }) {
               <button
                 onClick={() => setActiveSubTab('shifts_main')}
                 className={cn(
-                  "px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-xl text-xs sm:text-sm font-black transition-all shrink-0 whitespace-nowrap cursor-pointer",
+                  "px-3.5 py-1.5 main-640:px-4 main-640:py-2 rounded-xl text-sm font-black transition-all shrink-0 whitespace-nowrap cursor-pointer",
                   activeSubTab === 'shifts_main' ? "bg-brand text-white shadow-sm" : "bg-surface text-content-muted border border-border hover:border-brand/40 hover:text-content"
                 )}
               >
@@ -495,7 +495,7 @@ export default function Sales({ tenantId }: { tenantId: string }) {
               <button
                 onClick={() => setActiveSubTab('shifts_record')}
                 className={cn(
-                  "px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-xl text-xs sm:text-sm font-black transition-all shrink-0 whitespace-nowrap cursor-pointer",
+                  "px-3.5 py-1.5 main-640:px-4 main-640:py-2 rounded-xl text-sm font-black transition-all shrink-0 whitespace-nowrap cursor-pointer",
                   activeSubTab === 'shifts_record' ? "bg-brand text-white shadow-sm" : "bg-surface text-content-muted border border-border hover:border-brand/40 hover:text-content"
                 )}
               >
@@ -642,7 +642,7 @@ export default function Sales({ tenantId }: { tenantId: string }) {
                   </div>
                   <div>
                     <h2 className="text-lg font-black text-content">{t('sales.cash_drawer_details')}</h2>
-                    <p className="text-xs font-bold text-content-muted mt-0.5">{t('sales.shift_cash_details')}</p>
+                    <p className="text-sm font-bold text-content-muted mt-0.5">{t('sales.shift_cash_details')}</p>
                   </div>
                 </div>
                 <button
@@ -657,27 +657,27 @@ export default function Sales({ tenantId }: { tenantId: string }) {
               {/* Body */}
               <div className="p-6 space-y-6">
                 {/* Employee / Shift info */}
-                <div className="flex justify-between items-center text-xs font-bold text-content-muted bg-surface-muted/35 px-4 py-2.5 rounded-xl border border-border">
+                <div className="flex justify-between items-center text-sm font-bold text-content-muted bg-surface-muted/35 px-4 py-2.5 rounded-xl border border-border">
                   <span>{t('sales.employee')}: <span className="text-content font-extrabold">{activeShift.staffName || t('sales.unknown')}</span></span>
                   <span>{t('sales.shift_no')}: <span className="font-sans text-content font-extrabold">#{activeShift.id?.slice(-6).toUpperCase()}</span></span>
                 </div>
 
                 {/* Main Cash Drawer Indicator */}
                 <div className="bg-success/10 border border-success/20 rounded-3xl p-5 text-center space-y-2">
-                  <span className="text-xs font-black text-success block uppercase tracking-widest">
+                  <span className="text-sm font-black text-success block uppercase">
                     {t('sales.expected_cash')}
                   </span>
-                  <div className="text-3xl font-black text-success tracking-tight">
+                  <div className="text-3xl font-black text-success">
                     <PriceDisplay amount={cashDrawerBalance} />
                   </div>
-                  <p className="text-[10px] text-content-muted">
+                  <p className="text-sm text-content-muted">
                     {t('sales.expected_cash_desc')}
                   </p>
                 </div>
 
                 {/* Operations Breakdown Grid */}
                 <div className="space-y-3.5">
-                  <h3 className="text-xs font-black text-content-muted uppercase tracking-widest">{t('sales.flow_details')}</h3>
+                  <h3 className="text-sm font-black text-content-muted uppercase">{t('sales.flow_details')}</h3>
                   
                   <div className="grid grid-cols-1 gap-3">
                     {/* Opening Balance */}
@@ -686,7 +686,7 @@ export default function Sales({ tenantId }: { tenantId: string }) {
                         <div className="p-2 bg-info/10 text-info rounded-xl">
                           <Coins size={18} />
                         </div>
-                        <span className="text-xs font-bold text-content">{t('sales.opening_balance')}</span>
+                        <span className="text-sm font-bold text-content">{t('sales.opening_balance')}</span>
                       </div>
                       <span className="text-sm font-black text-content">
                         <PriceDisplay amount={cashDrawerBreakdown.opening} />
@@ -699,7 +699,7 @@ export default function Sales({ tenantId }: { tenantId: string }) {
                         <div className="p-2 bg-success/10 text-success rounded-xl">
                           <TrendingUp size={18} />
                         </div>
-                        <span className="text-xs font-bold text-content">{t('sales.cash_sales')}</span>
+                        <span className="text-sm font-bold text-content">{t('sales.cash_sales')}</span>
                       </div>
                       <span className="text-sm font-black text-success">
                         + <PriceDisplay amount={cashDrawerBreakdown.sales} />
@@ -713,7 +713,7 @@ export default function Sales({ tenantId }: { tenantId: string }) {
                           <div className="p-2 bg-success/10 text-success rounded-xl">
                             <Plus size={18} />
                           </div>
-                          <span className="text-xs font-bold text-content">{t('sales.cash_deposits')}</span>
+                          <span className="text-sm font-bold text-content">{t('sales.cash_deposits')}</span>
                         </div>
                         <span className="text-sm font-black text-success">
                           + <PriceDisplay amount={cashDrawerBreakdown.deposits} />
@@ -728,7 +728,7 @@ export default function Sales({ tenantId }: { tenantId: string }) {
                           <div className="p-2 bg-danger/10 text-danger rounded-xl">
                             <TrendingDown size={18} />
                           </div>
-                          <span className="text-xs font-bold text-content">{t('sales.cash_returns')}</span>
+                          <span className="text-sm font-bold text-content">{t('sales.cash_returns')}</span>
                         </div>
                         <span className="text-sm font-black text-danger">
                           - <PriceDisplay amount={cashDrawerBreakdown.returns} />
@@ -743,7 +743,7 @@ export default function Sales({ tenantId }: { tenantId: string }) {
                           <div className="p-2 bg-danger/10 text-danger rounded-xl">
                             <X size={18} />
                           </div>
-                          <span className="text-xs font-bold text-content">{t('sales.expenses_withdrawals')}</span>
+                          <span className="text-sm font-bold text-content">{t('sales.expenses_withdrawals')}</span>
                         </div>
                         <span className="text-sm font-black text-danger">
                           - <PriceDisplay amount={cashDrawerBreakdown.withdrawals} />
@@ -759,14 +759,14 @@ export default function Sales({ tenantId }: { tenantId: string }) {
                     onClick={() => {
                       fetchCashDrawerBalance();
                     }}
-                    className="flex-1 py-3 bg-surface border border-border text-content hover:bg-surface-muted rounded-xl transition-all font-bold text-xs sm:text-sm text-center flex items-center justify-center gap-2 active:scale-95 cursor-pointer text-right"
+                    className="flex-1 py-3 bg-surface border border-border text-content hover:bg-surface-muted rounded-xl transition-all font-bold text-sm text-center flex items-center justify-center gap-2 active:scale-95 cursor-pointer text-right"
                   >
                     <Coins size={16} />
                     <span>{t('sales.refresh_data')}</span>
                   </button>
                   <button
                     onClick={() => setIsCashDrawerDetailsOpen(false)}
-                    className="flex-1 py-3 bg-brand text-white hover:bg-brand/90 rounded-xl transition-all font-bold text-xs sm:text-sm text-center active:scale-95 cursor-pointer"
+                    className="flex-1 py-3 bg-brand text-white hover:bg-brand/90 rounded-xl transition-all font-bold text-sm text-center active:scale-95 cursor-pointer"
                   >
                     {t('sales.close')}
                   </button>

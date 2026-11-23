@@ -297,7 +297,7 @@ export default function GlobalRoleManager() {
         <button
           onClick={() => setCategoryTab('all')}
           className={cn(
-            "px-5 py-2 text-xs font-black rounded-xl transition-all",
+            "px-5 py-2 text-sm font-black rounded-xl transition-all",
             categoryTab === 'all' ? "bg-surface text-content shadow-sm" : "text-content-muted hover:text-content"
           )}
         >
@@ -306,26 +306,26 @@ export default function GlobalRoleManager() {
         <button
           onClick={() => setCategoryTab('merchant')}
           className={cn(
-            "px-5 py-2 text-xs font-black rounded-xl transition-all flex items-center gap-1.5",
+            "px-5 py-2 text-sm font-black rounded-xl transition-all flex items-center gap-1.5",
             categoryTab === 'merchant' ? "bg-brand text-white shadow-sm" : "text-content-muted hover:text-content"
           )}
         >
           <span>{t('saas.global_roles.tab_merchant')}</span>
-          <span className="text-[10px] opacity-80">({roles.filter(r => isMerchantRole(r.roleKey)).length})</span>
+          <span className="text-sm opacity-80">({roles.filter(r => isMerchantRole(r.roleKey)).length})</span>
         </button>
         <button
           onClick={() => setCategoryTab('saas')}
           className={cn(
-            "px-5 py-2 text-xs font-black rounded-xl transition-all flex items-center gap-1.5",
+            "px-5 py-2 text-sm font-black rounded-xl transition-all flex items-center gap-1.5",
             categoryTab === 'saas' ? "bg-purple-600 text-white shadow-sm" : "text-content-muted hover:text-content"
           )}
         >
           <span>{t('saas.global_roles.tab_saas')}</span>
-          <span className="text-[10px] opacity-80">({roles.filter(r => isSaaSRole(r.roleKey)).length})</span>
+          <span className="text-sm opacity-80">({roles.filter(r => isSaaSRole(r.roleKey)).length})</span>
         </button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 main-720:grid-cols-2 main-900:grid-cols-3 gap-6">
         {roles
           .filter(r => {
             if (categoryTab === 'merchant') return isMerchantRole(r.roleKey);
@@ -350,7 +350,7 @@ export default function GlobalRoleManager() {
                   </div>
                   <div className="flex items-center gap-2">
                     <span className={cn(
-                      "text-[10px] font-black px-2.5 py-1 rounded-full border",
+                      "text-sm font-black px-2.5 py-1 rounded-full border",
                       isSaas ? "bg-purple-50 text-purple-600 border-purple-200" : "bg-brand/10 text-brand border-brand/20"
                     )}>
                       {isSaas ? t('saas.global_roles.badge_saas_team') : t('saas.global_roles.badge_merchant_roles')}
@@ -387,13 +387,13 @@ export default function GlobalRoleManager() {
                   const count = ALL_PERMISSIONS.filter(p => p.categoryKey === cat && role.permissions?.[p.key]).length;
                   if (count === 0) return null;
                   return (
-                    <span key={cat} className="px-2.5 py-1 bg-surface-muted text-content-muted text-[10px] font-black rounded-lg">
+                    <span key={cat} className="px-2.5 py-1 bg-surface-muted text-content-muted text-sm font-black rounded-lg">
                       {t(cat)}: {count}
                     </span>
                   );
                 })}
                 {CATEGORIES.length > 3 && (
-                  <span className="px-2.5 py-1 bg-surface-muted text-content-muted text-[10px] font-black rounded-lg">
+                  <span className="px-2.5 py-1 bg-surface-muted text-content-muted text-sm font-black rounded-lg">
                     ...
                   </span>
                 )}
@@ -438,7 +438,7 @@ export default function GlobalRoleManager() {
               </div>
 
               <div className="flex-1 overflow-y-auto p-8">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
+                <div className="grid grid-cols-1 main-720:grid-cols-2 gap-8 mb-12">
                   <div className="space-y-3">
                     <label className="block text-sm font-black text-content">{t('settings_page.staff.permissions.role_name')}</label>
                     <input
@@ -481,7 +481,7 @@ export default function GlobalRoleManager() {
                           if (editingRole) setEditingRole({ ...editingRole, permissions: allTrue });
                           else setNewRole({ ...newRole, permissions: allTrue });
                         }}
-                        className="text-xs font-black text-brand hover:underline"
+                        className="text-sm font-black text-brand hover:underline"
                       >
                         {t('inventory.select_all')}
                       </button>
@@ -493,14 +493,14 @@ export default function GlobalRoleManager() {
                           if (editingRole) setEditingRole({ ...editingRole, permissions: allFalse });
                           else setNewRole({ ...newRole, permissions: allFalse });
                         }}
-                        className="text-xs font-black text-content-muted hover:underline"
+                        className="text-sm font-black text-content-muted hover:underline"
                       >
                         {t('customers.deselect_all')}
                       </button>
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+                  <div className="grid grid-cols-1 main-720:grid-cols-2 gap-12">
                     {CATEGORIES.map(category => (
                       <div key={category} className="space-y-4">
                         <div className="flex items-center gap-2 pb-2 border-b border-border">
@@ -556,7 +556,7 @@ export default function GlobalRoleManager() {
               <div className="p-8 border-t border-border bg-surface-muted/50 flex items-center justify-between">
                 <div className="flex items-center gap-2 text-warning">
                   <Info size={18} />
-                  <span className="text-xs font-bold">{t('saas.global_roles.edit_warning')}</span>
+                  <span className="text-sm font-bold">{t('saas.global_roles.edit_warning')}</span>
                 </div>
                 <div className="flex items-center gap-3">
                   <button

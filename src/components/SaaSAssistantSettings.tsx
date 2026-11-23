@@ -287,7 +287,7 @@ export default function SaaSAssistantSettings() {
   const statusBadge = (p: ProviderStatus) => {
     if (!p.isConfigured) {
       return (
-        <span className="flex items-center gap-1.5 text-xs font-black text-content-muted">
+        <span className="flex items-center gap-1.5 text-sm font-black text-content-muted">
           <span className="w-2 h-2 rounded-full bg-border" />
           {t('saas.assistant_settings.provider_status_not_configured')}
         </span>
@@ -295,7 +295,7 @@ export default function SaaSAssistantSettings() {
     }
     if (p.lastTestStatus === 'success') {
       return (
-        <span className="flex items-center gap-1.5 text-xs font-black text-success">
+        <span className="flex items-center gap-1.5 text-sm font-black text-success">
           <CheckCircle2 size={14} />
           {t('saas.assistant_settings.provider_status_success')}
         </span>
@@ -303,14 +303,14 @@ export default function SaaSAssistantSettings() {
     }
     if (p.lastTestStatus === 'failed') {
       return (
-        <span className="flex items-center gap-1.5 text-xs font-black text-danger" title={p.lastTestMessage || ''}>
+        <span className="flex items-center gap-1.5 text-sm font-black text-danger" title={p.lastTestMessage || ''}>
           <XCircle size={14} />
           {t('saas.assistant_settings.provider_status_failed')}
         </span>
       );
     }
     return (
-      <span className="flex items-center gap-1.5 text-xs font-black text-warning">
+      <span className="flex items-center gap-1.5 text-sm font-black text-warning">
         <HelpCircle size={14} />
         {t('saas.assistant_settings.provider_status_untested')}
       </span>
@@ -362,7 +362,7 @@ export default function SaaSAssistantSettings() {
               <p className="text-content-muted text-sm font-medium mt-1">{t('saas.assistant_settings.providers_section_desc')}</p>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 main-900:grid-cols-2 gap-6">
               {providers.map((p) => {
                 const isActive = p.providerKey === activeProvider;
                 const ready = isReady(p);
@@ -378,7 +378,7 @@ export default function SaaSAssistantSettings() {
                       <div className="flex items-center gap-2">
                         <h4 className="text-content font-black">{p.label}</h4>
                         {isActive && (
-                          <span className="text-[10px] font-black bg-brand text-white rounded-full px-2 py-0.5">
+                          <span className="text-sm font-black bg-brand text-white rounded-full px-2 py-0.5">
                             {t('saas.assistant_settings.provider_active_badge')}
                           </span>
                         )}
@@ -387,7 +387,7 @@ export default function SaaSAssistantSettings() {
                     </div>
 
                     <div className="space-y-2">
-                      <label className="block text-xs font-black text-content-muted">{t('saas.assistant_settings.api_key_label')}</label>
+                      <label className="block text-sm font-black text-content-muted">{t('saas.assistant_settings.api_key_label')}</label>
                       <IconInput
                         type={providerShowKey[p.providerKey] ? 'text' : 'password'}
                         name={`provider-api-key-${p.providerKey}`}
@@ -412,7 +412,7 @@ export default function SaaSAssistantSettings() {
                     </div>
 
                     <div className="space-y-2">
-                      <label className="block text-xs font-black text-content-muted">{t('saas.assistant_settings.provider_model_label')}</label>
+                      <label className="block text-sm font-black text-content-muted">{t('saas.assistant_settings.provider_model_label')}</label>
                       <SmartSelect
                         value={providerModelChoice[p.providerKey] || p.defaultModels[0]}
                         onChange={(v) => setProviderModelChoice((prev) => ({ ...prev, [p.providerKey]: v }))}
@@ -432,7 +432,7 @@ export default function SaaSAssistantSettings() {
                     </div>
 
                     {p.lastTestedAt && (
-                      <p className="text-[11px] text-content-muted font-medium">
+                      <p className="text-sm text-content-muted font-medium">
                         {t('saas.assistant_settings.provider_last_tested', {
                           date: new Date(p.lastTestedAt).toLocaleString(
                             localeOf(i18n.language)
@@ -441,7 +441,7 @@ export default function SaaSAssistantSettings() {
                       </p>
                     )}
                     {p.lastTestStatus === 'failed' && p.lastTestMessage && (
-                      <p className="text-[11px] text-danger font-medium break-words">{p.lastTestMessage}</p>
+                      <p className="text-sm text-danger font-medium break-words">{p.lastTestMessage}</p>
                     )}
 
                     <div className="flex items-center gap-2">
@@ -492,7 +492,7 @@ export default function SaaSAssistantSettings() {
                   const p = providers.find((pr) => pr.providerKey === key);
                   return (
                     <div key={key} className="flex items-center gap-3 bg-surface-muted rounded-xl px-4 py-3">
-                      <span className="w-6 h-6 flex items-center justify-center rounded-full bg-brand/10 text-brand text-xs font-black shrink-0">
+                      <span className="w-6 h-6 flex items-center justify-center rounded-full bg-brand/10 text-brand text-sm font-black shrink-0">
                         {index + 1}
                       </span>
                       <span className="flex-1 font-bold text-content text-sm">{p?.label || key}</span>
@@ -550,7 +550,7 @@ export default function SaaSAssistantSettings() {
             )}
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <div className="grid grid-cols-1 main-900:grid-cols-2 gap-8">
             {/* System Prompt */}
             <div className="bg-surface p-8 rounded-2xl border border-border shadow-sm space-y-4">
               <div className="flex items-center justify-between">
@@ -561,7 +561,7 @@ export default function SaaSAssistantSettings() {
                 <button
                   type="button"
                   onClick={() => setSystemPrompt(DEFAULT_SYSTEM_PROMPT)}
-                  className="flex items-center gap-1.5 text-xs font-black text-content-muted hover:text-brand transition-colors"
+                  className="flex items-center gap-1.5 text-sm font-black text-content-muted hover:text-brand transition-colors"
                 >
                   <RotateCcw size={14} />
                   {t('saas.assistant_settings.prompt_reset_default')}
@@ -619,7 +619,7 @@ export default function SaaSAssistantSettings() {
                   onChange={(e) => setDailyMessageLimit(Math.max(0, parseInt(e.target.value, 10) || 0))}
                   className="w-full bg-surface border border-border rounded-xl px-3.5 py-2.5 text-sm font-semibold text-content outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand"
                 />
-                <p className="text-xs text-content-muted font-medium px-1">{t('saas.assistant_settings.daily_limit_unlimited_hint')}</p>
+                <p className="text-sm text-content-muted font-medium px-1">{t('saas.assistant_settings.daily_limit_unlimited_hint')}</p>
               </div>
             </div>
           </div>
@@ -667,10 +667,10 @@ export default function SaaSAssistantSettings() {
           <SaaSAssistantFeedback />
 
           {/* Save */}
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pb-4">
+          <div className="flex flex-col main-640:flex-row items-center justify-between gap-4 pb-4">
             <div>
               {settings?.updatedAt && (
-                <p className="text-xs text-content-muted font-bold">
+                <p className="text-sm text-content-muted font-bold">
                   {t('saas.assistant_settings.last_updated_by', {
                     name: settings.updatedBy || '—',
                     date: new Date(settings.updatedAt).toLocaleString(

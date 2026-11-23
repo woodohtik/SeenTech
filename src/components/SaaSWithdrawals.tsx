@@ -115,26 +115,26 @@ export default function SaaSWithdrawals() {
               {rows.map(w => (
                 <tr key={w.id}>
                   <td className={cn('py-3 px-3.5 border-b border-border text-[14.5px]', cellAlign)}>{new Date(w.requested_at).toLocaleDateString('en-GB')}</td>
-                  <td className={cn('py-3 px-3.5 border-b border-border text-[13px]', cellAlign)}>
-                    <span className={cn('rounded-full px-2.5 py-1 font-bold text-[11.5px]', w.source === 'partner' ? 'bg-brand/10 text-brand' : 'bg-surface-muted text-content-muted')}>
+                  <td className={cn('py-3 px-3.5 border-b border-border text-sm', cellAlign)}>
+                    <span className={cn('rounded-full px-2.5 py-1 font-bold text-sm', w.source === 'partner' ? 'bg-brand/10 text-brand' : 'bg-surface-muted text-content-muted')}>
                       {w.source === 'partner' ? t('saas.withdrawal_source_partner', 'شريك إحالة') : t('saas.withdrawal_source_tenant', 'تاجر')}
                     </span>
                   </td>
                   <td className={cn('py-3 px-3.5 border-b border-border text-[14.5px] font-extrabold text-[#0E2A42]', cellAlign)}>{w.amount.toLocaleString('en-US')} {t('common.currency_saudi_riyal', '﷼')}</td>
                   <td className={cn('py-3 px-3.5 border-b border-border text-[14.5px]', cellAlign)}>{w.beneficiary || '—'}</td>
-                  <td className={cn('py-3 px-3.5 border-b border-border text-[13px] [direction:ltr]', cellAlign)}>{w.iban || '—'}</td>
+                  <td className={cn('py-3 px-3.5 border-b border-border text-sm [direction:ltr]', cellAlign)}>{w.iban || '—'}</td>
                   <td className={cn('py-3 px-3.5 border-b border-border', cellAlign)}>
                     <button
                       disabled={busyId === w.id}
                       onClick={() => act(w.id, true)}
-                      className={cn('bg-success text-white rounded-[9px] py-2 px-4 font-black text-[13.5px] cursor-pointer', isRtl ? 'ml-2' : 'mr-2')}
+                      className={cn('bg-success text-white rounded-[9px] py-2 px-4 font-black text-sm cursor-pointer', isRtl ? 'ml-2' : 'mr-2')}
                     >
                       {t('saas.transferred')}
                     </button>
                     <button
                       disabled={busyId === w.id}
                       onClick={() => act(w.id, false)}
-                      className="bg-transparent text-danger border border-danger rounded-[9px] py-2 px-3.5 font-bold text-[13.5px] cursor-pointer"
+                      className="bg-transparent text-danger border border-danger rounded-[9px] py-2 px-3.5 font-bold text-sm cursor-pointer"
                     >
                       {t('saas.reject')}
                     </button>

@@ -336,7 +336,7 @@ export default function PinLogin({ tenantId, currentUserStaff, onLogin }: PinLog
                   />
 
                   {passwordError && (
-                    <div role="alert" aria-live="polite" className="flex items-center gap-2 text-danger text-xs font-bold bg-danger/10 px-4 py-2 rounded-xl border border-danger/20">
+                    <div role="alert" aria-live="polite" className="flex items-center gap-2 text-danger text-sm font-bold bg-danger/10 px-4 py-2 rounded-xl border border-danger/20">
                       <AlertCircle size={14} />
                       <span>{passwordError}</span>
                     </div>
@@ -380,7 +380,7 @@ export default function PinLogin({ tenantId, currentUserStaff, onLogin }: PinLog
 
                 <div className="w-full space-y-5">
                   <div className="space-y-2">
-                    <label className="text-xs font-black text-content-muted uppercase tracking-widest mr-2">{t('login.new_pin')}</label>
+                    <label className="text-sm font-black text-content-muted mr-2">{t('login.new_pin')}</label>
                     <input
                       type="password"
                       maxLength={4}
@@ -391,7 +391,7 @@ export default function PinLogin({ tenantId, currentUserStaff, onLogin }: PinLog
                     />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-xs font-black text-content-muted uppercase tracking-widest mr-2">{t('login.confirm_pin')}</label>
+                    <label className="text-sm font-black text-content-muted mr-2">{t('login.confirm_pin')}</label>
                     <input
                       type="password"
                       maxLength={4}
@@ -403,7 +403,7 @@ export default function PinLogin({ tenantId, currentUserStaff, onLogin }: PinLog
                   </div>
 
                   {error && (
-                    <div className="flex items-center gap-2 text-danger text-xs font-bold bg-danger/10 px-4 py-2 rounded-xl border border-danger/20">
+                    <div className="flex items-center gap-2 text-danger text-sm font-bold bg-danger/10 px-4 py-2 rounded-xl border border-danger/20">
                       <AlertCircle size={14} />
                       <span>{error}</span>
                     </div>
@@ -639,11 +639,11 @@ export default function PinLogin({ tenantId, currentUserStaff, onLogin }: PinLog
               <div className="mt-12 flex flex-wrap items-center justify-center gap-6">
                 <div className="flex items-center gap-2 bg-white/10 px-4 py-2 rounded-full border border-white/10">
                   <div className="w-2 h-2 bg-success rounded-full animate-pulse" />
-                  <span className="text-xs font-bold text-white/80 uppercase tracking-widest">{t('login.system_active')}</span>
+                  <span className="text-sm font-bold text-white/80 uppercase">{t('login.system_active')}</span>
                 </div>
                 <div className="flex items-center gap-2 bg-white/10 px-4 py-2 rounded-full border border-white/10">
                   <Shield size={14} className="text-white/60" />
-                  <span className="text-xs font-bold text-white/80 uppercase tracking-widest">{t('login.advanced_protection')}</span>
+                  <span className="text-sm font-bold text-white/80 uppercase">{t('login.advanced_protection')}</span>
                 </div>
               </div>
             </motion.div>

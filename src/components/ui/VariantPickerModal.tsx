@@ -53,7 +53,7 @@ export default function VariantPickerModal({ isOpen, onClose, item, variants, va
         </button>
       }
     >
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+      <div className="grid grid-cols-2 main-640:grid-cols-3 gap-3">
         {variants.map((variant) => {
           const stock = variantStock[variant.id] || 0;
           const isOut = stock <= 0;
@@ -75,7 +75,7 @@ export default function VariantPickerModal({ isOpen, onClose, item, variants, va
               )}
             >
               <span className="text-sm font-black">{variant.name}</span>
-              <span className={cn("text-xs font-bold mt-1", isOut ? "text-danger" : "text-content-muted")}>
+              <span className={cn("text-sm font-bold mt-1", isOut ? "text-danger" : "text-content-muted")}>
                 {isOut ? t("pos.out_of_stock", "غير متوفر") : `${t("inventory.available", "المتاح")}: ${stock}`}
               </span>
               {isSelected && (

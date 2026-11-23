@@ -325,14 +325,14 @@ export default function SaaSTeamManagement() {
   return (
     <div className="space-y-6" dir={isRtl ? 'rtl' : 'ltr'}>
       {/* Header section with Stats */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+      <div className="flex flex-col main-720:flex-row justify-between items-start main-720:items-center gap-4">
         <div>
           <h1 className="text-3xl font-black text-content">{t('saas.team_management_title', 'إدارة أعضاء الفريق')}</h1>
           <p className="text-content-muted mt-1">{t('saas.team_management_subtitle', 'إضافة موظفي فريق العمل وتحديد صلاحياتهم')}</p>
         </div>
 
-        <div className="flex items-center gap-3 w-full md:w-auto">
-          <div className="flex-1 md:w-64">
+        <div className="flex items-center gap-3 w-full main-720:w-auto">
+          <div className="flex-1 main-720:w-64">
             <IconInput
               startIcon={Search}
               placeholder={t('saas.search_members_placeholder', 'ابحث بالاسم أو البريد...')}
@@ -356,11 +356,11 @@ export default function SaaSTeamManagement() {
           <table className="w-full text-start rtl:text-right ltr:text-left">
             <thead>
               <tr className="border-b border-border">
-                <th className="px-6 py-4 text-start rtl:text-right ltr:text-left text-xs font-black text-content-muted uppercase tracking-wider">{t('common.employee', 'الموظف')}</th>
-                <th className="px-6 py-4 text-start rtl:text-right ltr:text-left text-xs font-black text-content-muted uppercase tracking-wider">{t('common.role', 'الدور الوظيفي')}</th>
-                <th className="px-6 py-4 text-start rtl:text-right ltr:text-left text-xs font-black text-content-muted uppercase tracking-wider">{t('common.date_added', 'تاريخ الإضافة')}</th>
-                <th className="px-6 py-4 text-start rtl:text-right ltr:text-left text-xs font-black text-content-muted uppercase tracking-wider">{t('common.status', 'الحالة')}</th>
-                <th className="px-6 py-4 text-end rtl:text-left ltr:text-right text-xs font-black text-content-muted uppercase tracking-wider">{t('common.actions', 'إجراءات')}</th>
+                <th className="px-6 py-4 text-start rtl:text-right ltr:text-left text-sm font-black text-content-muted uppercase">{t('common.employee', 'الموظف')}</th>
+                <th className="px-6 py-4 text-start rtl:text-right ltr:text-left text-sm font-black text-content-muted uppercase">{t('common.role', 'الدور الوظيفي')}</th>
+                <th className="px-6 py-4 text-start rtl:text-right ltr:text-left text-sm font-black text-content-muted uppercase">{t('common.date_added', 'تاريخ الإضافة')}</th>
+                <th className="px-6 py-4 text-start rtl:text-right ltr:text-left text-sm font-black text-content-muted uppercase">{t('common.status', 'الحالة')}</th>
+                <th className="px-6 py-4 text-end rtl:text-left ltr:text-right text-sm font-black text-content-muted uppercase">{t('common.actions', 'إجراءات')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
@@ -387,12 +387,12 @@ export default function SaaSTeamManagement() {
                         </div>
                         <div>
                           <p className="font-bold text-content">{member.name}</p>
-                          <p className="text-xs text-content-muted block" dir="ltr">{member.email}</p>
+                          <p className="text-sm text-content-muted block" dir="ltr">{member.email}</p>
                         </div>
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <span className={cn("px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap", roleColors[member.role])}>
+                      <span className={cn("px-3 py-1 rounded-full text-sm font-bold whitespace-nowrap", roleColors[member.role])}>
                         {roleLabels[member.role] || member.role}
                       </span>
                     </td>
@@ -408,12 +408,12 @@ export default function SaaSTeamManagement() {
                     </td>
                     <td className="px-6 py-4">
                       {member.is_active ? (
-                        <div className="flex items-center gap-1.5 text-success font-bold text-xs">
+                        <div className="flex items-center gap-1.5 text-success font-bold text-sm">
                           <CheckCircle size={14} />
                           <span>{t('common.status_active', 'نشط')}</span>
                         </div>
                       ) : (
-                        <div className="flex items-center gap-1.5 text-danger font-bold text-xs">
+                        <div className="flex items-center gap-1.5 text-danger font-bold text-sm">
                           <XCircle size={14} />
                           <span>{t('common.status_inactive', 'موقوف')}</span>
                         </div>
@@ -471,7 +471,7 @@ export default function SaaSTeamManagement() {
                                     setActiveMenuId(null);
                                     handleOpenModal(member);
                                   }}
-                                  className="w-full flex items-center gap-2.5 px-2.5 py-2 text-start rounded-xl text-xs font-bold text-content-muted hover:text-brand hover:bg-brand/5 transition-all cursor-pointer"
+                                  className="w-full flex items-center gap-2.5 px-2.5 py-2 text-start rounded-xl text-sm font-bold text-content-muted hover:text-brand hover:bg-brand/5 transition-all cursor-pointer"
                                 >
                                   <Edit size={14} />
                                   {t('common.edit', 'تعديل')}
@@ -483,7 +483,7 @@ export default function SaaSTeamManagement() {
                                     setActiveMenuId(null);
                                     openResetPasswordModal(member);
                                   }}
-                                  className="w-full flex items-center gap-2.5 px-2.5 py-2 text-start rounded-xl text-xs font-bold text-content-muted hover:text-brand hover:bg-brand/5 transition-all cursor-pointer"
+                                  className="w-full flex items-center gap-2.5 px-2.5 py-2 text-start rounded-xl text-sm font-bold text-content-muted hover:text-brand hover:bg-brand/5 transition-all cursor-pointer"
                                 >
                                   <KeyRound size={14} />
                                   {t('saas.reset_password_btn', 'إعادة تعيين كلمة المرور')}
@@ -493,7 +493,7 @@ export default function SaaSTeamManagement() {
                                   <button
                                     type="button"
                                     onClick={() => handleDeleteMember(member)}
-                                    className="w-full flex items-center gap-2.5 px-2.5 py-2 text-start rounded-xl text-xs font-bold text-danger hover:bg-danger/5 transition-all cursor-pointer"
+                                    className="w-full flex items-center gap-2.5 px-2.5 py-2 text-start rounded-xl text-sm font-bold text-danger hover:bg-danger/5 transition-all cursor-pointer"
                                   >
                                     <Trash2 size={14} />
                                     {t('common.delete', 'حذف')}
@@ -537,7 +537,7 @@ export default function SaaSTeamManagement() {
 
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-2">
-                  <label className="text-xs font-bold text-content-muted">{t('common.full_name', 'الاسم الكامل')}</label>
+                  <label className="text-sm font-bold text-content-muted">{t('common.full_name', 'الاسم الكامل')}</label>
                   <IconInput
                     startIcon={User}
                     value={formData.name}
@@ -549,7 +549,7 @@ export default function SaaSTeamManagement() {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-xs font-bold text-content-muted">{t('common.email', 'البريد الإلكتروني')}</label>
+                  <label className="text-sm font-bold text-content-muted">{t('common.email', 'البريد الإلكتروني')}</label>
                   <IconInput
                     type="email"
                     startIcon={Mail}
@@ -564,7 +564,7 @@ export default function SaaSTeamManagement() {
 
                 {!editingUser && (
                   <div className="space-y-2">
-                    <label className="text-xs font-bold text-content-muted">{t('common.password_temp', 'كلمة المرور المؤقتة')}</label>
+                    <label className="text-sm font-bold text-content-muted">{t('common.password_temp', 'كلمة المرور المؤقتة')}</label>
                     <IconInput
                       type="password"
                       startIcon={Shield}
@@ -579,7 +579,7 @@ export default function SaaSTeamManagement() {
                 )}
 
                 <div className="space-y-2">
-                  <label className="text-xs font-bold text-content-muted">{t('common.role', 'الدور الوظيفي')}</label>
+                  <label className="text-sm font-bold text-content-muted">{t('common.role', 'الدور الوظيفي')}</label>
                   <SmartSelect
                     startIcon={Shield}
                     value={formData.role}
@@ -656,7 +656,7 @@ export default function SaaSTeamManagement() {
 
               <form onSubmit={handleResetPassword} className="space-y-4">
                 <div className="space-y-2">
-                  <label className="text-xs font-bold text-content-muted">{t('saas.new_password_label', 'كلمة المرور الجديدة')}</label>
+                  <label className="text-sm font-bold text-content-muted">{t('saas.new_password_label', 'كلمة المرور الجديدة')}</label>
                   <IconInput
                     type="password"
                     startIcon={Shield}

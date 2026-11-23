@@ -55,10 +55,10 @@ export default function CuttingFabricDialog({ lines, busy = false, onCancel, onC
         dir={isRtlLang(i18n.language) ? 'rtl' : 'ltr'}
         className="w-full max-w-lg max-h-[90vh] flex flex-col rounded-3xl bg-surface border border-border shadow-2xl overflow-hidden text-start"
       >
-        <div className="flex items-center justify-between p-4 sm:p-5 border-b border-border bg-brand/5 shrink-0">
+        <div className="flex items-center justify-between p-4 main-640:p-5 border-b border-border bg-brand/5 shrink-0">
           <div className="flex items-center gap-3">
             <div className="p-2.5 bg-brand text-white rounded-2xl shrink-0"><Scissors size={20} /></div>
-            <h3 id="cutting-fabric-title" className="text-base sm:text-lg font-black text-content">{t('orders.cutting_fabric_title')}</h3>
+            <h3 id="cutting-fabric-title" className="text-base main-640:text-lg font-black text-content">{t('orders.cutting_fabric_title')}</h3>
           </div>
           <button type="button" onClick={onCancel} disabled={busy} aria-label={t('common.close')} className="p-2 hover:bg-surface-muted rounded-full transition-colors text-content-muted disabled:opacity-50">
             <X size={20} />
@@ -72,13 +72,13 @@ export default function CuttingFabricDialog({ lines, busy = false, onCancel, onC
             onConfirm(lines.map((line) => ({ ...line, meters: metersOf(line.lineKey) })));
           }}
         >
-          <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-3">
+          <div className="flex-1 overflow-y-auto p-4 main-640:p-5 space-y-3">
             <p className="text-sm font-bold text-content-muted">{t('orders.cutting_fabric_desc')}</p>
             {lines.map((line, index) => (
               <div key={line.lineKey} className="flex items-center gap-3 rounded-2xl border border-border bg-surface-muted p-3">
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-black text-content truncate">{line.fabricName}</p>
-                  <p className="text-xs font-bold text-content-muted truncate">
+                  <p className="text-sm font-bold text-content-muted truncate">
                     {t('orders.cutting_fabric_line', { garment: line.garmentType, count: line.pieces })}
                   </p>
                 </div>
@@ -95,7 +95,7 @@ export default function CuttingFabricDialog({ lines, busy = false, onCancel, onC
                     onChange={(e) => setValues((prev) => ({ ...prev, [line.lineKey]: e.target.value }))}
                     className="w-24 bg-surface border border-border rounded-xl px-3 text-base font-black text-content text-center outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand"
                   />
-                  <label htmlFor={`cutting-line-${index}`} className="text-xs font-bold text-content-muted">{t('inventory.unit_meter')}</label>
+                  <label htmlFor={`cutting-line-${index}`} className="text-sm font-bold text-content-muted">{t('inventory.unit_meter')}</label>
                 </div>
               </div>
             ))}
@@ -104,7 +104,7 @@ export default function CuttingFabricDialog({ lines, busy = false, onCancel, onC
             </p>
           </div>
 
-          <div className="shrink-0 p-4 sm:p-5 border-t border-border flex items-center justify-end gap-3">
+          <div className="shrink-0 p-4 main-640:p-5 border-t border-border flex items-center justify-end gap-3">
             <button type="button" onClick={onCancel} disabled={busy} className="px-6 py-2.5 text-content-muted font-bold hover:text-content transition-colors text-sm rounded-xl hover:bg-surface-muted disabled:opacity-50">
               {t('common.cancel')}
             </button>

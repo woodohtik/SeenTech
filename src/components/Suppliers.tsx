@@ -495,18 +495,18 @@ export default function Suppliers({ tenantId }: { tenantId: string }) {
   const suppliersPageTotal = suppliersPageQuery.data?.total ?? 0;
 
   return (
-    <div className="p-4 md:p-6 space-y-6 font-sans">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+    <div className="p-4 main-720:p-6 space-y-6 font-sans">
+      <div className="flex flex-col main-720:flex-row justify-between items-start main-720:items-center gap-4">
         <div>
           <h1 className="text-2xl font-bold text-content">{t('procurement.title', 'الموردين والمشتريات')}</h1>
           <p className="text-content-muted">{t('procurement.subtitle', 'إدارة الموردين، أوامر الشراء، والمرتجعات')}</p>
         </div>
-        <div className="flex gap-2 w-full md:w-auto">
+        <div className="flex gap-2 w-full main-720:w-auto">
           {activeTab === 'suppliers' && (
             <>
               <button
                 onClick={() => setIsImportModalOpen(true)}
-                className="flex-1 md:flex-none bg-surface text-content border border-border px-4 py-2 rounded-xl flex items-center justify-center gap-2 hover:bg-surface-muted transition-colors"
+                className="flex-1 main-720:flex-none bg-surface text-content border border-border px-4 py-2 rounded-xl flex items-center justify-center gap-2 hover:bg-surface-muted transition-colors"
                 title={t('procurement.bulk_import_button_title', 'استيراد موردين جدد بالجملة من ملف إكسل')}
               >
                 <Upload size={18} />
@@ -517,7 +517,7 @@ export default function Suppliers({ tenantId }: { tenantId: string }) {
                   setEditingSupplier(null);
                   setIsModalOpen(true);
                 }}
-                className="flex-1 md:flex-none bg-brand text-white px-4 py-2 rounded-xl flex items-center justify-center gap-2 hover:bg-brand/90 transition-colors"
+                className="flex-1 main-720:flex-none bg-brand text-white px-4 py-2 rounded-xl flex items-center justify-center gap-2 hover:bg-brand/90 transition-colors"
               >
                 <Plus size={20} />
                 <span>{t('procurement.add_supplier', 'إضافة مورد')}</span>
@@ -577,8 +577,8 @@ export default function Suppliers({ tenantId }: { tenantId: string }) {
             <>
               {/* Filters & Search & View Toggle */}
               <div className="space-y-4">
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                  <div className="flex overflow-x-auto pb-2 sm:pb-0 gap-2 scrollbar-hide select-none w-full sm:w-auto">
+                <div className="flex flex-col main-640:flex-row justify-between items-start main-640:items-center gap-4">
+                  <div className="flex overflow-x-auto pb-2 main-640:pb-0 gap-2 scrollbar-hide select-none w-full main-640:w-auto">
                     <button
                       onClick={() => setCategoryFilter('all')}
                       className={cn(
@@ -707,7 +707,7 @@ export default function Suppliers({ tenantId }: { tenantId: string }) {
                 placeholder={t('procurement.contact_person', 'الشخص المسؤول')}
                 error={errors.contactPerson?.message}
               />
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 main-640:grid-cols-2 gap-4">
                 <IconInput
                   id="supplier-email"
                   type="email"
@@ -728,7 +728,7 @@ export default function Suppliers({ tenantId }: { tenantId: string }) {
                   error={errors.phone?.message}
                 />
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 main-640:grid-cols-2 gap-4">
                 <IconInput
                   id="supplier-tax-number"
                   {...register('taxNumber')}
@@ -779,20 +779,20 @@ export default function Suppliers({ tenantId }: { tenantId: string }) {
                         type="button"
                         onClick={() => categoryPicker.confirmAdd((key) => setValue('category', key as any)).catch(handleToastError)}
                         disabled={!categoryPicker.newLabel.trim() || categoryPicker.saving}
-                        className="min-h-[32px] px-3 rounded-lg bg-brand text-white font-bold text-xs disabled:opacity-50"
+                        className="min-h-[32px] px-3 rounded-lg bg-brand text-white font-bold text-sm disabled:opacity-50"
                       >
                         {t('common.add', 'إضافة')}
                       </button>
                       <button
                         type="button"
                         onClick={categoryPicker.cancelAdd}
-                        className="min-h-[32px] px-2 rounded-lg text-content-muted font-bold text-xs hover:bg-surface"
+                        className="min-h-[32px] px-2 rounded-lg text-content-muted font-bold text-sm hover:bg-surface"
                       >
                         {t('common.cancel', 'إلغاء')}
                       </button>
                     </div>
                   )}
-                  {errors.category && <p className="text-xs text-danger font-bold mt-1">{errors.category.message}</p>}
+                  {errors.category && <p className="text-sm text-danger font-bold mt-1">{errors.category.message}</p>}
                 </div>
               </div>
               <div>
@@ -809,7 +809,7 @@ export default function Suppliers({ tenantId }: { tenantId: string }) {
                     className="w-full bg-transparent border-none p-0 outline-none h-20 resize-none text-content focus:ring-0 text-sm font-medium"
                   />
                 </div>
-                {errors.address && <p className="text-xs text-danger font-bold mt-1">{errors.address.message}</p>}
+                {errors.address && <p className="text-sm text-danger font-bold mt-1">{errors.address.message}</p>}
               </div>
               <button 
                 type="submit"
@@ -839,7 +839,7 @@ export default function Suppliers({ tenantId }: { tenantId: string }) {
                 </div>
                 <div>
                   <h2 className="text-xl font-black text-content">{selectedSupplierDetails.name}</h2>
-                  <p className="text-xs font-bold text-content-muted">{t('procurement.supplier_details_subtitle', 'تفاصيل المورد، المستحقات المالية، والمنتجات المطلوبة')}</p>
+                  <p className="text-sm font-bold text-content-muted">{t('procurement.supplier_details_subtitle', 'تفاصيل المورد، المستحقات المالية، والمنتجات المطلوبة')}</p>
                 </div>
               </div>
               <button 
@@ -854,7 +854,7 @@ export default function Suppliers({ tenantId }: { tenantId: string }) {
             <div className="p-6 overflow-y-auto space-y-6 flex-1 text-right" dir="rtl">
               
               {/* Top Stats Cards */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 main-720:grid-cols-3 gap-4">
                 {/* Balance & Due Amounts */}
                 {(() => {
                   const items = inventory.filter(p => p.supplierId === selectedSupplierDetails.id || (p as any).supplier_id === selectedSupplierDetails.id);
@@ -868,34 +868,34 @@ export default function Suppliers({ tenantId }: { tenantId: string }) {
                   return (
                     <>
                       <div className="bg-surface-muted/30 p-5 rounded-2xl border border-border flex flex-col justify-between">
-                        <span className="text-xs font-bold text-content-muted">{t('procurement.direct_products_dues', 'مستحقات المنتجات المباشرة (بالمخازن)')}</span>
+                        <span className="text-sm font-bold text-content-muted">{t('procurement.direct_products_dues', 'مستحقات المنتجات المباشرة (بالمخازن)')}</span>
                         <div className="mt-2 flex items-baseline justify-between">
                           <span className="text-2xl font-black text-content">
                             <PriceDisplay amount={linkedProductsTotal} />
                           </span>
-                          <span className="text-xs font-semibold text-content-muted">({items.length} {t('procurement.item', 'صنف')})</span>
+                          <span className="text-sm font-semibold text-content-muted">({items.length} {t('procurement.item', 'صنف')})</span>
                         </div>
-                        <p className="text-[10px] text-content-muted mt-2">{t('procurement.calculated_from_cost', 'محسوبة من: (سعر التكلفة × الكمية المتوفرة) للمنتجات المرتبطة بالمستودع')}</p>
+                        <p className="text-sm text-content-muted mt-2">{t('procurement.calculated_from_cost', 'محسوبة من: (سعر التكلفة × الكمية المتوفرة) للمنتجات المرتبطة بالمستودع')}</p>
                       </div>
 
                       <div className="bg-surface-muted/30 p-5 rounded-2xl border border-border flex flex-col justify-between">
-                        <span className="text-xs font-bold text-content-muted">{t('procurement.recorded_po_debts', 'ديون أوامر الشراء المسجلة')}</span>
+                        <span className="text-sm font-bold text-content-muted">{t('procurement.recorded_po_debts', 'ديون أوامر الشراء المسجلة')}</span>
                         <div className="mt-2">
                           <span className="text-2xl font-black text-content">
                             <PriceDisplay amount={baseBalance} />
                           </span>
                         </div>
-                        <p className="text-[10px] text-content-muted mt-2">{t('procurement.unpaid_po_amounts', 'المبالغ غير المدفوعة من فواتير وأوامر الشراء المعتمدة')}</p>
+                        <p className="text-sm text-content-muted mt-2">{t('procurement.unpaid_po_amounts', 'المبالغ غير المدفوعة من فواتير وأوامر الشراء المعتمدة')}</p>
                       </div>
 
                       <div className="bg-brand/5 p-5 rounded-2xl border border-brand/20 flex flex-col justify-between">
-                        <span className="text-xs font-bold text-brand">{t('procurement.total_dues_and_liabilities', 'إجمالي الذمم والمستحقات الكلية')}</span>
+                        <span className="text-sm font-bold text-brand">{t('procurement.total_dues_and_liabilities', 'إجمالي الذمم والمستحقات الكلية')}</span>
                         <div className="mt-2">
                           <span className="text-3xl font-black text-brand">
                             <PriceDisplay amount={totalDue} />
                           </span>
                         </div>
-                        <p className="text-[10px] text-brand/80 mt-2">{t('procurement.total_direct_dues_and_po', 'مجموع مستحقات المخازن المباشرة وفواتير أوامر الشراء')}</p>
+                        <p className="text-sm text-brand/80 mt-2">{t('procurement.total_direct_dues_and_po', 'مجموع مستحقات المخازن المباشرة وفواتير أوامر الشراء')}</p>
                       </div>
                     </>
                   );
@@ -903,21 +903,21 @@ export default function Suppliers({ tenantId }: { tenantId: string }) {
               </div>
 
               {/* Information & Contacts */}
-              <div className="bg-surface-muted/30 rounded-2xl p-4 border border-border grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="bg-surface-muted/30 rounded-2xl p-4 border border-border grid grid-cols-1 main-640:grid-cols-2 main-720:grid-cols-4 gap-4">
                 <div>
-                  <span className="text-[10px] font-black text-content-muted block uppercase">{t('procurement.contact_person', 'الشخص المسؤول')}</span>
+                  <span className="text-sm font-black text-content-muted block uppercase">{t('procurement.contact_person', 'الشخص المسؤول')}</span>
                   <span className="text-sm font-bold text-content mt-1 block">{selectedSupplierDetails.contactPerson || '—'}</span>
                 </div>
                 <div>
-                  <span className="text-[10px] font-black text-content-muted block uppercase">{t('procurement.phone', 'الهاتف')}</span>
+                  <span className="text-sm font-black text-content-muted block uppercase">{t('procurement.phone', 'الهاتف')}</span>
                   <a href={`tel:${selectedSupplierDetails.phone}`} className="text-sm font-bold text-brand hover:underline mt-1 block">{selectedSupplierDetails.phone || '—'}</a>
                 </div>
                 <div>
-                  <span className="text-[10px] font-black text-content-muted block uppercase">{t('procurement.email', 'البريد الإلكتروني')}</span>
+                  <span className="text-sm font-black text-content-muted block uppercase">{t('procurement.email', 'البريد الإلكتروني')}</span>
                   <a href={`mailto:${selectedSupplierDetails.email}`} className="text-sm font-bold text-brand hover:underline truncate mt-1 block">{selectedSupplierDetails.email || '—'}</a>
                 </div>
                 <div>
-                  <span className="text-[10px] font-black text-content-muted block uppercase">{t('procurement.address_and_location', 'العنوان والموقع')}</span>
+                  <span className="text-sm font-black text-content-muted block uppercase">{t('procurement.address_and_location', 'العنوان والموقع')}</span>
                   <span className="text-sm font-bold text-content truncate mt-1 block">{selectedSupplierDetails.address || '—'}</span>
                 </div>
               </div>
@@ -927,7 +927,7 @@ export default function Suppliers({ tenantId }: { tenantId: string }) {
                 <h3 className="text-md font-black text-content mb-3 flex items-center gap-2">
                   <span className="w-1.5 h-6 bg-brand rounded-full inline-block" />
                   <span>{t('procurement.products_linked_to_supplier', 'المنتجات المرتبطة بالمورد في المخزون')}</span>
-                  <span className="text-xs font-bold text-content-muted">({inventory.filter(p => p.supplierId === selectedSupplierDetails.id || (p as any).supplier_id === selectedSupplierDetails.id).length} {t('procurement.product', 'منتج')})</span>
+                  <span className="text-sm font-bold text-content-muted">({inventory.filter(p => p.supplierId === selectedSupplierDetails.id || (p as any).supplier_id === selectedSupplierDetails.id).length} {t('procurement.product', 'منتج')})</span>
                 </h3>
                 
                 {(() => {
@@ -944,7 +944,7 @@ export default function Suppliers({ tenantId }: { tenantId: string }) {
                     <div className="border border-border rounded-2xl overflow-x-auto bg-surface scrollbar-hide">
                       <table className="w-full text-right border-collapse min-w-max">
                         <thead>
-                          <tr className="bg-surface-muted/50 border-b border-border text-xs font-black text-content-muted">
+                          <tr className="bg-surface-muted/50 border-b border-border text-sm font-black text-content-muted">
                             <th className="p-4 text-right">{t('procurement.product_name', 'اسم المنتج')}</th>
                             <th className="p-4 text-right">{t('procurement.sku_code', 'رمز الصنف (SKU)')}</th>
                             <th className="p-4 text-right">{t('procurement.available_quantity', 'الكمية المتوفرة')}</th>
@@ -960,7 +960,7 @@ export default function Suppliers({ tenantId }: { tenantId: string }) {
                             return (
                               <tr key={item.id} className="hover:bg-surface-muted/30 transition-colors">
                                 <td className="p-4 font-bold text-content">{item.name}</td>
-                                <td className="p-4 font-mono text-xs text-content-muted">{item.sku}</td>
+                                <td className="p-4 font-mono text-sm text-content-muted">{item.sku}</td>
                                 <td className="p-4 font-bold text-content">
                                   {Number(item.quantity).toLocaleString('en-US')} {item.unit}
                                 </td>
@@ -985,7 +985,7 @@ export default function Suppliers({ tenantId }: { tenantId: string }) {
                 <h3 className="text-md font-black text-content mb-3 flex items-center gap-2">
                   <span className="w-1.5 h-6 bg-info rounded-full inline-block" />
                   <span>{t('procurement.products_and_orders_via_po', 'المنتجات والطلبيات عبر أوامر الشراء العامة')}</span>
-                  <span className="text-xs font-bold text-content-muted">({purchaseOrders.filter(po => po.supplierId === selectedSupplierDetails.id).length} {t('procurement.purchase_order_count', 'أمر شراء')})</span>
+                  <span className="text-sm font-bold text-content-muted">({purchaseOrders.filter(po => po.supplierId === selectedSupplierDetails.id).length} {t('procurement.purchase_order_count', 'أمر شراء')})</span>
                 </h3>
 
                 {(() => {
@@ -1026,11 +1026,11 @@ export default function Suppliers({ tenantId }: { tenantId: string }) {
                       <div className="border border-border rounded-2xl overflow-x-auto bg-surface scrollbar-hide">
                         <div className="p-4 bg-surface-muted/40 font-bold text-sm text-content border-b border-border">{t('procurement.total_supplied_requested_quantities', 'إجمالي الكميات والأنواع التي تم توريدها/طلبها')}</div>
                         {orderedItemsArray.length === 0 ? (
-                          <div className="p-4 text-center text-xs text-content-muted">{t('procurement.no_detailed_items_in_po', 'لا توجد بنود تفصيلية في سجلات أوامر الشراء.')}</div>
+                          <div className="p-4 text-center text-sm text-content-muted">{t('procurement.no_detailed_items_in_po', 'لا توجد بنود تفصيلية في سجلات أوامر الشراء.')}</div>
                         ) : (
                           <table className="w-full text-right border-collapse min-w-max">
                             <thead>
-                              <tr className="bg-surface-muted/20 border-b border-border text-xs font-black text-content-muted">
+                              <tr className="bg-surface-muted/20 border-b border-border text-sm font-black text-content-muted">
                                 <th className="p-4 text-right">{t('procurement.requested_product_name', 'اسم المنتج المطلـوب')}</th>
                                 <th className="p-4 text-right">{t('procurement.total_requested_quantities', 'إجمالي الكميات المطلوبة')}</th>
                                 <th className="p-4 text-right">{t('procurement.average_supply_price', 'متوسط سعر التوريد')}</th>
@@ -1061,18 +1061,18 @@ export default function Suppliers({ tenantId }: { tenantId: string }) {
                                 <div className="font-bold text-content flex items-center gap-2">
                                   <span>{t('procurement.po_number_prefix', 'أمر شراء رقم:')} {po.poNumber}</span>
                                   <span className={cn(
-                                    "text-[10px] font-black px-2 py-0.5 rounded-full",
+                                    "text-sm font-black px-2 py-0.5 rounded-full",
                                     (po.status === 'confirmed' || po.status === 'received' || po.status === 'returned') ? "bg-success/10 text-success" :
                                     po.status === 'draft' ? "bg-surface-muted text-content-muted" : "bg-warning/10 text-warning"
                                   )}>
                                     {(po.status === 'confirmed' || po.status === 'received' || po.status === 'returned') ? t('procurement.status_approved_received', 'معتمد ومستلم') : po.status === 'draft' ? t('procurement.status_draft', 'مسودة') : t('procurement.status_pending', 'معلق')}
                                   </span>
                                 </div>
-                                <div className="text-xs text-content-muted mt-1">{t('procurement.order_date_prefix', 'تاريخ الطلب:')} {new Date(po.orderDate).toLocaleDateString(localeOf())}</div>
+                                <div className="text-sm text-content-muted mt-1">{t('procurement.order_date_prefix', 'تاريخ الطلب:')} {new Date(po.orderDate).toLocaleDateString(localeOf())}</div>
                               </div>
                               <div className="text-left">
                                 <div className="font-extrabold text-content"><PriceDisplay amount={po.totalAmount} /></div>
-                                <div className="text-xs text-content-muted">{t('procurement.remaining_amount_prefix', 'المتبقي:')} <PriceDisplay amount={po.remainingAmount || 0} /></div>
+                                <div className="text-sm text-content-muted">{t('procurement.remaining_amount_prefix', 'المتبقي:')} <PriceDisplay amount={po.remainingAmount || 0} /></div>
                               </div>
                             </div>
                           ))}
@@ -1303,7 +1303,7 @@ const SupplierImportModal = ({
   const renderRowList = (list: SupplierImportRowView[], icon: React.ReactNode, colorClass: string) => (
     <div className="space-y-1.5 max-h-40 overflow-y-auto pr-1">
       {list.map((r) => (
-        <div key={r.rowNumber} className={cn("flex items-center gap-2 text-xs font-bold px-3 py-1.5 rounded-xl bg-surface-muted/60", colorClass)}>
+        <div key={r.rowNumber} className={cn("flex items-center gap-2 text-sm font-bold px-3 py-1.5 rounded-xl bg-surface-muted/60", colorClass)}>
           {icon}
           <span className="truncate">{r.name || '-'} ({r.phoneText || '-'})</span>
           <span className="text-content-muted font-medium shrink-0">— {r.reason}</span>
@@ -1313,7 +1313,7 @@ const SupplierImportModal = ({
   );
 
   return (
-    <div className="fixed inset-0 z-[110] flex items-center justify-center p-2 sm:p-4">
+    <div className="fixed inset-0 z-[110] flex items-center justify-center p-2 main-640:p-4">
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -1328,14 +1328,14 @@ const SupplierImportModal = ({
         className="bg-surface w-full max-w-2xl rounded-3xl shadow-2xl relative z-10 overflow-hidden flex flex-col max-h-[90vh]"
         dir={dir}
       >
-        <div className="p-4 sm:p-8 border-b border-border flex justify-between items-center bg-surface-muted/50">
+        <div className="p-4 main-640:p-8 border-b border-border flex justify-between items-center bg-surface-muted/50">
           <div className="flex items-center gap-4">
             <div className="p-4 bg-brand text-white rounded-2xl shadow-lg shadow-brand/10">
               <Upload size={24} />
             </div>
             <div>
               <h2 className="text-2xl font-black text-content">{t('procurement.bulk_import_modal_title')}</h2>
-              <p className="text-xs text-content-muted font-bold">{t('procurement.bulk_import_modal_subtitle')}</p>
+              <p className="text-sm text-content-muted font-bold">{t('procurement.bulk_import_modal_subtitle')}</p>
             </div>
           </div>
           {step !== 'result' && (
@@ -1345,7 +1345,7 @@ const SupplierImportModal = ({
           )}
         </div>
 
-        <div className="p-4 sm:p-8 space-y-6 overflow-y-auto">
+        <div className="p-4 main-640:p-8 space-y-6 overflow-y-auto">
           {step === 'upload' && (
             <>
               <button
@@ -1388,7 +1388,7 @@ const SupplierImportModal = ({
 
               {duplicateRows.length > 0 && (
                 <div className="space-y-1.5">
-                  <p className="text-xs font-black text-warning uppercase tracking-widest px-1">
+                  <p className="text-sm font-black text-warning uppercase px-1">
                     {duplicateRows.length} {t('procurement.bulk_import_result_duplicate_header')}
                   </p>
                   {renderRowList(duplicateRows, <AlertCircle size={14} className="shrink-0" />, 'text-warning')}
@@ -1397,7 +1397,7 @@ const SupplierImportModal = ({
 
               {invalidRows.length > 0 && (
                 <div className="space-y-1.5">
-                  <p className="text-xs font-black text-danger uppercase tracking-widest px-1">
+                  <p className="text-sm font-black text-danger uppercase px-1">
                     {invalidRows.length} {t('procurement.bulk_import_result_error_header')}
                   </p>
                   {renderRowList(invalidRows, <X size={14} className="shrink-0" />, 'text-danger')}
@@ -1407,12 +1407,12 @@ const SupplierImportModal = ({
           )}
         </div>
 
-        <div className="sticky bottom-0 shrink-0 p-4 sm:p-8 border-t border-border bg-surface flex justify-end gap-3">
+        <div className="sticky bottom-0 shrink-0 p-4 main-640:p-8 border-t border-border bg-surface flex justify-end gap-3">
           {step === 'preview' && (
             <>
               <button
                 onClick={() => { setRows([]); setStep('upload'); }}
-                className="px-6 py-3 bg-surface-muted text-content hover:bg-surface border border-border rounded-xl font-bold transition-all text-xs sm:text-sm cursor-pointer"
+                className="px-6 py-3 bg-surface-muted text-content hover:bg-surface border border-border rounded-xl font-bold transition-all text-sm cursor-pointer"
               >
                 {t('common.cancel')}
               </button>
@@ -1420,7 +1420,7 @@ const SupplierImportModal = ({
                 <button
                   onClick={handleConfirmImport}
                   disabled={loading}
-                  className="px-6 py-3 bg-brand hover:bg-brand/90 text-white rounded-xl font-bold text-xs sm:text-sm transition-all shadow-lg shadow-brand/20 cursor-pointer disabled:opacity-60 disabled:cursor-wait"
+                  className="px-6 py-3 bg-brand hover:bg-brand/90 text-white rounded-xl font-bold text-sm transition-all shadow-lg shadow-brand/20 cursor-pointer disabled:opacity-60 disabled:cursor-wait"
                 >
                   {t('procurement.bulk_import_confirm_button', { count: validRows.length })}
                 </button>
@@ -1430,7 +1430,7 @@ const SupplierImportModal = ({
           {step === 'result' && (
             <button
               onClick={onClose}
-              className="px-6 py-3 bg-brand hover:bg-brand/90 text-white rounded-xl font-bold text-xs sm:text-sm transition-all shadow-lg shadow-brand/20 cursor-pointer"
+              className="px-6 py-3 bg-brand hover:bg-brand/90 text-white rounded-xl font-bold text-sm transition-all shadow-lg shadow-brand/20 cursor-pointer"
             >
               {t('procurement.bulk_import_result_done')}
             </button>

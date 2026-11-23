@@ -105,7 +105,7 @@ export default function TourWelcomeModal({
               </p>
             </div>
 
-            <div className="inline-flex items-center gap-2 bg-white/15 border border-white/20 px-3.5 py-1.5 rounded-full text-[11px] font-bold">
+            <div className="inline-flex items-center gap-2 bg-white/15 border border-white/20 px-3.5 py-1.5 rounded-full text-sm font-bold">
               <Clock size={13} />
               <span>
                 {t('tour.welcome.duration', { count: stepCount })}
@@ -126,7 +126,7 @@ export default function TourWelcomeModal({
               </div>
               <div className="min-w-0">
                 <p className="font-black text-sm text-content leading-tight">{h.title}</p>
-                <p className="text-xs text-content-muted font-medium mt-1 leading-relaxed">{h.desc}</p>
+                <p className="text-sm text-content-muted font-medium mt-1 leading-relaxed">{h.desc}</p>
               </div>
             </div>
           ))}
@@ -149,7 +149,7 @@ export default function TourWelcomeModal({
           </button>
         </div>
 
-        <p className="pb-6 -mt-3 text-center text-[11px] text-content-muted/80 font-medium px-6">
+        <p className="pb-6 -mt-3 text-center text-sm text-content-muted/80 font-medium px-6">
           {t('tour.welcome.restart_hint')}
         </p>
       </motion.div>

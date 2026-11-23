@@ -298,14 +298,14 @@ export default function InvoiceLayoutSettings({ tenantId }: InvoiceLayoutSetting
   };
 
   return (
-    <div className="bg-surface rounded-2xl lg:rounded-3xl border border-border shadow-xl shadow-brand/5 overflow-hidden flex flex-col 2xl:flex-row min-h-[750px] w-full" dir={isRtl ? "rtl" : "ltr"}>
+    <div className="bg-surface rounded-2xl main-900:rounded-3xl border border-border shadow-xl shadow-brand/5 overflow-hidden flex flex-col main-1280:flex-row min-h-[750px] w-full" dir={isRtl ? "rtl" : "ltr"}>
       {/* Mobile/Tablet Switcher (< 2xl) */}
-      <div className="2xl:hidden flex items-center p-1.5 bg-surface-muted rounded-2xl border border-border m-3 sm:m-4 mb-0 sm:mb-0">
+      <div className="main-1280:hidden flex items-center p-1.5 bg-surface-muted rounded-2xl border border-border m-3 main-640:m-4 mb-0 main-640:mb-0">
         <button
           type="button"
           onClick={() => setMobileTab('controls')}
           className={cn(
-            "flex-1 py-2.5 px-3 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-2 cursor-pointer",
+            "flex-1 py-2.5 px-3 rounded-xl text-sm font-black transition-all flex items-center justify-center gap-2 cursor-pointer",
             mobileTab === 'controls' ? "bg-brand text-white shadow-md shadow-brand/10" : "text-content-muted hover:text-content"
           )}
         >
@@ -316,7 +316,7 @@ export default function InvoiceLayoutSettings({ tenantId }: InvoiceLayoutSetting
           type="button"
           onClick={() => setMobileTab('preview')}
           className={cn(
-            "flex-1 py-2.5 px-3 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-2 cursor-pointer",
+            "flex-1 py-2.5 px-3 rounded-xl text-sm font-black transition-all flex items-center justify-center gap-2 cursor-pointer",
             mobileTab === 'preview' ? "bg-brand text-white shadow-md shadow-brand/10" : "text-content-muted hover:text-content"
           )}
         >
@@ -327,24 +327,24 @@ export default function InvoiceLayoutSettings({ tenantId }: InvoiceLayoutSetting
 
       {/* Controls Section */}
       <div className={cn(
-        "w-full 2xl:w-1/2 p-4 sm:p-6 lg:p-8 border-b 2xl:border-b-0 2xl:border-l border-border overflow-y-auto max-h-[850px] space-y-6 sm:space-y-8 custom-scrollbar",
-        mobileTab === 'controls' ? "block" : "hidden 2xl:block"
+        "w-full main-1280:w-1/2 p-4 main-640:p-6 main-900:p-8 border-b main-1280:border-b-0 main-1280:border-l border-border overflow-y-auto max-h-[850px] space-y-6 main-640:space-y-8 custom-scrollbar",
+        mobileTab === 'controls' ? "block" : "hidden main-1280:block"
       )}>
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className={cn("text-center", isRtl ? "sm:text-right" : "sm:text-left")}>
-            <h2 className="text-xl sm:text-2xl font-black text-content flex items-center justify-center sm:justify-start gap-2.5">
+        <div className="flex flex-col main-640:flex-row items-center justify-between gap-4">
+          <div className={cn("text-center", isRtl ? "main-640:text-right" : "main-640:text-left")}>
+            <h2 className="text-xl main-640:text-2xl font-black text-content flex items-center justify-center main-640:justify-start gap-2.5">
               <div className="p-2 bg-brand/10 text-brand rounded-xl shrink-0">
                 <FileText size={22} />
               </div>
               <span>{t('settings_page.invoice.title')}</span>
             </h2>
-            <p className="text-content-muted text-xs sm:text-sm font-medium mt-1">{t('settings_page.invoice.subtitle')}</p>
+            <p className="text-content-muted text-sm font-medium mt-1">{t('settings_page.invoice.subtitle')}</p>
           </div>
           <button 
             onClick={handleSave}
             disabled={saving}
             className={cn(
-              "w-full sm:w-auto text-white px-6 py-3 rounded-xl font-black transition-all shadow-lg flex items-center justify-center gap-2 disabled:opacity-50 hover:scale-102 active:scale-98 cursor-pointer text-sm",
+              "w-full main-640:w-auto text-white px-6 py-3 rounded-xl font-black transition-all shadow-lg flex items-center justify-center gap-2 disabled:opacity-50 hover:scale-102 active:scale-98 cursor-pointer text-sm",
               saveSuccess ? "bg-success shadow-success/20" : "bg-brand hover:bg-brand/90 shadow-brand/20"
             )}
           >
@@ -363,13 +363,13 @@ export default function InvoiceLayoutSettings({ tenantId }: InvoiceLayoutSetting
         <div className="space-y-6">
           <div className="flex items-center gap-2 group">
              <div className="w-1.5 h-6 bg-brand rounded-full transition-all group-hover:h-8" />
-             <h3 className="text-lg font-black text-content uppercase tracking-tight">{t('settings_page.invoice.section1_title')}</h3>
+             <h3 className="text-lg font-black text-content uppercase">{t('settings_page.invoice.section1_title')}</h3>
           </div>
           
-          <div className="space-y-4 bg-surface-muted/50 p-4 sm:p-6 rounded-2xl border border-border">
+          <div className="space-y-4 bg-surface-muted/50 p-4 main-640:p-6 rounded-2xl border border-border">
             <div className="space-y-3">
-              <label className="text-[10px] font-black text-content-muted uppercase tracking-[0.2em] px-1">{t('settings_page.invoice.paper_size')}</label>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <label className="text-sm font-black text-content-muted px-1">{t('settings_page.invoice.paper_size')}</label>
+              <div className="grid grid-cols-2 main-640:grid-cols-4 gap-3">
                 {[
                   { id: 'thermal80' as const, label: t('settings_page.invoice.thermal80') },
                   { id: 'thermal58' as const, label: t('settings_page.invoice.thermal58') },
@@ -380,7 +380,7 @@ export default function InvoiceLayoutSettings({ tenantId }: InvoiceLayoutSetting
                     key={size.id}
                     onClick={() => setSettings(s => ({ ...s, printSize: size.id }))}
                     className={cn(
-                      "py-3 px-3 rounded-xl text-xs font-black transition-all border-2",
+                      "py-3 px-3 rounded-xl text-sm font-black transition-all border-2",
                       settings.printSize === size.id 
                         ? "border-brand bg-brand/5 text-brand shadow-lg shadow-brand/5" 
                         : "border-border bg-white text-content-muted hover:border-brand/30"
@@ -393,8 +393,8 @@ export default function InvoiceLayoutSettings({ tenantId }: InvoiceLayoutSetting
             </div>
 
             <div className="space-y-3">
-              <label className="text-[10px] font-black text-content-muted uppercase tracking-[0.2em] px-1">{t('settings_page.invoice.layout_template')}</label>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <label className="text-sm font-black text-content-muted px-1">{t('settings_page.invoice.layout_template')}</label>
+              <div className="grid grid-cols-1 main-640:grid-cols-3 gap-4">
                 {[
                   { id: 'classic' as const, label: t('settings_page.invoice.classic') },
                   { id: 'detailed' as const, label: t('settings_page.invoice.detailed') },
@@ -404,7 +404,7 @@ export default function InvoiceLayoutSettings({ tenantId }: InvoiceLayoutSetting
                     key={template.id}
                     onClick={() => setSettings(s => ({ ...s, layoutTemplate: template.id }))}
                     className={cn(
-                      "group py-4 px-4 rounded-xl text-xs font-black transition-all border-2 flex flex-col items-center gap-3",
+                      "group py-4 px-4 rounded-xl text-sm font-black transition-all border-2 flex flex-col items-center gap-3",
                       settings.layoutTemplate === template.id 
                         ? "border-brand bg-brand/5 text-brand shadow-lg shadow-brand/5" 
                         : "border-border bg-white text-content-muted hover:border-brand/30"
@@ -418,19 +418,19 @@ export default function InvoiceLayoutSettings({ tenantId }: InvoiceLayoutSetting
 
             {/* Fast Thermal Print Mode Toggle */}
             <div className="pt-2 border-t border-border/50">
-              <label className="flex items-center justify-between p-3 sm:p-4 bg-warning/5 rounded-2xl border border-warning/20 cursor-pointer hover:bg-warning/10 transition-all gap-3 sm:gap-4">
+              <label className="flex items-center justify-between p-3 main-640:p-4 bg-warning/5 rounded-2xl border border-warning/20 cursor-pointer hover:bg-warning/10 transition-all gap-3 main-640:gap-4">
                 <div className={cn("flex items-start gap-3 min-w-0", isRtl ? "text-right" : "text-left")}>
                   <div className="p-2.5 bg-warning text-white rounded-xl shrink-0 shadow-sm">
                     <Zap size={20} className="animate-pulse" />
                   </div>
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
-                      <p className="font-black text-content text-xs sm:text-sm">{t('settings_page.invoice.fast_thermal')}</p>
-                      <span className="text-[9px] bg-warning/10 text-warning peer peer-checked:after:translate-x-full peer-checked:after:border-white px-2 py-0.5 rounded-full font-black border border-warning/20">
+                      <p className="font-black text-content text-sm">{t('settings_page.invoice.fast_thermal')}</p>
+                      <span className="text-sm bg-warning/10 text-warning peer peer-checked:after:translate-x-full peer-checked:after:border-white px-2 py-0.5 rounded-full font-black border border-warning/20">
                         {t('settings_page.invoice.paper_saving')}
                       </span>
                     </div>
-                    <p className="text-[10px] text-content-muted font-medium mt-0.5">
+                    <p className="text-sm text-content-muted font-medium mt-0.5">
                       {t('settings_page.invoice.fast_thermal_desc')}
                     </p>
                   </div>
@@ -458,18 +458,18 @@ export default function InvoiceLayoutSettings({ tenantId }: InvoiceLayoutSetting
         <div className="space-y-6">
           <div className="flex items-center gap-2 group">
              <div className="w-1.5 h-6 bg-brand rounded-full transition-all group-hover:h-8" />
-             <h3 className="text-lg font-black text-content uppercase tracking-tight">{t('settings_page.invoice.section2_title')}</h3>
+             <h3 className="text-lg font-black text-content uppercase">{t('settings_page.invoice.section2_title')}</h3>
           </div>
           
-          <div className="space-y-6 bg-surface-muted/50 p-4 sm:p-8 rounded-2xl border border-border">
-            <div className="flex flex-col sm:flex-row items-center gap-6 sm:gap-8 border-b border-border/50 pb-6 sm:pb-8">
+          <div className="space-y-6 bg-surface-muted/50 p-4 main-640:p-8 rounded-2xl border border-border">
+            <div className="flex flex-col main-640:flex-row items-center gap-6 main-640:gap-8 border-b border-border/50 pb-6 main-640:pb-8">
               <div className="relative w-28 h-28 bg-white border-2 border-dashed border-border rounded-3xl flex items-center justify-center overflow-hidden group hover:border-brand transition-all shadow-inner">
                 {logoPreview ? (
                   <img src={logoPreview} alt="Logo Preview" className="w-full h-full object-contain p-2" />
                 ) : (
                   <div className="text-center p-4">
                     <Upload size={20} className="mx-auto text-content-muted mb-2 group-hover:text-brand transition-all" />
-                    <span className="text-[9px] font-black text-content-muted tracking-tighter">{t('settings_page.invoice.store_logo')}</span>
+                    <span className="text-sm font-black text-content-muted">{t('settings_page.invoice.store_logo')}</span>
                   </div>
                 )}
                 <label className="absolute -bottom-2 -right-2 p-2 bg-brand text-white rounded-xl shadow-lg cursor-pointer hover:bg-brand/90 transition-all hover:scale-110">
@@ -488,7 +488,7 @@ export default function InvoiceLayoutSettings({ tenantId }: InvoiceLayoutSetting
               
               <div className="flex-1 space-y-4 w-full">
                 <div>
-                  <label className="text-[10px] font-black text-content-muted uppercase tracking-[0.2em] mb-2 block">{t('settings_page.invoice.whatsapp_number')}</label>
+                  <label className="text-sm font-black text-content-muted mb-2 block">{t('settings_page.invoice.whatsapp_number')}</label>
                   <input 
                     type="text" 
                     value={settings.header.contactNumbers}
@@ -498,8 +498,8 @@ export default function InvoiceLayoutSettings({ tenantId }: InvoiceLayoutSetting
                   />
                 </div>
                 <div>
-                  <label className={cn("text-[10px] font-black text-content-muted uppercase tracking-[0.2em] mb-2 block text-center", isRtl ? "sm:text-right" : "sm:text-left")}>{t('settings_page.invoice.alignment_dir')}</label>
-                  <div className="flex bg-white rounded-xl border border-border p-1.5 w-fit shadow-inner mx-auto sm:mx-0">
+                  <label className={cn("text-sm font-black text-content-muted mb-2 block text-center", isRtl ? "main-640:text-right" : "main-640:text-left")}>{t('settings_page.invoice.alignment_dir')}</label>
+                  <div className="flex bg-white rounded-xl border border-border p-1.5 w-fit shadow-inner mx-auto main-640:mx-0">
                     {[
                       { id: 'right', icon: AlignRight },
                       { id: 'center', icon: AlignCenter },
@@ -519,7 +519,7 @@ export default function InvoiceLayoutSettings({ tenantId }: InvoiceLayoutSetting
                   </div>
                 </div>
                 <label className="flex items-center justify-between p-3 bg-white rounded-xl border border-border/50 cursor-pointer hover:border-brand/30 shadow-sm transition-all gap-3">
-                  <span className="text-xs font-bold text-content">{t('settings_page.invoice.logo_border')}</span>
+                  <span className="text-sm font-bold text-content">{t('settings_page.invoice.logo_border')}</span>
                   <div className="relative inline-flex items-center cursor-pointer shrink-0">
                     <input
                       type="checkbox"
@@ -535,7 +535,7 @@ export default function InvoiceLayoutSettings({ tenantId }: InvoiceLayoutSetting
 
             <div className="space-y-4">
               <div className="space-y-1.5">
-                <label className="text-[10px] font-black text-content-muted uppercase tracking-[0.2em] px-1">{t('settings_page.invoice.facility_name')}</label>
+                <label className="text-sm font-black text-content-muted px-1">{t('settings_page.invoice.facility_name')}</label>
                 <input 
                   type="text" 
                   value={settings.header.facilityName}
@@ -545,9 +545,9 @@ export default function InvoiceLayoutSettings({ tenantId }: InvoiceLayoutSetting
                 />
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+              <div className="grid grid-cols-1 main-720:grid-cols-2 gap-4 main-720:gap-6">
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-black text-content-muted uppercase tracking-[0.2em] px-1">{t('settings_page.invoice.custom_address')}</label>
+                  <label className="text-sm font-black text-content-muted px-1">{t('settings_page.invoice.custom_address')}</label>
                   <input 
                     type="text" 
                     value={settings.header.address}
@@ -555,15 +555,15 @@ export default function InvoiceLayoutSettings({ tenantId }: InvoiceLayoutSetting
                     placeholder={t('settings_page.invoice.custom_address_placeholder')}
                     className="w-full bg-white border border-border rounded-xl p-3.5 text-sm font-bold outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand shadow-sm"
                   />
-                  <p className="text-[11px] text-content-muted px-1">{t('settings_page.invoice.custom_address_help')}</p>
+                  <p className="text-sm text-content-muted px-1">{t('settings_page.invoice.custom_address_help')}</p>
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-black text-content-muted uppercase tracking-[0.2em] px-1">{t('settings_page.invoice.tax_id')}</label>
+                  <label className="text-sm font-black text-content-muted px-1">{t('settings_page.invoice.tax_id')}</label>
                   <input 
                     type="text" 
                     value={settings.header.taxId}
                     onChange={e => setSettings(s => ({ ...s, header: { ...s.header, taxId: e.target.value } }))}
-                    className="w-full bg-white border border-border rounded-xl p-3.5 text-sm font-black outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand shadow-sm text-left tracking-widest"
+                    className="w-full bg-white border border-border rounded-xl p-3.5 text-sm font-black outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand shadow-sm text-left"
                     dir="ltr"
                   />
                 </div>
@@ -572,14 +572,14 @@ export default function InvoiceLayoutSettings({ tenantId }: InvoiceLayoutSetting
           </div>
 
           {/* Table Columns */}
-          <div className="space-y-6 bg-surface-muted/30 p-4 sm:p-8 rounded-2xl border border-border">
+          <div className="space-y-6 bg-surface-muted/30 p-4 main-640:p-8 rounded-2xl border border-border">
             <div className="flex items-center gap-3">
                <div className="p-2 bg-white rounded-lg shadow-sm text-brand">
                   <Layout size={18} />
                </div>
-               <h4 className="font-black text-content uppercase tracking-widest text-xs">{t('settings_page.invoice.columns_title')}</h4>
+               <h4 className="font-black text-content uppercase text-sm">{t('settings_page.invoice.columns_title')}</h4>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 main-720:grid-cols-2 gap-4">
               {[
                 { id: 'showUnitPrice', label: t('settings_page.invoice.col_unit_price') },
                 { id: 'showDiscount', label: t('settings_page.invoice.col_discount') },
@@ -610,27 +610,27 @@ export default function InvoiceLayoutSettings({ tenantId }: InvoiceLayoutSetting
           </div>
 
           {/* Footer */}
-          <div className="space-y-6 bg-surface-muted/30 p-4 sm:p-8 rounded-2xl border border-border">
+          <div className="space-y-6 bg-surface-muted/30 p-4 main-640:p-8 rounded-2xl border border-border">
             <div className="flex items-center gap-3">
                <div className="p-2 bg-white rounded-lg shadow-sm text-brand">
                   <FileText size={18} />
                </div>
-               <h4 className="font-black text-content uppercase tracking-widest text-xs">{t('settings_page.invoice.footer_title')}</h4>
+               <h4 className="font-black text-content uppercase text-sm">{t('settings_page.invoice.footer_title')}</h4>
             </div>
             
             <div className="space-y-2">
-              <label className="text-[10px] font-black text-content-muted uppercase tracking-[0.2em] px-1">{t('settings_page.invoice.return_policy')}</label>
+              <label className="text-sm font-black text-content-muted px-1">{t('settings_page.invoice.return_policy')}</label>
               <textarea 
                 rows={4}
                 value={settings.footer.returnPolicy}
                 onChange={e => setSettings(s => ({ ...s, footer: { ...s.footer, returnPolicy: e.target.value } }))}
-                className="w-full bg-white border border-border rounded-2xl p-4 sm:p-6 text-xs font-medium outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand resize-none leading-relaxed shadow-inner"
+                className="w-full bg-white border border-border rounded-2xl p-4 main-640:p-6 text-sm font-medium outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand resize-none leading-relaxed shadow-inner"
                 placeholder={t('settings_page.invoice.return_policy_placeholder')}
               />
             </div>
             
             <div className="space-y-2">
-              <label className="text-[10px] font-black text-content-muted uppercase tracking-[0.2em] px-1">{t('settings_page.invoice.thank_you_message')}</label>
+              <label className="text-sm font-black text-content-muted px-1">{t('settings_page.invoice.thank_you_message')}</label>
               <input 
                 type="text" 
                 value={settings.footer.thankYouMessage}
@@ -639,17 +639,17 @@ export default function InvoiceLayoutSettings({ tenantId }: InvoiceLayoutSetting
               />
             </div>
 
-            <label className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between p-4 sm:p-6 bg-surface-muted/50 rounded-2xl border border-dashed border-brand/20 cursor-pointer hover:bg-brand/5 transition-all gap-4">
+            <label className="flex flex-col main-640:flex-row items-stretch main-640:items-center justify-between p-4 main-640:p-6 bg-surface-muted/50 rounded-2xl border border-dashed border-brand/20 cursor-pointer hover:bg-brand/5 transition-all gap-4">
               <div className={cn("flex items-center gap-4", isRtl ? "text-right" : "text-left")}>
                  <div className="p-3 bg-white rounded-2xl shadow-sm text-brand shrink-0">
                     <Zap size={24} className="animate-pulse" />
                  </div>
                  <div>
                     <p className="font-black text-content text-sm">{t('settings_page.invoice.zatca_qr')}</p>
-                    <p className="text-[10px] text-content-muted font-medium">{t('settings_page.invoice.zatca_compatibility')}</p>
+                    <p className="text-sm text-content-muted font-medium">{t('settings_page.invoice.zatca_compatibility')}</p>
                  </div>
               </div>
-              <div className="flex justify-end sm:justify-start">
+              <div className="flex justify-end main-640:justify-start">
                 <div className="relative inline-flex items-center cursor-pointer">
                   <input 
                     type="checkbox" 
@@ -667,19 +667,19 @@ export default function InvoiceLayoutSettings({ tenantId }: InvoiceLayoutSetting
 
       {/* Live Preview Section */}
       <div className={cn(
-        "w-full 2xl:w-1/2 bg-surface-muted/40 p-4 sm:p-8 flex flex-col items-center justify-start overflow-auto max-h-[850px] border-t 2xl:border-t-0 border-border custom-scrollbar",
-        mobileTab === 'preview' ? "flex" : "hidden 2xl:flex"
+        "w-full main-1280:w-1/2 bg-surface-muted/40 p-4 main-640:p-8 flex flex-col items-center justify-start overflow-auto max-h-[850px] border-t main-1280:border-t-0 border-border custom-scrollbar",
+        mobileTab === 'preview' ? "flex" : "hidden main-1280:flex"
       )}>
-        <div className="bg-white/80 backdrop-blur-md px-6 py-2 rounded-full border border-border/50 flex items-center gap-2 mb-6 sm:mb-10 text-content-muted font-black uppercase tracking-widest text-[10px] sticky top-0 z-10 shadow-sm shadow-brand/5 whitespace-nowrap">
+        <div className="bg-white/80 backdrop-blur-md px-6 py-2 rounded-full border border-border/50 flex items-center gap-2 mb-6 main-640:mb-10 text-content-muted font-black uppercase text-sm sticky top-0 z-10 shadow-sm shadow-brand/5 whitespace-nowrap">
           <Eye size={12} className="text-brand" />
           <span>{t('settings_page.invoice.live_simulation')}</span>
         </div>
 
         {/* Invoice Paper Wrapper to handle scaling */}
         <div className={cn(
-          "flex justify-center transition-all duration-500 w-full origin-top mb-10 2xl:mb-20 overflow-x-auto",
-          settings.printSize === 'a4' ? "scale-[0.45] xs:scale-[0.5] sm:scale-[0.6] md:scale-[0.7] lg:scale-[0.45] xl:scale-[0.6] 2xl:scale-[0.7]" : 
-          settings.printSize === 'a5' ? "scale-[0.55] xs:scale-[0.6] sm:scale-[0.7] lg:scale-[0.55] xl:scale-[0.7]" : "scale-100"
+          "flex justify-center transition-all duration-500 w-full origin-top mb-10 main-1280:mb-20 overflow-x-auto",
+          settings.printSize === 'a4' ? "scale-[0.45] xs:scale-[0.5] main-640:scale-[0.6] main-720:scale-[0.7] main-900:scale-[0.45] main-1024:scale-[0.6] main-1280:scale-[0.7]" : 
+          settings.printSize === 'a5' ? "scale-[0.55] xs:scale-[0.6] main-640:scale-[0.7] main-900:scale-[0.55] main-1024:scale-[0.7]" : "scale-100"
         )}>
           {['thermal80', 'thermal58'].includes(settings.printSize) ? (
             <ThermalInvoice 

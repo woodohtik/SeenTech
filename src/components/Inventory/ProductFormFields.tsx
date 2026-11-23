@@ -110,7 +110,7 @@ export default function ProductFormFields({
   return (
     <>
       {/* Image Uploader */}
-      <div className="bg-surface-muted/50 p-4 sm:p-6 rounded-2xl border border-border">
+      <div className="bg-surface-muted/50 p-4 main-640:p-6 rounded-2xl border border-border">
         <ProductImageUploader
           tenantId={tenantId}
           onUploadComplete={(url: string) => setFormData({ ...formData, mainImage: url })}
@@ -119,9 +119,9 @@ export default function ProductFormFields({
       </div>
 
       <div className="bg-surface-muted/50 p-6 rounded-2xl border border-border">
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-6 text-right">
-          <div className="space-y-2 col-span-1 md:col-span-6 text-right">
-            <label htmlFor={`${idPrefix}-name`} className="text-xs font-black text-content-muted uppercase tracking-widest mx-1 block">
+        <div className="grid grid-cols-1 main-720:grid-cols-12 gap-6 text-right">
+          <div className="space-y-2 col-span-1 main-720:col-span-6 text-right">
+            <label htmlFor={`${idPrefix}-name`} className="text-sm font-black text-content-muted uppercase mx-1 block">
               {t("inventory.item_name")}<span className="text-danger">*</span>
             </label>
             <div className="relative">
@@ -146,8 +146,8 @@ export default function ProductFormFields({
               )}
             </div>
           </div>
-          <div className="space-y-2 col-span-1 md:col-span-6 text-right">
-            <label className="text-xs font-black text-content-muted uppercase tracking-widest mx-1 block">
+          <div className="space-y-2 col-span-1 main-720:col-span-6 text-right">
+            <label className="text-sm font-black text-content-muted uppercase mx-1 block">
               {t("inventory.category")}
             </label>
             <SmartSelect
@@ -184,22 +184,22 @@ export default function ProductFormFields({
                   type="button"
                   onClick={() => categoryPicker.confirmAdd((key) => setFormData(withCategory(key))).catch(handleError)}
                   disabled={!categoryPicker.newLabel.trim() || categoryPicker.saving}
-                  className="min-h-[32px] px-3 rounded-lg bg-brand text-white font-bold text-xs disabled:opacity-50"
+                  className="min-h-[32px] px-3 rounded-lg bg-brand text-white font-bold text-sm disabled:opacity-50"
                 >
                   {t("common.add", "إضافة")}
                 </button>
                 <button
                   type="button"
                   onClick={categoryPicker.cancelAdd}
-                  className="min-h-[32px] px-2 rounded-lg text-content-muted font-bold text-xs hover:bg-surface"
+                  className="min-h-[32px] px-2 rounded-lg text-content-muted font-bold text-sm hover:bg-surface"
                 >
                   {t("common.cancel", "إلغاء")}
                 </button>
               </div>
             )}
           </div>
-          <div className="space-y-2 col-span-1 md:col-span-12 text-right">
-            <label htmlFor={`${idPrefix}-description`} className="text-xs font-black text-content-muted uppercase tracking-widest mx-1 block">
+          <div className="space-y-2 col-span-1 main-720:col-span-12 text-right">
+            <label htmlFor={`${idPrefix}-description`} className="text-sm font-black text-content-muted uppercase mx-1 block">
               {t("inventory.description_label")}
             </label>
             <textarea
@@ -223,13 +223,13 @@ export default function ProductFormFields({
             <div className="bg-brand/5 p-6 rounded-2xl border border-brand/10 space-y-6">
               <div className="flex items-center gap-2 mb-2">
                 <Shirt className="text-brand" size={18} />
-                <h3 className="text-sm font-black text-content uppercase tracking-widest text-brand">
+                <h3 className="text-sm font-black text-content uppercase text-brand">
                   {t("inventory.specs_ready_made")}
                 </h3>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-12 gap-6 text-right">
-                <div className="space-y-2 col-span-1 md:col-span-6 text-right">
-                  <label className="text-xs font-black text-content-muted uppercase tracking-widest mx-1 block">
+              <div className="grid grid-cols-1 main-720:grid-cols-12 gap-6 text-right">
+                <div className="space-y-2 col-span-1 main-720:col-span-6 text-right">
+                  <label className="text-sm font-black text-content-muted uppercase mx-1 block">
                     {t("inventory.collar_type")}
                   </label>
                   <SmartSelect
@@ -245,8 +245,8 @@ export default function ProductFormFields({
                     className="text-right"
                   />
                 </div>
-                <div className="space-y-2 col-span-1 md:col-span-6 text-right">
-                  <label className="text-xs font-black text-content-muted uppercase tracking-widest mx-1 block">
+                <div className="space-y-2 col-span-1 main-720:col-span-6 text-right">
+                  <label className="text-sm font-black text-content-muted uppercase mx-1 block">
                     {t("inventory.cuff_type")}
                   </label>
                   <SmartSelect
@@ -261,8 +261,8 @@ export default function ProductFormFields({
                     className="text-right"
                   />
                 </div>
-                <div className="space-y-2 col-span-1 md:col-span-6 text-right">
-                  <label className="text-xs font-black text-content-muted uppercase tracking-widest mx-1 block">
+                <div className="space-y-2 col-span-1 main-720:col-span-6 text-right">
+                  <label className="text-sm font-black text-content-muted uppercase mx-1 block">
                     {t("inventory.pocket_type")}
                   </label>
                   <SmartSelect
@@ -277,8 +277,8 @@ export default function ProductFormFields({
                     className="text-right"
                   />
                 </div>
-                <div className="space-y-2 col-span-1 md:col-span-6 text-right">
-                  <label className="text-xs font-black text-content-muted uppercase tracking-widest mx-1 block">
+                <div className="space-y-2 col-span-1 main-720:col-span-6 text-right">
+                  <label className="text-sm font-black text-content-muted uppercase mx-1 block">
                     {t("inventory.chest_style")}
                   </label>
                   <SmartSelect
@@ -300,9 +300,9 @@ export default function ProductFormFields({
       </AnimatePresence>
 
       <div className="bg-surface-muted/50 p-6 rounded-2xl border border-border">
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-6 text-right">
-          <div className={cn("space-y-2 col-span-1 text-right", showRollContent ? "md:col-span-4" : "md:col-span-6")}>
-            <label className="text-xs font-black text-content-muted uppercase tracking-widest mx-1 block">
+        <div className="grid grid-cols-1 main-720:grid-cols-12 gap-6 text-right">
+          <div className={cn("space-y-2 col-span-1 text-right", showRollContent ? "main-720:col-span-4" : "main-720:col-span-6")}>
+            <label className="text-sm font-black text-content-muted uppercase mx-1 block">
               {t("inventory.unit")}
             </label>
             <SmartSelect
@@ -313,8 +313,8 @@ export default function ProductFormFields({
             />
           </div>
           {showRollContent && (
-            <div className="space-y-2 col-span-1 md:col-span-4 text-right">
-              <label htmlFor={`${idPrefix}-roll-content`} className="text-xs font-black text-content-muted uppercase tracking-widest mx-1 block">
+            <div className="space-y-2 col-span-1 main-720:col-span-4 text-right">
+              <label htmlFor={`${idPrefix}-roll-content`} className="text-sm font-black text-content-muted uppercase mx-1 block">
                 {t("inventory.roll_content")}<span className="text-danger">*</span>
               </label>
               <div className="flex gap-2">
@@ -344,7 +344,7 @@ export default function ProductFormFields({
                       aria-pressed={formData.contentUnit === u}
                       onClick={() => setFormData({ ...formData, contentUnit: u })}
                       className={cn(
-                        "px-3 rounded-lg text-xs font-black transition-all",
+                        "px-3 rounded-lg text-sm font-black transition-all",
                         formData.contentUnit === u ? "bg-brand text-white" : "text-content-muted hover:bg-surface-muted"
                       )}
                     >
@@ -355,8 +355,8 @@ export default function ProductFormFields({
               </div>
             </div>
           )}
-          <div className={cn("space-y-2 col-span-1 text-right", showRollContent ? "md:col-span-4" : "md:col-span-6")}>
-            <label htmlFor={`${idPrefix}-min-threshold`} className="text-xs font-black text-content-muted uppercase tracking-widest mx-1 block">
+          <div className={cn("space-y-2 col-span-1 text-right", showRollContent ? "main-720:col-span-4" : "main-720:col-span-6")}>
+            <label htmlFor={`${idPrefix}-min-threshold`} className="text-sm font-black text-content-muted uppercase mx-1 block">
               {t("inventory.min_threshold")}
             </label>
             <input
@@ -373,8 +373,8 @@ export default function ProductFormFields({
 
       {isFabric && (
         <div className="bg-surface-muted/50 p-6 rounded-2xl border border-border">
-          <div className="space-y-2 text-right md:max-w-xs">
-            <label htmlFor={`${idPrefix}-fabric-width`} className="text-xs font-black text-content-muted uppercase tracking-widest mx-1 block">
+          <div className="space-y-2 text-right main-720:max-w-xs">
+            <label htmlFor={`${idPrefix}-fabric-width`} className="text-sm font-black text-content-muted uppercase mx-1 block">
               {t("inventory.fabric_width_cm")}
             </label>
             <input
@@ -389,7 +389,7 @@ export default function ProductFormFields({
               aria-describedby={`${idPrefix}-fabric-width-hint`}
               className="w-full px-5 py-3 bg-surface border border-border rounded-xl font-semibold text-content text-right outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand"
             />
-            <p id={`${idPrefix}-fabric-width-hint`} className="text-xs text-content-muted font-bold mx-1">
+            <p id={`${idPrefix}-fabric-width-hint`} className="text-sm text-content-muted font-bold mx-1">
               {t("inventory.fabric_width_hint")}
             </p>
           </div>
@@ -397,9 +397,9 @@ export default function ProductFormFields({
       )}
 
       <div className="bg-surface-muted/50 p-6 rounded-2xl border border-border">
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-6 text-right">
-          <div className="space-y-2 col-span-1 md:col-span-3 text-right">
-            <label htmlFor={`${idPrefix}-cost-price`} className="text-xs font-black text-content-muted uppercase tracking-widest mx-1 block">
+        <div className="grid grid-cols-1 main-720:grid-cols-12 gap-6 text-right">
+          <div className="space-y-2 col-span-1 main-720:col-span-3 text-right">
+            <label htmlFor={`${idPrefix}-cost-price`} className="text-sm font-black text-content-muted uppercase mx-1 block">
               {t(isFabric ? "inventory.cost_price_per_meter" : "inventory.cost_price_label")}<span className="text-danger">*</span>
             </label>
             <input
@@ -420,8 +420,8 @@ export default function ProductFormFields({
             />
           </div>
 
-          <div className="space-y-2 col-span-1 md:col-span-3 text-right">
-            <label htmlFor={`${idPrefix}-selling-price`} className="text-xs font-black text-content-muted uppercase tracking-widest mx-1 block">
+          <div className="space-y-2 col-span-1 main-720:col-span-3 text-right">
+            <label htmlFor={`${idPrefix}-selling-price`} className="text-sm font-black text-content-muted uppercase mx-1 block">
               {t(isFabric ? "inventory.selling_price_per_meter" : "inventory.selling_price_label")}<span className="text-danger">*</span>
             </label>
             <input
@@ -442,8 +442,8 @@ export default function ProductFormFields({
             />
           </div>
 
-          <div className="space-y-2 col-span-1 md:col-span-6 text-right">
-            <label className="text-xs font-black text-content-muted uppercase tracking-widest mx-1 block">
+          <div className="space-y-2 col-span-1 main-720:col-span-6 text-right">
+            <label className="text-sm font-black text-content-muted uppercase mx-1 block">
               {t("inventory.tax_status_label")}
             </label>
             <div className="grid grid-cols-3 gap-2">
@@ -463,8 +463,8 @@ export default function ProductFormFields({
                       : "bg-surface border-transparent text-content-muted hover:bg-surface-muted"
                   )}
                 >
-                  <span className="text-xs font-black leading-tight">{tax.label}</span>
-                  <span className="text-[8px] font-bold opacity-70 leading-none">{tax.desc}</span>
+                  <span className="text-sm font-black leading-tight">{tax.label}</span>
+                  <span className="text-sm font-bold opacity-70 leading-none">{tax.desc}</span>
                 </button>
               ))}
             </div>
@@ -473,9 +473,9 @@ export default function ProductFormFields({
       </div>
 
       <div className="bg-brand/5 p-6 rounded-2xl border border-brand/10 text-right">
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-6 text-right">
-          <div className={cn("space-y-2 col-span-1", showOpeningBalance ? "md:col-span-6" : "md:col-span-12")}>
-            <label className="text-xs font-black text-content uppercase tracking-widest mx-1 block">
+        <div className="grid grid-cols-1 main-720:grid-cols-12 gap-6 text-right">
+          <div className={cn("space-y-2 col-span-1", showOpeningBalance ? "main-720:col-span-6" : "main-720:col-span-12")}>
+            <label className="text-sm font-black text-content uppercase mx-1 block">
               {t("inventory.supplier_label")}
             </label>
             <SmartSelect
@@ -489,8 +489,8 @@ export default function ProductFormFields({
             />
           </div>
           {showOpeningBalance && (
-            <div className="space-y-2 col-span-1 md:col-span-6">
-              <label htmlFor={`${idPrefix}-initial-stock`} className="text-xs font-black text-content uppercase tracking-widest mx-1 block">
+            <div className="space-y-2 col-span-1 main-720:col-span-6">
+              <label htmlFor={`${idPrefix}-initial-stock`} className="text-sm font-black text-content uppercase mx-1 block">
                 {t("inventory.initial_stock")}
               </label>
               <input
@@ -508,9 +508,9 @@ export default function ProductFormFields({
       </div>
 
       <div className="bg-surface-muted/50 p-6 rounded-2xl border border-border">
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-6 text-right">
-          <div className="space-y-2 col-span-1 md:col-span-6">
-            <label htmlFor={`${idPrefix}-sku`} className="text-xs font-black text-content-muted uppercase tracking-widest mx-1 block">
+        <div className="grid grid-cols-1 main-720:grid-cols-12 gap-6 text-right">
+          <div className="space-y-2 col-span-1 main-720:col-span-6">
+            <label htmlFor={`${idPrefix}-sku`} className="text-sm font-black text-content-muted uppercase mx-1 block">
               {t("inventory.ref_sku")}
             </label>
             <input
@@ -521,8 +521,8 @@ export default function ProductFormFields({
               className="w-full px-5 py-3 bg-surface border border-border rounded-xl font-semibold text-content text-right outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand"
             />
           </div>
-          <div className="space-y-2 col-span-1 md:col-span-6">
-            <label htmlFor={`${idPrefix}-barcode`} className="text-xs font-black text-content-muted uppercase tracking-widest mx-1 block">
+          <div className="space-y-2 col-span-1 main-720:col-span-6">
+            <label htmlFor={`${idPrefix}-barcode`} className="text-sm font-black text-content-muted uppercase mx-1 block">
               {t("inventory.barcode")}
             </label>
             <input
@@ -539,7 +539,7 @@ export default function ProductFormFields({
       <div className="flex items-center justify-between p-6 bg-brand/5 rounded-2xl border border-brand/10">
         <div>
           <h4 className="text-sm font-black text-content">{t("inventory.visible_in_pos")}</h4>
-          <p className="text-xs text-content-muted">{t("inventory.show_in_pos_desc")}</p>
+          <p className="text-sm text-content-muted">{t("inventory.show_in_pos_desc")}</p>
         </div>
         <button
           type="button"

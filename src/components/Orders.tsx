@@ -174,7 +174,7 @@ const OrderStepper = ({ currentStatus, stages }: { currentStatus: string; stages
               </div>
               <div className="flex flex-col items-center">
                 <span className={cn(
-                  "text-[11px] font-black text-center whitespace-nowrap px-2 py-1 rounded-lg transition-colors",
+                  "text-sm font-black text-center whitespace-nowrap px-2 py-1 rounded-lg transition-colors",
                   isActive ? "text-brand bg-brand/5" : isCompleted ? "text-brand" : "text-content-muted"
                 )}>
                   {t(config.labelKey)}
@@ -739,7 +739,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
 
   const VisualPart = ({ label, icon: Icon, value, options, onChange }: any) => (
     <div className="space-y-2">
-      <label className="text-xs font-bold text-content-muted uppercase tracking-widest flex items-center gap-2">
+      <label className="text-sm font-bold text-content-muted uppercase flex items-center gap-2">
         <Icon size={14} className="text-brand" />
         {label}
       </label>
@@ -762,7 +762,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
             )}>
               {opt.icon}
             </div>
-            <span className="text-[11px] font-black">{opt.label}</span>
+            <span className="text-sm font-black">{opt.label}</span>
           </button>
         ))}
       </div>
@@ -1413,7 +1413,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
           screen opened it. */}
       <AnimatePresence>
         {viewingInvoice && (
-          <div className="fixed inset-0 z-[160] flex items-end lg:items-center justify-center overflow-hidden">
+          <div className="fixed inset-0 z-[160] flex items-end main-900:items-center justify-center overflow-hidden">
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -1426,10 +1426,10 @@ export default function Orders({ tenantId }: { tenantId: string }) {
               animate={{ y: 0, x: 0 }}
               exit={{ y: '100%', x: '100%' }}
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="bg-surface w-full lg:w-[450px] md:h-auto lg:h-full h-[90vh] shadow-2xl relative z-10 flex flex-col lg:rounded-none rounded-t-3xl border-t lg:border-t-0 lg:border-r border-border overflow-hidden lg:mr-auto md:max-w-md md:rounded-3xl md:mb-10 lg:max-w-none lg:mb-0 lg:ml-0"
+              className="bg-surface w-full main-900:w-[450px] main-720:h-auto main-900:h-full h-[90vh] shadow-2xl relative z-10 flex flex-col main-900:rounded-none rounded-t-3xl border-t main-900:border-t-0 main-900:border-r border-border overflow-hidden main-900:mr-auto main-720:max-w-md main-720:rounded-3xl main-720:mb-10 main-900:max-w-none main-900:mb-0 main-900:ml-0"
               dir={isRtlLang(i18n.language) ? 'rtl' : 'ltr'}
             >
-              <div className="flex-1 overflow-y-auto p-4 lg:p-6">
+              <div className="flex-1 overflow-y-auto p-4 main-900:p-6">
                 <TaxInvoiceDocument
                   order={viewingInvoice.invoice}
                   tenant={viewingInvoice.tenant}
@@ -1465,7 +1465,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                 </button>
               </div>
               <div id={`order-summary-fallback-${order.id}`} className="p-6 space-y-3 text-sm">
-                <p className="text-xs font-bold text-content-muted bg-surface-muted/60 p-2.5 rounded-lg">
+                <p className="text-sm font-bold text-content-muted bg-surface-muted/60 p-2.5 rounded-lg">
                   {t('pos.no_invoice_fallback_notice')}
                 </p>
                 <div className="flex justify-between"><span className="text-content-muted">{t('pos.customer_name')}</span><span className="font-bold">{order.customerName}</span></div>
@@ -1528,7 +1528,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
           </div>
         )}
       </AnimatePresence>
-      <div className="fixed inset-0 z-[60] flex items-end lg:items-center justify-center lg:justify-end overflow-hidden">
+      <div className="fixed inset-0 z-[60] flex items-end main-900:items-center justify-center main-900:justify-end overflow-hidden">
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -1544,7 +1544,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
           animate={{ x: 0, y: 0 }}
           exit={{ x: '100%', y: '100%' }}
           transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-          className={cn("bg-surface w-full lg:max-w-lg h-[95vh] lg:h-full shadow-2xl relative z-10 flex flex-col lg:rounded-none rounded-t-[3rem] overflow-hidden", isRtlLang(i18n.language) ? "text-right" : "text-left")}
+          className={cn("bg-surface w-full main-900:max-w-lg h-[95vh] main-900:h-full shadow-2xl relative z-10 flex flex-col main-900:rounded-none rounded-t-[3rem] overflow-hidden", isRtlLang(i18n.language) ? "text-right" : "text-left")}
           dir={isRtlLang(i18n.language) ? "rtl" : "ltr"}
         >
           <div className="px-6 py-4 border-b border-border flex justify-between items-center gap-3 bg-brand/5">
@@ -1604,7 +1604,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
               </div>
               
               {order.status === 'delivered' || !canUpdateStatus ? (
-                <div className="bg-surface-muted p-3.5 rounded-2xl border border-border text-center text-xs font-bold text-content-muted">
+                <div className="bg-surface-muted p-3.5 rounded-2xl border border-border text-center text-sm font-bold text-content-muted">
                   {order.status === 'delivered'
                     ? t('orders.order_delivered_locked')
                     : t(getOrderStatusDisplay(order.status, workflowStages).labelKey)}
@@ -1632,9 +1632,9 @@ export default function Orders({ tenantId }: { tenantId: string }) {
               <div className="flex justify-between items-center mb-4">
                 <h3 className="font-black text-content">{t('orders.payment_status')}</h3>
                 {order.remainingAmount > 0 ? (
-                  <span className="bg-danger text-white text-[11px] px-2 py-1 rounded-full font-bold">{t('orders.partial_balance')}</span>
+                  <span className="bg-danger text-white text-sm px-2 py-1 rounded-full font-bold">{t('orders.partial_balance')}</span>
                 ) : (
-                  <span className="bg-success text-white text-[11px] px-2 py-1 rounded-full font-bold">{t('orders.fully_paid')}</span>
+                  <span className="bg-success text-white text-sm px-2 py-1 rounded-full font-bold">{t('orders.fully_paid')}</span>
                 )}
               </div>
               <div className="space-y-2">
@@ -1667,7 +1667,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
               {isPaying && (
                 <div className="mt-4 p-4 bg-surface rounded-2xl border border-danger/20 space-y-4 animate-in fade-in slide-in-from-top-2">
                   <div className="space-y-1">
-                    <label className="text-[11px] font-black text-content-muted uppercase">{t('orders.pay_amount_now')}</label>
+                    <label className="text-sm font-black text-content-muted uppercase">{t('orders.pay_amount_now')}</label>
                     <input
                       type="number"
                       value={payAmount}
@@ -1681,7 +1681,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                         key={m.id}
                         onClick={() => setPayMethod(m.id as PaymentMethod)}
                         className={cn(
-                          "p-2 rounded-xl border text-[11px] font-bold flex flex-col items-center gap-1 transition-all",
+                          "p-2 rounded-xl border text-sm font-bold flex flex-col items-center gap-1 transition-all",
                           payMethod === m.id ? "bg-brand border-brand text-white shadow-md" : "bg-surface border-border text-content-muted hover:bg-surface-muted"
                         )}
                       >
@@ -1711,7 +1711,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
 
             {/* Status Timeline */}
             <section className="space-y-4">
-              <h3 className="text-xs font-black text-content-muted uppercase tracking-widest flex items-center gap-2">
+              <h3 className="text-sm font-black text-content-muted uppercase flex items-center gap-2">
                 <History size={14} />
                 {t('orders.status_history')}
               </h3>
@@ -1740,14 +1740,14 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                       <div className="bg-surface-muted p-4 rounded-2xl border border-border">
                         <div className="flex justify-between items-start mb-2">
                           <div className="flex flex-col">
-                            <span className={cn("text-xs font-bold", getOrderStatusDisplay(h.status, workflowStages).color)}>
+                            <span className={cn("text-sm font-bold", getOrderStatusDisplay(h.status, workflowStages).color)}>
                               {t(getOrderStatusDisplay(h.status, workflowStages).labelKey)}
                             </span>
                             <div className="flex items-center gap-1.5 mt-1">
                               <div className="w-5 h-5 rounded-full bg-surface flex items-center justify-center border border-border">
                                 <User size={10} className="text-content-muted" />
                               </div>
-                              <span className="text-[11px] text-content-muted font-bold">
+                              <span className="text-sm text-content-muted font-bold">
                                 {updaterName}
                                 {updaterRole && <span className="text-content-muted font-medium ms-1">({updaterRole})</span>}
                               </span>
@@ -1757,7 +1757,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                             <DateTimeDisplay date={h.updatedAt} showTime={true} size="xs" />
                           </div>
                         </div>
-                        <p className="text-[11px] text-content-muted bg-surface/50 p-2 rounded-lg border border-border">{h.notes}</p>
+                        <p className="text-sm text-content-muted bg-surface/50 p-2 rounded-lg border border-border">{h.notes}</p>
                       </div>
                     </div>
                   );
@@ -1768,7 +1768,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
             {/* Customer Measurements -- only for an activity that takes them (Phase 4). */}
             {measurementSetFor(capabilities.body_measurements).length > 0 && orderMeasurements(order) && (
               <section className="space-y-4">
-                <h3 className="text-xs font-black text-content-muted uppercase tracking-widest flex items-center gap-2">
+                <h3 className="text-sm font-black text-content-muted uppercase flex items-center gap-2">
                   <Ruler size={14} />
                   {t('orders.customer_measurements')}
                 </h3>
@@ -1778,8 +1778,8 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                       const displayValue = typeof m.value === 'number' ? cmToDisplayUnit(m.value, measurementUnit) : m.value;
                       return (
                         <div key={i} className="text-center">
-                          <span className="block text-[11px] text-content-muted font-bold mb-1">{m.label}</span>
-                          <span className="text-lg font-black text-brand">{displayValue} <span className="text-[11px] text-content-muted font-bold">{t(unitLabelKey(measurementUnit))}</span></span>
+                          <span className="block text-sm text-content-muted font-bold mb-1">{m.label}</span>
+                          <span className="text-lg font-black text-brand">{displayValue} <span className="text-sm text-content-muted font-bold">{t(unitLabelKey(measurementUnit))}</span></span>
                         </div>
                       );
                     })}
@@ -1790,7 +1790,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
 
             {/* Items */}
             <section className="space-y-4">
-              <h3 className="text-xs font-black text-content-muted uppercase tracking-widest flex items-center gap-2">
+              <h3 className="text-sm font-black text-content-muted uppercase flex items-center gap-2">
                 <ShoppingBag size={14} />
                 {t('orders.items')}
               </h3>
@@ -1807,17 +1807,17 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                     
                     <div className="flex justify-between items-center relative z-10">
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-brand text-white flex items-center justify-center font-black text-xs">
+                        <div className="w-8 h-8 rounded-full bg-brand text-white flex items-center justify-center font-black text-sm">
                           {idx + 1}
                         </div>
                         <p className="font-black text-content text-sm">{item.garmentType}</p>
                       </div>
-                      <span className="text-xs font-black bg-white text-brand px-3 py-1 rounded-full shadow-sm border border-brand/10">x{item.quantity}</span>
+                      <span className="text-sm font-black bg-white text-brand px-3 py-1 rounded-full shadow-sm border border-brand/10">x{item.quantity}</span>
                     </div>
                     {/* Fabric / additions / embroidery: the tailoring block, hidden
                         for a vertical that uses no fabric (Phase 3). */}
                     {capabilities.fabric_consumption && (
-                    <div className="grid grid-cols-1 gap-2 text-xs text-content-muted font-bold relative z-10">
+                    <div className="grid grid-cols-1 gap-2 text-sm text-content-muted font-bold relative z-10">
                       <div className="flex items-center gap-2">
                         <div className="w-1.5 h-1.5 rounded-full bg-brand/30" />
                         <span>{t('orders.fabric')}: <span className="text-content">{item.fabric === 'custom' ? t('orders.external_fabric') : (item.fabric || t('orders.not_specified'))}</span></span>
@@ -2015,7 +2015,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
     };
 
     return (
-      <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 sm:p-6">
+      <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 main-640:p-6">
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setIsPaymentModalOpen(false)} />
         <motion.div
           role="dialog"
@@ -2025,7 +2025,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
           animate={{ scale: 1, opacity: 1, y: 0 }}
           exit={{ scale: 0.95, opacity: 0, y: 20 }}
           transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-          className="bg-surface w-full lg:max-w-md rounded-3xl shadow-2xl relative z-10 overflow-y-auto max-h-[90vh] text-start border border-border"
+          className="bg-surface w-full main-900:max-w-md rounded-3xl shadow-2xl relative z-10 overflow-y-auto max-h-[90vh] text-start border border-border"
           dir={isRtlLang(i18n.language) ? 'rtl' : 'ltr'}
         >
           <div className="p-6 border-b border-border flex justify-between items-center bg-success/5">
@@ -2042,12 +2042,12 @@ export default function Orders({ tenantId }: { tenantId: string }) {
           
           <div className="p-8 space-y-6">
             <div className="bg-surface-muted p-6 rounded-3xl border border-border text-center">
-              <p className="text-xs font-bold text-content-muted uppercase tracking-widest mb-1">{t('orders.remaining_amount')}</p>
+              <p className="text-sm font-bold text-content-muted uppercase mb-1">{t('orders.remaining_amount')}</p>
               <p className="text-3xl font-black text-danger">{money(order.remainingAmount)}</p>
             </div>
 
             <div className="space-y-2">
-              <label className="text-xs font-bold text-content-muted uppercase tracking-widest">{t('orders.pay_amount_now')}</label>
+              <label className="text-sm font-bold text-content-muted uppercase">{t('orders.pay_amount_now')}</label>
               <input
                 type="number"
                 value={amount}
@@ -2058,14 +2058,14 @@ export default function Orders({ tenantId }: { tenantId: string }) {
             </div>
 
             <div className="space-y-2">
-              <label className="text-xs font-bold text-content-muted uppercase tracking-widest">{t('orders.payment_method')}</label>
+              <label className="text-sm font-bold text-content-muted uppercase">{t('orders.payment_method')}</label>
               <div className="grid grid-cols-2 gap-2">
                 {PAYMENT_METHODS.filter(m => m.id !== 'partial').map((m) => (
                   <button
                     key={m.id}
                     onClick={() => setMethod(m.id as PaymentMethod)}
                     className={cn(
-                      "flex items-center gap-2 p-3 rounded-xl border-2 transition-all text-xs font-bold",
+                      "flex items-center gap-2 p-3 rounded-xl border-2 transition-all text-sm font-bold",
                       method === m.id ? "border-success bg-success/10 text-success" : "border-border bg-surface text-content-muted"
                     )}
                   >
@@ -2091,7 +2091,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
 
   const InvoiceModal = ({ order }: { order: Order }) => {
     return (
-      <div className="fixed inset-0 z-[60] flex items-end lg:items-center justify-center overflow-hidden">
+      <div className="fixed inset-0 z-[60] flex items-end main-900:items-center justify-center overflow-hidden">
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -2104,10 +2104,10 @@ export default function Orders({ tenantId }: { tenantId: string }) {
           animate={{ y: 0, x: 0 }}
           exit={{ y: window.innerWidth < 1024 ? '100%' : 0, x: window.innerWidth >= 1024 ? '100%' : 0 }}
           transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-          className="bg-surface w-full lg:w-[450px] md:h-auto lg:h-full h-[90vh] shadow-2xl relative z-10 flex flex-col lg:rounded-none rounded-t-3xl border-t lg:border-t-0 lg:border-r border-border overflow-hidden lg:mr-auto md:max-w-md md:rounded-3xl md:mb-10 lg:max-w-none lg:mb-0 lg:ml-0"
+          className="bg-surface w-full main-900:w-[450px] main-720:h-auto main-900:h-full h-[90vh] shadow-2xl relative z-10 flex flex-col main-900:rounded-none rounded-t-3xl border-t main-900:border-t-0 main-900:border-r border-border overflow-hidden main-900:mr-auto main-720:max-w-md main-720:rounded-3xl main-720:mb-10 main-900:max-w-none main-900:mb-0 main-900:ml-0"
           dir={isRtlLang(i18n.language) ? 'rtl' : 'ltr'}
         >
-          <div id="order-invoice-print-area" className="flex-1 overflow-y-auto p-4 lg:p-6">
+          <div id="order-invoice-print-area" className="flex-1 overflow-y-auto p-4 main-900:p-6">
             {invoiceViewData ? (
               <TaxInvoiceDocument
                 order={invoiceViewData.invoice}
@@ -2217,7 +2217,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
         </div>
       </Header>
 
-      <div className="flex flex-col md:flex-row gap-4">
+      <div className="flex flex-col main-720:flex-row gap-4">
         <div id="tour-orders-search" data-tour="orders-search" className="flex-1">
           <IconInput
             type="text"
@@ -2269,7 +2269,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
             <div className="min-w-[140px]">
               <DatePicker value={startDate} onChange={setStartDate} placeholder={t('common.from', 'من')} triggerClassName="bg-surface hover:bg-surface border-border rounded-xl shadow-none" />
             </div>
-            <span className="text-content-muted text-xs">{t('orders.to')}</span>
+            <span className="text-content-muted text-sm">{t('orders.to')}</span>
             <div className="min-w-[140px]">
               <DatePicker value={endDate} onChange={setEndDate} placeholder={t('common.to', 'إلى')} triggerClassName="bg-surface hover:bg-surface border-border rounded-xl shadow-none" />
             </div>
@@ -2300,7 +2300,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
             <h3 className="text-lg font-black text-content mb-1">
               {t('orders.no_orders_currently')}
             </h3>
-            <p className="text-xs text-content-muted font-bold max-w-sm">
+            <p className="text-sm text-content-muted font-bold max-w-sm">
               {t('orders.no_orders_desc')}
             </p>
           </div>
@@ -2318,7 +2318,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                 transition={{ delay: Math.min(index * 0.03, 0.3) }}
                 key={order.id}
                 className={cn(
-                  "p-3.5 sm:p-4 lg:p-6 rounded-2xl sm:rounded-3xl border transition-all duration-200 group relative overflow-visible z-10 hover:z-30",
+                  "p-3.5 main-640:p-4 main-900:p-6 rounded-2xl main-640:rounded-3xl border transition-all duration-200 group relative overflow-visible z-10 hover:z-30",
                   // Selected: one brand-coloured border on the same white card,
                   // not a grey fill with a ring and a heavy shadow (founder, 2026-11-20).
                   selectedOrder?.id === order.id
@@ -2338,12 +2338,12 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                 )}
 
                 {/* MOBILE & TABLET LAYOUT (< lg) */}
-                <div className="flex lg:hidden flex-col gap-3">
+                <div className="flex main-900:hidden flex-col gap-3">
                   {/* Top Bar: Customer Name & Status / Main Actions */}
                   <div className="flex items-center justify-between gap-2 border-b border-border/50 pb-3">
                     <div className="flex items-center gap-2.5 min-w-0">
                       <div className={cn(
-                        "w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center shrink-0 shadow-inner",
+                        "w-9 h-9 main-640:w-10 main-640:h-10 rounded-xl flex items-center justify-center shrink-0 shadow-inner",
                         statusDisplay.bgColor,
                         statusDisplay.color
                       )}>
@@ -2355,7 +2355,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                           <h3 className="text-sm font-black text-content truncate hover:text-brand transition-colors">
                             {order.customerName}
                           </h3>
-                          <span className="text-[11px] bg-surface-muted text-content-muted px-2 py-0.5 rounded-md font-bold shrink-0 border border-border/60">
+                          <span className="text-sm bg-surface-muted text-content-muted px-2 py-0.5 rounded-md font-bold shrink-0 border border-border/60">
                             #{order.orderNumber || order.id.slice(-6).toUpperCase()}
                           </span>
                         </div>
@@ -2373,14 +2373,14 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                                 } as Customer;
                                 setDueDetailsCustomer(matchingCustomer);
                               }}
-                              className="flex items-center gap-1 bg-danger/10 text-danger border border-danger/20 px-1.5 py-0.5 rounded-md text-[11px] font-black shrink-0 animate-pulse"
+                              className="flex items-center gap-1 bg-danger/10 text-danger border border-danger/20 px-1.5 py-0.5 rounded-md text-sm font-black shrink-0 animate-pulse"
                             >
                               <AlertCircle size={10} />
                               {money(totalUnpaid)}
                             </button>
                           )}
                           {order.isTest && (
-                            <span className="text-[11px] bg-danger/10 text-danger px-1.5 py-0.5 rounded-md font-black flex items-center gap-0.5 shrink-0">
+                            <span className="text-sm bg-danger/10 text-danger px-1.5 py-0.5 rounded-md font-black flex items-center gap-0.5 shrink-0">
                               <Zap size={8} />
                               {t('orders.test_data_badge')}
                             </span>
@@ -2399,7 +2399,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                           setOpenStatusDropdownId(openStatusDropdownId === order.id ? null : order.id);
                         }}
                         className={cn(
-                          "px-2.5 py-1.5 rounded-xl text-[11px] font-black flex items-center gap-1.5 transition-all shadow-xs border border-border/60",
+                          "px-2.5 py-1.5 rounded-xl text-sm font-black flex items-center gap-1.5 transition-all shadow-xs border border-border/60",
                           statusDisplay.bgColor,
                           statusDisplay.color
                         )}
@@ -2425,7 +2425,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                                   updateStatus(order.id, status);
                                 }}
                                 className={cn(
-                                  "w-full px-3 py-2 text-xs font-bold hover:bg-brand/10 flex items-center justify-between",
+                                  "w-full px-3 py-2 text-sm font-bold hover:bg-brand/10 flex items-center justify-between",
                                   isRtlLang(i18n.language) ? "text-right" : "text-left",
                                   order.status === status ? cfg.color : "text-content-muted"
                                 )}
@@ -2444,10 +2444,10 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                   </div>
 
                   {/* Info Grid for Mobile & Tablet */}
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                  <div className="grid grid-cols-2 main-640:grid-cols-4 gap-2 text-sm">
                     {/* Box 1: Order Date */}
                     <div className="bg-surface-muted/60 p-2.5 rounded-xl border border-border/40 flex flex-col gap-1 justify-center">
-                      <span className="text-[11px] font-bold text-content-muted flex items-center gap-1">
+                      <span className="text-sm font-bold text-content-muted flex items-center gap-1">
                         <Calendar size={10} className="text-brand shrink-0" />
                         {t('common.date')}
                       </span>
@@ -2456,11 +2456,11 @@ export default function Orders({ tenantId }: { tenantId: string }) {
 
                     {/* Box 2: Payment Method */}
                     <div className="bg-surface-muted/60 p-2.5 rounded-xl border border-border/40 flex flex-col gap-1 justify-center">
-                      <span className="text-[11px] font-bold text-content-muted flex items-center gap-1">
+                      <span className="text-sm font-bold text-content-muted flex items-center gap-1">
                         <CreditCard size={10} className="text-brand shrink-0" />
                         {t('orders.payment_method')}
                       </span>
-                      <span className="font-bold text-content text-[11px] truncate">
+                      <span className="font-bold text-content text-sm truncate">
                         {(order.paymentMethod as any) === 'network' || (order.paymentMethod as any) === 'card' ? t('orders.payment_network_card') :
                          order.paymentMethod === 'bank_transfer' ? t('pos.bank_transfer') :
                          order.paymentMethod === 'partial' ? t('orders.payment_deferred_partial_short') :
@@ -2470,28 +2470,28 @@ export default function Orders({ tenantId }: { tenantId: string }) {
 
                     {/* Box 3: Total Amount */}
                     <div className="bg-surface-muted/60 p-2.5 rounded-xl border border-border/40 flex flex-col gap-1 justify-center">
-                      <span className="text-[11px] font-bold text-content-muted flex items-center gap-1">
+                      <span className="text-sm font-bold text-content-muted flex items-center gap-1">
                         <ShoppingBag size={10} className="text-brand shrink-0" />
                         {t('common.total')}
                       </span>
-                      <span className="font-black text-brand text-xs">
+                      <span className="font-black text-brand text-sm">
                         {money(order.totalAmount)}
                       </span>
                     </div>
 
                     {/* Box 4: Balance / Remaining */}
                     <div className="bg-surface-muted/60 p-2.5 rounded-xl border border-border/40 flex flex-col gap-1 justify-center">
-                      <span className="text-[11px] font-bold text-content-muted">
+                      <span className="text-sm font-bold text-content-muted">
                         {t('orders.remaining_label')}
                       </span>
                       <div>
                         {order.remainingAmount > 0 ? (
-                          <span className="bg-danger/10 text-danger border border-danger/20 px-2 py-0.5 rounded-md text-[11px] font-black inline-flex items-center gap-1 truncate">
+                          <span className="bg-danger/10 text-danger border border-danger/20 px-2 py-0.5 rounded-md text-sm font-black inline-flex items-center gap-1 truncate">
                             <span className="w-1.5 h-1.5 bg-danger rounded-full animate-pulse shrink-0" />
                             {money(order.remainingAmount)}
                           </span>
                         ) : (
-                          <span className="bg-success/10 text-success border border-success/20 px-2 py-0.5 rounded-md text-[11px] font-black inline-flex items-center gap-1 truncate">
+                          <span className="bg-success/10 text-success border border-success/20 px-2 py-0.5 rounded-md text-sm font-black inline-flex items-center gap-1 truncate">
                             <span className="w-1.5 h-1.5 bg-success rounded-full shrink-0" />
                             {t('orders.fully_paid')}
                           </span>
@@ -2501,7 +2501,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                   </div>
 
                   {/* Footer Actions for Mobile & Tablet */}
-                  <div className="flex items-center justify-between gap-2 pt-2.5 border-t border-border/40 text-xs">
+                  <div className="flex items-center justify-between gap-2 pt-2.5 border-t border-border/40 text-sm">
                     <div className="flex items-center gap-1.5">
                       {canViewInvoice && (<>
                       <button 
@@ -2510,7 +2510,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                           e.stopPropagation();
                           openInvoiceView(order);
                         }}
-                        className="px-2.5 py-1.5 bg-brand/10 text-brand hover:bg-brand hover:text-white rounded-xl transition-all flex items-center gap-1.5 font-bold text-xs"
+                        className="px-2.5 py-1.5 bg-brand/10 text-brand hover:bg-brand hover:text-white rounded-xl transition-all flex items-center gap-1.5 font-bold text-sm"
                       >
                         <Eye size={14} />
                         <span>{t('orders.invoice')}</span>
@@ -2566,8 +2566,8 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                   </div>
                 </div>
 
-                {/* DESKTOP LAYOUT (lg:flex) */}
-                <div className="hidden lg:flex lg:items-center lg:justify-between lg:gap-6">
+                {/* DESKTOP LAYOUT (main-900:flex) */}
+                <div className="hidden main-900:flex main-900:items-center main-900:justify-between main-900:gap-6">
                   <div className="flex items-center gap-5">
                     <div className={cn(
                       "w-16 h-16 rounded-2xl flex items-center justify-center transition-all duration-500 group-hover:scale-105 group-hover:rotate-3 shrink-0",
@@ -2592,37 +2592,37 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                               } as Customer;
                               setDueDetailsCustomer(matchingCustomer);
                             }}
-                            className="flex items-center gap-1 bg-danger/10 hover:bg-danger/20 text-danger border border-danger/20 px-2.5 py-1 rounded-full text-xs font-black transition-all animate-pulse"
+                            className="flex items-center gap-1 bg-danger/10 hover:bg-danger/20 text-danger border border-danger/20 px-2.5 py-1 rounded-full text-sm font-black transition-all animate-pulse"
                             title={t('orders.customer_has_dues')}
                           >
                             <AlertCircle size={14} className="text-danger" />
                             <span>{money(totalUnpaid)}</span>
                           </button>
                         )}
-                        <span className="text-[11px] bg-surface-muted text-content-muted px-3 py-1 rounded-full font-black uppercase tracking-widest border border-border">
+                        <span className="text-sm bg-surface-muted text-content-muted px-3 py-1 rounded-full font-black uppercase border border-border">
                           #{order.orderNumber || order.id.slice(-6).toUpperCase()}
                         </span>
                         {order.isTest && (
-                          <span className="text-[11px] bg-danger/10 text-danger px-2 py-0.5 rounded-full font-black uppercase tracking-widest flex items-center gap-1">
+                          <span className="text-sm bg-danger/10 text-danger px-2 py-0.5 rounded-full font-black uppercase flex items-center gap-1">
                             <Zap size={10} />
                             {t('orders.test_data_badge')}
                           </span>
                         )}
                       </div>
-                      <div className="flex flex-wrap items-center gap-3 sm:gap-4 mt-2 text-sm text-content-muted">
+                      <div className="flex flex-wrap items-center gap-3 main-640:gap-4 mt-2 text-sm text-content-muted">
                         <span className="flex items-center gap-1.5 font-bold">
                           <Calendar size={16} className="text-brand shrink-0" />
                           <DateTimeDisplay date={order.orderDate} showTime={true} size="xs" />
                         </span>
-                        <div className="w-1 h-1 bg-border rounded-full hidden sm:block" />
-                        <span className="text-xs font-bold bg-surface-muted px-2.5 py-1 rounded-lg border border-border flex items-center gap-1">
+                        <div className="w-1 h-1 bg-border rounded-full hidden main-640:block" />
+                        <span className="text-sm font-bold bg-surface-muted px-2.5 py-1 rounded-lg border border-border flex items-center gap-1">
                           <CreditCard size={12} className="text-brand" />
                           {(order.paymentMethod as any) === 'network' || (order.paymentMethod as any) === 'card' ? t('orders.payment_network_card') :
                            order.paymentMethod === 'bank_transfer' ? t('pos.bank_transfer') :
                            order.paymentMethod === 'partial' ? t('orders.payment_deferred_partial') :
                            order.paymentMethod === 'cash_on_delivery' ? t('common.payment_methods.cash_on_delivery') : t('common.payment_methods.cash')}
                         </span>
-                        <div className="w-1 h-1 bg-border rounded-full hidden sm:block" />
+                        <div className="w-1 h-1 bg-border rounded-full hidden main-640:block" />
                         <span className="font-black text-brand text-lg">
                           {money(order.totalAmount)}
                         </span>
@@ -2637,7 +2637,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                         onClick={() => {
                           openInvoiceView(order);
                         }}
-                        className="px-3 py-2 text-brand hover:bg-brand hover:text-white rounded-xl transition-all flex items-center gap-2 font-black text-xs"
+                        className="px-3 py-2 text-brand hover:bg-brand hover:text-white rounded-xl transition-all flex items-center gap-2 font-black text-sm"
                         title={t('orders.view_invoice')}
                       >
                         <Eye size={16} />
@@ -2687,7 +2687,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                           }
                         }}
                         className={cn(
-                          "px-4 py-2.5 rounded-2xl text-xs font-black flex items-center gap-3 transition-all shadow-sm relative z-30",
+                          "px-4 py-2.5 rounded-2xl text-sm font-black flex items-center gap-3 transition-all shadow-sm relative z-30",
                           statusDisplay.bgColor,
                           statusDisplay.color,
                           order.status === 'delivered' ? "cursor-not-allowed opacity-80" : "hover:shadow-lg hover:shadow-brand/5 border border-brand/10 cursor-pointer"
@@ -2704,7 +2704,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                           isRtlLang(i18n.language) ? "right-0" : "left-0"
                         )}>
                           <div className="px-4 py-2 mb-2 border-b border-border/50">
-                            <span className="text-[11px] font-black text-content-muted uppercase tracking-widest">{t('orders.update_status')}</span>
+                            <span className="text-sm font-black text-content-muted uppercase">{t('orders.update_status')}</span>
                           </div>
                           {statusOptions.map((status) => {
                             const cfg = getOrderStatusDisplay(status, workflowStages);
@@ -2713,7 +2713,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                                 key={status}
                                 onClick={() => updateStatus(order.id, status)}
                                 className={cn(
-                                  "w-full px-4 py-2.5 text-xs font-black hover:bg-brand/5 transition-all flex items-center justify-between group/item",
+                                  "w-full px-4 py-2.5 text-sm font-black hover:bg-brand/5 transition-all flex items-center justify-between group/item",
                                   isRtlLang(i18n.language) ? "text-right" : "text-left",
                                   order.status === status ? cfg.color : "text-content-muted hover:text-brand"
                                 )}
@@ -2789,7 +2789,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
             </button>
             {canReconcileStock && (
               <div className="space-y-2 border-t border-border pt-4">
-                <p className="text-xs font-bold text-content-muted">{t('orders.fabric_shortage_continue_hint')}</p>
+                <p className="text-sm font-bold text-content-muted">{t('orders.fabric_shortage_continue_hint')}</p>
                 <input value={shortageReason} onChange={(e) => setShortageReason(e.target.value)}
                   placeholder={t('orders.fabric_shortage_reason')} aria-label={t('orders.fabric_shortage_reason')}
                   className="w-full min-h-11 rounded-xl border border-border bg-surface-muted px-3 text-sm" />
@@ -2868,7 +2868,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
       {/* Customer Unpaid Balance Details Modal */}
       <AnimatePresence>
         {dueDetailsCustomer && typeof document !== 'undefined' && createPortal(
-          <div className="fixed inset-0 z-[100] flex items-end lg:items-center justify-center lg:p-4 overflow-hidden">
+          <div className="fixed inset-0 z-[100] flex items-end main-900:items-center justify-center main-900:p-4 overflow-hidden">
             <motion.div 
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -2884,7 +2884,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
               animate={{ y: 0, opacity: 1 }}
               exit={{ y: '100%', opacity: 0 }}
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="relative w-full max-w-lg rounded-t-3xl lg:rounded-3xl shadow-2xl z-10 overflow-hidden bg-surface border border-border flex flex-col max-h-[85vh]"
+              className="relative w-full max-w-lg rounded-t-3xl main-900:rounded-3xl shadow-2xl z-10 overflow-hidden bg-surface border border-border flex flex-col max-h-[85vh]"
               dir={isRtlLang(i18n.language) ? "rtl" : "ltr"}
             >
               <div className="flex items-center justify-between p-6 border-b border-border bg-brand/5 shrink-0">
@@ -2896,7 +2896,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                     <h3 className="text-lg font-black text-content">
                       {t('orders.due_details_title')}
                     </h3>
-                    <p className="text-xs text-content-muted mt-0.5 font-bold">
+                    <p className="text-sm text-content-muted mt-0.5 font-bold">
                       {dueDetailsCustomer.name}
                     </p>
                   </div>
@@ -2939,23 +2939,23 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                             <span className="font-black text-sm text-content">
                               #{o.orderNumber || o.id.slice(-6).toUpperCase()}
                             </span>
-                            <span className="text-[11px] bg-brand/10 text-brand px-2 py-0.5 rounded-full font-bold">
+                            <span className="text-sm bg-brand/10 text-brand px-2 py-0.5 rounded-full font-bold">
                               {t(getOrderStatusDisplay(o.status, workflowStages).labelKey)}
                             </span>
                           </div>
-                          <p className="text-xs text-content-muted font-bold">
+                          <p className="text-sm text-content-muted font-bold">
                             {new Date(o.orderDate).toLocaleDateString(localeOf(i18n.language))}
                           </p>
                         </div>
 
                         <div className="text-left rtl:text-right space-y-0.5">
-                          <div className="text-xs text-content-muted font-bold">
+                          <div className="text-sm text-content-muted font-bold">
                             {t('orders.remaining_label')}
                           </div>
                           <div className="font-mono font-black text-base text-danger">
                             {money(o.remainingAmount)}
                           </div>
-                          <div className="text-[11px] text-content-muted font-bold">
+                          <div className="text-sm text-content-muted font-bold">
                             {t('common.total')}: {money(o.totalAmount)}
                           </div>
                         </div>

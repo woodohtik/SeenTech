@@ -16,7 +16,7 @@ const ThemeSwitcher: React.FC = () => {
 
   return (
     <div className="p-4">
-      <h3 className="text-[10px] font-black text-content-muted uppercase tracking-wider mb-4 px-2">
+      <h3 className="text-sm font-black text-content-muted uppercase mb-4 px-2">
         {t('settings.appearance', 'Appearance')}
       </h3>
       <div className="grid grid-cols-2 gap-2">
@@ -41,7 +41,7 @@ const ThemeSwitcher: React.FC = () => {
                 themeItem.iconColor
               )} />
             </div>
-            <span className="text-xs font-black text-content">{themeItem.name}</span>
+            <span className="text-sm font-black text-content">{themeItem.name}</span>
             
             {theme === themeItem.id && (
               <motion.div 

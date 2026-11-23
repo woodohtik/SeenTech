@@ -506,7 +506,7 @@ export default function SaaSLayout({ children, userRole }: SaaSLayoutProps) {
           {(isSidebarOpen || isMobile) && (
             <div className="overflow-hidden whitespace-nowrap">
               <h1 className="text-lg font-black text-content">Seen</h1>
-              <p className="text-[10px] text-content-muted font-black uppercase tracking-widest">SaaS Management</p>
+              <p className="text-sm text-content-muted font-black uppercase">SaaS Management</p>
             </div>
           )}
         </div>
@@ -570,7 +570,7 @@ export default function SaaSLayout({ children, userRole }: SaaSLayoutProps) {
             <div className="h-8 w-px bg-border mx-2" />
             <div className="flex flex-col">
               <span className="text-sm font-black text-content">{t('common.welcome_user', { name: dbUser?.display_name || currentAuthUser?.user_metadata?.full_name || t('common.support_engineer') })}</span>
-              <span className="text-[10px] font-bold text-brand">{getRoleLabel(userRole)}</span>
+              <span className="text-sm font-bold text-brand">{getRoleLabel(userRole)}</span>
             </div>
           </div>
 
@@ -602,7 +602,7 @@ export default function SaaSLayout({ children, userRole }: SaaSLayoutProps) {
               >
                 <Bell size={20} />
                 {unreadCount > 0 && (
-                  <span className="absolute top-2 left-2 w-4 h-4 bg-danger text-white text-[10px] font-black rounded-full border-2 border-surface flex items-center justify-center">
+                  <span className="absolute top-2 left-2 w-4 h-4 bg-danger text-white text-sm font-black rounded-full border-2 border-surface flex items-center justify-center">
                     {unreadCount > 9 ? '+9' : unreadCount}
                   </span>
                 )}
@@ -625,7 +625,7 @@ export default function SaaSLayout({ children, userRole }: SaaSLayoutProps) {
                       {unreadCount > 0 && (
                         <button 
                           onClick={markAllAsRead}
-                          className="text-xs text-brand font-bold hover:underline"
+                          className="text-sm text-brand font-bold hover:underline"
                         >
                           {t('saas.mark_all_read', 'تحديد الكل كمقروء')}
                         </button>
@@ -663,10 +663,10 @@ export default function SaaSLayout({ children, userRole }: SaaSLayoutProps) {
                                 <h4 className={cn("font-bold text-sm", notif.read ? "text-content" : "text-brand")}>
                                   {notif.title}
                                 </h4>
-                                <p className="text-xs text-content-muted font-medium line-clamp-2 leading-relaxed">
+                                <p className="text-sm text-content-muted font-medium line-clamp-2 leading-relaxed">
                                   {notif.message}
                                 </p>
-                                <span className="text-[10px] text-content-muted font-bold pt-1 block opacity-75">
+                                <span className="text-sm text-content-muted font-bold pt-1 block opacity-75">
                                   {new Date(notif.date).toLocaleDateString(localeOf(i18n.language), { 
                                     month: 'short', 
                                     day: 'numeric', 
@@ -686,7 +686,7 @@ export default function SaaSLayout({ children, userRole }: SaaSLayoutProps) {
                       )}
                     </div>
                     <div className="p-3 border-t border-border bg-surface-muted/30 text-center">
-                      <Link to="/admin/dashboard" onClick={() => setShowNotifications(false)} className="text-xs font-black text-content hover:text-brand transition-colors">
+                      <Link to="/admin/dashboard" onClick={() => setShowNotifications(false)} className="text-sm font-black text-content hover:text-brand transition-colors">
                         {t('saas.view_dashboard', 'عرض لوحة التحكم')}
                       </Link>
                     </div>
@@ -721,7 +721,7 @@ export default function SaaSLayout({ children, userRole }: SaaSLayoutProps) {
                 <div className="w-16 h-16 bg-brand/10 text-brand rounded-2xl flex items-center justify-center mx-auto mb-4">
                   <Lock size={32} />
                 </div>
-                <h2 className="text-2xl font-black text-content tracking-tight">{t('saas.set_new_password_title')}</h2>
+                <h2 className="text-2xl font-black text-content">{t('saas.set_new_password_title')}</h2>
                 <p className="text-sm text-content-muted font-medium mt-1 leading-relaxed">
                   {t('saas.set_new_password_desc')}
                 </p>
@@ -736,7 +736,7 @@ export default function SaaSLayout({ children, userRole }: SaaSLayoutProps) {
                 )}
 
                 <div className="space-y-2">
-                  <label className="text-xs font-black text-content block">{t('saas.current_temp_password')} <span className="text-danger">*</span></label>
+                  <label className="text-sm font-black text-content block">{t('saas.current_temp_password')} <span className="text-danger">*</span></label>
                   <div className="relative">
                     <input
                       type={showCurrentPass ? "text" : "password"}
@@ -761,7 +761,7 @@ export default function SaaSLayout({ children, userRole }: SaaSLayoutProps) {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-xs font-black text-content block">{t('saas.new_password')} <span className="text-danger">*</span></label>
+                  <label className="text-sm font-black text-content block">{t('saas.new_password')} <span className="text-danger">*</span></label>
                   <div className="relative">
                     <input
                       type={showPass1 ? "text" : "password"}
@@ -786,7 +786,7 @@ export default function SaaSLayout({ children, userRole }: SaaSLayoutProps) {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-xs font-black text-content block">{t('saas.confirm_new_password')} <span className="text-danger">*</span></label>
+                  <label className="text-sm font-black text-content block">{t('saas.confirm_new_password')} <span className="text-danger">*</span></label>
                   <div className="relative">
                     <input
                       type={showPass2 ? "text" : "password"}
@@ -844,12 +844,12 @@ export default function SaaSLayout({ children, userRole }: SaaSLayoutProps) {
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-black text-content">{t('saas.idle_warning_title')}</p>
-                <p className="text-xs text-content-muted font-medium mt-0.5">{t('saas.idle_warning_desc')}</p>
+                <p className="text-sm text-content-muted font-medium mt-0.5">{t('saas.idle_warning_desc')}</p>
               </div>
               <button
                 type="button"
                 onClick={stayLoggedIn}
-                className="shrink-0 bg-brand text-white text-xs font-black px-4 py-2.5 rounded-xl hover:bg-brand/90 transition-all"
+                className="shrink-0 bg-brand text-white text-sm font-black px-4 py-2.5 rounded-xl hover:bg-brand/90 transition-all"
               >
                 {t('saas.idle_warning_stay')}
               </button>

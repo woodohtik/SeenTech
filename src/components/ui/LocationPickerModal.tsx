@@ -134,7 +134,7 @@ export default function LocationPickerModal({
   const center = position || DEFAULT_CENTER;
 
   return (
-    <div className="fixed inset-0 z-[200] flex items-center justify-center p-2 sm:p-4">
+    <div className="fixed inset-0 z-[200] flex items-center justify-center p-2 main-640:p-4">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-md" onClick={onClose} />
       <motion.div
         initial={{ scale: 0.9, opacity: 0, y: 20 }}
@@ -143,14 +143,14 @@ export default function LocationPickerModal({
         className="bg-surface w-full max-w-xl rounded-3xl shadow-2xl relative z-10 overflow-hidden flex flex-col max-h-[90vh]"
         dir={dir}
       >
-        <div className="p-4 sm:p-6 border-b border-border flex justify-between items-center bg-surface-muted/50">
+        <div className="p-4 main-640:p-6 border-b border-border flex justify-between items-center bg-surface-muted/50">
           <h2 className="text-lg font-black text-content">{t('location_picker.title')}</h2>
           <button aria-label={t('common.close')} onClick={onClose} className="p-2 hover:bg-surface rounded-full transition-colors min-w-11 min-h-11 inline-flex items-center justify-center">
             <X size={20} className="text-content-muted" />
           </button>
         </div>
 
-        <div className="p-4 sm:p-6 space-y-4 overflow-y-auto">
+        <div className="p-4 main-640:p-6 space-y-4 overflow-y-auto">
           <button
             type="button"
             onClick={handleUseCurrentLocation}
@@ -161,7 +161,7 @@ export default function LocationPickerModal({
             {t('location_picker.use_current_location')}
           </button>
 
-          <div className="h-[280px] sm:h-[340px] w-full rounded-2xl overflow-hidden border-2 border-white bg-white relative z-0 shadow-md">
+          <div className="h-[280px] main-640:h-[340px] w-full rounded-2xl overflow-hidden border-2 border-white bg-white relative z-0 shadow-md">
             <MapContainer
               center={center}
               zoom={position ? 15 : 6}
@@ -174,7 +174,7 @@ export default function LocationPickerModal({
             </MapContainer>
           </div>
 
-          <div className="bg-surface-muted/60 rounded-xl p-3 text-xs font-bold text-content min-h-[40px] flex items-center">
+          <div className="bg-surface-muted/60 rounded-xl p-3 text-sm font-bold text-content min-h-[40px] flex items-center">
             {resolving ? (
               <span className="flex items-center gap-2 text-content-muted">
                 <Loader2 size={14} className="animate-spin" /> {t('location_picker.resolving')}
@@ -187,7 +187,7 @@ export default function LocationPickerModal({
           </div>
         </div>
 
-        <div className="sticky bottom-0 shrink-0 p-4 sm:p-6 border-t border-border bg-surface flex justify-end gap-3">
+        <div className="sticky bottom-0 shrink-0 p-4 main-640:p-6 border-t border-border bg-surface flex justify-end gap-3">
           <button
             onClick={onClose}
             className="px-6 py-2.5 bg-surface-muted text-content hover:bg-surface border border-border rounded-xl font-bold text-sm transition-all cursor-pointer"

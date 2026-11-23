@@ -152,7 +152,7 @@ export default function SaaSAuditLogs() {
 
   return (
     <div className="space-y-8 font-sans" dir={isRtl ? 'rtl' : 'ltr'}>
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+      <div className="flex flex-col main-720:flex-row main-720:items-center justify-between gap-6">
         <div>
           <h2 className="text-3xl font-black text-content">{t('saas.audit_logs_title')}</h2>
           <p className="text-content-muted font-bold mt-1">{t('saas.audit_logs_subtitle')}</p>
@@ -164,7 +164,7 @@ export default function SaaSAuditLogs() {
       </div>
 
       {/* Filters */}
-      <div className="bg-surface p-6 rounded-2xl border border-border shadow-sm flex flex-col md:flex-row gap-4">
+      <div className="bg-surface p-6 rounded-2xl border border-border shadow-sm flex flex-col main-720:flex-row gap-4">
         <div className="flex-1">
           <IconInput 
             type="text"
@@ -174,7 +174,7 @@ export default function SaaSAuditLogs() {
             startIcon={Search}
           />
         </div>
-        <div className="flex gap-2 w-full md:w-56">
+        <div className="flex gap-2 w-full main-720:w-56">
           <SmartSelect
             value={filterType}
             onChange={setFilterType}
@@ -195,7 +195,7 @@ export default function SaaSAuditLogs() {
       <div className="bg-surface rounded-2xl border border-border shadow-sm overflow-x-auto whitespace-nowrap scrollbar-hide">
         <table className="w-full text-right rtl:text-right ltr:text-left min-w-max">
           <thead>
-            <tr className="bg-surface-muted text-content-muted text-xs font-black uppercase tracking-wider">
+            <tr className="bg-surface-muted text-content-muted text-sm font-black uppercase">
               <th className="px-8 py-5 text-right rtl:text-right ltr:text-left">{t('saas.action_performed')}</th>
               <th className="px-8 py-5 text-right rtl:text-right ltr:text-left">{t('saas.performed_by')}</th>
               <th className="px-8 py-5 text-right rtl:text-right ltr:text-left">{t('saas.details')}</th>
@@ -225,7 +225,7 @@ export default function SaaSAuditLogs() {
                       </div>
                       <div className="text-right rtl:text-right ltr:text-left">
                         <div className="font-bold text-content">{log.action}</div>
-                        <div className="text-[10px] text-content-muted font-black uppercase tracking-widest">{log.type}</div>
+                        <div className="text-sm text-content-muted font-black uppercase">{log.type}</div>
                       </div>
                     </div>
                   </td>
@@ -243,7 +243,7 @@ export default function SaaSAuditLogs() {
                     </p>
                   </td>
                   <td className="px-8 py-6">
-                    <div className="flex items-center gap-2 text-content-muted text-xs font-bold">
+                    <div className="flex items-center gap-2 text-content-muted text-sm font-bold">
                       <Clock size={14} />
                       <span>
                         {new Date(log.timestamp).toLocaleString(

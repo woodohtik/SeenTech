@@ -76,7 +76,7 @@ export default function ZatcaSubmissionsList({ tenantId }: { tenantId: string })
       <div className="flex items-center justify-between gap-3">
         <div>
           <h3 id="zatca-submissions-title" className="text-lg font-black text-content">{t('zatca_queue.title')}</h3>
-          <p className="text-xs text-content-muted">{t('zatca_queue.subtitle')}</p>
+          <p className="text-sm text-content-muted">{t('zatca_queue.subtitle')}</p>
         </div>
         <button type="button" onClick={() => void load()} className="min-h-11 min-w-11 inline-flex items-center justify-center rounded-xl border border-border" aria-label={t('zatca_queue.refresh')}>
           <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
@@ -95,16 +95,16 @@ export default function ZatcaSubmissionsList({ tenantId }: { tenantId: string })
                 <span className="text-sm font-bold text-content">
                   {t(`zatca_queue.kind_${r.kind}`)} {numbers[`${r.kind}:${r.ref_id}`] ?? ''}
                 </span>
-                <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${STATUS_STYLE[r.status] ?? STATUS_STYLE.pending}`}>
+                <span className={`rounded-full px-2.5 py-1 text-sm font-bold ${STATUS_STYLE[r.status] ?? STATUS_STYLE.pending}`}>
                   {t(`zatca_queue.status_${r.status}`)}
                 </span>
               </div>
-              <div className="text-xs text-content-muted">
+              <div className="text-sm text-content-muted">
                 {fmt(r.created_at)}
                 {r.status === 'retry' && <> · {t('zatca_queue.next_try', { when: fmt(r.next_attempt_at), attempts: r.attempts })}</>}
               </div>
               {r.last_error && (r.status === 'rejected' || r.status === 'failed' || r.status === 'retry') && (
-                <p className="text-xs text-danger break-words">{r.last_error}</p>
+                <p className="text-sm text-danger break-words">{r.last_error}</p>
               )}
             </li>
           ))}

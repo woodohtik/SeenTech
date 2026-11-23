@@ -199,22 +199,22 @@ export default function CashOperationsModal({ shift, tenantId, onClose }: CashOp
         <div className="h-1.5 w-full bg-brand shrink-0" />
 
         {/* Header Panel */}
-        <div className="p-6 border-b border-border shrink-0 bg-surface-muted/50 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div className="p-6 border-b border-border shrink-0 bg-surface-muted/50 flex flex-col main-640:flex-row main-640:items-center main-640:justify-between gap-4">
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-300 bg-brand/10 text-brand shadow">
               {isDeposit ? <ArrowUpRight size={22} className="stroke-[2.5]" /> : <ArrowDownRight size={22} className="stroke-[2.5]" />}
             </div>
             <div>
-              <h2 className="text-xl font-black text-content tracking-tight flex items-center gap-2">
+              <h2 className="text-xl font-black text-content flex items-center gap-2">
                 {t('cash_operations.title', 'إدارة صندوق النقدية والدرج')}
               </h2>
-              <p className="text-xs text-content-muted font-bold mt-1">
+              <p className="text-sm text-content-muted font-bold mt-1">
                 {t('cash_operations.desc', 'تسجيل ومتابعة حركات الإيداع والسحب لوردية البائع الحالي')}
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2.5 self-end sm:self-center">
+          <div className="flex items-center gap-2.5 self-end main-640:self-center">
             <button
               type="button"
               onClick={onClose}
@@ -228,9 +228,9 @@ export default function CashOperationsModal({ shift, tenantId, onClose }: CashOp
         </div>
 
         {/* Context Stats Dashboard - Styled professionally with Brand & neutrals */}
-        <div className="bg-surface-muted border-b border-border text-content px-6 py-4 grid grid-cols-2 md:grid-cols-4 gap-4 divide-y-0 divide-x-0 md:divide-x md:divide-x-reverse divide-border shrink-0">
+        <div className="bg-surface-muted border-b border-border text-content px-6 py-4 grid grid-cols-2 main-720:grid-cols-4 gap-4 divide-y-0 divide-x-0 main-720:divide-x main-720:divide-x-reverse divide-border shrink-0">
           <div>
-            <span className="text-[10px] uppercase font-bold text-content-muted block mb-1">{t('cash_operations.current_employee', 'الموظف الحالي في الوردية')}</span>
+            <span className="text-sm uppercase font-bold text-content-muted block mb-1">{t('cash_operations.current_employee', 'الموظف الحالي في الوردية')}</span>
             <span className="text-sm font-black text-content flex items-center gap-1.5">
               <User size={13} className="text-brand" />
               {shift.staffName}
@@ -238,14 +238,14 @@ export default function CashOperationsModal({ shift, tenantId, onClose }: CashOp
           </div>
 
           <div>
-            <span className="text-[10px] uppercase font-bold text-content-muted block mb-1">{t('cash_operations.opening_balance', 'رصيد فتح الصندوق')}</span>
+            <span className="text-sm uppercase font-bold text-content-muted block mb-1">{t('cash_operations.opening_balance', 'رصيد فتح الصندوق')}</span>
             <span className="text-sm font-black text-brand font-mono">
               {formatCurrency(shift.openingBalance)} {getCurrencySymbol()}
             </span>
           </div>
 
           <div>
-            <span className="text-[10px] uppercase font-bold text-content-muted block mb-1">{t('cash_operations.total_operations', 'إجمالي الحركات لليوم')}</span>
+            <span className="text-sm uppercase font-bold text-content-muted block mb-1">{t('cash_operations.total_operations', 'إجمالي الحركات لليوم')}</span>
             <span className="text-sm font-bold flex items-center gap-2">
               <span className="text-brand font-mono font-black">+{formatCurrency(totalDeposits)}</span>
               <span className="text-content-muted">/</span>
@@ -254,7 +254,7 @@ export default function CashOperationsModal({ shift, tenantId, onClose }: CashOp
           </div>
 
           <div>
-            <span className="text-[10px] uppercase font-bold text-content-muted block mb-1">{t('cash_operations.estimated_cash', 'الرصيد التقديري بالصندوق')}</span>
+            <span className="text-sm uppercase font-bold text-content-muted block mb-1">{t('cash_operations.estimated_cash', 'الرصيد التقديري بالصندوق')}</span>
             <span className="text-base font-black text-brand font-mono">
               {formatCurrency(currentEstimatedCashInDrawer)} {getCurrencySymbol()}
             </span>
@@ -262,15 +262,15 @@ export default function CashOperationsModal({ shift, tenantId, onClose }: CashOp
         </div>
 
         {/* Main Body: Dual Pane Layout */}
-        <div className="flex-1 overflow-hidden grid grid-cols-1 lg:grid-cols-12">
+        <div className="flex-1 overflow-hidden grid grid-cols-1 main-900:grid-cols-12">
           
           {/* Right Pane: Transaction Entry Form (7 Columns) */}
-          <div className="lg:col-span-7 overflow-y-auto p-6 lg:p-8 space-y-6 border-l border-border">
+          <div className="main-900:col-span-7 overflow-y-auto p-6 main-900:p-8 space-y-6 border-l border-border">
             <form onSubmit={handleSubmit} className="space-y-6">
               
               {/* Toggle Panel: Withdrawal / Deposit */}
               <div className="space-y-2">
-                <label className="text-xs font-black text-content-muted uppercase tracking-wide block mr-1">
+                <label className="text-sm font-black text-content-muted uppercase block mr-1">
                   {t('cash_operations.operation_type', 'نوع العملية المطلوبة / DIRECTION')}
                 </label>
                 
@@ -316,17 +316,17 @@ export default function CashOperationsModal({ shift, tenantId, onClose }: CashOp
               {/* Amount Input with guaranteed paddings and no icon interference */}
               <div className="space-y-2">
                 <div className="flex justify-between items-center mr-1">
-                  <label className="text-xs font-black text-content-muted uppercase tracking-wide">
+                  <label className="text-sm font-black text-content-muted uppercase">
                     {t('cash_operations.amount', 'المبلغ المطلوب')}
                   </label>
-                  <span className="text-[10px] text-content-muted font-bold bg-surface-muted px-2 py-0.5 rounded-md">
+                  <span className="text-sm text-content-muted font-bold bg-surface-muted px-2 py-0.5 rounded-md">
                     {t('cash_operations.local_currency')}
                   </span>
                 </div>
 
                 <div className="relative">
                   {/* Symbol Badge pinned to physical left */}
-                  <div className="absolute left-3 top-1/2 -translate-y-1/2 bg-surface-muted rounded-xl px-3 py-1.5 border border-border text-content-muted font-extrabold text-[11px] pointer-events-none select-none z-10">
+                  <div className="absolute left-3 top-1/2 -translate-y-1/2 bg-surface-muted rounded-xl px-3 py-1.5 border border-border text-content-muted font-extrabold text-sm pointer-events-none select-none z-10">
                     {getCurrencySymbol()}
                   </div>
 
@@ -342,7 +342,7 @@ export default function CashOperationsModal({ shift, tenantId, onClose }: CashOp
                     }}
                     style={{ paddingRight: '4.5rem', paddingLeft: '8rem' }}
                     className={cn(
-                      "w-full h-16 bg-surface-muted hover:bg-surface-muted/50 focus:bg-white border-2 border-border rounded-2xl text-2xl font-black font-mono transition-all outline-none text-right tracking-tight shadow-sm z-0 focus:border-brand focus:ring-4 focus:ring-brand/10 text-content",
+                      "w-full h-16 bg-surface-muted hover:bg-surface-muted/50 focus:bg-white border-2 border-border rounded-2xl text-2xl font-black font-mono transition-all outline-none text-right shadow-sm z-0 focus:border-brand focus:ring-4 focus:ring-brand/10 text-content",
                       fieldErrors.amount && "ring-2 ring-danger border-danger"
                     )}
                     placeholder={t('cash_operations.amount_placeholder', '0.00')}
@@ -358,7 +358,7 @@ export default function CashOperationsModal({ shift, tenantId, onClose }: CashOp
 
               {/* Quick Preset Buttons - Brand themed (Cohesive Identity) */}
               <div className="space-y-2.5">
-                <span className="text-[10px] font-black text-content-muted block mr-1 uppercase">
+                <span className="text-sm font-black text-content-muted block mr-1 uppercase">
                   {t('cash_operations.quick_presets', 'اختصارات المبالغ السريعة')}
                 </span>
                 
@@ -371,7 +371,7 @@ export default function CashOperationsModal({ shift, tenantId, onClose }: CashOp
                         type="button"
                         onClick={() => handlePresetClick(preset)}
                         className={cn(
-                          "py-2.5 px-3 rounded-xl font-mono font-black text-xs transition-all tracking-wide cursor-pointer text-center",
+                          "py-2.5 px-3 rounded-xl font-mono font-black text-sm transition-all cursor-pointer text-center",
                           Number(amount) === preset
                             ? "bg-brand text-white border border-brand shadow scale-[1.02]"
                             : "bg-surface-muted hover:bg-border/80 text-content border border-border/40"
@@ -389,7 +389,7 @@ export default function CashOperationsModal({ shift, tenantId, onClose }: CashOp
                         key={`add-${addVal}`}
                         type="button"
                         onClick={() => handleAddPreset(addVal)}
-                        className="py-1.5 px-3 bg-brand/5 hover:bg-brand/10 border border-brand/10 text-brand rounded-lg text-[10px] font-black tracking-wider transition-all cursor-pointer text-center"
+                        className="py-1.5 px-3 bg-brand/5 hover:bg-brand/10 border border-brand/10 text-brand rounded-lg text-sm font-black transition-all cursor-pointer text-center"
                       >
                         +{addVal} {getCurrencySymbol()}
                       </button>
@@ -400,7 +400,7 @@ export default function CashOperationsModal({ shift, tenantId, onClose }: CashOp
 
               {/* Reason Description */}
               <div className="space-y-2.5">
-                <label className="text-xs font-black text-content-muted uppercase tracking-wide block mr-1">
+                <label className="text-sm font-black text-content-muted uppercase block mr-1">
                   {t('cash_operations.reason', 'السبب والبيان التفصيلي')}
                 </label>
 
@@ -421,7 +421,7 @@ export default function CashOperationsModal({ shift, tenantId, onClose }: CashOp
 
                 {/* Quick Shortcuts */}
                 <div className="space-y-1.5">
-                  <span className="text-[9px] font-bold text-content-muted block mb-1">{t('cash_operations.quick_reasons', 'اختصارات الأسباب السريعة')}</span>
+                  <span className="text-sm font-bold text-content-muted block mb-1">{t('cash_operations.quick_reasons', 'اختصارات الأسباب السريعة')}</span>
                   <div className="flex flex-wrap gap-1.5">
                     {reasonShortcuts[operationType].map((shortcut, idx) => (
                       <button
@@ -429,7 +429,7 @@ export default function CashOperationsModal({ shift, tenantId, onClose }: CashOp
                         type="button"
                         onClick={() => setReason(shortcut)}
                         className={cn(
-                          "px-2.5 py-1.5 rounded-lg text-[10px] font-bold transition-all border text-right cursor-pointer",
+                          "px-2.5 py-1.5 rounded-lg text-sm font-bold transition-all border text-right cursor-pointer",
                           reason === shortcut
                             ? "bg-content text-white border-content"
                             : "bg-surface-muted hover:bg-border text-content-muted border-border/50"
@@ -448,7 +448,7 @@ export default function CashOperationsModal({ shift, tenantId, onClose }: CashOp
                   type="button"
                   onClick={onClose}
                   disabled={isSubmitting}
-                  className="flex-1 py-3.5 bg-surface-muted hover:bg-surface-muted border border-border text-content-muted rounded-2xl font-black text-xs sm:text-sm transition-all cursor-pointer text-center"
+                  className="flex-1 py-3.5 bg-surface-muted hover:bg-surface-muted border border-border text-content-muted rounded-2xl font-black text-sm transition-all cursor-pointer text-center"
                 >
                   {t('common.cancel', 'إلغاء وتراجع')}
                 </button>
@@ -456,7 +456,7 @@ export default function CashOperationsModal({ shift, tenantId, onClose }: CashOp
                 <button 
                   type="submit"
                   disabled={isSubmitting || !amount || !reason}
-                  className="flex-[2] text-white py-3.5 rounded-2xl font-black text-xs sm:text-sm bg-brand hover:bg-brand/90 shadow-sm shadow-brand/10 transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-1.5"
+                  className="flex-[2] text-white py-3.5 rounded-2xl font-black text-sm bg-brand hover:bg-brand/90 shadow-sm shadow-brand/10 transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-1.5"
                 >
                   {isSubmitting ? (
                     <>
@@ -476,10 +476,10 @@ export default function CashOperationsModal({ shift, tenantId, onClose }: CashOp
           </div>
 
           {/* Left Pane: Recent Entries Timeline - Aligned with Brand & Neutrals */}
-          <div className="lg:col-span-5 bg-surface-muted/60 overflow-y-auto flex flex-col h-full border-t lg:border-t-0 lg:border-l border-border">
+          <div className="main-900:col-span-5 bg-surface-muted/60 overflow-y-auto flex flex-col h-full border-t main-900:border-t-0 main-900:border-l border-border">
             {/* Header/Title for Timeline */}
             <div className="p-4 bg-surface-muted border-b border-border flex items-center justify-between shrink-0">
-              <span className="text-xs font-black text-content flex items-center gap-2">
+              <span className="text-sm font-black text-content flex items-center gap-2">
                 <History size={14} className="text-content-muted" />
                 {t('cash_operations.recent_operations', 'آخر العمليات المسجلة بالوردية الحالية')} ({recentEntries.length})
               </span>
@@ -487,7 +487,7 @@ export default function CashOperationsModal({ shift, tenantId, onClose }: CashOp
               <button 
                 type="button"
                 onClick={fetchRecentEntries}
-                className="p-1.5 text-content-muted hover:text-content rounded-lg bg-white border border-border hover:shadow-sm active:scale-95 transition-all text-[10px] font-bold flex items-center gap-1 cursor-pointer"
+                className="p-1.5 text-content-muted hover:text-content rounded-lg bg-white border border-border hover:shadow-sm active:scale-95 transition-all text-sm font-bold flex items-center gap-1 cursor-pointer"
                 disabled={isLoadingEntries}
               >
                 <RefreshCw size={10} className={cn(isLoadingEntries && "animate-spin")} />
@@ -496,11 +496,11 @@ export default function CashOperationsModal({ shift, tenantId, onClose }: CashOp
             </div>
 
             {/* Mobile Expand / Collapse for Timeline */}
-            <div className="lg:hidden p-3 bg-white border-b border-border">
+            <div className="main-900:hidden p-3 bg-white border-b border-border">
               <button
                 type="button"
                 onClick={() => setShowHistoryMobile(!showHistoryMobile)}
-                className="w-full flex items-center justify-between text-xs font-black text-brand focus:outline-none cursor-pointer"
+                className="w-full flex items-center justify-between text-sm font-black text-brand focus:outline-none cursor-pointer"
               >
                 <span>{showHistoryMobile ? t('cash_operations.hide_history', 'إخفاء سجل الحركات للوردية') : t('cash_operations.show_history', 'عرض سجل الحركات للوردية والتفاصيل')}</span>
                 {showHistoryMobile ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
@@ -510,19 +510,19 @@ export default function CashOperationsModal({ shift, tenantId, onClose }: CashOp
             {/* Content for Timeline */}
             <div className={cn(
               "flex-1 p-4 space-y-3.5 overflow-y-auto",
-              "hidden lg:block", 
-              showHistoryMobile && "block! lg:block"
+              "hidden main-900:block", 
+              showHistoryMobile && "block! main-900:block"
             )}>
               {isLoadingEntries && recentEntries.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-12 text-content-muted gap-2">
                   <div className="w-5 h-5 border-2 border-border border-t-brand rounded-full animate-spin" />
-                  <span className="text-xs font-bold">{t('cash_operations.loading_flow', 'جاري تحميل حركات الصندوق...')}</span>
+                  <span className="text-sm font-bold">{t('cash_operations.loading_flow', 'جاري تحميل حركات الصندوق...')}</span>
                 </div>
               ) : recentEntries.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-12 px-6 text-center text-content-muted border border-dashed border-border rounded-2xl bg-white">
                   <AlertCircle size={28} className="text-content-muted mb-2" />
-                  <p className="text-xs font-black text-content-muted">{t('cash_operations.no_operations', 'لا توجد حركات مسجلة للوردية الحالية بعد.')}</p>
-                  <p className="text-[10px] text-content-muted mt-1 max-w-[200px]">
+                  <p className="text-sm font-black text-content-muted">{t('cash_operations.no_operations', 'لا توجد حركات مسجلة للوردية الحالية بعد.')}</p>
+                  <p className="text-sm text-content-muted mt-1 max-w-[200px]">
                     {t('cash_operations.any_operation_desc', 'أي عملية سحب أو إيداع رصيد بالدرج ستظهر هنا فوراً.')}
                   </p>
                 </div>
@@ -544,14 +544,14 @@ export default function CashOperationsModal({ shift, tenantId, onClose }: CashOp
                         {/* Top Line: Type Badge + Amount */}
                         <div className="flex items-center justify-between pl-1">
                           <span className={cn(
-                            "px-2 py-0.5 rounded-md text-[10px] font-black",
+                            "px-2 py-0.5 rounded-md text-sm font-black",
                             isDep ? "bg-brand/10 text-brand" : "bg-surface-muted text-content"
                           )}>
                             {isDep ? t('cash_operations.deposit_badge', 'إيـداع سيولة') : t('cash_operations.withdrawal_badge', 'سحب / مصروف')}
                           </span>
 
                           <span className={cn(
-                            "font-mono font-black text-[13px] tracking-tight",
+                            "font-mono font-black text-sm",
                             isDep ? "text-brand" : "text-content"
                           )}>
                             {isDep ? '+' : '-'}{Number(entry.amount).toFixed(2)} {getCurrencySymbol()}
@@ -559,7 +559,7 @@ export default function CashOperationsModal({ shift, tenantId, onClose }: CashOp
                         </div>
 
                         {/* Middle Line: Reason */}
-                        <p className="text-xs font-bold text-content pr-1 select-text text-right">
+                        <p className="text-sm font-bold text-content pr-1 select-text text-right">
                           {entry.reason}
                         </p>
 
@@ -575,7 +575,7 @@ export default function CashOperationsModal({ shift, tenantId, onClose }: CashOp
             </div>
 
             {/* Bottom Panel Drawer Status Indicator */}
-            <div className="mt-auto p-4 bg-surface-muted border-t border-border text-center text-[10px] text-content-muted font-bold">
+            <div className="mt-auto p-4 bg-surface-muted border-t border-border text-center text-sm text-content-muted font-bold">
               {t('cash_operations.audit_logged', 'جميع حركات الصندوق تسجل آلياً في سجل تدقيق النظام.')}
             </div>
           </div>

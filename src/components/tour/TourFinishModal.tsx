@@ -91,7 +91,7 @@ export default function TourFinishModal({
               ? t('tour.finish.complete_all_title')
               : t('tour.finish.title')}
           </h2>
-          <p className="text-content-muted text-xs font-semibold mt-2 leading-relaxed max-w-sm mx-auto">
+          <p className="text-content-muted text-sm font-semibold mt-2 leading-relaxed max-w-sm mx-auto">
             {completedCount === totalCount
               ? t('tour.finish.complete_all_desc')
               : t('tour.finish.subtitle')}
@@ -99,7 +99,7 @@ export default function TourFinishModal({
 
           {/* Progress Indicator */}
           <div className="mt-5 max-w-xs mx-auto">
-            <div className="flex justify-between text-[11px] font-bold text-content-muted mb-1.5 px-0.5">
+            <div className="flex justify-between text-sm font-bold text-content-muted mb-1.5 px-0.5">
               <span>{t('tour.finish.setup_progress')}</span>
               <span>
                 {t('tour.finish.progress_count', { completed: completedCount, total: totalCount })}
@@ -118,14 +118,14 @@ export default function TourFinishModal({
 
         {/* Quick start checklist */}
         <div className="px-5 sm:px-6 pb-2 space-y-2 overflow-y-auto">
-          <p className="px-1.5 pb-1 text-[11px] font-black text-content-muted uppercase tracking-widest">
+          <p className="px-1.5 pb-1 text-sm font-black text-content-muted uppercase">
             {t('tour.finish.checklist_title')}
           </p>
 
           {loading ? (
             <div className="py-8 flex flex-col items-center justify-center gap-3">
               <Loader2 className="w-6 h-6 animate-spin text-brand" />
-              <span className="text-xs font-bold text-content-muted">
+              <span className="text-sm font-bold text-content-muted">
                 {t('common.loading')}
               </span>
             </div>
@@ -175,7 +175,7 @@ export default function TourFinishModal({
                     <div className="flex items-center gap-2">
                       <p
                         className={cn(
-                          'font-black text-[13px] leading-tight',
+                          'font-black text-sm leading-tight',
                           isCompleted ? 'text-content-muted line-through opacity-80' : 'text-content'
                         )}
                       >
@@ -184,18 +184,18 @@ export default function TourFinishModal({
                       </p>
 
                       {isCompleted && (
-                        <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-[9px] font-black bg-success/10 text-success border border-success/20 uppercase tracking-wider">
+                        <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-sm font-black bg-success/10 text-success border border-success/20 uppercase">
                           {t('common.completed')}
                         </span>
                       )}
 
                       {isActive && (
-                        <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-[9px] font-black bg-brand text-white uppercase tracking-wider animate-pulse">
+                        <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-sm font-black bg-brand text-white uppercase animate-pulse">
                           {t('common.next')}
                         </span>
                       )}
                     </div>
-                    <p className="text-[11px] text-content-muted font-medium mt-0.5 leading-relaxed truncate">
+                    <p className="text-sm text-content-muted font-medium mt-0.5 leading-relaxed truncate">
                       {t(`tour.finish.checklist.${item.id}.desc`, '')}
                     </p>
                   </div>
@@ -220,7 +220,7 @@ export default function TourFinishModal({
         <div className="px-5 sm:px-6 py-5 flex flex-col-reverse sm:flex-row gap-2.5 shrink-0 border-t border-border/60 mt-3">
           <button
             onClick={onRestart}
-            className="flex-1 px-5 py-3 rounded-2xl font-bold text-xs sm:text-sm text-content-muted bg-surface-muted hover:bg-border/60 transition-colors cursor-pointer flex items-center justify-center gap-2"
+            className="flex-1 px-5 py-3 rounded-2xl font-bold text-sm text-content-muted bg-surface-muted hover:bg-border/60 transition-colors cursor-pointer flex items-center justify-center gap-2"
           >
             <RotateCcw size={15} />
             <span>{t('tour.finish.restart')}</span>

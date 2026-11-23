@@ -849,18 +849,18 @@ export default function PrinterSettings() {
   // No padding on phones below: Settings already pads the panel, and a third
   // layer of padding was leaving only ~220px of usable width.
   return (
-    <div className={cn("max-w-6xl mx-auto p-0 sm:p-6 lg:p-8 space-y-6 sm:space-y-8", isRtl ? "text-right" : "text-left")} dir={isRtl ? "rtl" : "ltr"}>
+    <div className={cn("max-w-6xl mx-auto p-0 main-640:p-6 main-900:p-8 space-y-6 main-640:space-y-8", isRtl ? "text-right" : "text-left")} dir={isRtl ? "rtl" : "ltr"}>
       {/* منطقة الاختبار المخفية القابلة للطباعة */}
       <div
         id="print-area"
         data-paper={currentTestPrinter?.size || '80mm'}
-        className={cn("hidden print:block printable-area text-black bg-white p-4 font-mono text-xs", isRtl ? "text-right" : "text-left")}
+        className={cn("hidden print:block printable-area text-black bg-white p-4 font-mono text-sm", isRtl ? "text-right" : "text-left")}
         dir={isRtl ? "rtl" : "ltr"}
       >
         <div className="text-center pb-2 border-b border-black mb-3">
           <h2 className="text-base font-bold">{t('settings_page.printer.test_print_title')}</h2>
-          <p className="text-[10px]">{t('settings_page.printer.system_name')}</p>
-          <p className="text-[10px] mt-1">{new Date().toLocaleString(localeOf())}</p>
+          <p className="text-sm">{t('settings_page.printer.system_name')}</p>
+          <p className="text-sm mt-1">{new Date().toLocaleString(localeOf())}</p>
         </div>
         <div className="space-y-1 mb-3">
           <p><strong>{t('settings_page.printer.printer_name_label')}</strong> {currentTestPrinter ? printerDisplayName(currentTestPrinter) : t('settings_page.printer.system_default_name')}</p>
@@ -870,18 +870,18 @@ export default function PrinterSettings() {
         <div className="border-t border-b border-black py-2 my-2 text-center font-bold">
           {t('settings_page.printer.test_success')}
         </div>
-        <div className="text-center pt-2 text-[10px]">{t('settings_page.printer.thank_you')}</div>
+        <div className="text-center pt-2 text-sm">{t('settings_page.printer.thank_you')}</div>
       </div>
 
       {/* الترويسة */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-surface p-4 sm:p-6 rounded-2xl border border-border shadow-xs">
-        <div className="flex items-center gap-3 sm:gap-4 min-w-0">
-          <div className="p-3 sm:p-3.5 bg-brand/10 text-brand rounded-2xl shrink-0">
+      <div className="flex flex-col main-640:flex-row main-640:items-center justify-between gap-4 bg-surface p-4 main-640:p-6 rounded-2xl border border-border shadow-xs">
+        <div className="flex items-center gap-3 main-640:gap-4 min-w-0">
+          <div className="p-3 main-640:p-3.5 bg-brand/10 text-brand rounded-2xl shrink-0">
             <Printer size={24} />
           </div>
           <div className="min-w-0">
-            <h1 className="text-lg sm:text-2xl font-black text-content">{t('settings_page.printer.title')}</h1>
-            <p className="text-xs text-content-muted mt-1 font-medium">
+            <h1 className="text-lg main-640:text-2xl font-black text-content">{t('settings_page.printer.title')}</h1>
+            <p className="text-sm text-content-muted mt-1 font-medium">
               {t('settings_page.printer.subtitle')}
             </p>
           </div>
@@ -894,7 +894,7 @@ export default function PrinterSettings() {
               void refreshAgent(true);
               void syncPairedDevices(printers, false);
             }}
-            className="bg-surface-muted hover:bg-brand/10 text-content hover:text-brand border border-border px-4 py-3 rounded-2xl text-xs font-black transition-all flex items-center justify-center gap-2"
+            className="bg-surface-muted hover:bg-brand/10 text-content hover:text-brand border border-border px-4 py-3 rounded-2xl text-sm font-black transition-all flex items-center justify-center gap-2"
           >
             <RefreshCw size={16} />
             <span>{t('settings_page.printer.refresh')}</span>
@@ -908,10 +908,10 @@ export default function PrinterSettings() {
           <Info size={20} className="text-brand shrink-0 mt-0.5" />
           <div className="space-y-1">
             <p className="text-sm font-black text-brand">{t('settings_page.printer.iframe_notice_title')}</p>
-            <p className="text-xs text-content-muted font-medium leading-relaxed">
+            <p className="text-sm text-content-muted font-medium leading-relaxed">
               {t('settings_page.printer.iframe_notice_body1')}
             </p>
-            <p className="text-xs text-content-muted font-medium leading-relaxed">
+            <p className="text-sm text-content-muted font-medium leading-relaxed">
               {t('settings_page.printer.iframe_notice_body2')}
             </p>
           </div>
@@ -924,8 +924,8 @@ export default function PrinterSettings() {
           <AlertTriangle size={20} className="text-warning shrink-0 mt-0.5" />
           <div className="space-y-1">
             <p className="text-sm font-black text-content">{t('settings_page.printer.no_direct_hardware_title')}</p>
-            <p className="text-xs text-content-muted font-medium leading-relaxed">{support.reason}</p>
-            <p className="text-xs text-content-muted font-medium leading-relaxed">
+            <p className="text-sm text-content-muted font-medium leading-relaxed">{support.reason}</p>
+            <p className="text-sm text-content-muted font-medium leading-relaxed">
               {t('settings_page.printer.no_direct_hardware_fallback')}
             </p>
           </div>
@@ -933,7 +933,7 @@ export default function PrinterSettings() {
       )}
 
       {/* الطباعة الصامتة عبر وسيط سين (الاقتران) — المسار الأساسي الموصى به */}
-      <div className="bg-surface p-4 sm:p-6 rounded-2xl border-2 border-brand/30 shadow-xs space-y-4">
+      <div className="bg-surface p-4 main-640:p-6 rounded-2xl border-2 border-brand/30 shadow-xs space-y-4">
         <div className="flex items-center justify-between gap-2 flex-wrap">
           <div className="flex items-center gap-2">
             <Zap size={20} className="text-brand" />
@@ -952,21 +952,21 @@ export default function PrinterSettings() {
           )}
         </div>
 
-        <p className="text-xs text-content-muted font-medium leading-relaxed">
+        <p className="text-sm text-content-muted font-medium leading-relaxed">
           {t('settings_page.printer.relay_card_hint')}
         </p>
 
         {!paired ? (
           <div className="space-y-3">
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-brand/5 p-4 rounded-2xl border border-brand/20">
+            <div className="flex flex-col main-640:flex-row items-stretch main-640:items-center justify-between gap-3 bg-brand/5 p-4 rounded-2xl border border-brand/20">
               <div className="flex items-center gap-3 min-w-0">
-                <div className="w-7 h-7 rounded-full bg-brand text-white flex items-center justify-center font-black text-xs shrink-0">1</div>
-                <p className="text-xs font-bold text-content">{t('settings_page.printer.relay_download_step')}</p>
+                <div className="w-7 h-7 rounded-full bg-brand text-white flex items-center justify-center font-black text-sm shrink-0">1</div>
+                <p className="text-sm font-bold text-content">{t('settings_page.printer.relay_download_step')}</p>
               </div>
               <a
                 href="/downloads/seen-print-agent.exe"
                 download
-                className="px-4 py-2.5 bg-brand text-white rounded-xl text-xs font-black transition-all hover:bg-brand/90 flex items-center justify-center gap-2 shrink-0"
+                className="px-4 py-2.5 bg-brand text-white rounded-xl text-sm font-black transition-all hover:bg-brand/90 flex items-center justify-center gap-2 shrink-0"
               >
                 <Download size={14} />
                 <span>{t('settings_page.printer.relay_download_button')}</span>
@@ -974,11 +974,11 @@ export default function PrinterSettings() {
             </div>
 
             <div className="flex items-center gap-3 px-1">
-              <div className="w-7 h-7 rounded-full bg-brand text-white flex items-center justify-center font-black text-xs shrink-0">2</div>
-              <p className="text-xs font-bold text-content">{t('settings_page.printer.relay_pair_step')}</p>
+              <div className="w-7 h-7 rounded-full bg-brand text-white flex items-center justify-center font-black text-sm shrink-0">2</div>
+              <p className="text-sm font-bold text-content">{t('settings_page.printer.relay_pair_step')}</p>
             </div>
 
-            <div className="flex flex-col sm:flex-row gap-2">
+            <div className="flex flex-col main-640:flex-row gap-2">
               <input
                 type="text"
                 value={pairCodeInput}
@@ -1007,7 +1007,7 @@ export default function PrinterSettings() {
                 </p>
                 <span
                   className={cn(
-                    'text-[11px] font-black px-2.5 py-0.5 rounded-full inline-flex items-center gap-1.5 mt-1',
+                    'text-sm font-black px-2.5 py-0.5 rounded-full inline-flex items-center gap-1.5 mt-1',
                     station?.online ? 'bg-success/15 text-success' : 'bg-warning/15 text-warning'
                   )}
                 >
@@ -1018,7 +1018,7 @@ export default function PrinterSettings() {
               <button
                 type="button"
                 onClick={handleUnpair}
-                className="px-3.5 py-2 text-danger hover:bg-danger/10 border border-danger/20 rounded-xl text-xs font-black transition-all shrink-0"
+                className="px-3.5 py-2 text-danger hover:bg-danger/10 border border-danger/20 rounded-xl text-sm font-black transition-all shrink-0"
               >
                 {t('settings_page.printer.unpair_button')}
               </button>
@@ -1026,19 +1026,19 @@ export default function PrinterSettings() {
 
             {station && station.printers.length > 0 ? (
               <div className="space-y-2">
-                <p className="text-[11px] font-black text-content-muted uppercase tracking-widest">
+                <p className="text-sm font-black text-content-muted uppercase">
                   {t('settings_page.printer.station_printers_heading')}
                 </p>
                 {station.printers.map((p) => (
                   <div key={p.name} className="flex items-center justify-between gap-3 p-3 bg-surface rounded-xl border border-border">
-                    <span className="text-xs font-bold text-content truncate">
+                    <span className="text-sm font-bold text-content truncate">
                       {p.name}
                       {p.isDefault ? ' ⭐' : ''}
                     </span>
                     <button
                       type="button"
                       onClick={() => handleLinkRelayPrinter(p)}
-                      className="px-3 py-1.5 bg-brand/10 text-brand hover:bg-brand hover:text-white rounded-lg text-[11px] font-black transition-all shrink-0"
+                      className="px-3 py-1.5 bg-brand/10 text-brand hover:bg-brand hover:text-white rounded-lg text-sm font-black transition-all shrink-0"
                     >
                       {t('settings_page.printer.link_button')}
                     </button>
@@ -1046,13 +1046,13 @@ export default function PrinterSettings() {
                 ))}
               </div>
             ) : (
-              <p className="text-xs text-content-muted font-medium">{t('settings_page.printer.no_station_printers')}</p>
+              <p className="text-sm text-content-muted font-medium">{t('settings_page.printer.no_station_printers')}</p>
             )}
           </div>
         )}
 
         {relayError && (
-          <p className="text-xs text-danger font-bold flex items-start gap-1.5">
+          <p className="text-sm text-danger font-bold flex items-start gap-1.5">
             <AlertTriangle size={14} className="shrink-0 mt-0.5" />
             <span>{relayError}</span>
           </p>
@@ -1060,16 +1060,16 @@ export default function PrinterSettings() {
       </div>
 
       {/* أزرار الربط الحقيقي */}
-      <div className="bg-surface p-4 sm:p-6 rounded-2xl border border-border shadow-xs space-y-4">
+      <div className="bg-surface p-4 main-640:p-6 rounded-2xl border border-border shadow-xs space-y-4">
         <div className="flex items-center gap-2">
           <Search size={20} className="text-brand" />
           <h3 className="text-base font-black text-content">{t('settings_page.printer.link_real_printer')}</h3>
         </div>
-        <p className="text-xs text-content-muted font-medium leading-relaxed">
+        <p className="text-sm text-content-muted font-medium leading-relaxed">
           {t('settings_page.printer.link_real_printer_hint')}
         </p>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="grid grid-cols-1 main-640:grid-cols-2 main-900:grid-cols-4 gap-3">
           <ConnectButton
             icon={Usb}
             label={t('settings_page.printer.connect_usb')}
@@ -1104,7 +1104,7 @@ export default function PrinterSettings() {
           />
         </div>
 
-        <div className="flex items-start gap-2 pt-2 border-t border-border text-[11px] text-content-muted font-medium leading-relaxed">
+        <div className="flex items-start gap-2 pt-2 border-t border-border text-sm text-content-muted font-medium leading-relaxed">
           <Info size={14} className="shrink-0 mt-0.5" />
           <span>{t('settings_page.printer.empty_browser_dialog_hint')}</span>
         </div>
@@ -1114,14 +1114,14 @@ export default function PrinterSettings() {
       {activePrinter && (
         <div
           className={cn(
-            'p-6 sm:p-8 rounded-2xl border-2 transition-all space-y-4 shadow-lg relative overflow-hidden',
+            'p-6 main-640:p-8 rounded-2xl border-2 transition-all space-y-4 shadow-lg relative overflow-hidden',
             isRtl ? 'text-right' : 'text-left',
             activePrinter.status === 'online'
               ? 'bg-success/10 border-success/40'
               : 'bg-warning/15 border-warning/50'
           )}
         >
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
+          <div className="flex flex-col main-720:flex-row main-720:items-center justify-between gap-6 relative z-10">
             <div className="flex items-start gap-4 flex-1">
               <div
                 className={cn(
@@ -1133,13 +1133,13 @@ export default function PrinterSettings() {
               </div>
               <div className="space-y-2">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-xs font-bold text-content-muted">{t('settings_page.printer.default_printer_label')}</span>
+                  <span className="text-sm font-bold text-content-muted">{t('settings_page.printer.default_printer_label')}</span>
                   <h3 className="text-lg font-black text-content bg-surface px-3 py-1 rounded-xl border border-border shadow-xs">
                     {printerDisplayName(activePrinter)}
                   </h3>
                   <span
                     className={cn(
-                      'text-[11px] font-black px-3 py-1 rounded-full flex items-center gap-1.5 shadow-xs text-white',
+                      'text-sm font-black px-3 py-1 rounded-full flex items-center gap-1.5 shadow-xs text-white',
                       activePrinter.status === 'online' ? 'bg-success' : 'bg-warning'
                     )}
                   >
@@ -1147,25 +1147,25 @@ export default function PrinterSettings() {
                     {activePrinter.status === 'online' ? t('settings_page.printer.status_ready') : t('settings_page.printer.status_offline')}
                   </span>
                   {activePrinter.isRealDevice && (
-                    <span className="text-[10px] font-black px-2.5 py-1 rounded-full bg-brand text-white">
+                    <span className="text-sm font-black px-2.5 py-1 rounded-full bg-brand text-white">
                       {t('settings_page.printer.directly_linked_device')}
                     </span>
                   )}
                 </div>
 
-                <p className="text-xs text-content-muted font-medium">
+                <p className="text-sm text-content-muted font-medium">
                   {t('settings_page.printer.paper_size_label')} <strong className="text-content">{activePrinter.size}</strong> | {t('settings_page.printer.connection_label')}{' '}
                   <strong className="text-content">{transportLabel(activePrinter.type)}</strong>
                   {activePrinter.ipAddress && ` | IP: ${activePrinter.ipAddress}`}
                 </p>
 
                 {activePrinter.status === 'offline' && (
-                  <p className="text-xs text-warning font-bold">
+                  <p className="text-sm text-warning font-bold">
                     {t('settings_page.printer.device_unpaired_hint')}
                   </p>
                 )}
                 {activePrinter.type === 'system' && (
-                  <p className="text-xs text-content-muted font-medium">
+                  <p className="text-sm text-content-muted font-medium">
                     {t('settings_page.printer.system_printer_hint')}
                   </p>
                 )}
@@ -1177,7 +1177,7 @@ export default function PrinterSettings() {
                 type="button"
                 onClick={() => void handleTestPrint(activePrinter)}
                 disabled={busyId === activePrinter.id}
-                className="px-5 py-2.5 bg-success hover:bg-success text-white rounded-xl text-xs font-black transition-all shadow-md flex items-center gap-2 disabled:opacity-50"
+                className="px-5 py-2.5 bg-success hover:bg-success text-white rounded-xl text-sm font-black transition-all shadow-md flex items-center gap-2 disabled:opacity-50"
               >
                 {busyId === activePrinter.id ? <Loader2 size={16} className="animate-spin" /> : <Zap size={16} />}
                 <span>{busyId === activePrinter.id ? t('settings_page.printer.testing') : t('settings_page.printer.print_test_invoice')}</span>
@@ -1191,7 +1191,7 @@ export default function PrinterSettings() {
       {feedback && (
         <div
           className={cn(
-            'p-4 border rounded-2xl text-xs font-bold flex items-start justify-between gap-3',
+            'p-4 border rounded-2xl text-sm font-bold flex items-start justify-between gap-3',
             feedback.kind === 'success' && 'bg-success/10 border-success/30 text-success',
             feedback.kind === 'error' && 'bg-danger/10 border-danger/30 text-danger',
             feedback.kind === 'info' && 'bg-brand/10 border-brand/30 text-brand'
@@ -1214,10 +1214,10 @@ export default function PrinterSettings() {
       )}
 
       {/* قائمة الطابعات */}
-      <div className="bg-surface p-4 sm:p-6 rounded-2xl border border-border shadow-xs space-y-4">
+      <div className="bg-surface p-4 main-640:p-6 rounded-2xl border border-border shadow-xs space-y-4">
         <div className="flex items-center justify-between flex-wrap gap-2">
           <h3 className="text-base font-black text-content">{t('settings_page.printer.printers_heading', { count: printers.length })}</h3>
-          <span className="text-xs text-content-muted font-bold">
+          <span className="text-sm text-content-muted font-bold">
             {realCount > 0
               ? t('settings_page.printer.directly_linked_count', { count: realCount })
               : t('settings_page.printer.no_directly_linked_yet')}
@@ -1229,7 +1229,7 @@ export default function PrinterSettings() {
             <div
               key={p.id}
               className={cn(
-                'p-4 rounded-2xl border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4',
+                'p-4 rounded-2xl border transition-all flex flex-col main-640:flex-row main-640:items-center justify-between gap-4',
                 p.isDefault ? 'bg-brand/5 border-brand/40 shadow-xs' : 'bg-surface border-border'
               )}
             >
@@ -1241,18 +1241,18 @@ export default function PrinterSettings() {
                   <div className="flex items-center gap-2 flex-wrap">
                     <h4 className="font-black text-sm text-content truncate">{printerDisplayName(p)}</h4>
                     {p.isDefault && (
-                      <span className="text-[10px] bg-brand text-white font-black px-2 py-0.5 rounded-full">{t('settings_page.printer.badge_default')}</span>
+                      <span className="text-sm bg-brand text-white font-black px-2 py-0.5 rounded-full">{t('settings_page.printer.badge_default')}</span>
                     )}
                     <span
                       className={cn(
-                        'text-[10px] font-black px-2 py-0.5 rounded-full',
+                        'text-sm font-black px-2 py-0.5 rounded-full',
                         p.status === 'online' ? 'bg-success/15 text-success' : 'bg-warning/15 text-warning'
                       )}
                     >
                       {p.status === 'online' ? t('settings_page.printer.status_connected') : t('settings_page.printer.status_offline')}
                     </span>
                   </div>
-                  <p className="text-xs text-content-muted font-medium mt-0.5">
+                  <p className="text-sm text-content-muted font-medium mt-0.5">
                     {transportLabel(p.type)}
                     {p.vendorId !== undefined && ` • ${p.vendorId.toString(16).padStart(4, '0')}:${(p.productId ?? 0).toString(16).padStart(4, '0')}`}
                     {p.ipAddress && ` • ${p.ipAddress}:${p.port}`}
@@ -1264,7 +1264,7 @@ export default function PrinterSettings() {
                 <SmartSelect
                   value={p.size}
                   onChange={(v) => handleChangeSize(p.id, v as '80mm' | '58mm' | 'A4')}
-                  className="w-auto min-w-[100px] rounded-xl px-3 py-2 text-xs"
+                  className="w-auto min-w-[100px] rounded-xl px-3 py-2 text-sm"
                   options={[
                     { value: '80mm', label: '80mm' },
                     { value: '58mm', label: '58mm' },
@@ -1276,7 +1276,7 @@ export default function PrinterSettings() {
                   <button
                     type="button"
                     onClick={() => handleSetDefault(p.id)}
-                    className="px-3.5 py-2 bg-surface hover:bg-brand/10 text-content hover:text-brand border border-border hover:border-brand/30 rounded-xl text-xs font-black transition-all"
+                    className="px-3.5 py-2 bg-surface hover:bg-brand/10 text-content hover:text-brand border border-border hover:border-brand/30 rounded-xl text-sm font-black transition-all"
                   >
                     {t('settings_page.printer.set_as_default')}
                   </button>
@@ -1286,7 +1286,7 @@ export default function PrinterSettings() {
                   type="button"
                   onClick={() => void handleTestPrint(p)}
                   disabled={busyId === p.id}
-                  className="px-3.5 py-2 bg-success/10 text-success hover:bg-success hover:text-white rounded-xl text-xs font-black transition-all disabled:opacity-50 flex items-center gap-1.5"
+                  className="px-3.5 py-2 bg-success/10 text-success hover:bg-success hover:text-white rounded-xl text-sm font-black transition-all disabled:opacity-50 flex items-center gap-1.5"
                 >
                   {busyId === p.id && <Loader2 size={13} className="animate-spin" />}
                   <span>{t('settings_page.printer.test')}</span>
@@ -1309,7 +1309,7 @@ export default function PrinterSettings() {
       </div>
 
       {/* خيارات الطباعة */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+      <div className="grid grid-cols-1 main-720:grid-cols-2 gap-4 main-640:gap-6">
         <ToggleCard
           icon={Sliders}
           title={t('settings_page.printer.auto_print_title')}
@@ -1333,7 +1333,7 @@ export default function PrinterSettings() {
       </div>
 
       {/* إرشادات حل المشاكل */}
-      <div className="bg-surface p-4 sm:p-6 rounded-2xl border border-border shadow-xs space-y-4">
+      <div className="bg-surface p-4 main-640:p-6 rounded-2xl border border-border shadow-xs space-y-4">
         <button
           type="button"
           onClick={() => setShowHelpGuide(!showHelpGuide)}
@@ -1343,11 +1343,11 @@ export default function PrinterSettings() {
             <Wrench size={20} className="text-brand" />
             <h3 className="text-base font-black text-content">{t('settings_page.printer.help_heading')}</h3>
           </div>
-          <span className="text-xs text-brand font-black">{showHelpGuide ? t('settings_page.printer.hide') : t('settings_page.printer.show_details')}</span>
+          <span className="text-sm text-brand font-black">{showHelpGuide ? t('settings_page.printer.hide') : t('settings_page.printer.show_details')}</span>
         </button>
 
         {showHelpGuide && (
-          <div className="pt-3 border-t border-border space-y-3 text-xs text-content-muted leading-relaxed font-medium">
+          <div className="pt-3 border-t border-border space-y-3 text-sm text-content-muted leading-relaxed font-medium">
             <p>
               <strong className="text-content">{t('settings_page.printer.help_q1_title')}</strong> {t('settings_page.printer.help_q1_body')}
             </p>
@@ -1407,10 +1407,10 @@ function ConnectButton({
       )}
     >
       <div className="flex items-center justify-between gap-2">
-        <span className="font-black text-xs text-content group-hover:text-brand">{label}</span>
+        <span className="font-black text-sm text-content group-hover:text-brand">{label}</span>
         {loading ? <Loader2 size={16} className="animate-spin text-brand" /> : <Icon size={16} className="text-content-muted" />}
       </div>
-      <p className="text-[11px] text-content-muted font-medium">{hint}</p>
+      <p className="text-sm text-content-muted font-medium">{hint}</p>
     </button>
   );
 }
@@ -1429,7 +1429,7 @@ function ToggleCard({
   onChange: (v: boolean) => void;
 }) {
   return (
-    <div className="bg-surface p-4 sm:p-6 rounded-2xl border border-border shadow-xs">
+    <div className="bg-surface p-4 main-640:p-6 rounded-2xl border border-border shadow-xs">
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-3 min-w-0">
           <div className="p-3 bg-brand/10 text-brand rounded-2xl shrink-0">
@@ -1437,7 +1437,7 @@ function ToggleCard({
           </div>
           <div className="min-w-0">
             <h4 className="font-black text-sm text-content">{title}</h4>
-            <p className="text-xs text-content-muted font-medium mt-0.5">{desc}</p>
+            <p className="text-sm text-content-muted font-medium mt-0.5">{desc}</p>
           </div>
         </div>
 

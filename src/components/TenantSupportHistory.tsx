@@ -72,12 +72,12 @@ export default function TenantSupportHistory({ tenantId }: Props) {
                   <div>
                     <h3 className="font-black text-content flex items-center gap-2">
                       {session.saas_user_name}
-                      {isActive && <span className="bg-success text-white text-[10px] px-2 py-0.5 rounded-full uppercase tracking-wider animate-pulse">{t('saas.support_history.active_now')}</span>}
-                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-black ${session.access_type === 'explicit' ? 'bg-success/10 text-success' : 'bg-warning/15 text-content'}`}>
+                      {isActive && <span className="bg-success text-white text-sm px-2 py-0.5 rounded-full uppercase animate-pulse">{t('saas.support_history.active_now')}</span>}
+                      <span className={`text-sm px-2 py-0.5 rounded-full font-black ${session.access_type === 'explicit' ? 'bg-success/10 text-success' : 'bg-warning/15 text-content'}`}>
                         {session.access_type === 'explicit' ? t('saas.support_history.type_approved') : t('saas.support_history.type_without_approval')}
                       </span>
                     </h3>
-                    <p className="text-xs text-content-muted font-bold flex items-center gap-1 mt-1">
+                    <p className="text-sm text-content-muted font-bold flex items-center gap-1 mt-1">
                       <Clock size={12} />
                       {new Date(session.started_at).toLocaleDateString(localeOf())} - {new Date(session.started_at).toLocaleTimeString(localeOf(), { hour: '2-digit', minute: '2-digit' })}
                     </p>

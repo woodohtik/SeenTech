@@ -77,7 +77,7 @@ export default function SalesRecord({ tenantId, shiftId, filterStatus }: { tenan
    *
    * كانت تستخدم `window.print()` مباشرة، فيطبع المتصفح الصفحة كاملة
    * بهوامشه الافتراضية الكبيرة أعلى وأسفل الورقة، ومع حشو النافذة
-   * (p-4 / sm:p-8) وارتفاع 100% كان يظهر فراغ واسع حول الفاتورة.
+   * (p-4 / main-640:p-8) وارتفاع 100% كان يظهر فراغ واسع حول الفاتورة.
    *
    * الآن تمر عبر محرك الطباعة الموحّد: نسخة معزولة من الفاتورة بهوامش
    * @page مضبوطة — نفس ناتج الطباعة من صفحة البيع تماماً.
@@ -342,10 +342,10 @@ export default function SalesRecord({ tenantId, shiftId, filterStatus }: { tenan
       <div className="p-6 font-sans flex flex-col items-center justify-center h-64 text-center bg-surface border border-border rounded-2xl max-w-md mx-auto my-12 shadow-sm animate-fade-in" dir={isRtl ? 'rtl' : 'ltr'}>
         <div className="w-12 h-12 bg-danger/10 text-danger rounded-full flex items-center justify-center mb-4"><AlertTriangle size={22} /></div>
         <h3 className="text-sm font-black text-content mb-2">{t('sales_record.failed_to_load', 'فشل تحميل سجل المبيعات')}</h3>
-        <p className="text-xs text-content-muted mb-4 font-bold max-w-[280px] leading-relaxed">{error}</p>
+        <p className="text-sm text-content-muted mb-4 font-bold max-w-[280px] leading-relaxed">{error}</p>
         <button
           onClick={fetchOrders}
-          className="px-5 py-2 bg-brand text-white text-xs font-black rounded-xl hover:bg-brand/90 transition-colors shadow-md shadow-brand/10 cursor-pointer"
+          className="px-5 py-2 bg-brand text-white text-sm font-black rounded-xl hover:bg-brand/90 transition-colors shadow-md shadow-brand/10 cursor-pointer"
         >
           {t('common.retry', 'إعادة المحاولة')}
         </button>
@@ -354,16 +354,16 @@ export default function SalesRecord({ tenantId, shiftId, filterStatus }: { tenan
   }
 
   return (
-    <div className="p-4 sm:p-6 font-sans">
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 mb-4">
-        <div className="flex-1 sm:flex-none sm:min-w-[150px]">
+    <div className="p-4 main-640:p-6 font-sans">
+      <div className="flex flex-col main-640:flex-row items-stretch main-640:items-center gap-3 mb-4">
+        <div className="flex-1 main-640:flex-none main-640:min-w-[150px]">
           <DatePicker
             value={dateRange.start}
             onChange={(val) => setDateRange(prev => ({ ...prev, start: val }))}
             placeholder={t('common.from', 'من')}
           />
         </div>
-        <div className="flex-1 sm:flex-none sm:min-w-[150px]">
+        <div className="flex-1 main-640:flex-none main-640:min-w-[150px]">
           <DatePicker
             value={dateRange.end}
             onChange={(val) => setDateRange(prev => ({ ...prev, end: val }))}
@@ -374,7 +374,7 @@ export default function SalesRecord({ tenantId, shiftId, filterStatus }: { tenan
 
       <div className="bg-surface rounded-2xl border border-border shadow-sm overflow-hidden">
         {/* Desktop View Table */}
-        <div className="hidden md:block overflow-x-auto whitespace-nowrap scrollbar-hide">
+        <div className="hidden main-720:block overflow-x-auto whitespace-nowrap scrollbar-hide">
           <table className="w-full text-right min-w-max">
             <thead className="bg-surface-muted border-b border-border text-content-muted">
               <tr>
@@ -394,7 +394,7 @@ export default function SalesRecord({ tenantId, shiftId, filterStatus }: { tenan
                   <td className="p-4 text-content-muted">{order.customerName}</td>
                   <td className="p-4">
                     <span className={cn(
-                      "px-2 py-1 rounded-lg text-[10px] font-black whitespace-nowrap",
+                      "px-2 py-1 rounded-lg text-sm font-black whitespace-nowrap",
                       order.isB2B ? "bg-brand/10 text-brand" : "bg-surface-muted text-content-muted"
                     )}>
                       {order.isB2B ? t('tax_invoices.b2b_label') : t('tax_invoices.b2c_label')}
@@ -406,7 +406,7 @@ export default function SalesRecord({ tenantId, shiftId, filterStatus }: { tenan
                   <td className="p-4 font-bold text-brand"><PriceDisplay amount={order.totalAmount} /></td>
                   <td className="p-4">
                     <span className={cn(
-                      "px-2 py-1 rounded-md text-xs font-bold",
+                      "px-2 py-1 rounded-md text-sm font-bold",
                       getStatusBadge(order.status).className
                     )}>
                       {getStatusBadge(order.status).label}
@@ -427,12 +427,12 @@ export default function SalesRecord({ tenantId, shiftId, filterStatus }: { tenan
         </div>
 
         {/* Mobile View Cards */}
-        <div className="md:hidden divide-y divide-border">
+        <div className="main-720:hidden divide-y divide-border">
           {orders.map(order => (
             <div key={order.id} className="p-4 active:bg-surface-muted/50" onClick={() => setSelectedOrder(order)}>
               <div className="flex justify-between items-start mb-2">
                 <div>
-                  <p className="text-xs font-bold text-content mb-1">#{order.orderNumber || order.id.slice(-6).toUpperCase()}</p>
+                  <p className="text-sm font-bold text-content mb-1">#{order.orderNumber || order.id.slice(-6).toUpperCase()}</p>
                   <p className="font-bold text-content leading-tight">{order.customerName}</p>
                 </div>
                 <div className="text-left font-black text-brand">
@@ -442,13 +442,13 @@ export default function SalesRecord({ tenantId, shiftId, filterStatus }: { tenan
               <div className="flex justify-between items-center mt-3">
                 <div className="flex gap-2">
                   <span className={cn(
-                    "px-2 py-0.5 rounded text-[10px] font-bold",
+                    "px-2 py-0.5 rounded text-sm font-bold",
                     getStatusBadge(order.status).className
                   )}>
                     {getStatusBadge(order.status).label}
                   </span>
                   <span className={cn(
-                    "px-2 py-0.5 rounded text-[10px] font-black whitespace-nowrap",
+                    "px-2 py-0.5 rounded text-sm font-black whitespace-nowrap",
                     order.isB2B ? "bg-brand/10 text-brand" : "bg-surface-muted text-content-muted"
                   )}>
                     {order.isB2B ? t('tax_invoices.b2b_label') : t('tax_invoices.b2c_label')}
@@ -465,7 +465,7 @@ export default function SalesRecord({ tenantId, shiftId, filterStatus }: { tenan
             </div>
           )}
         </div>
-        <div className="px-4 sm:px-6">
+        <div className="px-4 main-640:px-6">
           <Pagination page={page} pageSize={PAGE_SIZE} total={ordersTotal} onPageChange={setPage} />
         </div>
       </div>
@@ -473,7 +473,7 @@ export default function SalesRecord({ tenantId, shiftId, filterStatus }: { tenan
       {/* Order Details Modal */}
       {selectedOrder && (
         <div
-          className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] p-2 sm:p-4"
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] p-2 main-640:p-4"
           onClick={() => setSelectedOrder(null)}
         >
           <div
@@ -483,22 +483,22 @@ export default function SalesRecord({ tenantId, shiftId, filterStatus }: { tenan
             onClick={(e) => e.stopPropagation()}
             className={cn(
             "bg-surface rounded-3xl shadow-2xl flex flex-col max-h-[92vh] overflow-hidden transition-all duration-200",
-            selectedOrder.isB2B ? "w-full max-w-3xl" : "w-full max-w-[92mm] sm:max-w-[100mm]"
+            selectedOrder.isB2B ? "w-full max-w-3xl" : "w-full max-w-[92mm] main-640:max-w-[100mm]"
           )}>
-            <div className="p-4 sm:p-6 border-b border-border flex justify-between items-center shrink-0">
-              <div className="flex items-center gap-3 sm:gap-4">
-                <div className="p-2.5 sm:p-3 bg-brand/10 text-brand rounded-xl sm:rounded-2xl">
-                  <FileText className="w-5 h-5 sm:w-6 sm:h-6" />
+            <div className="p-4 main-640:p-6 border-b border-border flex justify-between items-center shrink-0">
+              <div className="flex items-center gap-3 main-640:gap-4">
+                <div className="p-2.5 main-640:p-3 bg-brand/10 text-brand rounded-xl main-640:rounded-2xl">
+                  <FileText className="w-5 h-5 main-640:w-6 main-640:h-6" />
                 </div>
                 <div>
-                  <h2 className="text-base sm:text-xl font-black text-content">{t('pos.order_details')} #{selectedOrder.orderNumber || selectedOrder.id.slice(-6).toUpperCase()}</h2>
+                  <h2 className="text-base main-640:text-xl font-black text-content">{t('pos.order_details')} #{selectedOrder.orderNumber || selectedOrder.id.slice(-6).toUpperCase()}</h2>
                   <div className="mt-0.5">
                     <DateTimeDisplay date={selectedOrder.orderDate} showTime={true} size="xs" />
                   </div>
                 </div>
               </div>
               <button onClick={() => setSelectedOrder(null)} aria-label={t('common.close')} className="p-2 hover:bg-surface-muted rounded-full transition-colors">
-                <X className="w-5 h-5 sm:w-6 sm:h-6 text-content-muted" />
+                <X className="w-5 h-5 main-640:w-6 main-640:h-6 text-content-muted" />
               </button>
             </div>
 
@@ -556,7 +556,7 @@ export default function SalesRecord({ tenantId, shiftId, filterStatus }: { tenan
               const invNumber = selectedOrder.invoiceNumber || String(selectedOrder.orderNumber || selectedOrder.id.slice(0, 8));
 
               return (
-                <div className="flex-1 overflow-auto p-4 sm:p-8 flex justify-center bg-surface-muted print:bg-white print:p-2 print:px-3 print:overflow-visible print:max-h-none" id="sales-record-print-area">
+                <div className="flex-1 overflow-auto p-4 main-640:p-8 flex justify-center bg-surface-muted print:bg-white print:p-2 print:px-3 print:overflow-visible print:max-h-none" id="sales-record-print-area">
                   {selectedOrder.isB2B ? (
                     <TaxInvoice
                       invoiceNumber={invNumber}
@@ -606,35 +606,35 @@ export default function SalesRecord({ tenantId, shiftId, filterStatus }: { tenan
             <div className="p-4 bg-surface-muted border-t border-border flex flex-wrap gap-2.5 shrink-0 mt-auto print:hidden">
               <button 
                 onClick={handleDownloadPDF}
-                className="flex-1 min-w-[110px] bg-brand text-white py-2.5 px-3 rounded-xl font-bold text-xs shadow-md hover:bg-brand/90 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                className="flex-1 min-w-[110px] bg-brand text-white py-2.5 px-3 rounded-xl font-bold text-sm shadow-md hover:bg-brand/90 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
               >
                 <Download size={16} />
                 {t('sales_record.download_pdf', 'تحميل PDF')}
               </button>
               <button
                 onClick={handleShareWhatsApp}
-                className="flex-1 min-w-[110px] bg-[#25D366] text-white py-2.5 px-3 rounded-xl font-bold text-xs shadow-md hover:bg-[#20ba56] transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                className="flex-1 min-w-[110px] bg-[#25D366] text-white py-2.5 px-3 rounded-xl font-bold text-sm shadow-md hover:bg-[#20ba56] transition-all flex items-center justify-center gap-1.5 cursor-pointer"
               >
                 <Share2 size={16} />
                 {t('sales_record.whatsapp', 'واتساب')}
               </button>
               <button
                 onClick={() => void handleAttachInvoicePdf()}
-                className="flex-1 min-w-[110px] bg-surface border border-border text-content-muted hover:text-content py-2.5 px-3 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                className="flex-1 min-w-[110px] bg-surface border border-border text-content-muted hover:text-content py-2.5 px-3 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-1.5 cursor-pointer"
               >
                 <Paperclip size={16} />
                 {t('sales_record.attach_invoice_pdf', 'إرفاق PDF أيضاً')}
               </button>
               <button
                 onClick={handlePrint}
-                className="flex-1 min-w-[90px] bg-content text-surface py-2.5 px-3 rounded-xl font-bold text-xs shadow-md hover:bg-content/90 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                className="flex-1 min-w-[90px] bg-content text-surface py-2.5 px-3 rounded-xl font-bold text-sm shadow-md hover:bg-content/90 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
               >
                 <Printer size={16} />
                 {t('tax_invoices.print', 'طباعة')}
               </button>
               <button 
                 onClick={() => setSelectedOrder(null)}
-                className="px-4 bg-surface text-content-muted border border-border py-2.5 rounded-xl font-bold hover:bg-surface-muted transition-all text-xs cursor-pointer"
+                className="px-4 bg-surface text-content-muted border border-border py-2.5 rounded-xl font-bold hover:bg-surface-muted transition-all text-sm cursor-pointer"
               >
                 {t('common.close', 'إغلاق')}
               </button>

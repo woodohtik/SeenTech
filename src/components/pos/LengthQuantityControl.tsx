@@ -63,7 +63,7 @@ export default function LengthQuantityControl({
           commit(next, next === 'roll' ? '1' : String(fromMeters(meters, next, metersPerRoll)));
         }}
         aria-label={t('pos.length_unit', 'الوحدة')}
-        className="h-11 rounded-lg border border-border bg-surface px-2 text-xs font-bold text-content"
+        className="h-11 rounded-lg border border-border bg-surface px-2 text-sm font-bold text-content"
       >
         {units.map((u) => <option key={u.value} value={u.value}>{u.label}</option>)}
       </select>

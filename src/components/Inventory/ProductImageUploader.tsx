@@ -160,7 +160,7 @@ export default function ProductImageUploader({
                     style={{ width: `${progress}%` }}
                   />
                 </div>
-                <span className="text-[10px] font-bold text-brand mt-1">{Math.round(progress)}%</span>
+                <span className="text-sm font-bold text-brand mt-1">{Math.round(progress)}%</span>
               </div>
             )}
           </div>
@@ -170,16 +170,16 @@ export default function ProductImageUploader({
               {isUploading ? <Loader2 className="animate-spin text-brand" /> : <Upload size={24} />}
             </div>
             <p className="text-sm font-bold text-content">{t('inventory.drag_drop_image')}</p>
-            <p className="text-xs text-content-muted mt-1 underline">{t('inventory.click_to_browse')}</p>
+            <p className="text-sm text-content-muted mt-1 underline">{t('inventory.click_to_browse')}</p>
           </div>
         )}
 
         {error && (
-          <p className="text-xs text-danger font-bold mt-2">{error}</p>
+          <p className="text-sm text-danger font-bold mt-2">{error}</p>
         )}
       </div>
 
-      <p className="text-[10px] text-content-muted flex items-center gap-1">
+      <p className="text-sm text-content-muted flex items-center gap-1">
         <ImageIcon size={10} />
         {t('inventory.supported_formats')}
       </p>

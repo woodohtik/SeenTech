@@ -136,7 +136,7 @@ export default function ShiftManager({ tenantId, onShiftOpen }: ShiftManagerProp
             <Coins size={24} />
           </div>
           <h2 className="text-xl font-black text-content">{t('shift_manager.title')}</h2>
-          <p className="text-xs font-bold text-content-muted mt-1">{t('shift_manager.desc')}</p>
+          <p className="text-sm font-bold text-content-muted mt-1">{t('shift_manager.desc')}</p>
         </div>
         
         {/* Body Content */}
@@ -145,12 +145,12 @@ export default function ShiftManager({ tenantId, onShiftOpen }: ShiftManagerProp
           <div className="bg-surface-muted/30 p-4 rounded-2xl space-y-3.5 border border-border">
             <div className="flex items-center gap-3 text-content-muted">
               <User size={18} className="text-brand shrink-0" />
-              <span className="text-xs font-bold">{t('shift_manager.current_staff')}</span>
+              <span className="text-sm font-bold">{t('shift_manager.current_staff')}</span>
               <span className="text-sm font-extrabold text-content">{currentStaff?.name || '—'}</span>
             </div>
             <div className="flex items-center gap-3 text-content-muted">
               <Clock size={18} className="text-brand shrink-0" />
-              <span className="text-xs font-bold font-sans">{t('shift_manager.start_time')}</span>
+              <span className="text-sm font-bold font-sans">{t('shift_manager.start_time')}</span>
               <span className="text-sm font-extrabold text-content" dir="ltr">
                 {new Date().toLocaleString(localeOf(i18n.language), { dateStyle: 'short', timeStyle: 'short' })}
               </span>
@@ -159,7 +159,7 @@ export default function ShiftManager({ tenantId, onShiftOpen }: ShiftManagerProp
 
           {/* Opening balance field */}
           <div className="space-y-2">
-            <label className="block text-xs font-black text-content-muted uppercase tracking-widest">
+            <label className="block text-sm font-black text-content-muted uppercase">
               {t('shift_manager.opening_balance_label')}
             </label>
             <div className="relative">
@@ -173,16 +173,16 @@ export default function ShiftManager({ tenantId, onShiftOpen }: ShiftManagerProp
                   const val = e.target.value;
                   setOpeningBalance(val === '' ? '' : Number(val));
                 }}
-                className="w-full px-20 py-4 bg-surface-muted/50 border border-border rounded-xl focus:ring-2 focus:ring-brand focus:border-brand outline-none text-2xl font-black text-content text-center tracking-tight"
+                className="w-full px-20 py-4 bg-surface-muted/50 border border-border rounded-xl focus:ring-2 focus:ring-brand focus:border-brand outline-none text-2xl font-black text-content text-center"
                 placeholder={t('shift_manager.opening_balance_placeholder')}
                 min="0"
                 step="any"
               />
-              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-xs font-black text-content-muted bg-surface px-3 py-1.5 rounded-lg border border-border shadow-xs">
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm font-black text-content-muted bg-surface px-3 py-1.5 rounded-lg border border-border shadow-xs">
                 {getCurrencySymbol()}
               </span>
             </div>
-            <p className="text-[10px] text-content-muted leading-relaxed">
+            <p className="text-sm text-content-muted leading-relaxed">
               {t('shift_manager.opening_balance_hint')}
             </p>
           </div>

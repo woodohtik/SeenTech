@@ -331,7 +331,7 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
     <div className={cn("space-y-8 max-w-6xl mx-auto w-full relative", isRtl ? "text-right" : "text-left")} dir={isRtl ? "rtl" : "ltr"}>
       {/* Toast Notification */}
       {toastMessage && (
-        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 max-w-[92vw] bg-surface-muted text-white px-5 sm:px-6 py-3.5 rounded-2xl shadow-2xl text-xs sm:text-sm font-black flex items-center gap-3 border border-brand/30 animate-bounce">
+        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 max-w-[92vw] bg-surface-muted text-white px-5 sm:px-6 py-3.5 rounded-2xl shadow-2xl text-sm font-black flex items-center gap-3 border border-brand/30 animate-bounce">
           <Sparkles size={18} className="text-warning shrink-0" />
           <span className="text-center">{toastMessage}</span>
         </div>
@@ -346,31 +346,31 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
             </div>
             <div>
               <h4 className="font-black text-sm sm:text-base">{t('billing.pending_request_title')}</h4>
-              <p className="text-xs text-content-muted font-bold mt-0.5">
+              <p className="text-sm text-content-muted font-bold mt-0.5">
                 {t('billing.pending_request_desc', {
                   planName: pendingRequests[0].plan_name,
                   date: new Date(pendingRequests[0].created_at).toLocaleDateString(localeOf())
                 })}
               </p>
               {pendingRequests[0].discount_amount ? (
-                <p className="text-xs font-black text-warning mt-1 flex flex-wrap items-center gap-x-2.5 gap-y-0.5 dir-ltr justify-start">
-                  <span className="text-content-muted font-bold text-[11px] line-through">
+                <p className="text-sm font-black text-warning mt-1 flex flex-wrap items-center gap-x-2.5 gap-y-0.5 dir-ltr justify-start">
+                  <span className="text-content-muted font-bold text-sm line-through">
                     <PriceDisplay amount={pendingRequests[0].original_amount ?? pendingRequests[0].amount + pendingRequests[0].discount_amount} />
                   </span>
-                  <span className="text-danger font-bold text-[11px]">-<PriceDisplay amount={pendingRequests[0].discount_amount} /></span>
+                  <span className="text-danger font-bold text-sm">-<PriceDisplay amount={pendingRequests[0].discount_amount} /></span>
                   <span>→ <PriceDisplay amount={pendingRequests[0].amount} /></span>
                   {pendingRequests[0].coupon_code && (
-                    <span className="text-content-muted font-bold text-[11px] not-italic">({pendingRequests[0].coupon_code})</span>
+                    <span className="text-content-muted font-bold text-sm not-italic">({pendingRequests[0].coupon_code})</span>
                   )}
                 </p>
               ) : (
-                <p className="text-xs font-black text-warning mt-1 dir-ltr flex justify-start">
+                <p className="text-sm font-black text-warning mt-1 dir-ltr flex justify-start">
                   <PriceDisplay amount={pendingRequests[0].amount} />
                 </p>
               )}
             </div>
           </div>
-          <span className="px-4 py-1.5 bg-warning/20 border border-warning/40 rounded-full text-xs font-black text-warning shrink-0">
+          <span className="px-4 py-1.5 bg-warning/20 border border-warning/40 rounded-full text-sm font-black text-warning shrink-0">
             {t('billing.pending_request_status')}
           </span>
         </div>
@@ -384,17 +384,17 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
         <div className="relative z-10 flex flex-col lg:flex-row justify-between items-stretch lg:items-center gap-8">
           <div className="space-y-4 flex-1">
             <div className="flex flex-wrap items-center gap-2.5">
-              <span className="inline-flex items-center gap-1.5 bg-brand/10 border border-brand/20 px-3.5 py-1 rounded-full text-xs font-black text-brand">
+              <span className="inline-flex items-center gap-1.5 bg-brand/10 border border-brand/20 px-3.5 py-1 rounded-full text-sm font-black text-brand">
                 <Zap size={14} className="fill-brand" />
                 <span>{t('billing.current_plan_badge')}</span>
               </span>
-              <span className={`px-3 py-1 rounded-full text-xs font-black border ${statusBadge.bg}`}>
+              <span className={`px-3 py-1 rounded-full text-sm font-black border ${statusBadge.bg}`}>
                 {statusBadge.label}
               </span>
             </div>
 
             <div className="flex flex-wrap items-baseline gap-3">
-              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-content">
+              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-content">
                 {getPlanDisplayName()}
               </h2>
               <span className="text-brand text-2xl sm:text-3xl font-black font-mono dir-ltr">
@@ -402,7 +402,7 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
               </span>
             </div>
 
-            <div className="flex flex-wrap items-center gap-4 text-xs font-bold text-content-muted pt-3 border-t border-border/60">
+            <div className="flex flex-wrap items-center gap-4 text-sm font-bold text-content-muted pt-3 border-t border-border/60">
               <span className="flex items-center gap-1.5 text-content font-bold">
                 <ShieldCheck size={16} className="text-success" />
                 {t('billing.store_id')} <span className="font-mono text-brand font-black">{tenantId.slice(0, 8).toUpperCase()}</span>
@@ -415,9 +415,9 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
           {/* min-width only from sm: at 320-360px a hard 280px floor overflowed. */}
           <div className="bg-surface-muted/90 backdrop-blur-md p-5 sm:p-8 rounded-2xl border border-border text-center sm:min-w-[280px] w-full lg:w-auto shrink-0 flex flex-col justify-between shadow-sm space-y-4">
             <div>
-              <p className="text-content-muted font-black uppercase tracking-wider text-[11px] mb-1">{t('billing.billing_status_title')}</p>
+              <p className="text-content-muted font-black uppercase text-sm mb-1">{t('billing.billing_status_title')}</p>
               <p className="text-2xl sm:text-3xl font-black text-content">{getNextBillingDate()}</p>
-              <p className="text-[11px] text-success font-bold mt-1">✓ {t('billing.vat_included_hint')}</p>
+              <p className="text-sm text-success font-bold mt-1">✓ {t('billing.vat_included_hint')}</p>
             </div>
 
             <button
@@ -438,11 +438,11 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
       {/* World-Class Comparative Pricing Section (الباقات المتاحة) */}
       <div className="space-y-6">
         <div className="text-center space-y-2 max-w-xl mx-auto">
-          <span className="text-xs font-black text-brand bg-brand/10 px-4 py-1.5 rounded-full border border-brand/20 uppercase tracking-wider inline-block">
+          <span className="text-sm font-black text-brand bg-brand/10 px-4 py-1.5 rounded-full border border-brand/20 uppercase inline-block">
             {t('billing.pricing_eyebrow')}
           </span>
           <h3 className="text-2xl sm:text-3xl font-black text-content">{t('billing.pricing_title')}</h3>
-          <p className="text-xs sm:text-sm text-content-muted font-bold">
+          <p className="text-sm text-content-muted font-bold">
             {t('billing.pricing_desc')}
           </p>
         </div>
@@ -461,7 +461,7 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
                     <div className="flex items-center justify-between">
                       <h4 className="text-xl sm:text-2xl font-black text-content">{plan.name}</h4>
                       {isCurrent && (
-                        <span className="px-3 py-1 bg-success/10 text-success border border-success/20 rounded-full text-xs font-black">
+                        <span className="px-3 py-1 bg-success/10 text-success border border-success/20 rounded-full text-sm font-black">
                           {t('billing.card_current_plan')}
                         </span>
                       )}
@@ -476,10 +476,10 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
 
                   {/* Plan Features Checklist */}
                   <div className="space-y-3">
-                    <p className="text-xs font-black text-content uppercase tracking-wider">{t('billing.card_included_features')}</p>
+                    <p className="text-sm font-black text-content uppercase">{t('billing.card_included_features')}</p>
                     <ul className="space-y-2.5">
                       {(plan.features || []).map((feat: string, idx: number) => (
-                        <li key={idx} className="flex items-start gap-2.5 text-xs font-bold text-content leading-relaxed">
+                        <li key={idx} className="flex items-start gap-2.5 text-sm font-bold text-content leading-relaxed">
                           <CheckCircle2 size={16} className="text-success shrink-0 mt-0.5" />
                           <span>{feat}</span>
                         </li>
@@ -496,7 +496,7 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
                       setSelectedPlanId(plan.id);
                       setShowUpgradeModal(true);
                     }}
-                    className="w-full py-4 rounded-2xl font-black text-xs transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md bg-surface-muted hover:bg-border text-content hover:scale-[1.02]"
+                    className="w-full py-4 rounded-2xl font-black text-sm transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md bg-surface-muted hover:bg-border text-content hover:scale-[1.02]"
                   >
                     <Sparkles size={16} />
                     <span>{isCurrent ? t('billing.card_renew_or_confirm') : t('billing.card_switch_to', { planName: plan.name })}</span>
@@ -516,7 +516,7 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
               <CreditCard size={22} className="text-brand" />
               <span>{t('billing.history_title')}</span>
             </h4>
-            <p className="text-xs text-content-muted font-bold mt-1">
+            <p className="text-sm text-content-muted font-bold mt-1">
               {t('billing.history_subtitle')}
             </p>
           </div>
@@ -534,7 +534,7 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
             <button
               type="button"
               onClick={() => { setSelectedPlanId(getDefaultUpgradePlanId()); setShowUpgradeModal(true); }}
-              className="text-xs font-black text-white bg-brand hover:bg-brand/90 px-4 py-2.5 rounded-xl transition-all flex items-center gap-1.5 w-full sm:w-auto justify-center shadow-md shadow-brand/20 cursor-pointer"
+              className="text-sm font-black text-white bg-brand hover:bg-brand/90 px-4 py-2.5 rounded-xl transition-all flex items-center gap-1.5 w-full sm:w-auto justify-center shadow-md shadow-brand/20 cursor-pointer"
             >
               <Plus size={16} />
               <span>{t('billing.history_send_proof')}</span>
@@ -557,14 +557,14 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
                     <p className="font-black text-content text-sm sm:text-base">
                       {inv.plan_name || t('billing.history_notes_fallback')}
                     </p>
-                    <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 text-xs text-content-muted font-bold mt-1">
+                    <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 text-sm text-content-muted font-bold mt-1">
                       <span>{new Date(inv.created_at).toLocaleDateString(localeOf(), { year: 'numeric', month: 'long', day: 'numeric' })}</span>
                       <span>•</span>
                       <span className="font-mono dir-ltr">
                         {inv.receipt_number}
                       </span>
                       <span>•</span>
-                      <span className="bg-brand/10 text-brand px-2 py-0.5 rounded-md text-[10px] font-black">
+                      <span className="bg-brand/10 text-brand px-2 py-0.5 rounded-md text-sm font-black">
                         {methodLabel(inv.payment_method)}
                       </span>
                     </div>
@@ -575,13 +575,13 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
                   <span className="text-xl font-black text-content">
                     <PriceDisplay amount={Number(inv.amount)} />
                   </span>
-                  <div className="p-2 bg-success/10 text-success rounded-xl text-xs font-black flex items-center gap-1">
+                  <div className="p-2 bg-success/10 text-success rounded-xl text-sm font-black flex items-center gap-1">
                     <span>{t('billing.status_completed')}</span>
                   </div>
                   <button
                     type="button"
                     onClick={() => openReceipt(inv)}
-                    className="p-2 rounded-xl text-xs font-black flex items-center gap-1 border-2 border-border hover:border-brand/40 text-content cursor-pointer"
+                    className="p-2 rounded-xl text-sm font-black flex items-center gap-1 border-2 border-border hover:border-brand/40 text-content cursor-pointer"
                   >
                     <Download size={14} />
                     <span>{t('billing.receipt_button')}</span>
@@ -597,14 +597,14 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
             </div>
             <div className="space-y-1">
               <p className="text-base font-black text-content">{t('billing.history_empty_title')}</p>
-              <p className="text-xs text-content-muted font-bold max-w-md mx-auto leading-relaxed">
+              <p className="text-sm text-content-muted font-bold max-w-md mx-auto leading-relaxed">
                 {t('billing.history_empty_desc')}
               </p>
             </div>
             <button
               type="button"
               onClick={() => { setSelectedPlanId(getDefaultUpgradePlanId()); setShowUpgradeModal(true); }}
-              className="mt-2 inline-flex items-center gap-2 px-5 py-2.5 bg-brand text-white rounded-xl text-xs font-black hover:bg-brand/90 transition-all cursor-pointer shadow-md shadow-brand/20"
+              className="mt-2 inline-flex items-center gap-2 px-5 py-2.5 bg-brand text-white rounded-xl text-sm font-black hover:bg-brand/90 transition-all cursor-pointer shadow-md shadow-brand/20"
             >
               <Plus size={16} />
               <span>{t('billing.history_empty_btn')}</span>
@@ -617,7 +617,7 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
       {tenant?.owner_uid && user?.id === tenant.owner_uid && (
         <section className="bg-surface rounded-3xl border border-border p-5 sm:p-6 space-y-3" aria-labelledby="billing-data-heading">
           <h3 id="billing-data-heading" className="text-base font-black text-content">{t('billing.data.title')}</h3>
-          <p className="text-xs text-content-muted font-bold leading-relaxed">{t('billing.data.desc')}</p>
+          <p className="text-sm text-content-muted font-bold leading-relaxed">{t('billing.data.desc')}</p>
           <div className="flex flex-wrap gap-3">
             <button
               type="button"
@@ -628,14 +628,14 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
                 catch (err) { toastError(getFriendlyErrorMessage(err)); }
                 finally { setExporting(false); }
               }}
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border-2 border-border text-xs font-black text-content hover:border-brand/40 disabled:opacity-50 cursor-pointer"
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border-2 border-border text-sm font-black text-content hover:border-brand/40 disabled:opacity-50 cursor-pointer"
             >
               <Download size={16} />
               {exporting ? t('billing.data.exporting') : t('billing.data.export')}
             </button>
             <a
               href={`mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(t('billing.data.delete_subject'))}&body=${encodeURIComponent(`${tenant?.name || ''} (${tenantId})`)}`}
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border-2 border-danger/30 text-xs font-black text-danger hover:bg-danger/5"
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border-2 border-danger/30 text-sm font-black text-danger hover:bg-danger/5"
             >
               {t('billing.data.request_delete')}
             </a>
@@ -664,7 +664,7 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
             <form onSubmit={handleSubmitSubscriptionRequest} className="space-y-5">
               {/* Plan Selection */}
               <div className="space-y-2">
-                <label className="text-xs font-black text-content uppercase tracking-wider block">
+                <label className="text-sm font-black text-content uppercase block">
                   {t('billing.modal_choose_plan')}
                 </label>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -685,7 +685,7 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
                       )}
                       <div className="flex items-center justify-between pl-5">
                         <span className="font-black text-content text-sm">{p.name}</span>
-                        <span className="text-xs font-black text-brand dir-ltr font-mono">
+                        <span className="text-sm font-black text-brand dir-ltr font-mono">
                           {p.price > 0 ? `${p.price} SAR` : t('billing.price_free')}
                         </span>
                       </div>
@@ -696,7 +696,7 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
 
               {/* Payment Method */}
               <div className="space-y-2">
-                <label className="text-xs font-black text-content uppercase tracking-wider block">{t('billing.modal_payment_method')}</label>
+                <label className="text-sm font-black text-content uppercase block">{t('billing.modal_payment_method')}</label>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                   {[
                     { id: 'bank_transfer', label: t('billing.modal_method_bank') },
@@ -708,7 +708,7 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
                       key={m.id}
                       type="button"
                       onClick={() => setPaymentMethod(m.id as any)}
-                      className={`p-3 rounded-xl border text-xs font-black transition-all cursor-pointer ${
+                      className={`p-3 rounded-xl border text-sm font-black transition-all cursor-pointer ${
                         paymentMethod === m.id
                           ? 'border-brand bg-brand/10 text-brand shadow-sm'
                           : 'border-border text-content-muted bg-surface hover:bg-surface-muted'
@@ -722,7 +722,7 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
 
               {/* Bank Transfer Details Box */}
               {paymentMethod === 'bank_transfer' && (
-                <div className="p-4 bg-surface-muted rounded-2xl border border-border space-y-3 text-xs">
+                <div className="p-4 bg-surface-muted rounded-2xl border border-border space-y-3 text-sm">
                   <div className="flex items-center justify-between">
                     <p className="font-black text-content flex items-center gap-1.5">
                       <Building2 size={16} className="text-brand" />
@@ -731,14 +731,14 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
                     <button
                       type="button"
                       onClick={copyIbanToClipboard}
-                      className="px-3 py-1 bg-brand/10 hover:bg-brand/20 text-brand rounded-lg text-[11px] font-black flex items-center gap-1 transition-all cursor-pointer"
+                      className="px-3 py-1 bg-brand/10 hover:bg-brand/20 text-brand rounded-lg text-sm font-black flex items-center gap-1 transition-all cursor-pointer"
                     >
                       {copiedIban ? <Check size={12} /> : <Copy size={12} />}
                       <span>{copiedIban ? t('billing.modal_iban_copied') : t('billing.modal_copy_iban')}</span>
                     </button>
                   </div>
 
-                  <div className="space-y-1 text-content-muted font-bold text-[11px]">
+                  <div className="space-y-1 text-content-muted font-bold text-sm">
                     <p>{t('billing.modal_bank_name_label')} <span className="text-content font-mono font-bold">{bankTransfer.bankName}</span></p>
                     <p>{t('billing.modal_bank_holder_label')} <span className="text-content font-bold">{bankTransfer.accountHolder}</span></p>
                     <p>{t('billing.modal_iban_label')} <span className="text-brand font-mono dir-ltr select-all font-black">{bankTransfer.iban}</span></p>
@@ -748,9 +748,9 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
 
               {/* Attach Proof File (إرفاق إثبات الدفع) */}
               <div className="space-y-2">
-                <label className="text-xs font-black text-content uppercase tracking-wider block flex items-center justify-between">
+                <label className="text-sm font-black text-content uppercase block flex items-center justify-between">
                   <span>{t('billing.modal_proof_label')} <span className="text-danger">{t('billing.modal_proof_req')}</span></span>
-                  <span className="text-[10px] text-content-muted font-bold">{t('billing.modal_proof_hint')}</span>
+                  <span className="text-sm text-content-muted font-bold">{t('billing.modal_proof_hint')}</span>
                 </label>
 
                 <input
@@ -771,8 +771,8 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
                       <Upload size={24} />
                     </div>
                     <div className="text-center">
-                      <p className="text-xs font-black text-content">{t('billing.modal_proof_btn')}</p>
-                      <p className="text-[10px] text-content-muted font-bold mt-1">{t('billing.modal_proof_formats')}</p>
+                      <p className="text-sm font-black text-content">{t('billing.modal_proof_btn')}</p>
+                      <p className="text-sm text-content-muted font-bold mt-1">{t('billing.modal_proof_formats')}</p>
                     </div>
                   </button>
                 ) : (
@@ -786,8 +786,8 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
                         )}
                       </div>
                       <div className="truncate">
-                        <p className="text-xs font-black text-content truncate">{proofFile?.name || t('billing.modal_proof_fallback_filename')}</p>
-                        <p className="text-[10px] text-success font-bold mt-0.5">{t('billing.modal_proof_success')}</p>
+                        <p className="text-sm font-black text-content truncate">{proofFile?.name || t('billing.modal_proof_fallback_filename')}</p>
+                        <p className="text-sm text-success font-bold mt-0.5">{t('billing.modal_proof_success')}</p>
                       </div>
                     </div>
                     <button
@@ -807,7 +807,7 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
 
               {/* Reference No */}
               <div className="space-y-1.5">
-                <label className="text-xs font-black text-content uppercase tracking-wider block">
+                <label className="text-sm font-black text-content uppercase block">
                   {t('billing.modal_ref_label')}
                 </label>
                 <input
@@ -815,13 +815,13 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
                   value={referenceNo}
                   onChange={(e) => setReferenceNo(e.target.value)}
                   placeholder={t('billing.modal_ref_placeholder')}
-                  className="w-full p-3.5 bg-surface-muted border border-border rounded-xl text-xs font-bold text-content focus:border-brand focus:outline-none"
+                  className="w-full p-3.5 bg-surface-muted border border-border rounded-xl text-sm font-bold text-content focus:border-brand focus:outline-none"
                 />
               </div>
 
               {/* Coupon Code (كود الخصم) */}
               <div className="space-y-1.5">
-                <label className="text-xs font-black text-content uppercase tracking-wider block">
+                <label className="text-sm font-black text-content uppercase block">
                   {t('billing.modal_coupon_label', 'كود الخصم (اختياري)')}
                 </label>
                 <div className="flex items-center gap-2">
@@ -844,23 +844,23 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
                         }
                       }}
                       placeholder={t('billing.modal_coupon_placeholder', 'مثال: OFF-AB12X7')}
-                      className="w-full p-3.5 ps-10 bg-surface-muted border border-border rounded-xl text-xs font-bold text-content focus:border-brand focus:outline-none dir-ltr text-left"
+                      className="w-full p-3.5 ps-10 bg-surface-muted border border-border rounded-xl text-sm font-bold text-content focus:border-brand focus:outline-none dir-ltr text-left"
                     />
                   </div>
                   <button
                     type="button"
                     onClick={handleCheckCoupon}
                     disabled={!couponCode.trim() || checkingCoupon}
-                    className="px-4 py-3.5 bg-surface-muted hover:bg-border text-content font-black rounded-xl text-xs transition-all cursor-pointer disabled:opacity-50 shrink-0 flex items-center gap-1.5"
+                    className="px-4 py-3.5 bg-surface-muted hover:bg-border text-content font-black rounded-xl text-sm transition-all cursor-pointer disabled:opacity-50 shrink-0 flex items-center gap-1.5"
                   >
                     {checkingCoupon ? <RefreshCw size={14} className="animate-spin" /> : t('billing.modal_coupon_check', 'تحقق')}
                   </button>
                 </div>
                 {couponError && (
-                  <p className="text-[11px] text-danger font-bold">{couponError}</p>
+                  <p className="text-sm text-danger font-bold">{couponError}</p>
                 )}
                 {couponPreview && (
-                  <div className="p-3.5 bg-success/10 border border-success/20 rounded-xl text-xs font-bold text-success space-y-1.5">
+                  <div className="p-3.5 bg-success/10 border border-success/20 rounded-xl text-sm font-bold text-success space-y-1.5">
                     <p className="font-black">{t('billing.modal_coupon_applied', 'تم تطبيق الخصم 🎉')}</p>
                     <div className="flex items-center justify-between text-content-muted">
                       <span>{t('billing.modal_coupon_price_before', 'السعر قبل الخصم')}</span>
@@ -882,7 +882,7 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
 
               {/* Notes */}
               <div className="space-y-1.5">
-                <label className="text-xs font-black text-content uppercase tracking-wider block">
+                <label className="text-sm font-black text-content uppercase block">
                   {t('billing.modal_notes_label')}
                 </label>
                 <textarea
@@ -890,11 +890,11 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
                   placeholder={t('billing.modal_notes_placeholder')}
-                  className="w-full p-3.5 bg-surface-muted border border-border rounded-xl text-xs font-bold text-content focus:border-brand focus:outline-none resize-none"
+                  className="w-full p-3.5 bg-surface-muted border border-border rounded-xl text-sm font-bold text-content focus:border-brand focus:outline-none resize-none"
                 />
               </div>
 
-              <div className="p-4 bg-brand/10 border border-brand/20 rounded-2xl text-xs font-bold text-brand leading-relaxed">
+              <div className="p-4 bg-brand/10 border border-brand/20 rounded-2xl text-sm font-bold text-brand leading-relaxed">
                 {t('billing.modal_submit_tip')}
               </div>
 
@@ -902,14 +902,14 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
                 <button
                   type="button"
                   onClick={() => setShowUpgradeModal(false)}
-                  className="flex-1 py-3.5 bg-surface-muted hover:bg-border text-content font-bold rounded-xl text-xs transition-all cursor-pointer"
+                  className="flex-1 py-3.5 bg-surface-muted hover:bg-border text-content font-bold rounded-xl text-sm transition-all cursor-pointer"
                 >
                   {t('billing.modal_cancel')}
                 </button>
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="flex-1 py-3.5 bg-brand hover:bg-brand/90 disabled:opacity-50 text-white font-black rounded-xl text-xs flex items-center justify-center gap-2 shadow-lg shadow-brand/20 transition-all cursor-pointer"
+                  className="flex-1 py-3.5 bg-brand hover:bg-brand/90 disabled:opacity-50 text-white font-black rounded-xl text-sm flex items-center justify-center gap-2 shadow-lg shadow-brand/20 transition-all cursor-pointer"
                 >
                   {submitting ? (
                     <RefreshCw size={16} className="animate-spin" />

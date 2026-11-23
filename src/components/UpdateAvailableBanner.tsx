@@ -27,13 +27,13 @@ export default function UpdateAvailableBanner() {
       </div>
       <div className="flex-1 text-sm font-bold leading-snug">
         <div className="text-[15px]">{t('pwa.update_available', 'يتوفر تحديث جديد')}</div>
-        <div className="text-xs font-semibold text-white/85 mt-0.5">
+        <div className="text-sm font-semibold text-white/85 mt-0.5">
           {t('pwa.update_available_reason', 'اضغط لتطبيقه الآن — لن يُطبَّق تلقائياً حتى لا يُفقَد أي بيع جارٍ.')}
         </div>
       </div>
       <button
         onClick={applyPendingUpdate}
-        className="shrink-0 bg-white text-brand text-xs font-black px-3.5 py-2.5 rounded-xl hover:bg-white/90 transition-colors"
+        className="shrink-0 bg-white text-brand text-sm font-black px-3.5 py-2.5 rounded-xl hover:bg-white/90 transition-colors"
       >
         {t('pwa.update_now', 'تحديث الآن')}
       </button>

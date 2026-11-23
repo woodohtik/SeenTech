@@ -244,25 +244,25 @@ export function TaxInvoiceDocument({ order, tenant, onClose }: TaxInvoiceModalPr
           <div className="flex flex-wrap gap-2 w-full sm:w-auto">
             <button
               onClick={handleDownloadPDF}
-              className="flex-1 min-w-[110px] px-3 py-2.5 bg-brand text-white rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-brand/90 transition-all shadow-sm cursor-pointer text-xs"
+              className="flex-1 min-w-[110px] px-3 py-2.5 bg-brand text-white rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-brand/90 transition-all shadow-sm cursor-pointer text-sm"
             >
               <Download size={16} /> {t('sales_record.download_pdf')}
             </button>
             <button
               onClick={handleShareWhatsApp}
-              className="flex-1 min-w-[110px] px-3 py-2.5 bg-[#25D366] text-white rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-[#20ba56] transition-all shadow-sm cursor-pointer text-xs"
+              className="flex-1 min-w-[110px] px-3 py-2.5 bg-[#25D366] text-white rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-[#20ba56] transition-all shadow-sm cursor-pointer text-sm"
             >
               <Share2 size={16} /> {t('sales_record.share_whatsapp')}
             </button>
             <button
               onClick={() => void handleAttachInvoicePdf()}
-              className="flex-1 min-w-[110px] px-3 py-2.5 bg-surface border border-border text-content-muted hover:text-content rounded-xl font-bold flex items-center justify-center gap-2 transition-all cursor-pointer text-xs"
+              className="flex-1 min-w-[110px] px-3 py-2.5 bg-surface border border-border text-content-muted hover:text-content rounded-xl font-bold flex items-center justify-center gap-2 transition-all cursor-pointer text-sm"
             >
               <Paperclip size={16} /> {t('tax_invoices.attach_pdf', 'إرفاق PDF أيضاً')}
             </button>
             <button
               onClick={handlePrint}
-              className="flex-1 min-w-[90px] px-3 py-2.5 bg-content text-surface rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-content/90 transition-colors shadow-sm cursor-pointer text-xs"
+              className="flex-1 min-w-[90px] px-3 py-2.5 bg-content text-surface rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-content/90 transition-colors shadow-sm cursor-pointer text-sm"
             >
               <Printer size={16} /> {t('tax_invoices.print')}
             </button>

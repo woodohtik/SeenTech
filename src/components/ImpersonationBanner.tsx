@@ -32,10 +32,10 @@ export default function ImpersonationBanner({ tenantId, tenantLabel, onEnd }: Im
             <span>{t('common.support_mode_desc')}</span>
           </div>
           <div className="h-4 w-px bg-surface/30 mx-2" />
-          <span className="text-xs font-bold">{t('common.current_subscriber')}: {tenantLabel || tenantId}</span>
+          <span className="text-sm font-bold">{t('common.current_subscriber')}: {tenantLabel || tenantId}</span>
           <button
             onClick={onEnd}
-            className="bg-surface text-warning px-4 py-1 rounded-full text-xs font-black hover:bg-surface/90 transition-all ml-4"
+            className="bg-surface text-warning px-4 py-1 rounded-full text-sm font-black hover:bg-surface/90 transition-all ml-4"
           >
             {t('common.end_impersonation')}
           </button>

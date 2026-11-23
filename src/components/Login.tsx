@@ -735,11 +735,11 @@ export default function Login() {
 
                 <div className="space-y-1.5">
                   <div className="flex justify-between items-center px-1">
-                    <label className="text-xs font-black uppercase tracking-widest text-content-muted hover:text-content select-none">{t('login.password')}</label>
+                    <label className="text-sm font-black text-content-muted hover:text-content select-none">{t('login.password')}</label>
                     <button
                       type="button"
                       onClick={() => setView('forgot-password')}
-                      className="text-xs font-bold text-brand hover:underline"
+                      className="text-sm font-bold text-brand hover:underline"
                     >
                       {t('login.forgot_password_link')}
                     </button>
@@ -782,12 +782,12 @@ export default function Login() {
 
                 <div className="relative py-4">
                   <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-border"></div></div>
-                  <div className="relative flex justify-center text-xs uppercase"><span className="bg-surface-muted px-2 text-content-muted font-bold">{t('login.or_with')}</span></div>
+                  <div className="relative flex justify-center text-sm uppercase"><span className="bg-surface-muted px-2 text-content-muted font-bold">{t('login.or_with')}</span></div>
                 </div>
 
                 <div ref={googleButtonRef} className="w-full flex justify-center" />
                 {!import.meta.env.VITE_GOOGLE_CLIENT_ID && (
-                  <p className="text-xs text-danger font-bold text-center">{t('login.google_unconfigured')}</p>
+                  <p className="text-sm text-danger font-bold text-center">{t('login.google_unconfigured')}</p>
                 )}
 
                 <p className="text-center text-content-muted font-medium">
@@ -848,7 +848,7 @@ export default function Login() {
                     className={cn(googleUser && "bg-surface-muted text-content-muted cursor-not-allowed")}
                   />
                   {googleUser && (
-                    <span className="absolute top-1 left-2 text-[10px] font-bold text-success bg-success/10 px-2 py-0.5 rounded-full">
+                    <span className="absolute top-1 left-2 text-sm font-bold text-success bg-success/10 px-2 py-0.5 rounded-full">
                       {t('login.google_verified')}
                     </span>
                   )}
@@ -878,7 +878,7 @@ export default function Login() {
                     />
                     {/* Strength Indicator */}
                     <div className="px-1 pt-2">
-                      <div className="flex justify-between text-[10px] font-bold mb-1">
+                      <div className="flex justify-between text-sm font-bold mb-1">
                         <span className="text-content-muted uppercase">{t('login.password_strength')}</span>
                         <span className={cn("uppercase", strength > 0 ? "text-brand" : "text-content-muted")}>
                           {regPassword ? strengthLabels[strength - 1] : ''}

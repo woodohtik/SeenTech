@@ -154,7 +154,7 @@ export default class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBo
         return (
           <div className="bg-surface-muted border border-border rounded-2xl p-5 flex flex-col items-center gap-3 text-content-muted" dir={dirOf()}>
             <RefreshCcw size={20} className="animate-spin" />
-            <p className="font-bold text-xs">{i18n.t('errors.updating')}</p>
+            <p className="font-bold text-sm">{i18n.t('errors.updating')}</p>
           </div>
         );
       }
@@ -205,14 +205,14 @@ export default class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBo
               <AlertCircle className="text-danger" size={22} />
             </div>
             {this.props.inlineLabel && (
-              <p className="text-[11px] font-black text-content-muted uppercase tracking-wider mb-1">{this.props.inlineLabel}</p>
+              <p className="text-sm font-black text-content-muted mb-1">{this.props.inlineLabel}</p>
             )}
             <p className="text-content-muted font-bold text-sm mb-4 leading-relaxed">
               {isPermissionError ? i18n.t('errors.permission_error_title') : errorMessage}
             </p>
             <button
               onClick={this.handleInlineRetry}
-              className="inline-flex items-center justify-center gap-2 bg-content text-white px-5 py-2.5 rounded-xl font-black text-xs hover:bg-black transition-all"
+              className="inline-flex items-center justify-center gap-2 bg-content text-white px-5 py-2.5 rounded-xl font-black text-sm hover:bg-black transition-all"
             >
               <RefreshCcw size={14} />
               {i18n.t('common.retry')}
@@ -236,7 +236,7 @@ export default class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBo
             
             <p className="text-content-muted font-bold mb-8 leading-relaxed">
               {errorMessage}
-              {pathInfo && <span className="block text-[10px] mt-2 text-content-muted font-mono" dir="ltr">{pathInfo}</span>}
+              {pathInfo && <span className="block text-sm mt-2 text-content-muted font-mono" dir="ltr">{pathInfo}</span>}
             </p>
 
             <div className="space-y-4">
@@ -258,17 +258,17 @@ export default class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBo
             </div>
 
             {eventId && (
-               <p className="text-xs text-content-muted mt-6 font-mono">{i18n.t('errors.error_id', { id: eventId })}</p>
+               <p className="text-sm text-content-muted mt-6 font-mono">{i18n.t('errors.error_id', { id: eventId })}</p>
             )}
 
             {import.meta.env.DEV && error && (
               <div className="mt-8 p-4 bg-gray-900 rounded-xl text-left overflow-auto max-h-48 shadow-inner" dir="ltr">
                 <div className="flex items-center gap-2 mb-2 text-red-400 border-b border-gray-800 pb-2">
                   <Terminal size={14} />
-                  <span className="text-xs font-bold uppercase tracking-wider">Developer Error Log</span>
+                  <span className="text-sm font-bold uppercase">Developer Error Log</span>
                 </div>
-                <p className="text-xs font-mono text-red-300 font-bold mb-2">{error.toString()}</p>
-                <pre className="text-[10px] font-mono text-content-muted whitespace-pre-wrap leading-relaxed">
+                <p className="text-sm font-mono text-red-300 font-bold mb-2">{error.toString()}</p>
+                <pre className="text-sm font-mono text-content-muted whitespace-pre-wrap leading-relaxed">
                   {error.stack}
                 </pre>
               </div>

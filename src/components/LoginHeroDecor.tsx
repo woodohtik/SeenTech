@@ -50,7 +50,7 @@ export default function LoginHeroDecor() {
         <motion.span
           animate={{ opacity: hoveredVertical === 'clothing' ? 1 : 0, y: hoveredVertical === 'clothing' ? 0 : 4 }}
           transition={{ duration: 0.2 }}
-          className="text-white text-xs font-bold bg-black/20 backdrop-blur-sm px-3 py-1 rounded-full whitespace-nowrap pointer-events-none"
+          className="text-white text-sm font-bold bg-black/20 backdrop-blur-sm px-3 py-1 rounded-full whitespace-nowrap pointer-events-none"
         >
           {t('login.vertical_clothing')}
         </motion.span>
@@ -73,7 +73,7 @@ export default function LoginHeroDecor() {
         <motion.span
           animate={{ opacity: hoveredVertical === 'tailoring' ? 1 : 0, y: hoveredVertical === 'tailoring' ? 0 : 4 }}
           transition={{ duration: 0.2 }}
-          className="text-white text-xs font-bold bg-black/20 backdrop-blur-sm px-3 py-1 rounded-full whitespace-nowrap pointer-events-none"
+          className="text-white text-sm font-bold bg-black/20 backdrop-blur-sm px-3 py-1 rounded-full whitespace-nowrap pointer-events-none"
         >
           {t('login.vertical_tailoring')}
         </motion.span>
@@ -96,7 +96,7 @@ export default function LoginHeroDecor() {
         <motion.span
           animate={{ opacity: hoveredVertical === 'upholstery' ? 1 : 0, y: hoveredVertical === 'upholstery' ? 0 : 4 }}
           transition={{ duration: 0.2 }}
-          className="text-white text-xs font-bold bg-black/20 backdrop-blur-sm px-3 py-1 rounded-full whitespace-nowrap pointer-events-none"
+          className="text-white text-sm font-bold bg-black/20 backdrop-blur-sm px-3 py-1 rounded-full whitespace-nowrap pointer-events-none"
         >
           {t('login.vertical_upholstery')}
         </motion.span>

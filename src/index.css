@@ -593,9 +593,20 @@ html, body {
   table.min-w-max, table[class*="min-w-"] { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; white-space: nowrap; }
 }
 
-/* 5) هدف لمس مريح للأزرار الأيقونية على الأجهزة اللمسية */
+/* 5) هدف لمس مريح على الأجهزة اللمسية: 48×48 (DESIGN.md §7، و
+   seen-responsive-layout-task.md المرحلة 5). كان 40 وللارتفاع فقط، فبقيت
+   الأزرار الأيقونية الضيقة أصغر من الإصبع. :where() يبقي الوزن صفراً حتى
+   يستطيع مكوّن أن يقرر غير ذلك صراحةً (min-h-0) لسبب يوثّقه.
+   العرض الأدنى للأزرار الأيقونية فقط (التي تحمل aria-label): على زر نصي
+   داخل صف flex كان min-width: 48px يلغي min-width: auto فيتقلص الزر تحت
+   نصه وتتراكب الأزرار (قيس في تبويبات المخزون). */
 @media (pointer: coarse) {
-  button, a[role="button"], [role="tab"] { min-height: 40px; }
+  :where(button, a[role="button"], [role="tab"], [role="switch"], [role="menuitem"], summary):not(.sr-only) {
+    min-height: 48px;
+  }
+  :where(button[aria-label], a[role="button"][aria-label], button:has(> svg:only-child)):not(.sr-only) {
+    min-width: 48px;
+  }
 }
 
 /* 6) دعم وضع الكمبيوتر على الجوال والتاب (Desktop View Support) */

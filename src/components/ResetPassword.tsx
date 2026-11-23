@@ -244,7 +244,7 @@ export default function ResetPassword() {
                   <h3 className="text-xl font-black text-content">{t('login.reset_password_invalid_link')}</h3>
                   <p className="text-content-muted font-medium mt-2">{t('login.reset_password_invalid_link_desc')}</p>
                   {linkError && (
-                    <p className="text-content-muted/80 text-xs font-mono mt-3 break-all">{linkError}</p>
+                    <p className="text-content-muted/80 text-sm font-mono mt-3 break-all">{linkError}</p>
                   )}
                 </div>
                 <button
@@ -315,7 +315,7 @@ export default function ResetPassword() {
 
                 {/* Strength Indicator */}
                 <div className="px-1">
-                  <div className="flex justify-between text-[10px] font-bold mb-1">
+                  <div className="flex justify-between text-sm font-bold mb-1">
                     <span className="text-content-muted uppercase">{t('login.password_strength')}</span>
                     <span className={cn("uppercase", strength > 0 ? "text-brand" : "text-content-muted")}>
                       {password ? strengthLabels[strength - 1] : ''}

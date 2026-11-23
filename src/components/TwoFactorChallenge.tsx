@@ -61,7 +61,7 @@ export default function TwoFactorChallenge({ onVerified }: TwoFactorChallengePro
         </div>
         <div>
           <h2 className="text-lg font-black text-content">{t('saas.mfa_challenge_title', 'التحقق الثنائي مطلوب')}</h2>
-          <p className="text-content-muted font-bold text-xs mt-1">
+          <p className="text-content-muted font-bold text-sm mt-1">
             {t('saas.mfa_challenge_desc', 'أدخل الرمز المكوّن من 6 أرقام من تطبيق المصادقة')}
           </p>
         </div>
@@ -69,7 +69,7 @@ export default function TwoFactorChallenge({ onVerified }: TwoFactorChallengePro
         {loading ? (
           <Loader2 className="animate-spin text-content-muted mx-auto" size={24} />
         ) : !factorId ? (
-          <p className="text-xs font-bold text-danger">{t('saas.mfa_no_factor_error', 'لا يوجد عامل تحقق موثَّق على هذا الحساب -- تواصل مع مدير آخر')}</p>
+          <p className="text-sm font-bold text-danger">{t('saas.mfa_no_factor_error', 'لا يوجد عامل تحقق موثَّق على هذا الحساب -- تواصل مع مدير آخر')}</p>
         ) : (
           <form onSubmit={handleVerify} className="space-y-4">
             <input
@@ -82,7 +82,7 @@ export default function TwoFactorChallenge({ onVerified }: TwoFactorChallengePro
               placeholder="000000"
               className="w-full p-3 bg-surface-muted border border-border rounded-xl text-center text-lg font-black tracking-[0.3em] dir-ltr outline-none focus:border-brand"
             />
-            {error && <p className="text-xs font-bold text-danger">{error}</p>}
+            {error && <p className="text-sm font-bold text-danger">{error}</p>}
             <button
               type="submit"
               disabled={verifying || code.length !== 6}
@@ -95,7 +95,7 @@ export default function TwoFactorChallenge({ onVerified }: TwoFactorChallengePro
 
         <button
           onClick={handleLogout}
-          className="flex items-center justify-center gap-2 w-full text-xs font-bold text-content-muted hover:text-content transition-all cursor-pointer"
+          className="flex items-center justify-center gap-2 w-full text-sm font-bold text-content-muted hover:text-content transition-all cursor-pointer"
         >
           <LogOut size={14} />
           <span>{t('saas.logout', 'تسجيل الخروج')}</span>

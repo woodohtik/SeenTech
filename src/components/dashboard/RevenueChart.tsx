@@ -64,7 +64,7 @@ export default function RevenueChart({
           dataKey="date" 
           axisLine={false} 
           tickLine={false} 
-          tick={{ fill: 'var(--content-muted)', fontSize: 11, fontWeight: 700 }}
+          tick={{ fill: 'var(--content-muted)', fontSize: 14, fontWeight: 700 }}
           dy={10}
         />
 
@@ -73,7 +73,7 @@ export default function RevenueChart({
           hide={chartViewMode === 'orders'}
           axisLine={false} 
           tickLine={false} 
-          tick={{ fill: 'var(--content-muted)', fontSize: 11, fontWeight: 700 }}
+          tick={{ fill: 'var(--content-muted)', fontSize: 14, fontWeight: 700 }}
           tickFormatter={(value) => {
             if (value >= 1000000) return `${(value / 1000000).toFixed(1)}M`;
             if (value >= 1000) return `${(value / 1000).toFixed(value % 1000 === 0 ? 0 : 1)}k`;
@@ -88,7 +88,7 @@ export default function RevenueChart({
           hide={chartViewMode === 'revenue'}
           axisLine={false} 
           tickLine={false} 
-          tick={{ fill: 'var(--content-muted)', fontSize: 11, fontWeight: 700 }}
+          tick={{ fill: 'var(--content-muted)', fontSize: 14, fontWeight: 700 }}
           allowDecimals={false}
           dx={isRtl ? -10 : 10}
         />
@@ -106,13 +106,13 @@ export default function RevenueChart({
               return (
                 <div className="bg-surface/95 backdrop-blur-md p-4 rounded-2xl shadow-2xl border border-border text-right min-w-[220px] animate-in fade-in zoom-in-95 duration-150">
                   <div className="flex items-center justify-between pb-2.5 mb-2.5 border-b border-border/60">
-                    <span className="text-xs font-black text-content">{label}</span>
+                    <span className="text-sm font-black text-content">{label}</span>
                     {isPeak ? (
-                      <span className="text-[10px] font-black bg-success/15 text-success px-2 py-0.5 rounded-full flex items-center gap-1">
+                      <span className="text-sm font-black bg-success/15 text-success px-2 py-0.5 rounded-full flex items-center gap-1">
                         🔥 {t('dashboard.peak_day_badge', 'أعلى مبيعات')}
                       </span>
                     ) : revVal > avgDailyRevenue && revVal > 0 ? (
-                      <span className="text-[10px] font-bold bg-brand/10 text-brand px-2 py-0.5 rounded-full">
+                      <span className="text-sm font-bold bg-brand/10 text-brand px-2 py-0.5 rounded-full">
                         📈 {t('dashboard.above_avg', 'فوق المتوسط')}
                       </span>
                     ) : null}
@@ -121,7 +121,7 @@ export default function RevenueChart({
                   <div className="space-y-2.5">
                     {(chartViewMode === 'both' || chartViewMode === 'revenue') && (
                       <div className="flex flex-col gap-0.5">
-                        <div className="flex items-center justify-between gap-4 text-xs font-bold">
+                        <div className="flex items-center justify-between gap-4 text-sm font-bold">
                           <div className="flex items-center gap-1.5 text-content-muted">
                             <span className="w-2.5 h-2.5 rounded-full bg-brand shrink-0"></span>
                             <span>{t('dashboard.revenue', 'المبيعات')}:</span>
@@ -131,7 +131,7 @@ export default function RevenueChart({
                           </span>
                         </div>
                         {totalPeriodRevenue > 0 && (
-                          <div className="text-[10px] font-semibold text-content-muted text-left">
+                          <div className="text-sm font-semibold text-content-muted text-left">
                             {sharePct}% {t('dashboard.of_total_period', 'من إجمالي الفترة')}
                           </div>
                         )}
@@ -140,7 +140,7 @@ export default function RevenueChart({
 
                     {(chartViewMode === 'both' || chartViewMode === 'orders') && (
                       <div className="flex flex-col gap-0.5">
-                        <div className="flex items-center justify-between gap-4 text-xs font-bold">
+                        <div className="flex items-center justify-between gap-4 text-sm font-bold">
                           <div className="flex items-center gap-1.5 text-content-muted">
                             <span className="w-2.5 h-2.5 rounded-full bg-info shrink-0"></span>
                             <span>{t('dashboard.orders', 'الطلبات')}:</span>
@@ -150,7 +150,7 @@ export default function RevenueChart({
                           </span>
                         </div>
                         {ordersVal > 0 && (
-                          <div className="text-[10px] font-semibold text-content-muted text-left">
+                          <div className="text-sm font-semibold text-content-muted text-left">
                             {t('dashboard.avg_basket', 'متوسط الطلب')}: <PriceDisplay amount={avgOrderVal} />
                           </div>
                         )}

@@ -1,4 +1,6 @@
 import React, { useState, useEffect, lazy, Suspense } from 'react';
+import { AutoGrid } from './ui/AutoGrid';
+import { StatBadge, StatCard, StatIcon } from './ui/StatCard';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { 
   Users, 
@@ -143,20 +145,20 @@ const DrillDownModal = ({
         dir={dir}
       >
         {/* Header (Fixed) */}
-        <div className="sticky top-0 z-10 flex items-center justify-between p-4 sm:p-6 border-b border-[var(--border)] bg-[var(--surface)] shrink-0 bg-surface-muted/50">
+        <div className="sticky top-0 z-10 flex items-center justify-between p-4 main-640:p-6 border-b border-[var(--border)] bg-[var(--surface)] shrink-0 bg-surface-muted/50">
           <div className="flex items-center gap-3">
             <div className="p-2.5 bg-brand text-white rounded-2xl shrink-0 shadow-sm">
               <TrendingUp size={20} />
             </div>
             <div>
-              <h3 className="text-base sm:text-lg lg:text-xl font-black text-content">{drillDown.title}</h3>
-              <p className="text-[10px] text-content-muted font-bold uppercase tracking-widest leading-none mt-0.5">{t('dashboard.drill_down_title')}</p>
+              <h3 className="text-base main-640:text-lg main-900:text-xl font-black text-content">{drillDown.title}</h3>
+              <p className="text-sm text-content-muted font-bold uppercase leading-none mt-0.5">{t('dashboard.drill_down_title')}</p>
             </div>
           </div>
           <div className="flex items-center gap-3">
             <button 
               onClick={() => exportToExcel(filteredData, drillDown.type)}
-              className="flex items-center gap-2 bg-success/10 px-4 py-2 rounded-xl border border-success/20 text-xs sm:text-sm font-bold text-success hover:bg-success/20 transition-all cursor-pointer"
+              className="flex items-center gap-2 bg-success/10 px-4 py-2 rounded-xl border border-success/20 text-sm font-bold text-success hover:bg-success/20 transition-all cursor-pointer"
             >
               <FileSpreadsheet size={16} />
               {t('dashboard.export_excel')}
@@ -169,7 +171,7 @@ const DrillDownModal = ({
 
         {/* Scrollable Body */}
         <div className="flex-1 overflow-y-auto">
-          <div className="p-4 sm:p-6 bg-surface border-b border-border flex gap-4">
+          <div className="p-4 main-640:p-6 bg-surface border-b border-border flex gap-4">
             <IconInput
               type="text"
               startIcon={Search}
@@ -183,7 +185,7 @@ const DrillDownModal = ({
           <div className="flex-1 overflow-x-auto whitespace-nowrap scrollbar-hide p-4">
             <div className="bg-surface rounded-2xl border border-border overflow-hidden min-w-max">
               <table className="w-full text-right" dir={dir}>
-                <thead className="bg-surface-muted text-[10px] font-black text-content-muted uppercase tracking-widest sticky top-0 z-10">
+                <thead className="bg-surface-muted text-sm font-black text-content-muted uppercase sticky top-0 z-10">
                   <tr>
                     {Object.keys(drillDown.data[0] || {}).filter(k => k !== 'id').map((key, headIdx) => (
                       <th 
@@ -1109,12 +1111,12 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
     return (
       <div className={cn("space-y-8 animate-pulse", textAlignmentClass)} dir={dir}>
         <div className="h-24 bg-surface rounded-3xl border border-border"></div>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 main-720:grid-cols-4 gap-6">
           {[1, 2, 3, 4].map(i => (
             <div key={i} className="h-32 bg-surface rounded-2xl border border-border shadow-sm"></div>
           ))}
         </div>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 main-900:grid-cols-2 gap-8">
           <div className="h-[400px] bg-surface rounded-2xl border border-border"></div>
           <div className="h-[400px] bg-surface rounded-2xl border border-border"></div>
         </div>
@@ -1129,9 +1131,9 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
         title={t('dashboard.title')} 
         subtitle={t('dashboard.subtitle', { name: tenant?.name || t('common.tailor_system') })}
       >
-        <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3 w-full sm:w-auto justify-end">
+        <div className="flex flex-col main-640:flex-row flex-wrap items-stretch main-640:items-center gap-3 w-full main-640:w-auto justify-end">
           {/* Branch Filter */}
-          <div className="w-full sm:w-56 shrink-0">
+          <div className="w-full main-640:w-56 shrink-0">
             <SmartSelect
               value={selectedBranchId}
               onChange={setSelectedBranchId}
@@ -1143,7 +1145,7 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
           </div>
 
           {/* Timeframe Filter */}
-          <div className="w-full sm:w-48 shrink-0">
+          <div className="w-full main-640:w-48 shrink-0">
             <SmartSelect
               value={selectedTimeframe}
               onChange={(val) => setSelectedTimeframe(val as any)}
@@ -1159,31 +1161,31 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
             />
           </div>
 
-          <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 sm:gap-3 justify-between sm:justify-end w-full sm:w-auto">
+          <div className="flex flex-wrap main-640:flex-nowrap items-center gap-2 main-640:gap-3 justify-between main-640:justify-end w-full main-640:w-auto">
             <button 
               onClick={() => setIsDeleteConfirmVisible(true)}
-              className="flex items-center gap-1.5 sm:gap-2 bg-danger/10 text-danger px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl sm:rounded-2xl font-bold text-xs hover:bg-danger/20 transition-all border border-danger/20 shrink-0"
+              className="flex items-center gap-1.5 main-640:gap-2 bg-danger/10 text-danger px-3 main-640:px-4 py-2 main-640:py-2.5 rounded-xl main-640:rounded-2xl font-bold text-sm hover:bg-danger/20 transition-all border border-danger/20 shrink-0"
             >
               <AlertTriangle size={15} />
               {t('dashboard.delete_test_data')}
             </button>
             {hasRevenuePermission && (
-              <div className="bg-surface p-2 sm:p-2.5 rounded-xl sm:rounded-2xl border border-border flex items-center gap-2 sm:gap-3 shadow-sm shrink-0">
-                <div className="p-1 sm:p-1.5 bg-success/10 text-success rounded-lg sm:rounded-xl">
+              <div className="bg-surface p-2 main-640:p-2.5 rounded-xl main-640:rounded-2xl border border-border flex items-center gap-2 main-640:gap-3 shadow-sm shrink-0">
+                <div className="p-1 main-640:p-1.5 bg-success/10 text-success rounded-lg main-640:rounded-xl">
                   <TrendingUp size={16} />
                 </div>
-                <div>
-                  <p className="text-[8px] sm:text-[10px] font-bold text-content-muted uppercase leading-none">
+                <div className="min-w-0">
+                  <p className="m-0 text-sm font-bold leading-[1.5] text-content-muted">
                     {t('dashboard.growth_rate')} {getComparisonLabelShort()}
                   </p>
-                  <div className="flex flex-col sm:flex-row sm:items-center gap-1 mt-0.5 sm:mt-1">
-                    <p className={cn(
-                      "text-xs sm:text-sm font-black leading-none",
+                  <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                    <p dir="ltr" className={cn(
+                      "m-0 text-sm font-black leading-[1.5] tabular-nums",
                       growthRate >= 0 ? "text-success" : "text-danger"
                     )}>
                       {growthRate >= 0 ? '+' : ''}{growthRate}%
                     </p>
-                    <span className="text-[8px] sm:text-[10px] text-content-muted font-bold whitespace-nowrap">
+                    <span className="text-sm text-content-muted font-bold whitespace-nowrap">
                       ({t('dashboard.prev_label')} <PriceDisplay amount={stats.prevRevenue} />)
                     </span>
                   </div>
@@ -1193,11 +1195,11 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
             <div className="relative shrink-0">
               <button 
                 onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
-                className="relative p-2 sm:p-3 bg-surface rounded-xl sm:rounded-2xl border border-border shadow-sm hover:bg-surface-muted transition-colors"
+                className="relative p-2 main-640:p-3 bg-surface rounded-xl main-640:rounded-2xl border border-border shadow-sm hover:bg-surface-muted transition-colors"
               >
-                <Bell size={18} className="text-content-muted sm:size-6" />
+                <Bell size={18} className="text-content-muted main-640:size-6" />
                 {notifications.some(n => n.status === 'unread') && (
-                  <span className="absolute top-1.5 right-1.5 sm:top-2 sm:right-2 w-2 h-2 sm:w-3 sm:h-3 bg-danger border-2 border-surface rounded-full" />
+                  <span className="absolute top-1.5 right-1.5 main-640:top-2 main-640:right-2 w-2 h-2 main-640:w-3 main-640:h-3 bg-danger border-2 border-surface rounded-full" />
                 )}
               </button>
               
@@ -1209,7 +1211,7 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
                       initial={{ opacity: 0, y: 10, scale: 0.95 }}
                       animate={{ opacity: 1, y: 0, scale: 1 }}
                       exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                      className="absolute left-0 mt-2 w-72 sm:w-80 bg-surface rounded-3xl shadow-2xl border border-border z-50 overflow-hidden"
+                      className="absolute left-0 mt-2 w-72 main-640:w-80 bg-surface rounded-3xl shadow-2xl border border-border z-50 overflow-hidden"
                     >
                       <div className="p-4 border-b border-border flex justify-between items-center bg-surface-muted/50">
                         <h4 className="text-sm font-black text-content">{t('dashboard.notifications')}</h4>
@@ -1217,12 +1219,12 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
                           {notifications.some(n => n.status === 'unread') && (
                             <button 
                               onClick={markAllAsRead} 
-                              className="text-[10px] font-black text-brand hover:underline cursor-pointer"
+                              className="text-sm font-black text-brand hover:underline cursor-pointer"
                             >
                               {t('saas.mark_all_read')}
                             </button>
                           )}
-                          <span className="text-[10px] font-bold text-brand bg-brand/10 px-2 py-0.5 rounded-full">
+                          <span className="text-sm font-bold text-brand bg-brand/10 px-2 py-0.5 rounded-full">
                             {notifications.filter(n => n.status === 'unread').length} {t('dashboard.new_notifications')}
                           </span>
                         </div>
@@ -1246,9 +1248,9 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
                                   {notif.type === 'inventory' ? <AlertTriangle size={16} /> : <Bell size={16} />}
                                 </div>
                                 <div className="flex-1">
-                                  <p className="text-xs font-black text-content group-hover:text-brand transition-colors">{notif.title}</p>
-                                  <p className="text-[10px] text-content-muted mt-0.5 leading-relaxed">{notif.message}</p>
-                                  <p className="text-[9px] text-content-muted mt-1 font-bold">
+                                  <p className="text-sm font-black text-content group-hover:text-brand transition-colors">{notif.title}</p>
+                                  <p className="text-sm text-content-muted mt-0.5 leading-relaxed">{notif.message}</p>
+                                  <p className="text-sm text-content-muted mt-1 font-bold">
                                     {new Date(notif.createdAt).toLocaleTimeString(localeOf(i18n.language), { hour: '2-digit', minute: '2-digit' })}
                                   </p>
                                 </div>
@@ -1261,7 +1263,7 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
                         ) : (
                           <div className="py-8 text-center">
                             <CheckCircle2 size={32} className="text-content-muted/30 mx-auto mb-2" />
-                            <p className="text-xs text-content-muted font-bold">{t('dashboard.no_notifications')}</p>
+                            <p className="text-sm text-content-muted font-bold">{t('dashboard.no_notifications')}</p>
                           </div>
                         )}
                       </div>
@@ -1278,17 +1280,17 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
         <motion.div 
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-amber-500/10 dark:bg-amber-500/5 border border-amber-500/20 rounded-2xl p-6 lg:p-8 flex flex-col md:flex-row items-center justify-between gap-6"
+          className="bg-amber-500/10 dark:bg-amber-500/5 border border-amber-500/20 rounded-2xl p-6 main-900:p-8 flex flex-col main-720:flex-row items-center justify-between gap-6"
         >
           <div className={cn("flex items-center gap-4", textAlignmentClass)} dir={dir}>
             <div className="w-12 h-12 bg-amber-500/20 text-amber-600 dark:text-amber-400 rounded-2xl flex items-center justify-center shrink-0 animate-pulse">
               <AlertTriangle size={24} />
             </div>
             <div>
-              <h3 className="text-base sm:text-lg font-black text-amber-950 dark:text-amber-200">
+              <h3 className="text-base main-640:text-lg font-black text-amber-950 dark:text-amber-200">
                 {isTrialPlan ? t('subscription.trial_ending_soon') : t('subscription.subscription_expiring_soon')}
               </h3>
-              <p className="text-xs sm:text-sm font-medium text-amber-700/85 dark:text-amber-400/85 mt-1 leading-relaxed">
+              <p className="text-sm font-medium text-amber-700/85 dark:text-amber-400/85 mt-1 leading-relaxed">
                 {trialDays === 0
                   ? (isTrialPlan ? t('subscription.trial_ended_today') : t('subscription.subscription_ended_today'))
                   : (isTrialPlan
@@ -1299,7 +1301,7 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
           </div>
           <a 
             href={`mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(t('subscription.activation_email_subject'))}`}
-            className="w-full md:w-auto bg-amber-600 hover:bg-amber-700 text-white px-6 py-3.5 rounded-2xl font-bold text-xs sm:text-sm shadow-lg shadow-amber-900/10 transition-all shrink-0 flex items-center justify-center gap-2 border border-amber-700/20"
+            className="w-full main-720:w-auto bg-amber-600 hover:bg-amber-700 text-white px-6 py-3.5 rounded-2xl font-bold text-sm shadow-lg shadow-amber-900/10 transition-all shrink-0 flex items-center justify-center gap-2 border border-amber-700/20"
           >
             <ExternalLink size={15} />
             {t('subscription.contact_support_activate')}
@@ -1308,13 +1310,13 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
       )}
       
       {/* Mobile Horizontal Filters */}
-      <div className="flex overflow-x-auto gap-2 pb-2 -mx-4 px-4 scrollbar-hide lg:hidden">
+      <div className="flex overflow-x-auto gap-2 pb-2 -mx-4 px-4 scrollbar-hide main-900:hidden">
         {filters.map((filter) => (
           <button
             key={filter.id}
             onClick={() => setActiveFilter(filter.id)}
             className={cn(
-              "whitespace-nowrap px-6 py-2.5 rounded-full text-xs font-black transition-all",
+              "whitespace-nowrap px-6 py-2.5 rounded-full text-sm font-black transition-all",
               activeFilter === filter.id 
                 ? "bg-brand text-white shadow-lg shadow-brand/20" 
                 : "bg-surface border border-border text-content-muted"
@@ -1325,8 +1327,8 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
         ))}
       </div>
 
-      {/* Main Grid Actions - Mobile First */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-2">
+      {/* Action cards: as many columns of at least 220px as the content has room for, four at most. */}
+      <AutoGrid min={220} maxColumns={4} className="mt-2">
         {gridItems.map((item, i) => (
           <motion.div
             key={item.title}
@@ -1340,12 +1342,12 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
             />
           </motion.div>
         ))}
-      </div>
+      </AutoGrid>
 
       {/* Delete Confirmation Modal */}
       <AnimatePresence>
         {isDeleteConfirmVisible && (
-          <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 sm:p-6">
+          <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 main-640:p-6">
             <motion.div 
               initial={{ opacity: 0 }} 
               animate={{ opacity: 1 }} 
@@ -1408,16 +1410,16 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
         <motion.div 
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 bg-surface rounded-2xl border border-border shadow-sm mb-6"
+          className="flex flex-col main-640:flex-row main-640:items-center justify-between gap-4 p-4 bg-surface rounded-2xl border border-border shadow-sm mb-6"
         >
           <div className="flex items-center gap-2">
             <Calendar size={18} className="text-brand animate-pulse" />
-            <span className="text-xs sm:text-sm font-black text-content">
+            <span className="text-sm font-black text-content">
               {t('dashboard.custom_range_hint')}
             </span>
           </div>
-          <div className="flex items-center gap-3 w-full sm:w-auto">
-            <div className="flex-1 sm:flex-none sm:min-w-[150px]">
+          <div className="flex items-center gap-3 w-full main-640:w-auto">
+            <div className="flex-1 main-640:flex-none main-640:min-w-[150px]">
               <DatePicker
                 id="custom-start-date"
                 value={customStartDate}
@@ -1425,7 +1427,7 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
                 placeholder={t('common.from_label')}
               />
             </div>
-            <div className="flex-1 sm:flex-none sm:min-w-[150px]">
+            <div className="flex-1 main-640:flex-none main-640:min-w-[150px]">
               <DatePicker
                 id="custom-end-date"
                 value={customEndDate}
@@ -1437,50 +1439,37 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
         </motion.div>
       )}
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-        {visibleStatCards.map((stat, i) => (
-          <motion.div
+      {/* Number cards: columns of at least 200px, four at most (seen-responsive-layout-task.md Phase 2). */}
+      <AutoGrid min={200} maxColumns={4}>
+        {visibleStatCards.map((stat) => (
+          <StatCard
             key={stat.label}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: i * 0.1 }}
             onClick={stat.onClick}
-            className="bg-surface p-4 sm:p-6 rounded-2xl sm:rounded-3xl border border-border shadow-sm hover:shadow-xl transition-all group cursor-pointer"
-          >
-            <div className="flex items-center justify-between mb-3 sm:mb-4">
-              <div className={cn(stat.color, "p-3 sm:p-4 rounded-xl sm:rounded-2xl text-white shadow-lg shadow-current/20 group-hover:scale-110 transition-transform")}>
-                <stat.icon className="w-5 h-5 sm:w-6 sm:h-6" />
-              </div>
-              <span className={cn(
-                "text-[10px] sm:text-xs font-black px-2 py-1 rounded-lg",
-                stat.trend.startsWith('+') ? "bg-success/10 text-success" : 
-                stat.trend.startsWith('-') ? "bg-danger/10 text-danger" :
-                (stat.isAlert || stat.trend === t('dashboard.trend.critical', 'هام')) ? "bg-danger/10 text-danger" : "bg-surface-muted text-content-muted"
-              )}>
-                {stat.trend}
-              </span>
-            </div>
-            <p className="text-content-muted text-[10px] sm:text-xs font-black uppercase tracking-widest">{stat.label}</p>
-            <h3 className="text-2xl sm:text-3xl font-black text-content mt-1">
-              {typeof stat.value === 'number' ? stat.value.toLocaleString(localeOf(i18n.language)) : stat.value}
-            </h3>
-            {stat.comparisonLabel && (
-              <div className="flex items-center justify-between mt-2 pt-2 border-t border-border/40 text-[10px] sm:text-xs">
-                <span className="text-content-muted font-bold">
-                  {stat.comparisonLabel}
-                </span>
+            label={stat.label}
+            value={typeof stat.value === 'number' ? stat.value.toLocaleString(localeOf(i18n.language)) : stat.value}
+            icon={<StatIcon className={stat.color}><stat.icon className="h-6 w-6" /></StatIcon>}
+            badge={
+              <StatBadge tone={
+                stat.trend.startsWith('+') ? 'success'
+                  : stat.trend.startsWith('-') || stat.isAlert || stat.trend === t('dashboard.trend.critical', 'هام') ? 'danger'
+                  : 'neutral'
+              }>
+                <span dir={/^[+-]?\d/.test(stat.trend) ? 'ltr' : undefined} className="tabular-nums">{stat.trend}</span>
+              </StatBadge>
+            }
+            footer={stat.comparisonLabel ? (
+              <div className="flex min-w-0 flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+                <span className="min-w-0">{stat.comparisonLabel}</span>
                 {(stat as any).prevValue !== undefined && (
-                  <span className="text-content font-black">
-                    {(stat as any).prevValue}
-                  </span>
+                  <span className="whitespace-nowrap font-bold text-content tabular-nums">{(stat as any).prevValue}</span>
                 )}
               </div>
-            )}
-          </motion.div>
+            ) : undefined}
+          />
         ))}
-      </div>
+      </AutoGrid>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
+      <div className="grid grid-cols-1 main-900:grid-cols-3 gap-6 main-640:gap-8">
         {/* Revenue Chart */}
         {hasRevenuePermission && (() => {
           const totalPeriodRevenue = chartData.reduce((acc, curr) => acc + (Number(curr.revenue) || 0), 0);
@@ -1491,17 +1480,17 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
             : { revenue: 0, date: '-' };
 
           return (
-            <div className="lg:col-span-2 bg-surface rounded-2xl border border-border shadow-sm p-4 sm:p-6 md:p-8 flex flex-col justify-between transition-all">
+            <div className="main-900:col-span-2 bg-surface rounded-2xl border border-border shadow-sm p-4 main-640:p-6 main-720:p-8 flex flex-col justify-between transition-all">
               {/* Header with Title and Control Pills */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+              <div className="flex flex-col main-640:flex-row main-640:items-center justify-between gap-4 mb-6">
                 <div>
                   <div className="flex items-center gap-2.5">
                     <div className="p-2.5 bg-brand/10 text-brand rounded-2xl shrink-0">
                       <TrendingUp size={20} />
                     </div>
                     <div>
-                      <h3 className="text-lg sm:text-xl font-black text-content">{t('dashboard.revenue_analysis', 'مخطط تحليل الإيرادات')}</h3>
-                      <p className="text-xs sm:text-sm text-content-muted font-medium mt-0.5">
+                      <h3 className="text-lg main-640:text-xl font-black text-content">{t('dashboard.revenue_analysis', 'مخطط تحليل الإيرادات')}</h3>
+                      <p className="text-sm text-content-muted font-medium mt-0.5">
                         {t('dashboard.revenue_analysis_desc', 'مقارنة تفصيلية للأداء المالي وعدد الطلبات خلال الفترة')}
                       </p>
                     </div>
@@ -1509,9 +1498,9 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
                 </div>
 
                 {/* Controls: View Mode & Time Range */}
-                <div className="flex flex-wrap items-center gap-2 sm:gap-3 shrink-0">
+                <div className="flex flex-wrap items-center gap-2 main-640:gap-3 shrink-0">
                   {/* View Mode Toggle */}
-                  <div className="bg-surface-muted p-1 rounded-2xl flex items-center border border-border text-xs font-bold">
+                  <div className="bg-surface-muted p-1 rounded-2xl flex items-center border border-border text-sm font-bold">
                     <button
                       type="button"
                       onClick={() => setChartViewMode('both')}
@@ -1547,7 +1536,7 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
                   </div>
 
                   {/* Days Selector */}
-                  <div className="bg-surface-muted p-1 rounded-2xl flex items-center border border-border text-xs font-bold">
+                  <div className="bg-surface-muted p-1 rounded-2xl flex items-center border border-border text-sm font-bold">
                     <button
                       type="button"
                       onClick={() => setRevenueRange(7)}
@@ -1573,50 +1562,50 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
               </div>
 
               {/* Quick Summary Metric Cards */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3 mb-6">
+              <AutoGrid min={150} maxColumns={4} className="mb-6" style={{ ['--auto-grid-gap' as string]: '0.75rem' }}>
                 <div className="bg-surface-muted/60 border border-border/80 rounded-2xl p-3 flex flex-col justify-between">
-                  <span className="text-[10px] font-bold text-content-muted uppercase tracking-wider">{t('dashboard.total_in_period', 'إجمالي الفترة')}</span>
-                  <span className="text-sm sm:text-base md:text-lg font-black text-brand mt-1 truncate">
+                  <span className="text-sm font-bold text-content-muted">{t('dashboard.total_in_period', 'إجمالي الفترة')}</span>
+                  <span className="text-sm main-640:text-base main-720:text-lg font-black text-brand mt-1 truncate">
                     <PriceDisplay amount={totalPeriodRevenue} />
                   </span>
                 </div>
 
                 <div className="bg-surface-muted/60 border border-border/80 rounded-2xl p-3 flex flex-col justify-between">
-                  <span className="text-[10px] font-bold text-content-muted uppercase tracking-wider">{t('dashboard.daily_avg', 'المتوسط اليومي')}</span>
-                  <span className="text-sm sm:text-base md:text-lg font-black text-content mt-1 truncate">
+                  <span className="text-sm font-bold text-content-muted">{t('dashboard.daily_avg', 'المتوسط اليومي')}</span>
+                  <span className="text-sm main-640:text-base main-720:text-lg font-black text-content mt-1 truncate">
                     <PriceDisplay amount={avgDailyRevenue} />
                   </span>
                 </div>
 
                 <div className="bg-surface-muted/60 border border-border/80 rounded-2xl p-3 flex flex-col justify-between">
-                  <span className="text-[10px] font-bold text-content-muted uppercase tracking-wider">{t('dashboard.peak_day', 'أعلى يوم مبيعات')}</span>
-                  <div className="flex items-baseline gap-1 mt-1 truncate">
-                    <span className="text-sm sm:text-base md:text-lg font-black text-success">
+                  <span className="text-sm font-bold text-content-muted">{t('dashboard.peak_day', 'أعلى يوم مبيعات')}</span>
+                  <div className="mt-1 flex min-w-0 flex-wrap items-baseline gap-x-1">
+                    <span className="text-sm main-640:text-base main-720:text-lg font-black text-success">
                       <PriceDisplay amount={maxRevenueDay?.revenue || 0} />
                     </span>
                     {maxRevenueDay?.date && maxRevenueDay.revenue > 0 && (
-                      <span className="text-[10px] font-bold text-content-muted truncate">({maxRevenueDay.date})</span>
+                      <span className="text-sm font-bold text-content-muted">({maxRevenueDay.date})</span>
                     )}
                   </div>
                 </div>
 
                 <div className="bg-surface-muted/60 border border-border/80 rounded-2xl p-3 flex flex-col justify-between">
-                  <span className="text-[10px] font-bold text-content-muted uppercase tracking-wider">{t('dashboard.period_orders', 'الطلبات الإجمالية')}</span>
-                  <span className="text-sm sm:text-base md:text-lg font-black text-info mt-1 truncate">
-                    {totalPeriodOrders.toLocaleString(localeOf(i18n.language))} <span className="text-xs font-bold text-content-muted">{t('common.order', 'طلب')}</span>
+                  <span className="text-sm font-bold text-content-muted">{t('dashboard.period_orders', 'الطلبات الإجمالية')}</span>
+                  <span className="text-sm main-640:text-base main-720:text-lg font-black text-info mt-1 truncate">
+                    {totalPeriodOrders.toLocaleString(localeOf(i18n.language))} <span className="text-sm font-bold text-content-muted">{t('common.order', 'طلب')}</span>
                   </span>
                 </div>
-              </div>
+              </AutoGrid>
 
               {/* Main Graph Area */}
-              <div className="h-72 sm:h-80 relative flex-1">
+              <div className="h-72 main-640:h-80 relative flex-1">
                 {(chartData.length === 0 || chartData.every(d => d.revenue === 0 && d.ordersCount === 0)) && (
                   <div className="absolute inset-0 flex flex-col items-center justify-center bg-surface/90 backdrop-blur-md z-10 p-6 rounded-3xl text-center border border-border/50">
                     <div className="p-4 bg-brand/10 text-brand rounded-full mb-3 border border-brand/20 shadow-sm mx-auto">
                       <DollarSign size={28} />
                     </div>
                     <h4 className="text-base font-black text-content mb-1">{t('dashboard.no_revenue_analytics_yet', 'لا توجد تحليلات مالية بعد')}</h4>
-                    <p className="text-xs text-content-muted font-medium max-w-sm mx-auto">{t('dashboard.no_revenue_analytics_yet_desc', 'بمجرد تسجيل مبيعات أو فواتير مدفوعة، ستظهر البيانات التحليلية والرسوم البيانية هنا.')}</p>
+                    <p className="text-sm text-content-muted font-medium max-w-sm mx-auto">{t('dashboard.no_revenue_analytics_yet_desc', 'بمجرد تسجيل مبيعات أو فواتير مدفوعة، ستظهر البيانات التحليلية والرسوم البيانية هنا.')}</p>
                   </div>
                 )}
 
@@ -1638,7 +1627,7 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
 
         {/* Status Breakdown */}
         {hasOrdersPermission && (
-          <div className={cn("bg-surface rounded-2xl border border-border shadow-sm p-4 sm:p-6 md:p-8 flex flex-col justify-between", !hasRevenuePermission && "lg:col-span-3")}>
+          <div className={cn("bg-surface rounded-2xl border border-border shadow-sm p-4 main-640:p-6 main-720:p-8 flex flex-col justify-between", !hasRevenuePermission && "main-900:col-span-3")}>
             <div>
               <h3 className="text-xl font-black text-content mb-2">{t('dashboard.status_distribution')}</h3>
               <p className="text-sm text-content-muted font-medium mb-8">{t('dashboard.status_distribution_desc', 'مراحل العمل الحالية في المشغل')}</p>
@@ -1649,7 +1638,7 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
                     <Clock size={28} />
                   </div>
                   <h4 className="text-base font-black text-content mb-1">{t('dashboard.no_orders_in_progress', 'لا توجد طلبات جارية')}</h4>
-                  <p className="text-xs text-content-muted font-bold max-w-xs mx-auto mb-4">{t('dashboard.no_orders_in_progress_desc', 'كافة مراحل التصنيع والقص والخياطة والقياسات ستظهر هنا بمجرد إنشاء طلب جديد.')}</p>
+                  <p className="text-sm text-content-muted font-bold max-w-xs mx-auto mb-4">{t('dashboard.no_orders_in_progress_desc', 'كافة مراحل التصنيع والقص والخياطة والقياسات ستظهر هنا بمجرد إنشاء طلب جديد.')}</p>
                 </div>
               ) : (
                 <div className="space-y-6">
@@ -1685,7 +1674,7 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
                           </div>
                           <div className="flex items-center gap-2">
                             <span className="text-lg font-black text-content">{status.value.toLocaleString(localeOf(i18n.language))}</span>
-                            <span className="text-[10px] font-bold text-content-muted uppercase tracking-widest">{t('common.order')}</span>
+                            <span className="text-sm font-bold text-content-muted uppercase">{t('common.order')}</span>
                           </div>
                         </div>
                         <div className="h-2.5 bg-surface-muted rounded-full overflow-hidden shadow-inner relative">
@@ -1707,11 +1696,11 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
 
             <div className="mt-8 pt-8 border-t border-border grid grid-cols-2 gap-4">
               <div className="bg-brand/5 p-4 rounded-2xl">
-                <p className="text-[10px] font-black text-brand uppercase tracking-widest">{t('dashboard.in_progress', 'قيد التنفيذ')}</p>
+                <p className="text-sm font-black text-brand uppercase">{t('dashboard.in_progress', 'قيد التنفيذ')}</p>
                 <p className="text-xl font-black text-brand">{stats.pending.toLocaleString(localeOf(i18n.language))}</p>
               </div>
               <div className="bg-success/10 p-4 rounded-2xl">
-                <p className="text-[10px] font-black text-success uppercase tracking-widest">{t('dashboard.ready', 'جاهز')}</p>
+                <p className="text-sm font-black text-success uppercase">{t('dashboard.ready', 'جاهز')}</p>
                 <p className="text-xl font-black text-success">{(dashboardTotals?.ready ?? 0).toLocaleString(localeOf(i18n.language))}</p>
               </div>
             </div>
@@ -1719,12 +1708,12 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
         )}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
+      <div className="grid grid-cols-1 main-900:grid-cols-3 gap-6 main-640:gap-8">
         {/* Recent Orders Table */}
         {hasOrdersPermission && (
-          <div className="lg:col-span-2 bg-surface rounded-2xl border border-border shadow-sm overflow-hidden">
-            <div className="p-4 sm:p-6 md:p-8 border-b border-border flex justify-between items-center">
-              <h3 className="text-lg sm:text-xl font-black text-content">{t('dashboard.recent_orders')}</h3>
+          <div className="main-900:col-span-2 bg-surface rounded-2xl border border-border shadow-sm overflow-hidden">
+            <div className="p-4 main-640:p-6 main-720:p-8 border-b border-border flex justify-between items-center">
+              <h3 className="text-lg main-640:text-xl font-black text-content">{t('dashboard.recent_orders')}</h3>
               <button 
                 onClick={() => openDrill((r) => ({ 
                   type: 'all_orders', 
@@ -1738,7 +1727,7 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
             </div>
             <div className="overflow-x-auto whitespace-nowrap scrollbar-hide">
               <table className={cn("w-full min-w-max", textAlignmentClass)} dir={dir}>
-                <thead className="bg-surface-muted/50 text-content-muted text-[10px] uppercase font-black tracking-widest">
+                <thead className="bg-surface-muted/50 text-content-muted text-sm uppercase font-black">
                   <tr>
                     <th className={cn("px-8 py-4", textAlignmentClass)}>{t('common.customer', 'العميل')}</th>
                     <th className={cn("px-8 py-4", textAlignmentClass)}>{t('common.status', 'الحالة')}</th>
@@ -1760,20 +1749,20 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
                           <td className="px-8 py-5">
                             <div className="flex items-center gap-3">
                               <div className={cn(
-                                "w-8 h-8 rounded-full flex items-center justify-center text-xs font-black transition-transform group-hover:scale-110",
+                                "w-8 h-8 rounded-full flex items-center justify-center text-sm font-black transition-transform group-hover:scale-110",
                                 order.status === 'delivered' ? "bg-success/10 text-success" : "bg-brand/10 text-brand"
                               )}>
                                 {order.customerName.charAt(0)}
                               </div>
                               <div>
                                 <p className="text-sm font-black text-content group-hover:text-brand transition-colors">{order.customerName}</p>
-                                <p className="text-[10px] text-content-muted font-bold">#{order.id.slice(-6).toUpperCase()}</p>
+                                <p className="text-sm text-content-muted font-bold">#{order.id.slice(-6).toUpperCase()}</p>
                               </div>
                             </div>
                           </td>
                           <td className="px-8 py-5">
                             <span className={cn(
-                              "px-3 py-1 rounded-xl text-[10px] font-black uppercase tracking-wider",
+                              "px-3 py-1 rounded-xl text-sm font-black uppercase",
                               getOrderStatusDisplay(order.status, workflowStages).bgColor,
                               getOrderStatusDisplay(order.status, workflowStages).color
                             )}>
@@ -1782,7 +1771,7 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
                           </td>
                           <td className="px-8 py-5">
                             <p className="text-sm font-black text-content"><PriceDisplay amount={order.totalAmount} /></p>
-                            <p className="text-[10px] text-success font-bold">{t('common.paid', 'مدفوع')}: <PriceDisplay amount={order.paidAmount} /></p>
+                            <p className="text-sm text-success font-bold">{t('common.paid', 'مدفوع')}: <PriceDisplay amount={order.paidAmount} /></p>
                           </td>
                           <td className="px-8 py-5 text-sm text-content-muted font-bold">
                             <div className="flex items-center justify-between">
@@ -1806,12 +1795,12 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
                                   exit={{ height: 0, opacity: 0 }}
                                   className="overflow-hidden"
                                 >
-                                  <div className="py-6 grid grid-cols-1 md:grid-cols-3 gap-6 border-t border-border">
+                                  <div className="py-6 grid grid-cols-1 main-720:grid-cols-3 gap-6 border-t border-border">
                                     <div className="space-y-2">
-                                      <p className="text-[10px] font-black text-content-muted uppercase">{t('common.items', 'الأصناف')}</p>
+                                      <p className="text-sm font-black text-content-muted uppercase">{t('common.items', 'الأصناف')}</p>
                                       <div className="space-y-1">
                                         {order.items.map((item, idx) => (
-                                          <div key={idx} className="flex justify-between text-xs font-bold text-content/70 bg-surface-muted p-2 rounded-lg">
+                                          <div key={idx} className="flex justify-between text-sm font-bold text-content/70 bg-surface-muted p-2 rounded-lg">
                                             <span>{item.garmentType} ({item.fabric})</span>
                                             <span>x{item.quantity}</span>
                                           </div>
@@ -1819,14 +1808,14 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
                                       </div>
                                     </div>
                                     <div className="space-y-2">
-                                      <p className="text-[10px] font-black text-content-muted uppercase">{t('common.appointments', 'مواعيد')}</p>
+                                      <p className="text-sm font-black text-content-muted uppercase">{t('common.appointments', 'مواعيد')}</p>
                                       <div className="space-y-2">
-                                        <div className="flex items-center gap-2 text-xs font-bold">
+                                        <div className="flex items-center gap-2 text-sm font-bold">
                                           <Clock size={14} className="text-brand/60" />
                                           <span className="text-content-muted">{t('common.delivery_date', 'تاريخ الاستلام:')}</span>
                                           <span className="text-content/80">{formatDate(order.deliveryDate)}</span>
                                         </div>
-                                        <div className="flex items-center gap-2 text-xs font-bold">
+                                        <div className="flex items-center gap-2 text-sm font-bold">
                                           <DollarSign size={14} className="text-success" />
                                           <span className="text-content-muted">{t('common.payment_method', 'طريقة الدفع:')}</span>
                                           <span className="text-content/80">
@@ -1843,7 +1832,7 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
                                           e.stopPropagation();
                                           navigate(`/orders?id=${order.id}`);
                                         }}
-                                        className="w-full bg-brand text-white py-3 rounded-xl font-black text-xs flex items-center justify-center gap-2 hover:bg-brand/90 shadow-lg shadow-brand/10 transition-all cursor-pointer"
+                                        className="w-full bg-brand text-white py-3 rounded-xl font-black text-sm flex items-center justify-center gap-2 hover:bg-brand/90 shadow-lg shadow-brand/10 transition-all cursor-pointer"
                                       >
                                         <ExternalLink size={14} />
                                         {t('common.view_details', 'عرض كامل التفاصيل')}
@@ -1864,7 +1853,7 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
                           <ShoppingBag size={32} />
                         </div>
                         <h4 className="text-base font-black text-content mb-1">{t('dashboard.no_orders_yet', 'لا توجد طلبات بعد')}</h4>
-                        <p className="text-xs text-content-muted font-bold max-w-sm mx-auto">{t('dashboard.no_orders_yet_desc', 'سيتم إدراج أحدث طلبات العملاء وحالات خياطتها وتفصيلها هنا فور إنشائها.')}</p>
+                        <p className="text-sm text-content-muted font-bold max-w-sm mx-auto">{t('dashboard.no_orders_yet_desc', 'سيتم إدراج أحدث طلبات العملاء وحالات خياطتها وتفصيلها هنا فور إنشائها.')}</p>
                       </td>
                     </tr>
                   )}
@@ -1876,10 +1865,10 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
 
         {/* Recent Notifications / Low Stock */}
         <div className="space-y-6">
-          <div className="bg-surface rounded-2xl border border-border shadow-sm p-4 sm:p-6 md:p-8">
+          <div className="bg-surface rounded-2xl border border-border shadow-sm p-4 main-640:p-6 main-720:p-8">
             <div className="flex justify-between items-center mb-6">
-              <h3 className="text-lg sm:text-xl font-black text-content">{t('dashboard.notifications', 'التنبيهات')}</h3>
-              <span className="bg-danger/10 text-danger text-[10px] font-black px-2 py-1 rounded-lg">{t('common.active', 'نشط')}</span>
+              <h3 className="text-lg main-640:text-xl font-black text-content">{t('dashboard.notifications', 'التنبيهات')}</h3>
+              <span className="bg-danger/10 text-danger text-sm font-black px-2 py-1 rounded-lg">{t('common.active', 'نشط')}</span>
             </div>
             <div className="space-y-4">
               {notifications.length > 0 ? (
@@ -1904,13 +1893,13 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
                       <div className="flex justify-between items-start gap-2">
                         <p className="text-sm font-black text-content">{notif.title}</p>
                         {notif.status === 'unread' && (
-                          <span className="bg-brand text-white text-[9px] font-black px-1.5 py-0.5 rounded-full animate-pulse whitespace-nowrap">
+                          <span className="bg-brand text-white text-sm font-black px-1.5 py-0.5 rounded-full animate-pulse whitespace-nowrap">
                             {t('common.new')}
                           </span>
                         )}
                       </div>
-                      <p className="text-xs text-content-muted mt-1 leading-relaxed">{notif.message}</p>
-                      <p className="text-[9px] text-content-muted/80 mt-2 font-bold">
+                      <p className="text-sm text-content-muted mt-1 leading-relaxed">{notif.message}</p>
+                      <p className="text-sm text-content-muted/80 mt-2 font-bold">
                         {new Date(notif.createdAt).toLocaleDateString(localeOf(i18n.language), { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                       </p>
                     </div>
@@ -1928,7 +1917,7 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
           </div>
 
           {hasInventoryPermission && (
-            <div className="bg-brand rounded-2xl p-4 sm:p-6 md:p-8 text-white shadow-xl shadow-brand/20 relative overflow-hidden group">
+            <div className="bg-brand rounded-2xl p-4 main-640:p-6 main-720:p-8 text-white shadow-xl shadow-brand/20 relative overflow-hidden group">
               <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:scale-110 transition-transform">
                 <Package size={120} />
               </div>

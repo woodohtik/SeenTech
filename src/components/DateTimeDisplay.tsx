@@ -30,16 +30,16 @@ export function DateTimeDisplay({
   const timeStr = d.toLocaleTimeString(localeOf(), { hour: '2-digit', minute: '2-digit', hour12: true });
 
   const sizeClasses = {
-    xs: 'text-[10px]',
-    sm: 'text-xs',
+    xs: 'text-sm',
+    sm: 'text-sm',
     md: 'text-sm'
   }[size];
 
   return (
-    <span className={`font-mono inline-flex ${inline ? 'items-center gap-1.5' : 'flex-col sm:flex-row sm:items-center gap-1 sm:gap-1.5'} whitespace-nowrap ${sizeClasses} ${className}`} dir="ltr">
+    <span className={`font-mono inline-flex ${inline ? 'items-center gap-1.5' : 'flex-col main-640:flex-row main-640:items-center gap-1 main-640:gap-1.5'} whitespace-nowrap ${sizeClasses} ${className}`} dir="ltr">
       <span className="font-semibold text-content">{dateStr}</span>
       {showTime && (
-        <span className="text-[10px] text-content-muted font-medium bg-surface-muted/80 px-1.5 py-0.5 rounded border border-border/50">
+        <span className="text-sm text-content-muted font-medium bg-surface-muted/80 px-1.5 py-0.5 rounded border border-border/50">
           {timeStr}
         </span>
       )}

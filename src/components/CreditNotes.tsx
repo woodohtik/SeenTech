@@ -40,7 +40,7 @@ function ZatcaStatusBadge({ status }: { status?: CreditNote['zatcaStatus'] }) {
   };
   const key = status || 'not_applicable';
   return (
-    <span className={cn('inline-block px-2 py-1 rounded-lg text-xs font-bold', styles[key])}>
+    <span className={cn('inline-block px-2 py-1 rounded-lg text-sm font-bold', styles[key])}>
       {labels[key]}
     </span>
   );
@@ -247,8 +247,8 @@ export default function CreditNotes({ tenantId }: { tenantId: string }) {
   );
 
   return (
-    <div className="p-4 sm:p-6 font-sans bg-surface" dir={isRtl ? 'rtl' : 'ltr'}>
-      <div className="mb-4 md:mb-6 flex justify-between items-center bg-surface p-4 md:p-6 rounded-2xl shadow-sm border border-border">
+    <div className="p-4 main-640:p-6 font-sans bg-surface" dir={isRtl ? 'rtl' : 'ltr'}>
+      <div className="mb-4 main-720:mb-6 flex justify-between items-center bg-surface p-4 main-720:p-6 rounded-2xl shadow-sm border border-border">
         <div>
           <h2 className="text-xl font-black text-content flex items-center gap-2">
             <ArrowDownLeft className="text-brand" />
@@ -258,8 +258,8 @@ export default function CreditNotes({ tenantId }: { tenantId: string }) {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-        <div className="lg:col-span-1 bg-surface p-4 sm:p-6 rounded-2xl md:rounded-3xl border border-border shadow-sm flex flex-col">
+      <div className="grid grid-cols-1 main-900:grid-cols-3 gap-6 mb-8">
+        <div className="main-900:col-span-1 bg-surface p-4 main-640:p-6 rounded-2xl main-720:rounded-3xl border border-border shadow-sm flex flex-col">
           <h3 className="text-lg font-black text-content mb-4 flex items-center gap-2">
             <ShieldAlert className="text-warning" />
             {t('credit_notes.issue_new', 'إصدار إشعار جديد')}
@@ -289,7 +289,7 @@ export default function CreditNotes({ tenantId }: { tenantId: string }) {
                     >
                       <div>
                         <p className="font-mono font-bold text-sm text-content">{inv.invoiceNumber}</p>
-                        <p className="text-xs text-content-muted">{inv.customerName}</p>
+                        <p className="text-sm text-content-muted">{inv.customerName}</p>
                       </div>
                       <span className="font-black text-brand text-sm"><PriceDisplay amount={inv.totalAmount} /></span>
                     </button>
@@ -311,12 +311,12 @@ export default function CreditNotes({ tenantId }: { tenantId: string }) {
               </button>
               
               <div>
-                <p className="text-xs font-bold text-brand uppercase tracking-widest mb-1">{t('credit_notes.selected_invoice', 'الفاتورة المحددة')}</p>
+                <p className="text-sm font-bold text-brand uppercase mb-1">{t('credit_notes.selected_invoice', 'الفاتورة المحددة')}</p>
                 <p className="font-mono font-black text-xl">{selectedInvoice.invoiceNumber}</p>
               </div>
               
               <div>
-                <p className="text-xs font-bold text-content-muted mb-1">{t('tax_invoices.customer', 'العميل')}</p>
+                <p className="text-sm font-bold text-content-muted mb-1">{t('tax_invoices.customer', 'العميل')}</p>
                 <p className="font-bold text-content">{selectedInvoice.customerName}</p>
               </div>
               
@@ -330,7 +330,7 @@ export default function CreditNotes({ tenantId }: { tenantId: string }) {
                   min={0}
                   className="w-full bg-surface border border-border rounded-xl p-3 focus:ring-2 focus:ring-brand font-bold text-lg text-content"
                 />
-                <p className="text-xs text-content-muted mt-1">{t('credit_notes.max_limit', 'الحد الأقصى')}: <PriceDisplay amount={selectedInvoice.totalAmount} /></p>
+                <p className="text-sm text-content-muted mt-1">{t('credit_notes.max_limit', 'الحد الأقصى')}: <PriceDisplay amount={selectedInvoice.totalAmount} /></p>
               </div>
               
               <div>
@@ -360,7 +360,7 @@ export default function CreditNotes({ tenantId }: { tenantId: string }) {
           )}
         </div>
 
-        <div className="lg:col-span-2 bg-surface rounded-2xl border border-border overflow-hidden shadow-sm">
+        <div className="main-900:col-span-2 bg-surface rounded-2xl border border-border overflow-hidden shadow-sm">
           <div className="p-5 border-b border-border bg-surface-muted">
             <h3 className="font-black text-content">{t('credit_notes.records_title', 'سجل الإشعارات الدائنة')}</h3>
           </div>
@@ -371,7 +371,7 @@ export default function CreditNotes({ tenantId }: { tenantId: string }) {
           ) : (
             <div className="overflow-x-auto whitespace-nowrap scrollbar-hide">
               <table className="w-full text-right min-w-max">
-                <thead className="bg-surface border-b border-border text-content-muted text-xs uppercase font-black tracking-wider">
+                <thead className="bg-surface border-b border-border text-content-muted text-sm uppercase font-black">
                   <tr>
                     <th className="p-4">{t('credit_notes.credit_note_no', 'رقم الإشعار')}</th>
                     <th className="p-4">{t('credit_notes.original_invoice_no', 'رقم الفاتورة الأصلية')}</th>

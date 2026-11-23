@@ -76,8 +76,8 @@ const EXTERNAL_FABRIC = 'custom';
 
 const inputClass =
   "w-full bg-surface border border-border rounded-xl p-3 text-sm font-semibold text-content outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand";
-const smallLabelClass = "text-[11px] text-content-muted font-bold uppercase tracking-wider";
-const sectionLabelClass = "text-sm font-black text-content-muted uppercase tracking-widest";
+const smallLabelClass = "text-sm text-content-muted font-bold uppercase";
+const sectionLabelClass = "text-sm font-black text-content-muted uppercase";
 
 export default function TailoringOrderForm(props: TailoringOrderFormProps) {
   if (typeof document === 'undefined') return null;
@@ -117,7 +117,7 @@ function TailoringOrderFormGate(props: TailoringOrderFormProps) {
           <>
             <AlertCircle size={28} className="mx-auto text-danger" />
             <h3 className="font-black text-content">{t('verticals.settings_unavailable_title', 'تعذّر تحميل إعدادات نشاطك')}</h3>
-            <p className="text-xs text-content-muted font-bold leading-relaxed">
+            <p className="text-sm text-content-muted font-bold leading-relaxed">
               {t('verticals.settings_unavailable_desc', 'لا يمكن إنشاء طلب الآن بإعدادات صحيحة لنشاطك. اتصل بالإنترنت ثم أعد المحاولة.')}
             </p>
           </>
@@ -150,7 +150,7 @@ function DynamicOrderItemFields({
   if (fields.length === 0) return null;
 
   return (
-    <div className="md:col-span-4 mt-4 pt-4 border-t border-border grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div className="main-720:col-span-4 mt-4 pt-4 border-t border-border grid grid-cols-1 main-720:grid-cols-3 gap-4">
       {fields.map((f) => {
         const path = `items.${index}.attributes.${f.field_key}`;
         const value = watch(path);
@@ -175,7 +175,7 @@ function DynamicOrderItemFields({
                 type="button"
                 onClick={() => setValue(path, !value)}
                 className={cn(
-                  "w-full px-3 py-2.5 rounded-xl border-2 text-xs font-bold transition-all",
+                  "w-full px-3 py-2.5 rounded-xl border-2 text-sm font-bold transition-all",
                   value ? "border-brand bg-brand/10 text-brand" : "border-border bg-surface text-content-muted"
                 )}
               >
@@ -191,7 +191,7 @@ function DynamicOrderItemFields({
               type={f.field_type === 'number' ? 'number' : 'text'}
               value={value ?? ''}
               onChange={(e) => setValue(path, f.field_type === 'number' ? (e.target.value === '' ? '' : Number(e.target.value)) : e.target.value)}
-              className="w-full bg-surface border border-border rounded-xl p-3 text-xs font-bold text-content outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand"
+              className="w-full bg-surface border border-border rounded-xl p-3 text-sm font-bold text-content outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand"
             />
           </div>
         );
@@ -318,32 +318,32 @@ function QuickAddCustomerModal({
         className="relative w-full max-w-[clamp(320px,94vw,1100px)] max-h-[90vh] rounded-[var(--radius-card)] bg-[var(--surface)] shadow-2xl flex flex-col my-auto border border-border overflow-hidden text-start"
         dir={isRtlLang(i18n.language) ? 'rtl' : 'ltr'}
       >
-        <div className="flex items-center justify-between p-4 sm:p-6 border-b border-[var(--border)] bg-brand/5 shrink-0">
+        <div className="flex items-center justify-between p-4 main-640:p-6 border-b border-[var(--border)] bg-brand/5 shrink-0">
           <div className="flex items-center gap-3">
             <div className="p-2.5 bg-brand text-white rounded-2xl shrink-0 shadow-sm"><UserPlus size={20} /></div>
-            <h3 className="text-base sm:text-lg lg:text-xl font-black text-content">{t('pos.add_new_customer')}</h3>
+            <h3 className="text-base main-640:text-lg main-900:text-xl font-black text-content">{t('pos.add_new_customer')}</h3>
           </div>
           <button type="button" onClick={onClose} aria-label={t('common.close')} className="p-2 hover:bg-surface-muted rounded-full transition-colors text-content-muted">
             <X size={20} />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit(onSubmit, onInvalid)} className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <form onSubmit={handleSubmit(onSubmit, onInvalid)} className="flex-1 overflow-y-auto p-4 main-640:p-6 space-y-6">
+          <div className="grid grid-cols-1 main-720:grid-cols-2 gap-6">
             <div className="space-y-1">
-              <label htmlFor="quick-customer-name" className="text-xs font-bold text-content-muted">{t('login.full_name')}</label>
+              <label htmlFor="quick-customer-name" className="text-sm font-bold text-content-muted">{t('login.full_name')}</label>
               <input id="quick-customer-name" {...register('name' as any)} className={inputClass} />
-              {errors.name && <p className="text-[11px] text-danger font-bold">{String(errors.name.message)}</p>}
+              {errors.name && <p className="text-sm text-danger font-bold">{String(errors.name.message)}</p>}
             </div>
             <div className="space-y-1">
-              <label htmlFor="quick-customer-phone" className="text-xs font-bold text-content-muted">{t('onboarding.fields.phone')}</label>
+              <label htmlFor="quick-customer-phone" className="text-sm font-bold text-content-muted">{t('onboarding.fields.phone')}</label>
               <input
                 id="quick-customer-phone"
                 {...register('phone' as any)}
                 onBlur={(e) => setValue('phone' as any, formatSaudiPhone(e.target.value))}
                 className={inputClass}
               />
-              {errors.phone && <p className="text-[11px] text-danger font-bold">{String(errors.phone.message)}</p>}
+              {errors.phone && <p className="text-sm text-danger font-bold">{String(errors.phone.message)}</p>}
             </div>
           </div>
 
@@ -351,15 +351,15 @@ function QuickAddCustomerModal({
             <ShoppingBag size={20} className="text-brand" />
             {t('orders.b2b_data_title')}
           </h4>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-4 border-b border-border">
+          <div className="grid grid-cols-1 main-720:grid-cols-2 gap-6 pb-4 border-b border-border">
             <div className="space-y-2">
-              <label htmlFor="quick-customer-company" className="text-sm font-bold text-content-muted">{t('orders.company_name_label')} <span className="opacity-70 text-xs">{t('common.optional')}</span></label>
+              <label htmlFor="quick-customer-company" className="text-sm font-bold text-content-muted">{t('orders.company_name_label')} <span className="opacity-70 text-sm">{t('common.optional')}</span></label>
               <input id="quick-customer-company" type="text" {...register('companyName' as any)} className={inputClass} placeholder={t('orders.company_name_placeholder')} />
             </div>
             <div className="space-y-2">
-              <label htmlFor="quick-customer-trn" className="text-sm font-bold text-content-muted">{t('orders.company_trn_label')} <span className="opacity-70 text-xs">{t('common.optional')}</span></label>
+              <label htmlFor="quick-customer-trn" className="text-sm font-bold text-content-muted">{t('orders.company_trn_label')} <span className="opacity-70 text-sm">{t('common.optional')}</span></label>
               <input id="quick-customer-trn" type="text" {...register('trn' as any)} className={inputClass} dir="ltr" placeholder="300000000000003" />
-              {errors.trn && <p className="text-xs text-danger font-bold">{String(errors.trn.message)}</p>}
+              {errors.trn && <p className="text-sm text-danger font-bold">{String(errors.trn.message)}</p>}
             </div>
           </div>
 
@@ -395,7 +395,7 @@ function QuickAddCustomerModal({
             </label>
           </div>
 
-          <div className="sticky bottom-0 z-10 -mx-4 sm:-mx-6 px-4 sm:px-6 pt-4 pb-[calc(1rem+env(safe-area-inset-bottom))] border-t border-[var(--border)] bg-[var(--surface)] flex items-center justify-end gap-3">
+          <div className="sticky bottom-0 z-10 -mx-4 main-640:-mx-6 px-4 main-640:px-6 pt-4 pb-[calc(1rem+env(safe-area-inset-bottom))] border-t border-[var(--border)] bg-[var(--surface)] flex items-center justify-end gap-3">
             <button type="button" onClick={onClose} className="px-6 py-2.5 text-content-muted font-bold hover:text-content transition-colors text-sm">{t('common.cancel')}</button>
             <button type="submit" disabled={isSubmitting} className="bg-brand text-white px-8 py-2.5 rounded-xl font-bold hover:bg-brand/90 shadow-lg shadow-brand/20 transition-all disabled:opacity-50 text-sm">
               {isSubmitting ? t('common.saving') : t('orders.confirm_add_customer')}
@@ -745,7 +745,7 @@ function TailoringOrderFormBody({
   const images: string[] = watch('images' as any) || [];
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-end lg:items-center justify-center lg:p-4 overflow-hidden">
+    <div className="fixed inset-0 z-[100] flex items-end main-900:items-center justify-center main-900:p-4 overflow-hidden">
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -762,15 +762,15 @@ function TailoringOrderFormBody({
         animate={{ y: 0, opacity: 1 }}
         exit={{ y: '100%', opacity: 0 }}
         transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-        className="relative w-full lg:max-w-5xl rounded-t-3xl lg:rounded-3xl shadow-2xl z-10 overflow-hidden h-[95vh] lg:h-auto lg:max-h-[92vh] flex flex-col border border-border bg-surface text-start"
+        className="relative w-full main-900:max-w-5xl rounded-t-3xl main-900:rounded-3xl shadow-2xl z-10 overflow-hidden h-[95vh] main-900:h-auto main-900:max-h-[92vh] flex flex-col border border-border bg-surface text-start"
         dir={isRtl ? 'rtl' : 'ltr'}
       >
-        <div className="flex items-center justify-between p-4 sm:p-5 border-b border-[var(--border)] bg-brand/5 shrink-0">
+        <div className="flex items-center justify-between p-4 main-640:p-5 border-b border-[var(--border)] bg-brand/5 shrink-0">
           <div className="flex items-center gap-3">
             <div className="p-2.5 bg-brand text-white rounded-2xl shrink-0 shadow-sm">
               {savedOrder ? <CheckCircle2 size={20} /> : <Plus size={20} />}
             </div>
-            <h3 className="text-base sm:text-lg lg:text-xl font-black text-content">
+            <h3 className="text-base main-640:text-lg main-900:text-xl font-black text-content">
               {savedOrder ? t('orders.receipt_saved') : t('orders.create_new_order')}
             </h3>
           </div>
@@ -780,7 +780,7 @@ function TailoringOrderFormBody({
         </div>
 
         {savedOrder ? (
-          <div className="flex-1 overflow-y-auto p-4 sm:p-6">
+          <div className="flex-1 overflow-y-auto p-4 main-640:p-6">
             <div id="tailoring-order-receipt" className="max-w-md mx-auto bg-surface border border-border rounded-2xl p-5 space-y-4 text-content" dir={isRtl ? 'rtl' : 'ltr'}>
               <div className="text-center space-y-1">
                 <h4 className="text-lg font-black">{tv('orders.receipt_title')}</h4>
@@ -788,7 +788,7 @@ function TailoringOrderFormBody({
                   <p className="text-sm font-bold text-content-muted" dir="ltr">{savedOrder.order.order_number}</p>
                 )}
                 {savedOrder.queuedOffline && (
-                  <p className="text-xs font-bold text-warning">{t('orders.order_queued_offline_title', 'سُجِّل الطلب محلياً')}</p>
+                  <p className="text-sm font-bold text-warning">{t('orders.order_queued_offline_title', 'سُجِّل الطلب محلياً')}</p>
                 )}
               </div>
               <dl className="text-sm space-y-1.5">
@@ -831,11 +831,11 @@ function TailoringOrderFormBody({
           </div>
         ) : (
         <form onSubmit={handleSubmit(onSubmit, onInvalidSubmit)} className="flex-1 flex flex-col min-h-0 overflow-hidden">
-          <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6">
+          <div className="flex-1 overflow-y-auto p-4 main-640:p-6 space-y-6">
             {topSlot}
 
             {/* Customer, delivery, tailor */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 main-720:grid-cols-3 gap-4">
               <div className="space-y-2">
                 <label className={sectionLabelClass}>{t('common.customer')}</label>
                 <div className="flex items-center gap-2">
@@ -867,7 +867,7 @@ function TailoringOrderFormBody({
                     <UserPlus size={20} />
                   </button>
                 </div>
-                {errors.customerId && <p className="text-xs text-danger font-bold">{String(errors.customerId.message)}</p>}
+                {errors.customerId && <p className="text-sm text-danger font-bold">{String(errors.customerId.message)}</p>}
               </div>
 
               <div className="space-y-2" aria-invalid={!!errors.deliveryDate}>
@@ -876,7 +876,7 @@ function TailoringOrderFormBody({
                   value={watch('deliveryDate' as any) || ''}
                   onChange={(val) => setValue('deliveryDate' as any, val, { shouldValidate: true, shouldDirty: true })}
                 />
-                {errors.deliveryDate && <p className="text-xs text-danger font-bold">{String(errors.deliveryDate.message)}</p>}
+                {errors.deliveryDate && <p className="text-sm text-danger font-bold">{String(errors.deliveryDate.message)}</p>}
               </div>
 
               {/* One tailor per order: the commission trigger works at order level. */}
@@ -895,11 +895,11 @@ function TailoringOrderFormBody({
 
             {/* Measurements -- only for an activity that takes them (Phase 4). */}
             {selectedCustomer && hasBodyMeasurements && (
-              <div className="bg-brand/5 p-4 sm:p-5 rounded-3xl border border-brand/10 space-y-4">
+              <div className="bg-brand/5 p-4 main-640:p-5 rounded-3xl border border-brand/10 space-y-4">
                 <div className="flex items-center justify-between text-brand">
                   <div className="flex items-center gap-2">
                     <Ruler size={18} />
-                    <h4 className="font-black text-sm uppercase tracking-wider">{t('orders.customer_measurements_auto')}</h4>
+                    <h4 className="font-black text-sm uppercase">{t('orders.customer_measurements_auto')}</h4>
                   </div>
                   {!isEditingMeasurements ? (
                     <button
@@ -908,7 +908,7 @@ function TailoringOrderFormBody({
                         setTempMeasurements(selectedCustomer.measurements || {});
                         setIsEditingMeasurements(true);
                       }}
-                      className="text-xs font-bold text-brand bg-surface border border-brand/20 hover:bg-brand hover:text-white px-3 py-1.5 rounded-xl transition-all flex items-center gap-1.5 shadow-sm active:scale-95"
+                      className="text-sm font-bold text-brand bg-surface border border-brand/20 hover:bg-brand hover:text-white px-3 py-1.5 rounded-xl transition-all flex items-center gap-1.5 shadow-sm active:scale-95"
                     >
                       <Edit2 size={13} />
                       <span>{t('common.edit')}</span>
@@ -918,7 +918,7 @@ function TailoringOrderFormBody({
                       <button
                         type="button"
                         onClick={() => setIsEditingMeasurements(false)}
-                        className="text-xs font-bold text-content-muted bg-surface hover:bg-surface-muted px-2.5 py-1 rounded-xl transition-all"
+                        className="text-sm font-bold text-content-muted bg-surface hover:bg-surface-muted px-2.5 py-1 rounded-xl transition-all"
                       >
                         {t('common.cancel')}
                       </button>
@@ -926,7 +926,7 @@ function TailoringOrderFormBody({
                         type="button"
                         disabled={isSavingMeasurements}
                         onClick={saveMeasurements}
-                        className="text-xs font-bold text-white bg-brand hover:bg-brand/90 px-3 py-1.5 rounded-xl transition-all flex items-center gap-1 shadow-sm active:scale-95 disabled:opacity-50"
+                        className="text-sm font-bold text-white bg-brand hover:bg-brand/90 px-3 py-1.5 rounded-xl transition-all flex items-center gap-1 shadow-sm active:scale-95 disabled:opacity-50"
                       >
                         <Check size={13} />
                         <span>{isSavingMeasurements ? t('common.saving') : t('orders.save_measurements')}</span>
@@ -936,13 +936,13 @@ function TailoringOrderFormBody({
                 </div>
 
                 {!isEditingMeasurements ? (
-                  <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
+                  <div className="grid grid-cols-3 main-640:grid-cols-5 gap-2">
                     {measurementRows(selectedCustomer.measurements, true).map((row) => (
                       <div key={row.key} className="bg-surface p-2 rounded-xl border border-brand/10 text-center">
-                        <p className="text-[11px] text-content-muted font-bold truncate">{t(row.labelKey)}</p>
+                        <p className="text-sm text-content-muted font-bold truncate">{t(row.labelKey)}</p>
                         <p className="text-sm font-black text-brand">
                           {row.value
-                            ? <>{cmToDisplayUnit(row.value, measurementUnit)} <span className="text-[11px] text-content-muted font-bold">{t(unitLabelKey(measurementUnit))}</span></>
+                            ? <>{cmToDisplayUnit(row.value, measurementUnit)} <span className="text-sm text-content-muted font-bold">{t(unitLabelKey(measurementUnit))}</span></>
                             : '-'}
                         </p>
                       </div>
@@ -956,7 +956,7 @@ function TailoringOrderFormBody({
                       measurementUnit={measurementUnit}
                       fabricEstimate={{ settings: fabricEstimateSettings }}
                     />
-                    <p className="text-xs font-bold text-content-muted pt-2 border-t border-brand/10">{t('orders.edit_style_details')}</p>
+                    <p className="text-sm font-bold text-content-muted pt-2 border-t border-brand/10">{t('orders.edit_style_details')}</p>
                     <VisualMeasurements
                       values={tempMeasurements as any}
                       onChange={(field, val) => setTempMeasurements((prev) => ({ ...prev, [field]: val }))}
@@ -976,7 +976,7 @@ function TailoringOrderFormBody({
                 <button
                   type="button"
                   onClick={() => append(newLine())}
-                  className="bg-brand/5 text-brand px-4 py-2 rounded-xl text-xs font-black hover:bg-brand/10 transition-all flex items-center gap-2"
+                  className="bg-brand/5 text-brand px-4 py-2 rounded-xl text-sm font-black hover:bg-brand/10 transition-all flex items-center gap-2"
                 >
                   <Plus size={14} /> {t('orders.add_item')}
                 </button>
@@ -992,7 +992,7 @@ function TailoringOrderFormBody({
                 const unit = unitText(fabric.contentUnit);
                 const inUnit = (meters: number) => fabricInContentUnit(meters, fabric.contentUnit);
                 return (
-                  <div key={field.id} className="grid grid-cols-1 md:grid-cols-4 gap-4 bg-surface-muted p-4 sm:p-5 rounded-2xl relative border border-transparent hover:border-brand/10 transition-all">
+                  <div key={field.id} className="grid grid-cols-1 main-720:grid-cols-4 gap-4 bg-surface-muted p-4 main-640:p-5 rounded-2xl relative border border-transparent hover:border-brand/10 transition-all">
                     <div className="space-y-1">
                       <label htmlFor={`order-item-${index}-type`} className={smallLabelClass}>{t('orders.item_type')}</label>
                       <input
@@ -1076,10 +1076,10 @@ function TailoringOrderFormBody({
 
                     {/* Fabric for the line */}
                     {capabilities.fabric_consumption && fabric.hasFabric && (
-                      <div className="md:col-span-4 rounded-xl border border-brand/15 bg-surface px-3 py-2 flex flex-wrap items-center gap-x-4 gap-y-2">
+                      <div className="main-720:col-span-4 rounded-xl border border-brand/15 bg-surface px-3 py-2 flex flex-wrap items-center gap-x-4 gap-y-2">
                         <p className="text-sm font-bold text-content flex-1 min-w-[220px]" role="status">
                           {fabric.perPieceMeters === null ? (
-                            <span className="text-xs text-content-muted">
+                            <span className="text-sm text-content-muted">
                               {estimatesFabricFromMeasurements
                                 ? t('measurements.fabric_estimate_missing')
                                 : t('orders.fabric_enter_manually', 'أدخل الأمتار المستهلكة لهذا الصنف يدوياً')}
@@ -1099,10 +1099,10 @@ function TailoringOrderFormBody({
                           )}
                         </p>
                         {fabric.isExternal ? (
-                          <p className="text-xs font-bold text-content-muted">{t('orders.fabric_external_note')}</p>
+                          <p className="text-sm font-bold text-content-muted">{t('orders.fabric_external_note')}</p>
                         ) : (
                           <div className="flex items-center gap-2">
-                            <label htmlFor={`order-item-${index}-fabric-total`} className="text-xs font-bold text-content-muted">
+                            <label htmlFor={`order-item-${index}-fabric-total`} className="text-sm font-bold text-content-muted">
                               {t('orders.fabric_total_label', { unit })}
                             </label>
                             <FabricTotalInput
@@ -1115,7 +1115,7 @@ function TailoringOrderFormBody({
                             />
                             {fabric.isManual && (
                               <>
-                                <span className="text-[11px] font-black text-warning bg-warning/10 border border-warning/20 rounded-lg px-2 py-1">
+                                <span className="text-sm font-black text-warning bg-warning/10 border border-warning/20 rounded-lg px-2 py-1">
                                   {t('orders.fabric_manual_badge')}
                                 </span>
                                 <button
@@ -1124,7 +1124,7 @@ function TailoringOrderFormBody({
                                     setValue(`items.${index}.fabricManual` as any, false, { shouldDirty: true });
                                     setValue(`items.${index}.consumedMeters` as any, 0);
                                   }}
-                                  className="text-xs font-bold text-brand flex items-center gap-1 hover:underline"
+                                  className="text-sm font-bold text-brand flex items-center gap-1 hover:underline"
                                 >
                                   <RotateCcw size={13} /> {t('orders.fabric_reset')}
                                 </button>
@@ -1136,12 +1136,12 @@ function TailoringOrderFormBody({
                     )}
 
                     {isLegacyVertical ? (
-                      <div className="md:col-span-4 pt-4 border-t border-border space-y-4">
+                      <div className="main-720:col-span-4 pt-4 border-t border-border space-y-4">
                         <VisualMeasurements
                           values={item}
                           onChange={(key, val) => setValue(`items.${index}.${key}` as any, val)}
                         />
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 main-720:grid-cols-2 gap-4">
                           <div className="space-y-1">
                             <label htmlFor={`order-item-${index}-additions`} className={smallLabelClass}>{t('orders.other_additions')}</label>
                             <input id={`order-item-${index}-additions`} {...register(`items.${index}.additions` as any)} placeholder={t('orders.other_additions_placeholder')} className={inputClass} />
@@ -1172,8 +1172,8 @@ function TailoringOrderFormBody({
             </div>
 
             {/* Money, notes, images */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="bg-brand text-white p-5 sm:p-6 rounded-2xl space-y-4">
+            <div className="grid grid-cols-1 main-720:grid-cols-2 gap-6">
+              <div className="bg-brand text-white p-5 main-640:p-6 rounded-2xl space-y-4">
                 {(tax.enabled || totals.discount > 0) && (
                   <div className="flex justify-between items-center text-sm border-b border-white/10 pb-2">
                     <span className="text-white/70 font-medium">{t('orders.subtotal')}</span>
@@ -1187,13 +1187,13 @@ function TailoringOrderFormBody({
                   </div>
                 )}
                 <div className="flex justify-between items-center">
-                  <span className="text-white/90 font-black text-sm uppercase tracking-widest">{t('orders.grand_total')}</span>
+                  <span className="text-white/90 font-black text-sm uppercase">{t('orders.grand_total')}</span>
                   <span className="text-3xl font-black"><PriceDisplay amount={totals.total} /></span>
                 </div>
 
                 {canDiscount && (
                   <div className="space-y-2">
-                    <label htmlFor="order-discount" className="text-xs font-bold text-white/70 uppercase tracking-widest">{t('orders.discount_label')}</label>
+                    <label htmlFor="order-discount" className="text-sm font-bold text-white/70 uppercase">{t('orders.discount_label')}</label>
                     <input
                       id="order-discount"
                       type="number"
@@ -1207,7 +1207,7 @@ function TailoringOrderFormBody({
                 )}
 
                 <div className="space-y-2">
-                  <span className="text-xs font-bold text-white/70 uppercase tracking-widest">{t('orders.payment_method_label')}</span>
+                  <span className="text-sm font-bold text-white/70 uppercase">{t('orders.payment_method_label')}</span>
                   <div className="grid grid-cols-2 gap-2">
                     {PAYMENT_METHODS.map((method) => (
                       <button
@@ -1216,7 +1216,7 @@ function TailoringOrderFormBody({
                         aria-pressed={watch('paymentMethod' as any) === method.id}
                         onClick={() => setValue('paymentMethod' as any, method.id)}
                         className={cn(
-                          "flex items-center gap-2 p-3 rounded-xl border-2 transition-all text-xs font-bold",
+                          "flex items-center gap-2 p-3 rounded-xl border-2 transition-all text-sm font-bold",
                           watch('paymentMethod' as any) === method.id ? "border-surface bg-surface text-brand" : "border-surface/20 bg-surface/10 text-surface"
                         )}
                       >
@@ -1228,7 +1228,7 @@ function TailoringOrderFormBody({
                 </div>
 
                 <div className="space-y-2 pt-4 border-t border-white/10">
-                  <label htmlFor="order-paid" className="text-xs font-bold text-white/70 uppercase tracking-widest">{t('orders.amount_paid')}</label>
+                  <label htmlFor="order-paid" className="text-sm font-bold text-white/70 uppercase">{t('orders.amount_paid')}</label>
                   <input
                     id="order-paid"
                     type="number"
@@ -1238,7 +1238,7 @@ function TailoringOrderFormBody({
                     {...register('paidAmount' as any)}
                     className="w-full bg-surface/10 border border-surface/20 rounded-xl p-3 font-black text-surface placeholder:text-surface/30 focus:ring-2 focus:ring-surface/40 outline-none"
                   />
-                  <div className="flex justify-between text-xs font-bold pt-1">
+                  <div className="flex justify-between text-sm font-bold pt-1">
                     <span className="text-white/80">{t('orders.remaining_label')}</span>
                     <span className="bg-danger px-2 py-0.5 rounded-lg"><PriceDisplay amount={totals.total - paidAmount} /></span>
                   </div>
@@ -1284,7 +1284,7 @@ function TailoringOrderFormBody({
                         setValue('images' as any, [...images, imageUrl.trim()]);
                         setImageUrl('');
                       }}
-                      className="bg-brand text-white px-4 rounded-xl font-bold text-xs"
+                      className="bg-brand text-white px-4 rounded-xl font-bold text-sm"
                     >
                       {t('common.add')}
                     </button>
@@ -1319,23 +1319,23 @@ function TailoringOrderFormBody({
             </div>
           </div>
 
-          <div className="shrink-0 p-4 sm:p-5 border-t border-border bg-surface flex flex-wrap items-center justify-between gap-4">
+          <div className="shrink-0 p-4 main-640:p-5 border-t border-border bg-surface flex flex-wrap items-center justify-between gap-4">
             <div>
               {Object.keys(errors).length > 0 && (
-                <p className="text-xs text-danger font-bold flex items-center gap-1">
+                <p className="text-sm text-danger font-bold flex items-center gap-1">
                   <AlertCircle size={14} />
                   {t('orders.fill_required_fields')}
                 </p>
               )}
             </div>
             <div className="flex gap-3">
-              <button type="button" onClick={onClose} className="px-6 py-2.5 sm:px-8 sm:py-3 text-content-muted font-bold hover:text-content transition-colors text-sm sm:text-base rounded-xl hover:bg-surface-muted">
+              <button type="button" onClick={onClose} className="px-6 py-2.5 main-640:px-8 main-640:py-3 text-content-muted font-bold hover:text-content transition-colors text-sm main-640:text-base rounded-xl hover:bg-surface-muted">
                 {t('common.cancel')}
               </button>
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="bg-brand text-white px-8 py-2.5 sm:px-12 sm:py-3 rounded-xl font-bold hover:bg-brand/90 shadow-lg shadow-brand/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
+                className="bg-brand text-white px-8 py-2.5 main-640:px-12 main-640:py-3 rounded-xl font-bold hover:bg-brand/90 shadow-lg shadow-brand/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed text-sm main-640:text-base"
               >
                 {isSubmitting ? t('orders.saving') : t('orders.confirm_create_order')}
               </button>

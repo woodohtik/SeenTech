@@ -40,11 +40,11 @@ export default function WhatsAppPhoneModal({ onClose, onConfirm, defaultPhone, t
             <MessageCircle size={24} />
           </div>
           <h3 className="text-lg font-black text-content">{title}</h3>
-          <div className="text-xs font-bold text-content-muted leading-relaxed">{description}</div>
+          <div className="text-sm font-bold text-content-muted leading-relaxed">{description}</div>
         </div>
 
         <div className="space-y-2 text-start">
-          <label className="block text-xs font-black text-content-muted">
+          <label className="block text-sm font-black text-content-muted">
             {t('z_report.recipient_phone', 'رقم جوال المستلم (مثال: 0501234567)')}
           </label>
           <input
@@ -62,14 +62,14 @@ export default function WhatsAppPhoneModal({ onClose, onConfirm, defaultPhone, t
           <button
             onClick={handleConfirm}
             disabled={!phone.trim()}
-            className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-600/30 disabled:cursor-not-allowed text-white rounded-xl text-xs font-black shadow-md shadow-emerald-600/15 flex items-center justify-center gap-2 transition-all cursor-pointer"
+            className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-600/30 disabled:cursor-not-allowed text-white rounded-xl text-sm font-black shadow-md shadow-emerald-600/15 flex items-center justify-center gap-2 transition-all cursor-pointer"
           >
             <span>{t('z_report.continue_to_whatsapp', 'متابعة إلى واتساب')}</span>
             <ArrowLeft size={14} className="rotate-180" />
           </button>
           <button
             onClick={onClose}
-            className="px-4 py-3 bg-surface-muted hover:bg-border text-content transition-colors cursor-pointer rounded-xl text-xs font-black"
+            className="px-4 py-3 bg-surface-muted hover:bg-border text-content transition-colors cursor-pointer rounded-xl text-sm font-black"
           >
             {t('common.cancel')}
           </button>

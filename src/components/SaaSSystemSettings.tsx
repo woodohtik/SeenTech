@@ -352,7 +352,7 @@ export default function SaaSSystemSettings() {
           </div>
         </div>
         {userRole === 'support_tech' && (
-          <span className="px-4 py-2 bg-warning/10 text-warning rounded-xl text-xs font-black">
+          <span className="px-4 py-2 bg-warning/10 text-warning rounded-xl text-sm font-black">
             {t('common.support_mode')}
           </span>
         )}
@@ -360,7 +360,7 @@ export default function SaaSSystemSettings() {
 
       <TwoFactorSetup />
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 main-900:grid-cols-3 gap-8">
         {/* System Health */}
         <div className="bg-surface p-8 rounded-2xl border border-border shadow-sm">
           <h3 className="text-xl font-black text-content mb-8 flex items-center gap-2">
@@ -380,7 +380,7 @@ export default function SaaSSystemSettings() {
                   </div>
                   <div>
                     <div className="text-sm font-black text-content">{item.label}</div>
-                    <div className="text-xs text-content-muted font-bold">{item.status}</div>
+                    <div className="text-sm text-content-muted font-bold">{item.status}</div>
                   </div>
                 </div>
                 <span className={cn("text-sm font-black", item.color)}>{item.health}</span>
@@ -389,14 +389,14 @@ export default function SaaSSystemSettings() {
           </div>
         </div>
 
-        <div className="lg:col-span-2 space-y-8">
+        <div className="main-900:col-span-2 space-y-8">
           <div className="bg-surface p-8 rounded-2xl border border-border shadow-sm">
             <h3 className="text-xl font-black text-content mb-8 flex items-center gap-2">
               <Globe className="text-brand" size={24} />
               {t('common.branding_settings')}
             </h3>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="grid grid-cols-1 main-720:grid-cols-2 gap-8">
               <div className="space-y-4">
                 <label className="block text-sm font-black text-content-muted">{t('common.company_name')}</label>
                 <IconInput 
@@ -443,7 +443,7 @@ export default function SaaSSystemSettings() {
               {t('saas.core_platform_settings', 'إعدادات المنصة الأساسية')}
             </h3>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="grid grid-cols-1 main-720:grid-cols-2 gap-8">
               <div className="space-y-4">
                 <label className="block text-sm font-black text-content-muted">{t('saas.trial_duration_days', 'مدة التجربة المجانية (أيام)')}</label>
                 <IconInput 
@@ -492,7 +492,7 @@ export default function SaaSSystemSettings() {
               {t('saas.referral_program_settings', 'إعدادات برنامج الإحالة')}
             </h3>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 main-720:grid-cols-3 gap-8">
               <div className="space-y-4">
                 <label className="block text-sm font-black text-content-muted">{t('saas.referral_reward_per_referral', 'العمولة لكل إحالة (ر.س)')}</label>
                 <IconInput
@@ -530,7 +530,7 @@ export default function SaaSSystemSettings() {
               </div>
             </div>
 
-            <p className="text-xs text-content-muted font-bold mt-4">
+            <p className="text-sm text-content-muted font-bold mt-4">
               {t('saas.referral_disabled_hint', 'عند التعطيل: تتوقف إحالات جديدة عن التسجيل فقط -- أرصدة التجار المكتسبة فعلاً تبقى قابلة للسحب كالمعتاد.')}
             </p>
 
@@ -556,11 +556,11 @@ export default function SaaSSystemSettings() {
               {t('saas.bank_transfer_settings', 'تفاصيل التحويل البنكي')}
             </h3>
 
-            <p className="text-xs text-content-muted font-bold mb-6 -mt-4">
+            <p className="text-sm text-content-muted font-bold mb-6 -mt-4">
               {t('saas.bank_transfer_hint', 'هذه البيانات هي ما يراه التاجر عند اختيار الدفع بالتحويل البنكي في شاشة الفوترة.')}
             </p>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 main-720:grid-cols-3 gap-8">
               <div className="space-y-4">
                 <label className="block text-sm font-black text-content-muted">{t('saas.bank_transfer_bank_name', 'اسم البنك')}</label>
                 <IconInput
@@ -625,7 +625,7 @@ export default function SaaSSystemSettings() {
           {t('common.advanced_data_management')}
         </h3>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 main-720:grid-cols-2 gap-8">
           <div className="space-y-4">
             <label className="block text-sm font-black text-content-muted">{t('common.select_tenant_management')}</label>
             <SmartSelect
@@ -640,7 +640,7 @@ export default function SaaSSystemSettings() {
             />
           </div>
 
-          <div className="flex flex-col sm:flex-row gap-4 items-end">
+          <div className="flex flex-col main-640:flex-row gap-4 items-end">
             <button
               disabled={!selectedTenantId || isDeleting || userRole === 'support_tech' || userRole === 'billing_admin'}
               onClick={() => {
@@ -740,14 +740,14 @@ export default function SaaSSystemSettings() {
                 <div className="flex gap-4 pt-4">
                   <button 
                     onClick={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
-                    className="flex-1 px-6 py-4 bg-surface-muted text-content-muted rounded-2xl font-black hover:bg-border/20 transition-all font-mono uppercase text-xs"
+                    className="flex-1 px-6 py-4 bg-surface-muted text-content-muted rounded-2xl font-black hover:bg-border/20 transition-all font-mono uppercase text-sm"
                   >
                     {t('common.cancel')}
                   </button>
                   <button 
                     onClick={confirmModal.type === 'wipe' ? confirmWipeData : confirmDeleteTestData}
                     disabled={confirmModal.type === 'wipe' && confirmModal.inputValue !== confirmModal.tenantName}
-                    className="flex-1 px-6 py-4 bg-danger text-white rounded-2xl font-black hover:bg-danger/90 disabled:opacity-50 shadow-lg shadow-danger/10 transition-all font-mono uppercase text-xs"
+                    className="flex-1 px-6 py-4 bg-danger text-white rounded-2xl font-black hover:bg-danger/90 disabled:opacity-50 shadow-lg shadow-danger/10 transition-all font-mono uppercase text-sm"
                   >
                     {t('common.confirm_final_deletion')}
                   </button>

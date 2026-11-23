@@ -86,7 +86,7 @@ export default function SubscriptionLockScreen({
           </div>
           <div className="flex justify-between gap-4">
             <dt className="text-slate-400">{t('subscription.account_email_label')}</dt>
-            <dd className="font-mono text-white text-[12px] dir-ltr">{userEmail}</dd>
+            <dd className="font-mono text-white text-sm dir-ltr">{userEmail}</dd>
           </div>
         </dl>
 

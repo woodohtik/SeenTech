@@ -39,7 +39,7 @@ export default function PublicLanguageSwitch({ className = '' }: { className?: s
   }, []);
 
   return (
-    <div className={`flex items-center justify-center gap-1 text-xs font-bold ${className}`} role="group" aria-label="Language / اللغة / زبان">
+    <div className={`flex items-center justify-center gap-1 text-sm font-bold ${className}`} role="group" aria-label="Language / اللغة / زبان">
       {LANGS.map((l) => (
         <button
           key={l.code}

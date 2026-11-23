@@ -1,4 +1,5 @@
 import { ThermalInvoice, StandardInvoice, InvoiceData } from "./printing/InvoiceReceipt";
+import { AutoGrid } from './ui/AutoGrid';
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { formatSaudiPhone } from '../utils/phoneUtils';
 import { fuzzyIncludes } from '../utils/fuzzySearch';
@@ -1648,14 +1649,14 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
     return (
       <div className="flex flex-col h-full bg-surface">
         {/* Cart Header */}
-        <div className="p-4 sm:px-6 sm:py-5 border-b border-border flex items-center justify-between shrink-0 relative">
+        <div className="p-4 main-640:px-6 main-640:py-5 border-b border-border flex items-center justify-between shrink-0 relative">
           <div className="flex items-center gap-2">
-            {isMobilePanel && <div className="md:hidden w-10 h-1 bg-border rounded-full absolute top-2 left-1/2 -translate-x-1/2" />}
+            {isMobilePanel && <div className="main-720:hidden w-10 h-1 bg-border rounded-full absolute top-2 left-1/2 -translate-x-1/2" />}
             <ShoppingCart size={22} className="text-brand" />
-            <h2 className="text-base lg:text-lg font-black text-content">
+            <h2 className="text-base main-900:text-lg font-black text-content">
               {t('pos.cart_title')}
             </h2>
-            <span className="bg-brand/10 text-brand text-xs px-2.5 py-0.5 rounded-full font-black">{cart.length}</span>
+            <span className="bg-brand/10 text-brand text-sm px-2.5 py-0.5 rounded-full font-black">{cart.length}</span>
           </div>
           {isMobilePanel && (
             <button
@@ -1669,7 +1670,7 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
         </div>
 
         {/* Customer Selector */}
-        <div className="p-4 sm:px-6 sm:py-5 border-b border-border space-y-3 z-30 shrink-0">
+        <div className="p-4 main-640:px-6 main-640:py-5 border-b border-border space-y-3 z-30 shrink-0">
           <div className="flex gap-2 relative">
             <Combobox value={selectedCustomer} onChange={(customer: Customer | null) => {
               setSelectedCustomer(customer);
@@ -1710,7 +1711,7 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
                       }
                       value={null}
                     >
-                      <span className="block truncate font-bold text-xs">{t('pos.walk_in_customer')}</span>
+                      <span className="block truncate font-bold text-sm">{t('pos.walk_in_customer')}</span>
                     </Combobox.Option>
                     {customers
                       .filter((person) =>
@@ -1727,8 +1728,8 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
                         }
                         value={person}
                       >
-                        <span className="block truncate font-bold text-xs">{person.name}</span>
-                        <span className="block text-[11px] opacity-80">{person.phone}</span>
+                        <span className="block truncate font-bold text-sm">{person.name}</span>
+                        <span className="block text-sm opacity-80">{person.phone}</span>
                       </Combobox.Option>
                     ))}
                   </Combobox.Options>
@@ -1744,7 +1745,7 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
             </button>
           </div>
           {selectedCustomer && (
-            <div className="p-3 bg-surface-muted border border-border rounded-xl space-y-1.5 text-xs">
+            <div className="p-3 bg-surface-muted border border-border rounded-xl space-y-1.5 text-sm">
               <div className="flex justify-between items-center text-content-muted">
                 <span className="font-medium">{t('pos.customer_name')}</span>
                 <span className="font-black text-content">{selectedCustomer.name}</span>
@@ -1764,13 +1765,13 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
                   <button
                     type="button"
                     onClick={() => setIsDebtModalOpen(true)}
-                    className="w-full py-1.5 bg-danger text-white rounded-md text-[11px] font-black hover:bg-danger/90 transition-colors cursor-pointer"
+                    className="w-full py-1.5 bg-danger text-white rounded-md text-sm font-black hover:bg-danger/90 transition-colors cursor-pointer"
                   >
                     {t('pos.settle_debt')}
                   </button>
                 </div>
               ) : (
-                <div className="mt-2 p-1.5 px-2 bg-success/10 border border-success/20 text-success rounded-lg text-center font-bold text-[11px]">
+                <div className="mt-2 p-1.5 px-2 bg-success/10 border border-success/20 text-success rounded-lg text-center font-bold text-sm">
                   {t('pos.no_previous_due')}
                 </div>
               )}
@@ -1779,7 +1780,7 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
         </div>
 
         {/* Cart Items List */}
-        <div className="flex-1 overflow-auto p-4 sm:px-6 sm:py-5 space-y-3">
+        <div className="flex-1 overflow-auto p-4 main-640:px-6 main-640:py-5 space-y-3">
           {focusedItemId && (
             <div 
               className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40 transition-opacity"
@@ -1832,12 +1833,12 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
                       {item.type === 'custom' ? (
-                        <span className="px-2 py-0.5 bg-brand/10 text-brand text-xs font-bold rounded-md flex items-center gap-1">
+                        <span className="px-2 py-0.5 bg-brand/10 text-brand text-sm font-bold rounded-md flex items-center gap-1">
                           <Scissors size={12} />
                           {tv('pos.type_custom')}
                         </span>
                       ) : (
-                        <span className="px-2 py-0.5 bg-content-muted/10 text-content-muted text-xs font-bold rounded-md flex items-center gap-1">
+                        <span className="px-2 py-0.5 bg-content-muted/10 text-content-muted text-sm font-bold rounded-md flex items-center gap-1">
                           <Package size={12} />
                           {t('pos.type_ready_made')}
                         </span>
@@ -1848,7 +1849,7 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
                     </div>
                     <div className="text-brand font-bold">
                       <PriceDisplay amount={item.price} />
-                      {(item as any).isLength && <span className="text-xs text-content-muted font-bold"> / {t('pos.per_meter', 'للمتر')}</span>}
+                      {(item as any).isLength && <span className="text-sm text-content-muted font-bold"> / {t('pos.per_meter', 'للمتر')}</span>}
                     </div>
                   </div>
                   
@@ -1878,7 +1879,7 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
                 {focusedItemId === item.id && item.type === 'ready_made' && (
                   <div className="mt-3 pt-3 border-t border-border flex flex-wrap gap-2 animate-in fade-in slide-in-from-top-1">
                     <button 
-                      className="text-[11px] font-black text-brand bg-brand/5 px-2 py-1 rounded-md uppercase tracking-wider cursor-pointer"
+                      className="text-sm font-black text-brand bg-brand/5 px-2 py-1 rounded-md uppercase cursor-pointer"
                       onClick={() => {
                         const input = document.createElement('input');
                         input.type = 'file';
@@ -1902,15 +1903,15 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
         </div>
 
         {/* Order Summary Block */}
-        <div className="p-4 sm:px-6 sm:py-5 border-t border-border bg-surface shrink-0">
+        <div className="p-4 main-640:px-6 main-640:py-5 border-t border-border bg-surface shrink-0">
           <div className="space-y-2 mb-4">
-            <div className="flex justify-between items-center text-xs sm:text-sm">
+            <div className="flex justify-between items-center text-sm">
               <span className="text-content-muted font-bold">{t('pos.subtotal')}</span>
               <span className="text-content font-black"><PriceDisplay amount={subTotalAmount} /></span>
             </div>
             
             {calculatedDiscountAmount > 0 && (
-              <div className="flex justify-between items-center text-xs sm:text-sm text-brand font-bold">
+              <div className="flex justify-between items-center text-sm text-brand font-bold">
                 <span>{t('pos.discount_applied')}</span>
                 <span className="font-black relative flex items-center">
                   -<PriceDisplay amount={calculatedDiscountAmount} className="inline-flex ms-1" />
@@ -1919,7 +1920,7 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
             )}
 
             {isTaxEnabled && (
-              <div className="flex justify-between items-center text-xs sm:text-sm">
+              <div className="flex justify-between items-center text-sm">
                 <span className="text-content-muted font-bold">{t('pos.vat')} ({vatRate}%)</span>
                 <span className="text-content font-black"><PriceDisplay amount={taxAmount} /></span>
               </div>
@@ -1927,10 +1928,10 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
           </div>
           
           <div className="flex justify-between items-center mb-4 pt-3 border-t border-border">
-            <span className="text-content-muted font-black uppercase tracking-wider text-xs sm:text-sm">
+            <span className="text-content-muted font-black uppercase text-sm">
               {t('pos.grand_total')} {isTaxEnabled && t('pos.inclusive_vat')}
             </span>
-            <span className="text-xl sm:text-2xl font-black text-brand"><PriceDisplay amount={totalAmount} /></span>
+            <span className="text-xl main-640:text-2xl font-black text-brand"><PriceDisplay amount={totalAmount} /></span>
           </div>
 
           <button
@@ -1939,7 +1940,7 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
                setPaidAmount(totalAmount);
             }}
             disabled={cart.length === 0}
-            className="w-full py-3.5 sm:py-4 bg-success hover:bg-success/90 text-white rounded-2xl font-black text-base sm:text-lg transition-all active:scale-[0.98] disabled:opacity-50 disabled:grayscale disabled:scale-100 flex items-center justify-center gap-2.5 cursor-pointer"
+            className="w-full py-3.5 main-640:py-4 bg-success hover:bg-success/90 text-white rounded-2xl font-black text-base main-640:text-lg transition-all active:scale-[0.98] disabled:opacity-50 disabled:grayscale disabled:scale-100 flex items-center justify-center gap-2.5 cursor-pointer"
           >
             <CreditCard size={22} />
             <span>{t('pos.checkout_and_pay')}</span>
@@ -2042,7 +2043,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
   };
 
   return (
-    <div className="h-full flex flex-col md:flex-row font-sans bg-surface text-content overflow-hidden w-full" dir={isRtl ? 'rtl' : 'ltr'}>
+    <div className="h-full flex flex-col main-720:flex-row font-sans bg-surface text-content overflow-hidden w-full" dir={isRtl ? 'rtl' : 'ltr'}>
       <ScannerModal isOpen={isScannerOpen} onClose={() => setIsScannerOpen(false)} onScan={handleScan} />
       {variantPickerItem && (
         <VariantPickerModal
@@ -2066,8 +2067,8 @@ const invoiceData: InvoiceData | null = completedOrder ? {
         />
       )}
       {/* Main Pane (70% width on Desktop) */}
-      <div className="w-full md:w-[70%] flex flex-col gap-4 lg:gap-5 overflow-x-hidden transition-all duration-300 p-4 sm:p-6 overflow-y-auto h-auto md:h-full flex-1">
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+      <div className="w-full min-w-0 main-720:w-[70%] flex flex-col gap-4 main-900:gap-5 overflow-x-hidden transition-all duration-300 p-4 main-640:p-6 overflow-y-auto h-auto main-720:h-full flex-1">
+        <div className="flex flex-col main-900:flex-row items-stretch main-900:items-center gap-3">
           <IconInput
             ref={searchInputRef}
             type="text"
@@ -2098,7 +2099,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
           <button
             onClick={() => setIsShortcutsModalOpen(true)}
             aria-label={t('pos.shortcuts_button')}
-            className="hidden sm:flex items-center justify-center gap-2 px-4 h-11 bg-surface border border-border text-content hover:bg-surface-muted rounded-xl transition-all font-black shadow-sm active:scale-95 cursor-pointer text-xs sm:text-sm shrink-0"
+            className="hidden main-640:flex items-center justify-center gap-2 px-4 h-11 bg-surface border border-border text-content hover:bg-surface-muted rounded-xl transition-all font-black shadow-sm active:scale-95 cursor-pointer text-sm shrink-0"
             title={t('pos.shortcuts_tooltip')}
           >
             <Keyboard size={16} />
@@ -2108,8 +2109,8 @@ const invoiceData: InvoiceData | null = completedOrder ? {
         </div>
 
         {/* Category Filters scroll row & View Toggle */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 shrink-0">
-          <div className="flex items-center gap-2 overflow-x-auto py-1 scrollbar-none w-full sm:w-auto" style={{ WebkitOverflowScrolling: 'touch' }}>
+        <div className="flex flex-col main-900:flex-row main-900:items-center main-900:justify-between gap-3 shrink-0">
+          <div className="flex items-center gap-2 overflow-x-auto py-1 scrollbar-none w-full main-900:w-auto" style={{ WebkitOverflowScrolling: 'touch' }}>
             {uniqueCategories.map(cat => {
               const isActive = selectedCategory === cat;
               return (
@@ -2117,7 +2118,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                   key={cat}
                   onClick={() => setSelectedCategory(cat)}
                   className={cn(
-                    "px-4 py-2 rounded-xl text-xs font-black transition-all duration-200 cursor-pointer border shrink-0 active:scale-95",
+                    "px-4 py-2 rounded-xl text-sm font-black transition-all duration-200 cursor-pointer border shrink-0 active:scale-95",
                     isActive
                       ? "bg-brand text-white border-brand shadow-sm"
                       : "bg-surface text-content-muted border-border hover:bg-surface-muted/80"
@@ -2129,7 +2130,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
             })}
           </div>
 
-          <div className="flex items-center self-end sm:self-center bg-surface border border-border rounded-xl p-1 shadow-sm shrink-0">
+          <div className="flex items-center self-end main-640:self-center bg-surface border border-border rounded-xl p-1 shadow-sm shrink-0">
             <button
               onClick={() => setViewMode('grid')}
               className={cn(
@@ -2166,14 +2167,18 @@ const invoiceData: InvoiceData | null = completedOrder ? {
             فقط، وrounded-2xl (16px) تحوّلت rounded-xl (12px) لتطابق فئة
             "البطاقات" الوحيدة المسموحة في §4 بدل قيمة وسيطة غير موجودة
             في اللوحة. */}
-        <div className="flex-1 bg-surface border border-border rounded-xl p-4 sm:p-5 overflow-auto">
+        <div className="flex-1 bg-surface border border-border rounded-xl p-4 main-640:p-5 overflow-auto">
           {/* "تفصيل جديد" opens a custom tailoring order unrelated to
               inventory stock, so it must stay reachable even when
               filteredInventory is empty (no products yet, or a search with
               no matches) -- it used to live only inside the non-empty
               branch below and vanished along with the product grid. */}
           {viewMode === 'grid' ? (
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4 w-full">
+              // Tiles of at least 128px, as many as the PRODUCT panel holds: it
+              // shares the content with the cart, so the content's width said
+              // five columns where the panel had room for three, and names
+              // went one word a line (seen-responsive-layout-task.md Phase 3).
+              <AutoGrid min={128} className="w-full" style={{ ['--auto-grid-gap' as string]: '0.75rem' }}>
                 {ordersModuleOn && (
                 <button
                   onClick={() => setIsCustomOrderModalOpen(true)}
@@ -2182,7 +2187,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                   <div className="w-full aspect-square bg-brand/10 rounded-xl flex items-center justify-center mb-2.5 group-hover:scale-105 transition-transform overflow-hidden border border-brand/20">
                     <Scissors size={26} className="text-brand" />
                   </div>
-                  <span className="text-xs sm:text-sm font-bold text-brand text-center line-clamp-2 min-h-[2.25rem] mb-1 w-full flex items-center justify-center">
+                  <span className="text-sm font-bold text-brand text-center line-clamp-2 min-h-[2.25rem] mb-1 w-full flex items-center justify-center">
                     {tv('pos.custom_tailor')}
                   </span>
                 </button>
@@ -2207,18 +2212,18 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                         </div>
                       )}
                     </div>
-                    <span className="text-xs sm:text-sm font-bold text-content text-center line-clamp-2 min-h-[2.25rem] mb-1 w-full">
+                    <span className="text-sm font-bold text-content text-center line-clamp-2 min-h-[2.25rem] mb-1 w-full">
                       {i18n.language === 'en' && item.nameEn ? item.nameEn : item.name}
                       {(itemVariants[item.id]?.length ?? 0) > 0 && (
-                        <span className="block text-[11px] font-bold text-brand mt-0.5">
+                        <span className="block text-sm font-bold text-brand mt-0.5">
                           {itemVariants[item.id].length} {t('inventory.variants.badge_suffix', 'سمات')}
                         </span>
                       )}
                     </span>
                     <div className="flex flex-col items-center justify-center gap-0.5 mb-1 w-full">
-                      <span className="text-brand font-black text-sm sm:text-base"><PriceDisplay amount={item.pricePerUnit} /></span>
+                      <span className="text-brand font-black text-sm main-640:text-base"><PriceDisplay amount={item.pricePerUnit} /></span>
                       <span className={cn(
-                        "text-[11px] font-bold px-2 py-0.5 rounded-full",
+                        "text-sm font-bold px-2 py-0.5 rounded-full",
                         getItemDisplayStock(item) <= 0
                           ? "bg-danger/10 text-danger"
                           : "bg-success/10 text-success"
@@ -2228,19 +2233,19 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                     </div>
                   </button>
                 ))}
-              </div>
+              </AutoGrid>
             ) : (
               <div className="flex flex-col gap-2.5 w-full">
                 {ordersModuleOn && (
                 <button
                   onClick={() => setIsCustomOrderModalOpen(true)}
-                  className="flex items-center p-3 sm:p-3.5 bg-brand/5 border border-brand/40 hover:border-brand rounded-xl transition-all duration-200 group active:scale-[0.99] cursor-pointer w-full text-start"
+                  className="flex items-center p-3 main-640:p-3.5 bg-brand/5 border border-brand/40 hover:border-brand rounded-xl transition-all duration-200 group active:scale-[0.99] cursor-pointer w-full text-start"
                 >
-                  <div className="w-14 h-14 sm:w-16 sm:h-16 bg-brand/10 rounded-xl flex items-center justify-center shrink-0 overflow-hidden border border-brand/20 ms-0 me-3.5">
+                  <div className="w-14 h-14 main-640:w-16 main-640:h-16 bg-brand/10 rounded-xl flex items-center justify-center shrink-0 overflow-hidden border border-brand/20 ms-0 me-3.5">
                     <Scissors size={22} className="text-brand" />
                   </div>
                   <div className="flex-1 min-w-0 flex flex-col items-start text-start justify-center gap-1">
-                    <span className="text-xs sm:text-sm font-bold text-brand line-clamp-1 w-full text-start">
+                    <span className="text-sm font-bold text-brand line-clamp-1 w-full text-start">
                       {tv('pos.custom_tailor')}
                     </span>
                   </div>
@@ -2250,10 +2255,10 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                   <button
                     key={item.id}
                     onClick={() => handleProductTileClick(item)}
-                    className="flex items-center p-3 sm:p-3.5 bg-surface border border-border/70 hover:border-brand/50 rounded-xl transition-all duration-200 group active:scale-[0.99] cursor-pointer w-full text-start"
+                    className="flex items-center p-3 main-640:p-3.5 bg-surface border border-border/70 hover:border-brand/50 rounded-xl transition-all duration-200 group active:scale-[0.99] cursor-pointer w-full text-start"
                   >
                     {/* Item Image */}
-                    <div className="w-14 h-14 sm:w-16 sm:h-16 bg-surface-muted/60 rounded-xl flex items-center justify-center shrink-0 overflow-hidden border border-border/40 ms-0 me-3.5">
+                    <div className="w-14 h-14 main-640:w-16 main-640:h-16 bg-surface-muted/60 rounded-xl flex items-center justify-center shrink-0 overflow-hidden border border-border/40 ms-0 me-3.5">
                       {item.mainImage ? (
                         <img 
                           src={item.mainImage} 
@@ -2268,17 +2273,17 @@ const invoiceData: InvoiceData | null = completedOrder ? {
 
                     {/* Details in the Middle */}
                     <div className="flex-1 min-w-0 flex flex-col items-start text-start justify-center gap-1">
-                      <span className="text-xs sm:text-sm font-bold text-content line-clamp-1 w-full text-start">
+                      <span className="text-sm font-bold text-content line-clamp-1 w-full text-start">
                         {i18n.language === 'en' && item.nameEn ? item.nameEn : item.name}
                       </span>
                       <div className="flex items-center gap-1.5 flex-wrap">
                         {(item.category_key || item.category) && (
-                          <span className="text-[11px] sm:text-xs text-content-muted bg-surface-muted px-2.5 py-0.5 rounded-full font-bold">
+                          <span className="text-sm text-content-muted bg-surface-muted px-2.5 py-0.5 rounded-full font-bold">
                             {getCategoryLabel(item.category_key || item.category)}
                           </span>
                         )}
                         <span className={cn(
-                          "text-[11px] font-bold px-2 py-0.5 rounded-full",
+                          "text-sm font-bold px-2 py-0.5 rounded-full",
                           getItemDisplayStock(item) <= 0
                             ? "bg-danger/10 text-danger"
                             : "bg-success/10 text-success"
@@ -2286,7 +2291,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                           {t('inventory.available')}: {getItemDisplayStock(item)}
                         </span>
                         {(itemVariants[item.id]?.length ?? 0) > 0 && (
-                          <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-brand/10 text-brand">
+                          <span className="text-sm font-bold px-2 py-0.5 rounded-full bg-brand/10 text-brand">
                             {itemVariants[item.id].length} {t('inventory.variants.badge_suffix', 'سمات')}
                           </span>
                         )}
@@ -2295,10 +2300,10 @@ const invoiceData: InvoiceData | null = completedOrder ? {
 
                     {/* Price and Action button on the End/Right */}
                     <div className="flex flex-col items-end justify-center shrink-0 gap-1 ms-3 me-0">
-                      <span className="text-brand font-black text-sm sm:text-base">
+                      <span className="text-brand font-black text-sm main-640:text-base">
                         <PriceDisplay amount={item.pricePerUnit} />
                       </span>
-                      <div className="px-2.5 py-1 bg-brand/10 text-brand group-hover:bg-brand group-hover:text-white rounded-lg transition-colors text-xs font-black flex items-center gap-1">
+                      <div className="px-2.5 py-1 bg-brand/10 text-brand group-hover:bg-brand group-hover:text-white rounded-lg transition-colors text-sm font-black flex items-center gap-1">
                         <Plus size={12} />
                         <span>{t('common.add')}</span>
                       </div>
@@ -2317,7 +2322,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
       </div>
 
       {/* Desktop sidebar cart layout (30% width) - Hidden on mobile */}
-      <div className="hidden md:flex md:w-[30%] md:min-w-[360px] md:max-w-[450px] ltr:border-l rtl:border-r border-border flex-col h-full overflow-hidden shrink-0">
+      <div className="hidden main-720:flex main-720:w-[30%] main-720:min-w-[360px] main-720:max-w-[450px] ltr:border-l rtl:border-r border-border flex-col h-full overflow-hidden shrink-0">
         {renderCartPanel(false)}
       </div>
 
@@ -2330,14 +2335,14 @@ const invoiceData: InvoiceData | null = completedOrder ? {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setShowCartOnMobile(false)}
-              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[50] md:hidden"
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[50] main-720:hidden"
             />
             <motion.div
               initial={shouldReduceMotion ? false : { y: '100%' }}
               animate={{ y: 0 }}
               exit={shouldReduceMotion ? undefined : { y: '100%' }}
               transition={shouldReduceMotion ? { duration: 0 } : { type: 'spring', damping: 28, stiffness: 220 }}
-              className="fixed inset-x-0 bottom-0 h-[85vh] rounded-t-[2.5rem] bg-surface flex flex-col shadow-2xl z-[60] md:hidden overflow-hidden pb-10"
+              className="fixed inset-x-0 bottom-0 h-[85vh] rounded-t-[2.5rem] bg-surface flex flex-col shadow-2xl z-[60] main-720:hidden overflow-hidden pb-10"
               dir={isRtl ? 'rtl' : 'ltr'}
             >
               {renderCartPanel(true)}
@@ -2354,16 +2359,16 @@ const invoiceData: InvoiceData | null = completedOrder ? {
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
           onClick={() => setShowCartOnMobile(true)}
-          className="md:hidden fixed bottom-[calc(1.5rem+env(safe-area-inset-bottom))] left-6 z-[40] bg-brand text-white p-5 rounded-2xl shadow-2xl flex items-center gap-3 transition-all"
+          className="main-720:hidden fixed bottom-[calc(1.5rem+env(safe-area-inset-bottom))] left-6 z-[40] bg-brand text-white p-5 rounded-2xl shadow-2xl flex items-center gap-3 transition-all"
         >
           <div className="relative">
             <ShoppingCart size={28} />
-            <span className="absolute -top-3 -right-3 bg-danger text-white text-[11px] font-black w-7 h-7 rounded-full flex items-center justify-center ring-4 ring-white shadow-lg">
+            <span className="absolute -top-3 -right-3 bg-danger text-white text-sm font-black w-7 h-7 rounded-full flex items-center justify-center ring-4 ring-white shadow-lg">
               {cart.length}
             </span>
           </div>
           <div className="flex flex-col items-start ps-1">
-             <span className="text-[11px] font-bold uppercase opacity-80 leading-none mb-1">{t('common.total')}</span>
+             <span className="text-sm font-bold uppercase opacity-80 leading-none mb-1">{t('common.total')}</span>
              <PriceDisplay amount={totalAmount} className="text-sm font-black leading-none" />
           </div>
         </motion.button>
@@ -2372,7 +2377,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
       {/* Payment Side Drawer Refactored to Bottom Sheet for mobile */}
       <AnimatePresence>
         {(isPaymentModalOpen || !!viewingInvoice) && (
-          <div className="fixed inset-0 z-[60] flex items-end lg:items-center justify-center overflow-hidden">
+          <div className="fixed inset-0 z-[60] flex items-end main-900:items-center justify-center overflow-hidden">
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -2389,10 +2394,10 @@ const invoiceData: InvoiceData | null = completedOrder ? {
               animate={{ y: 0, x: 0 }}
               exit={shouldReduceMotion ? undefined : { y: window.innerWidth < 1024 ? '100%' : 0, x: window.innerWidth >= 1024 ? '100%' : 0 }}
               transition={shouldReduceMotion ? { duration: 0 } : { type: 'spring', damping: 25, stiffness: 200 }}
-              className="bg-surface w-full lg:w-[450px] md:h-auto lg:h-full h-[90vh] shadow-2xl relative z-10 flex flex-col lg:rounded-none rounded-t-3xl border-t lg:border-t-0 lg:border-r border-border overflow-hidden lg:mr-auto md:max-w-md md:rounded-3xl md:mb-10 lg:max-w-none lg:mb-0 lg:ml-0"
+              className="bg-surface w-full main-900:w-[450px] main-720:h-auto main-900:h-full h-[90vh] shadow-2xl relative z-10 flex flex-col main-900:rounded-none rounded-t-3xl border-t main-900:border-t-0 main-900:border-r border-border overflow-hidden main-900:mr-auto main-720:max-w-md main-720:rounded-3xl main-720:mb-10 main-900:max-w-none main-900:mb-0 main-900:ml-0"
               dir={isRtl ? 'rtl' : 'ltr'}
             >
-              <div className="flex-1 overflow-y-auto p-4 lg:p-6 pb-24 lg:pb-6">
+              <div className="flex-1 overflow-y-auto p-4 main-900:p-6 pb-24 main-900:pb-6">
               {viewingInvoice ? (
                 // Bug report (2026-11-16): settling a customer's debt used
                 // to pop up a separate centered TaxInvoiceModal -- now
@@ -2503,7 +2508,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                           <AlertTriangle size={22} />
                           <div>
                             <div className="text-sm font-black">{t('pos.customer_has_due')}</div>
-                            <div className="text-xs opacity-80">{selectedCustomer.name}</div>
+                            <div className="text-sm opacity-80">{selectedCustomer.name}</div>
                           </div>
                         </div>
                         <span className="font-mono font-black text-lg text-danger whitespace-nowrap">
@@ -2539,7 +2544,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                         <div className="mt-3 p-3 bg-brand/5 border border-brand/20 rounded-xl text-sm">
                            <div className="flex justify-between items-center mb-1">
                              <span className="font-bold text-brand">{b2bData.companyName}</span>
-                             <button onClick={() => setIsB2bModalOpen(true)} className="text-brand text-xs font-bold hover:underline">{t('common.edit')}</button>
+                             <button onClick={() => setIsB2bModalOpen(true)} className="text-brand text-sm font-bold hover:underline">{t('common.edit')}</button>
                            </div>
                            <div className="text-content-muted">{t('pos.trn_label')} {b2bData.trn}</div>
                         </div>
@@ -2554,7 +2559,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                           <button
                             type="button"
                             className={cn(
-                              "px-3 py-2.5 min-h-[40px] text-xs font-bold rounded-md transition-all",
+                              "px-3 py-2.5 min-h-[40px] text-sm font-bold rounded-md transition-all",
                               discountType === 'percent' ? "bg-brand text-white shadow-sm" : "text-content-muted hover:text-content"
                             )}
                             onClick={() => {
@@ -2567,7 +2572,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                           <button
                             type="button"
                             className={cn(
-                              "px-3 py-2.5 min-h-[40px] text-xs font-bold rounded-md transition-all",
+                              "px-3 py-2.5 min-h-[40px] text-sm font-bold rounded-md transition-all",
                               discountType === 'fixed' ? "bg-brand text-white shadow-sm" : "text-content-muted hover:text-content"
                             )}
                             onClick={() => setDiscountType('fixed')}
@@ -2608,7 +2613,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                     {/* Payment Method */}
                     <div className="bg-surface p-4 rounded-2xl border border-border">
                       <label className="block text-sm font-bold text-content mb-3">{t('pos.payment_method')}</label>
-                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                      <div className="grid grid-cols-2 main-640:grid-cols-4 gap-2">
                         {[
                           { id: 'cash', label: t('pos.cash'), icon: Banknote },
                           { id: 'network', label: t('pos.card'), icon: CreditCard },
@@ -2633,7 +2638,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                             )}
                           >
                             <method.icon size={20} />
-                            <span className="text-xs">{method.label}</span>
+                            <span className="text-sm">{method.label}</span>
                           </button>
                         ))}
                       </div>
@@ -2667,8 +2672,8 @@ const invoiceData: InvoiceData | null = completedOrder ? {
 
                   </div>
 
-                  <div className="absolute bottom-0 right-0 left-0 p-4 md:p-6 bg-surface border-t border-border md:static md:mt-8 md:mb-4 md:border-none md:p-0">
-                    <div className="hidden md:block">
+                  <div className="absolute bottom-0 right-0 left-0 p-4 main-720:p-6 bg-surface border-t border-border main-720:static main-720:mt-8 main-720:mb-4 main-720:border-none main-720:p-0">
+                    <div className="hidden main-720:block">
                       <div className="flex justify-between items-center mb-2 px-1 text-content-muted">
                         <span>{t('pos.total_required')}</span>
                         <span className="font-bold text-content line-through opacity-70"><PriceDisplay amount={totalAmount + calculatedDiscountAmount} /></span>
@@ -2685,14 +2690,14 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                       </div>
                     </div>
                     
-                    <div className="md:hidden flex justify-between items-center mb-4">
+                    <div className="main-720:hidden flex justify-between items-center mb-4">
                         <div className="flex flex-col">
-                            <span className="text-[11px] text-content-muted font-bold uppercase">{t('pos.net_payable')}</span>
+                            <span className="text-sm text-content-muted font-bold uppercase">{t('pos.net_payable')}</span>
                             <span className="text-xl font-black text-brand"><PriceDisplay amount={totalAmount} /></span>
                         </div>
                         {totalAmount - paidAmount > 0 && (
                             <div className="flex flex-col items-end">
-                                <span className="text-[11px] text-danger font-bold uppercase">{t('pos.remaining_amount')}</span>
+                                <span className="text-sm text-danger font-bold uppercase">{t('pos.remaining_amount')}</span>
                                 <span className="text-lg font-bold text-danger"><PriceDisplay amount={totalAmount - paidAmount} /></span>
                             </div>
                         )}
@@ -2718,7 +2723,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                     <button
                       onClick={handleCheckout}
                       disabled={loading}
-                      className="w-full py-4 bg-brand text-white rounded-xl md:rounded-2xl font-black text-lg hover:bg-brand/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg active:scale-95"
+                      className="w-full py-4 bg-brand text-white rounded-xl main-720:rounded-2xl font-black text-lg hover:bg-brand/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg active:scale-95"
                     >
                       {loading ? t('common.processing') : (
                         <>
@@ -2758,7 +2763,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                   </div>
                   <div>
                     <h2 className="text-lg font-black text-content">{t('pos.settle_debt')}</h2>
-                    <p className="text-xs font-bold text-content-muted mt-0.5">{selectedCustomer.name}</p>
+                    <p className="text-sm font-bold text-content-muted mt-0.5">{selectedCustomer.name}</p>
                   </div>
                 </div>
                 <button
@@ -2796,7 +2801,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                     <div className="space-y-3">
                       {debtOrders.map(order => (
                         <div key={order.id} className="p-4 bg-surface-muted/50 border border-border rounded-2xl space-y-2.5">
-                          <div className="flex justify-between items-center text-xs font-bold text-content-muted">
+                          <div className="flex justify-between items-center text-sm font-bold text-content-muted">
                             <span>{t('staff.order_number', { number: order.orderNumber })}</span>
                             <span>{new Date(order.orderDate).toLocaleDateString()}</span>
                           </div>
@@ -2866,7 +2871,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
               </div>
 
               <div id="pos-fallback-receipt-print-area" className="p-6 space-y-3 text-sm">
-                <p className="text-xs font-bold text-content-muted bg-surface-muted/60 p-2.5 rounded-lg">
+                <p className="text-sm font-bold text-content-muted bg-surface-muted/60 p-2.5 rounded-lg">
                   {t('pos.no_invoice_fallback_notice')}
                 </p>
                 <div className="flex justify-between"><span className="text-content-muted">{t('pos.customer_name')}</span><span className="font-bold">{fallbackReceipt.customerName}</span></div>
@@ -2963,7 +2968,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                     className="w-full flex items-center justify-between p-3 bg-surface-muted/50 border border-border rounded-xl font-bold text-sm hover:border-brand/50 transition-colors cursor-pointer"
                   >
                     <span>{t('staff.order_number', { number: o.orderNumber })}</span>
-                    <span className="text-brand text-xs">{t('tax_invoices.view_invoice')}</span>
+                    <span className="text-brand text-sm">{t('tax_invoices.view_invoice')}</span>
                   </button>
                 ))}
               </div>
@@ -2992,7 +2997,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                   </div>
                   <div>
                     <h2 className="text-lg font-black text-content">{t('sales.cash_drawer_details')}</h2>
-                    <p className="text-xs font-bold text-content-muted mt-0.5">{t('sales.shift_cash_details')}</p>
+                    <p className="text-sm font-bold text-content-muted mt-0.5">{t('sales.shift_cash_details')}</p>
                   </div>
                 </div>
                 <button
@@ -3007,27 +3012,27 @@ const invoiceData: InvoiceData | null = completedOrder ? {
               {/* Body */}
               <div className="p-6 space-y-6">
                 {/* Employee / Shift info */}
-                <div className="flex justify-between items-center text-xs font-bold text-content-muted bg-surface-muted/35 px-4 py-2.5 rounded-xl border border-border">
+                <div className="flex justify-between items-center text-sm font-bold text-content-muted bg-surface-muted/35 px-4 py-2.5 rounded-xl border border-border">
                   <span>{t('pos.employee_label')} <span className="text-content font-extrabold">{currentStaff?.name || t('sales.unknown')}</span></span>
                   <span>{t('pos.shift_id_label')} <span className="font-sans text-content font-extrabold">#{shiftId?.slice(-6).toUpperCase()}</span></span>
                 </div>
 
                 {/* Main Cash Drawer Indicator */}
                 <div className="bg-success/10 border border-success/20 rounded-3xl p-5 text-center space-y-2">
-                  <span className="text-xs font-black text-success block uppercase tracking-widest">
+                  <span className="text-sm font-black text-success block uppercase">
                     {t('sales.expected_cash')}
                   </span>
-                  <div className="text-3xl font-black text-success tracking-tight">
+                  <div className="text-3xl font-black text-success">
                     <PriceDisplay amount={cashDrawerBalance} />
                   </div>
-                  <p className="text-[11px] text-content-muted">
+                  <p className="text-sm text-content-muted">
                     {t('sales.expected_cash_desc')}
                   </p>
                 </div>
 
                 {/* Operations Breakdown Grid */}
                 <div className="space-y-3.5">
-                  <h3 className="text-xs font-black text-content-muted uppercase tracking-widest">{t('sales.flow_details')}</h3>
+                  <h3 className="text-sm font-black text-content-muted uppercase">{t('sales.flow_details')}</h3>
                   
                   <div className="grid grid-cols-1 gap-3">
                     {/* Opening Balance */}
@@ -3036,7 +3041,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                         <div className="p-2 bg-info/10 text-info rounded-xl">
                           <Coins size={18} />
                         </div>
-                        <span className="text-xs font-bold text-content">{t('sales.opening_balance')}</span>
+                        <span className="text-sm font-bold text-content">{t('sales.opening_balance')}</span>
                       </div>
                       <span className="text-sm font-black text-content">
                         <PriceDisplay amount={cashDrawerBreakdown.opening} />
@@ -3049,7 +3054,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                         <div className="p-2 bg-success/10 text-success rounded-xl">
                           <TrendingUp size={18} />
                         </div>
-                        <span className="text-xs font-bold text-content">{t('sales.cash_sales')}</span>
+                        <span className="text-sm font-bold text-content">{t('sales.cash_sales')}</span>
                       </div>
                       <span className="text-sm font-black text-success">
                         + <PriceDisplay amount={cashDrawerBreakdown.sales} />
@@ -3063,7 +3068,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                           <div className="p-2 bg-success/10 text-success rounded-xl">
                             <Plus size={18} />
                           </div>
-                          <span className="text-xs font-bold text-content">{t('sales.cash_deposits')}</span>
+                          <span className="text-sm font-bold text-content">{t('sales.cash_deposits')}</span>
                         </div>
                         <span className="text-sm font-black text-success">
                           + <PriceDisplay amount={cashDrawerBreakdown.deposits} />
@@ -3078,7 +3083,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                           <div className="p-2 bg-danger/10 text-danger rounded-xl">
                             <TrendingDown size={18} />
                           </div>
-                          <span className="text-xs font-bold text-content">{t('sales.cash_returns')}</span>
+                          <span className="text-sm font-bold text-content">{t('sales.cash_returns')}</span>
                         </div>
                         <span className="text-sm font-black text-danger">
                           - <PriceDisplay amount={cashDrawerBreakdown.returns} />
@@ -3093,7 +3098,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                           <div className="p-2 bg-danger/10 text-danger rounded-xl">
                             <X size={18} />
                           </div>
-                          <span className="text-xs font-bold text-content">{t('sales.expenses_withdrawals')}</span>
+                          <span className="text-sm font-bold text-content">{t('sales.expenses_withdrawals')}</span>
                         </div>
                         <span className="text-sm font-black text-danger">
                           - <PriceDisplay amount={cashDrawerBreakdown.withdrawals} />
@@ -3110,14 +3115,14 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                       fetchCashDrawerBalance();
                       toastSuccess(t('pos.cash_drawer_refreshed'));
                     }}
-                    className="flex-1 py-3 bg-surface border border-border text-content hover:bg-surface-muted rounded-xl transition-all font-bold text-xs sm:text-sm text-center flex items-center justify-center gap-2 active:scale-95"
+                    className="flex-1 py-3 bg-surface border border-border text-content hover:bg-surface-muted rounded-xl transition-all font-bold text-sm text-center flex items-center justify-center gap-2 active:scale-95"
                   >
                     <Coins size={16} />
                     <span>{t('sales.refresh_data')}</span>
                   </button>
                   <button
                     onClick={() => setShowCashDrawerDetails(false)}
-                    className="flex-1 py-3 bg-brand text-white hover:bg-brand/90 rounded-xl transition-all font-bold text-xs sm:text-sm text-center active:scale-95"
+                    className="flex-1 py-3 bg-brand text-white hover:bg-brand/90 rounded-xl transition-all font-bold text-sm text-center active:scale-95"
                   >
                     {t('pos.close_window')}
                   </button>
@@ -3141,7 +3146,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
 
       {/* Add Customer Modal Refactored to Bottom Sheet */}
       <Transition appear show={isAddCustomerModalOpen} as={React.Fragment}>
-        <Dialog as="div" className="relative z-[200] flex items-end sm:items-center justify-center" onClose={() => setIsAddCustomerModalOpen(false)}>
+        <Dialog as="div" className="relative z-[200] flex items-end main-640:items-center justify-center" onClose={() => setIsAddCustomerModalOpen(false)}>
           <Transition.Child
             as={React.Fragment}
             enter="ease-out duration-300"
@@ -3154,18 +3159,18 @@ const invoiceData: InvoiceData | null = completedOrder ? {
             <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" />
           </Transition.Child>
 
-          <div className="fixed inset-0 overflow-y-auto pt-20 md:pt-0">
-            <div className="flex min-h-full items-end sm:items-center justify-center sm:p-4 text-center">
+          <div className="fixed inset-0 overflow-y-auto pt-20 main-720:pt-0">
+            <div className="flex min-h-full items-end main-640:items-center justify-center main-640:p-4 text-center">
               <Transition.Child
                 as={React.Fragment}
                 enter="ease-out duration-300"
-                enterFrom="opacity-0 translate-y-full sm:translate-y-0 sm:scale-95"
-                enterTo="opacity-100 translate-y-0 sm:scale-100"
+                enterFrom="opacity-0 translate-y-full main-640:translate-y-0 main-640:scale-95"
+                enterTo="opacity-100 translate-y-0 main-640:scale-100"
                 leave="ease-in duration-200"
-                leaveFrom="opacity-100 translate-y-0 sm:scale-100"
-                leaveTo="opacity-0 translate-y-full sm:translate-y-0 sm:scale-95"
+                leaveFrom="opacity-100 translate-y-0 main-640:scale-100"
+                leaveTo="opacity-0 translate-y-full main-640:translate-y-0 main-640:scale-95"
               >
-                <Dialog.Panel className="w-full max-w-md transform overflow-hidden rounded-t-3xl sm:rounded-3xl bg-surface p-6 text-start align-middle shadow-2xl transition-all border border-border">
+                <Dialog.Panel className="w-full max-w-md transform overflow-hidden rounded-t-3xl main-640:rounded-3xl bg-surface p-6 text-start align-middle shadow-2xl transition-all border border-border">
                   <Dialog.Title
                     as="h3"
                     className="text-lg font-bold leading-6 text-content mb-4 flex items-center justify-between"
@@ -3199,7 +3204,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-content mb-1">{t('pos.trn_label_clean')} <span className="text-content-muted text-xs font-normal">{t('pos.for_b2b_only')}</span></label>
+                      <label className="block text-sm font-medium text-content mb-1">{t('pos.trn_label_clean')} <span className="text-content-muted text-sm font-normal">{t('pos.for_b2b_only')}</span></label>
                       <IconInput
                         type="text"
                         value={newCustomerVat}
@@ -3262,8 +3267,8 @@ const invoiceData: InvoiceData | null = completedOrder ? {
       {/* B2B Data Modal */}
       <Dialog open={isB2bModalOpen} onClose={() => setIsB2bModalOpen(false)} className="relative z-[100]" dir={isRtl ? 'rtl' : 'ltr'}>
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" aria-hidden="true" />
-        <div className="fixed inset-0 overflow-y-auto flex items-end sm:items-center justify-center p-0 sm:p-4">
-          <Dialog.Panel className="w-full max-w-md bg-surface p-6 rounded-t-3xl sm:rounded-2xl shadow-xl border border-border">
+        <div className="fixed inset-0 overflow-y-auto flex items-end main-640:items-center justify-center p-0 main-640:p-4">
+          <Dialog.Panel className="w-full max-w-md bg-surface p-6 rounded-t-3xl main-640:rounded-2xl shadow-xl border border-border">
             <div className="flex justify-between items-center mb-6">
               <Dialog.Title className="text-xl font-bold text-content">{t('pos.b2b_data_title')}</Dialog.Title>
               <button onClick={() => setIsB2bModalOpen(false)} aria-label={t('common.close')} className="p-2 hover:bg-surface-muted rounded-full">
@@ -3319,10 +3324,10 @@ const invoiceData: InvoiceData | null = completedOrder ? {
 
       {/* Keyboard Shortcuts Help Modal */}
       <Transition appear show={isShortcutsModalOpen} as={React.Fragment}>
-        <Dialog as="div" className="relative z-[150] flex items-end sm:items-center justify-center" onClose={() => setIsShortcutsModalOpen(false)}>
+        <Dialog as="div" className="relative z-[150] flex items-end main-640:items-center justify-center" onClose={() => setIsShortcutsModalOpen(false)}>
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" aria-hidden="true" onClick={() => setIsShortcutsModalOpen(false)} />
-          <div className="fixed inset-0 overflow-y-auto flex items-end sm:items-center justify-center p-0 sm:p-4">
-            <Dialog.Panel className="w-full max-w-lg bg-surface p-6 rounded-t-3xl sm:rounded-3xl shadow-2xl border border-border text-right" dir={isRtl ? 'rtl' : 'ltr'}>
+          <div className="fixed inset-0 overflow-y-auto flex items-end main-640:items-center justify-center p-0 main-640:p-4">
+            <Dialog.Panel className="w-full max-w-lg bg-surface p-6 rounded-t-3xl main-640:rounded-3xl shadow-2xl border border-border text-right" dir={isRtl ? 'rtl' : 'ltr'}>
               <div className="flex justify-between items-center mb-6 border-b border-border pb-4">
                 <Dialog.Title className="text-xl font-black text-content flex items-center gap-2">
                   <Keyboard size={20} />
@@ -3356,8 +3361,8 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                       <div className="flex gap-1.5" dir="ltr">
                         {shortcut.keys.map((key, kIdx) => (
                           <React.Fragment key={kIdx}>
-                            {kIdx > 0 && <span className="text-content-muted self-center font-bold text-xs">+</span>}
-                            <kbd className="px-2 py-1 bg-surface dark:bg-content border border-border rounded-lg shadow-sm font-mono text-xs font-black text-brand">
+                            {kIdx > 0 && <span className="text-content-muted self-center font-bold text-sm">+</span>}
+                            <kbd className="px-2 py-1 bg-surface dark:bg-content border border-border rounded-lg shadow-sm font-mono text-sm font-black text-brand">
                               {key}
                             </kbd>
                           </React.Fragment>

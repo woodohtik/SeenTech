@@ -1,4 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
+import { AutoGrid } from '../ui/AutoGrid';
+import { StatCard } from '../ui/StatCard';
+import { PageHeader } from '../ui/PageHeader';
 import {
   BarChart,
   Bar,
@@ -513,37 +516,32 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
   );
 
   return (
-    <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
-      {/* Header */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-black text-content flex items-center gap-2 sm:gap-3">
-            <Package className="text-brand shrink-0" size={28} />
-            {t("inventory.title")}
-          </h1>
-          <p className="text-content-muted text-xs sm:text-sm font-medium mt-1">
-            {t("inventory.subtitle")}
-          </p>
-        </div>
-
-        <div id="tour-inventory-actions" data-tour="inventory-actions" className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 w-full lg:w-auto">
-          <div className="flex items-center gap-2 w-full sm:w-auto">
+    <div className="p-4 main-640:p-6 space-y-4 main-640:space-y-6">
+      {/* Header: the shared PageHeader, arranged by the content's width (seen-responsive-layout-task.md Phase 3). */}
+      <PageHeader
+        className="mb-0"
+        title={t("inventory.title")}
+        subtitle={t("inventory.subtitle")}
+        logo={<Package className="text-brand shrink-0" size={32} aria-hidden="true" />}
+      >
+        <div id="tour-inventory-actions" data-tour="inventory-actions" className="flex flex-col main-640:flex-row items-stretch main-640:items-center gap-2 main-640:gap-3 w-full main-720:w-auto">
+          <div className="flex flex-wrap items-center gap-2 w-full main-640:w-auto">
             {hasPermission("inventory.transfer") && (
               <button
                 onClick={() => setShowTransferModal(true)}
-                className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 sm:gap-2 bg-surface border-2 border-border px-3 sm:px-5 py-2.5 rounded-xl sm:rounded-2xl font-bold text-xs sm:text-sm text-content-muted hover:border-brand/20 hover:text-brand transition-all shadow-sm"
+                className="flex-1 main-640:flex-initial flex items-center justify-center gap-1.5 main-640:gap-2 bg-surface border-2 border-border px-3 main-640:px-5 py-2.5 rounded-xl main-640:rounded-2xl font-bold text-sm text-content-muted hover:border-brand/20 hover:text-brand transition-all shadow-sm"
               >
-                <ArrowRightLeft size={16} className="sm:size-[20px]" />
+                <ArrowRightLeft size={16} className="main-640:size-[20px]" />
                 <span className="whitespace-nowrap">{t("inventory.transfer_stock")}</span>
               </button>
             )}
             {hasPermission("inventory.create") && (
               <button
                 onClick={() => setShowProductImportModal(true)}
-                className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 sm:gap-2 bg-surface border-2 border-border px-3 sm:px-5 py-2.5 rounded-xl sm:rounded-2xl font-bold text-xs sm:text-sm text-content-muted hover:border-brand/20 hover:text-brand transition-all shadow-sm"
+                className="flex-1 main-640:flex-initial flex items-center justify-center gap-1.5 main-640:gap-2 bg-surface border-2 border-border px-3 main-640:px-5 py-2.5 rounded-xl main-640:rounded-2xl font-bold text-sm text-content-muted hover:border-brand/20 hover:text-brand transition-all shadow-sm"
                 title={t("inventory.bulk_import_button_title")}
               >
-                <Upload size={16} className="sm:size-[20px]" />
+                <Upload size={16} className="main-640:size-[20px]" />
                 <span className="whitespace-nowrap">{t("inventory.bulk_import_button")}</span>
               </button>
             )}
@@ -551,21 +549,21 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
           {hasPermission("inventory.create") && (
             <button
               onClick={() => setShowAddModal(true)}
-              className="w-full sm:w-auto flex items-center justify-center gap-1.5 sm:gap-2 bg-brand text-white px-5 sm:px-6 py-2.5 rounded-xl sm:rounded-2xl font-bold text-xs sm:text-sm hover:bg-brand/90 transition-all shadow-lg shadow-brand/10"
+              className="w-full main-640:w-auto flex items-center justify-center gap-1.5 main-640:gap-2 bg-brand text-white px-5 main-640:px-6 py-2.5 rounded-xl main-640:rounded-2xl font-bold text-sm hover:bg-brand/90 transition-all shadow-lg shadow-brand/10"
             >
-              <Plus size={16} className="sm:size-[20px]" />
+              <Plus size={16} className="main-640:size-[20px]" />
               <span className="whitespace-nowrap">{t("inventory.add_item")}</span>
             </button>
           )}
         </div>
-      </div>
+      </PageHeader>
 
       {/* Tabs */}
-      <div id="tour-inventory-tabs" data-tour="inventory-tabs" className="flex items-center gap-1 sm:gap-4 bg-surface p-1.5 rounded-2xl border border-border w-full sm:w-fit overflow-x-auto scrollbar-none">
+      <div id="tour-inventory-tabs" data-tour="inventory-tabs" className="flex items-center gap-1 main-640:gap-4 bg-surface p-1.5 rounded-2xl border border-border w-full main-640:w-fit overflow-x-auto scrollbar-none">
         <button
           onClick={() => setActiveTab("inventory")}
           className={cn(
-            "px-4 sm:px-6 py-2 sm:py-2.5 rounded-xl font-bold transition-all whitespace-nowrap text-xs sm:text-sm flex-1 sm:flex-none text-center",
+            "px-4 main-640:px-6 py-2 main-640:py-2.5 rounded-xl font-bold transition-all whitespace-nowrap text-sm flex-1 main-640:flex-none text-center",
             activeTab === "inventory"
               ? "bg-brand text-white shadow-lg shadow-brand/10"
               : "text-content-muted hover:bg-surface-muted",
@@ -576,7 +574,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
         <button
           onClick={() => setActiveTab("transfers")}
           className={cn(
-            "px-4 sm:px-6 py-2 sm:py-2.5 rounded-xl font-bold transition-all whitespace-nowrap text-xs sm:text-sm flex-1 sm:flex-none text-center",
+            "px-4 main-640:px-6 py-2 main-640:py-2.5 rounded-xl font-bold transition-all whitespace-nowrap text-sm flex-1 main-640:flex-none text-center",
             activeTab === "transfers"
               ? "bg-brand text-white shadow-lg shadow-brand/10"
               : "text-content-muted hover:bg-surface-muted",
@@ -587,7 +585,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
         <button
           onClick={() => setActiveTab("reports")}
           className={cn(
-            "px-4 sm:px-6 py-2 sm:py-2.5 rounded-xl font-bold transition-all whitespace-nowrap text-xs sm:text-sm flex-1 sm:flex-none text-center",
+            "px-4 main-640:px-6 py-2 main-640:py-2.5 rounded-xl font-bold transition-all whitespace-nowrap text-sm flex-1 main-640:flex-none text-center",
             activeTab === "reports"
               ? "bg-brand text-white shadow-lg shadow-brand/10"
               : "text-content-muted hover:bg-surface-muted",
@@ -598,7 +596,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
         <button
           onClick={() => setActiveTab("stock_take")}
           className={cn(
-            "px-4 sm:px-6 py-2 sm:py-2.5 rounded-xl font-bold transition-all whitespace-nowrap text-xs sm:text-sm flex-1 sm:flex-none text-center flex items-center justify-center gap-1.5",
+            "px-4 main-640:px-6 py-2 main-640:py-2.5 rounded-xl font-bold transition-all whitespace-nowrap text-sm flex-1 main-640:flex-none text-center flex items-center justify-center gap-1.5",
             activeTab === "stock_take"
               ? "bg-brand text-white shadow-lg shadow-brand/10"
               : "text-content-muted hover:bg-surface-muted",
@@ -610,76 +608,26 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
 
       {activeTab === "inventory" && (
         <>
-          {/* Stats Overview */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-            <div className="bg-surface p-3 sm:p-6 rounded-2xl sm:rounded-3xl border border-border shadow-sm">
-              <div className="flex items-center gap-2 sm:gap-4">
-                <div className="p-2 sm:p-3 bg-brand/10 text-brand rounded-xl sm:rounded-2xl shrink-0">
-                  <Layers size={20} className="sm:size-6" />
-                </div>
-                <div className="min-w-0">
-                  <p className="text-[10px] sm:text-xs font-bold text-content-muted uppercase tracking-wider truncate">
-                    {t("inventory.total_items")}
-                  </p>
-                  <p className="text-lg sm:text-2xl font-black text-content mt-0.5">
-                    {items.length}
-                  </p>
-                </div>
-              </div>
-            </div>
-            <div className="bg-surface p-3 sm:p-6 rounded-2xl sm:rounded-3xl border border-border shadow-sm">
-              <div className="flex items-center gap-2 sm:gap-4">
-                <div className="p-2 sm:p-3 bg-success/10 text-success rounded-xl sm:rounded-2xl shrink-0">
-                  <Warehouse size={20} className="sm:size-6" />
-                </div>
-                <div className="min-w-0">
-                  <p className="text-[10px] sm:text-xs font-bold text-content-muted uppercase tracking-wider truncate">
-                    {t("inventory.warehouses")}
-                  </p>
-                  <p className="text-lg sm:text-2xl font-black text-content mt-0.5">
-                    {branches.filter((b) => b.type === "warehouse").length}
-                  </p>
-                </div>
-              </div>
-            </div>
-            <div className="bg-surface p-3 sm:p-6 rounded-2xl sm:rounded-3xl border border-border shadow-sm">
-              <div className="flex items-center gap-2 sm:gap-4">
-                <div className="p-2 sm:p-3 bg-warning/10 text-warning rounded-xl sm:rounded-2xl shrink-0">
-                  <Store size={20} className="sm:size-6" />
-                </div>
-                <div className="min-w-0">
-                  <p className="text-[10px] sm:text-xs font-bold text-content-muted uppercase tracking-wider truncate">
-                    {t("inventory.branches")}
-                  </p>
-                  <p className="text-lg sm:text-2xl font-black text-content mt-0.5">
-                    {branches.filter((b) => b.type === "store").length}
-                  </p>
-                </div>
-              </div>
-            </div>
-            <div className="bg-surface p-3 sm:p-6 rounded-2xl sm:rounded-3xl border border-border shadow-sm">
-              <div className="flex items-center gap-2 sm:gap-4">
-                <div className="p-2 sm:p-3 bg-danger/10 text-danger rounded-xl sm:rounded-2xl shrink-0">
-                  <AlertCircle size={20} className="sm:size-6" />
-                </div>
-                <div className="min-w-0">
-                  <p className="text-[10px] sm:text-xs font-bold text-content-muted uppercase tracking-wider truncate">
-                    {t("inventory.low_stock")}
-                  </p>
-                  <p className="text-lg sm:text-2xl font-black text-content mt-0.5">
-                    {
-                      items.filter(
-                        (item) => getTotalStock(item.id) <= item.minThreshold,
-                      ).length
-                    }
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
+          {/* Stats Overview: StatCard on an AutoGrid (seen-responsive-layout-task.md Phase 3) --
+              two tiny columns at 360px cut every label to "…". */}
+          <AutoGrid min={160} maxColumns={4}>
+            {[
+              { label: t("inventory.total_items"), value: items.length, icon: Layers, tone: "bg-brand/10 text-brand" },
+              { label: t("inventory.warehouses"), value: branches.filter((b) => b.type === "warehouse").length, icon: Warehouse, tone: "bg-success/10 text-success" },
+              { label: t("inventory.branches"), value: branches.filter((b) => b.type === "store").length, icon: Store, tone: "bg-warning/10 text-warning" },
+              { label: t("inventory.low_stock"), value: items.filter((item) => getTotalStock(item.id) <= item.minThreshold).length, icon: AlertCircle, tone: "bg-danger/10 text-danger" },
+            ].map((stat) => (
+              <StatCard
+                key={stat.label}
+                label={stat.label}
+                value={stat.value}
+                icon={<span aria-hidden="true" className={cn("flex h-12 w-12 items-center justify-center rounded-[12px]", stat.tone)}><stat.icon size={24} /></span>}
+              />
+            ))}
+          </AutoGrid>
 
           {/* Filters */}
-          <div className="bg-surface p-3 sm:p-4 rounded-2xl border border-border shadow-sm flex flex-col sm:flex-row gap-3 sm:gap-4">
+          <div className="bg-surface p-3 main-640:p-4 rounded-2xl border border-border shadow-sm flex flex-col main-640:flex-row gap-3 main-640:gap-4">
             <IconInput
               type="text"
               startIcon={Search}
@@ -689,7 +637,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
               onChange={(e) => setSearchTerm(e.target.value)}
               containerClassName="flex-1"
             />
-            <div className="flex items-center gap-2 w-full sm:min-w-[200px] sm:w-auto">
+            <div className="flex items-center gap-2 w-full main-640:min-w-[200px] main-640:w-auto">
               <Select
                 value={selectedCategory}
                 onChange={(val) => setSelectedCategory(val)}
@@ -720,7 +668,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
                       : "bg-danger/5 border-danger/10 hover:bg-danger/10",
                   )}
                 >
-                  <div className="flex items-center gap-3">
+                  <div className="flex min-w-0 items-center gap-3">
                     <div
                       className={cn(
                         "p-2 rounded-xl",
@@ -729,7 +677,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
                     >
                       <AlertCircle size={20} />
                     </div>
-                    <div>
+                    <div className="min-w-0">
                       <h4
                         className={cn(
                           "text-sm font-black",
@@ -742,7 +690,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
                       </h4>
                       <p
                         className={cn(
-                          "text-xs font-bold",
+                          "text-sm font-bold",
                           isLowStockOnly ? "text-white/80" : "text-danger",
                         )}
                       >
@@ -754,18 +702,18 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
                       </p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-4">
+                  <div className="hidden main-480:flex shrink-0 items-center gap-4">
                     <div className="flex -space-x-2 rtl:space-x-reverse">
                       {lowStockItems.slice(0, 3).map((item, i) => (
                         <div
                           key={i}
-                          className="w-8 h-8 rounded-full bg-white border-2 border-danger/5 flex items-center justify-center text-[10px] font-black text-danger shadow-sm"
+                          className="w-8 h-8 rounded-full bg-white border-2 border-danger/5 flex items-center justify-center text-sm font-black text-danger shadow-sm"
                         >
                           {item.name.substring(0, 1)}
                         </div>
                       ))}
                       {lowStockItems.length > 3 && (
-                        <div className="w-8 h-8 rounded-full bg-danger/10 border-2 border-danger/5 flex items-center justify-center text-[10px] font-black text-danger shadow-sm">
+                        <div className="w-8 h-8 rounded-full bg-danger/10 border-2 border-danger/5 flex items-center justify-center text-sm font-black text-danger shadow-sm">
                           +{lowStockItems.length - 3}
                         </div>
                       )}
@@ -783,7 +731,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
 
           <div className="bg-surface rounded-2xl border border-border shadow-xl overflow-hidden">
             {/* Bulk Selection Controls for Mobile */}
-            <div className="lg:hidden flex items-center justify-between p-4 bg-surface-muted/50 border-b border-border">
+            <div className="main-900:hidden flex items-center justify-between p-4 bg-surface-muted/50 border-b border-border">
               <button
                 type="button"
                 onClick={() => {
@@ -793,19 +741,19 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
                     setSelectedItemIds(filteredItems.map(item => item.id));
                   }
                 }}
-                className="text-xs font-black text-brand bg-brand/10 hover:bg-brand/15 px-4 py-2 rounded-xl transition-all"
+                className="text-sm font-black text-brand bg-brand/10 hover:bg-brand/15 px-4 py-2 rounded-xl transition-all"
               >
                 {selectedItemIds.length === filteredItems.length ? t("inventory.unselect_all") : t("inventory.select_all")}
               </button>
               {selectedItemIds.length > 0 && (
-                <span className="text-xs font-bold text-content-muted">
+                <span className="text-sm font-bold text-content-muted">
                   {t("inventory.selected_items_count", { count: selectedItemIds.length })}
                 </span>
               )}
             </div>
 
             {/* Mobile View: Cards */}
-            <div className="lg:hidden divide-y divide-border">
+            <div className="main-900:hidden divide-y divide-border">
               {pagedItems.map((item) => {
                 const totalStock = getTotalStock(item.id);
                 const isLow = totalStock <= item.minThreshold;
@@ -820,7 +768,8 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
                       }
                     >
                       <div className="flex items-center gap-3">
-                        <div onClick={(e) => e.stopPropagation()} className="flex items-center justify-center min-w-[40px] min-h-[40px] -m-2.5 p-2.5">
+                        {/* A 48px target: the whole box toggles the checkbox (seen-responsive-layout-task.md Phase 5). */}
+                        <label onClick={(e) => e.stopPropagation()} className="flex items-center justify-center min-w-12 min-h-12 -m-3.5 p-3.5 cursor-pointer">
                           <input
                             type="checkbox"
                             checked={selectedItemIds.includes(item.id)}
@@ -833,7 +782,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
                             }}
                             className="rounded border-border text-brand focus:ring-brand w-5 h-5 cursor-pointer"
                           />
-                        </div>
+                        </label>
                         <div className="p-1 bg-surface border border-border rounded-xl w-14 h-14 flex items-center justify-center shrink-0 shadow-sm">
                           {item.mainImage ? (
                             <img
@@ -850,12 +799,12 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
                           <p className="font-black text-content flex items-center gap-1.5">
                             {item.name}
                             {(tenantVariantsByItem[item.id]?.length ?? 0) > 0 && (
-                              <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-brand/10 text-brand">
+                              <span className="text-sm font-bold px-1.5 py-0.5 rounded-full bg-brand/10 text-brand">
                                 {tenantVariantsByItem[item.id].length} {t("inventory.variants.badge_suffix", "سمات")}
                               </span>
                             )}
                           </p>
-                          <p className="text-[10px] font-bold text-content-muted uppercase tracking-tighter">
+                          <p className="text-sm font-bold text-content-muted uppercase">
                             SKU: {item.sku || "N/A"}
                           </p>
                         </div>
@@ -880,52 +829,52 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
                       </div>
                     </div>
 
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between bg-surface-muted/50 p-3 rounded-2xl gap-3">
-                      <div className="grid grid-cols-3 gap-2 sm:flex sm:gap-4 flex-1">
+                    <div className="flex flex-col main-640:flex-row main-640:items-center justify-between bg-surface-muted/50 p-3 rounded-2xl gap-3">
+                      <div className="grid grid-cols-3 gap-2 main-640:flex main-640:gap-4 flex-1">
                         <div className="flex flex-col gap-0.5">
-                          <span className="text-[9px] sm:text-[10px] font-black text-content-muted uppercase tracking-wider">
+                          <span className="text-sm font-black text-content-muted uppercase">
                             {t("inventory.total_stock")}
                           </span>
-                          <p className="text-xs sm:text-sm font-black text-content">
+                          <p className="text-sm font-black text-content">
                             {totalStock} {t(`inventory.unit_${item.baseUnit || item.unit}`)}
                           </p>
                           {isLengthItem(item) && item.conversionRate > 1 && (
-                            <span className="text-[9px] text-brand font-black block mt-0.5">
+                            <span className="text-sm text-brand font-black block mt-0.5">
                               {formatSmartStockDisplay(totalStock, item.unit, item.baseUnit || "meter", item.conversionRate, undefined, item.contentUnit)}
                             </span>
                           )}
                         </div>
-                        <div className="flex flex-col gap-0.5 border-l border-border/50 pl-2 sm:pl-4 rtl:pr-2 rtl:pl-0 sm:rtl:pr-4 rtl:border-l-0 rtl:border-r">
-                          <span className="text-[9px] sm:text-[10px] font-black text-content-muted uppercase tracking-wider">
+                        <div className="flex flex-col gap-0.5 border-l border-border/50 pl-2 main-640:pl-4 rtl:pr-2 rtl:pl-0 main-640:rtl:pr-4 rtl:border-l-0 rtl:border-r">
+                          <span className="text-sm font-black text-content-muted uppercase">
                             {t("inventory.price_per_unit")}
                           </span>
-                          <p className="text-xs sm:text-sm font-black text-content">
+                          <p className="text-sm font-black text-content">
                             {item.pricePerUnit}{" "}
-                            <span className="text-[8px] sm:text-[10px]">SAR</span>
+                            <span className="text-sm">SAR</span>
                           </p>
                         </div>
-                        <div className="flex flex-col gap-0.5 border-l border-border/50 pl-2 sm:pl-4 rtl:pr-2 rtl:pl-0 sm:rtl:pr-4 rtl:border-l-0 rtl:border-r">
-                          <span className="text-[9px] sm:text-[10px] font-black text-content-muted uppercase tracking-wider">
+                        <div className="flex flex-col gap-0.5 border-l border-border/50 pl-2 main-640:pl-4 rtl:pr-2 rtl:pl-0 main-640:rtl:pr-4 rtl:border-l-0 rtl:border-r">
+                          <span className="text-sm font-black text-content-muted uppercase">
                             {t("inventory.visible_in_pos")}
                           </span>
                           <span className={cn(
-                            "text-[10px] sm:text-xs font-black",
+                            "text-sm font-black",
                             item.showInPos ? "text-success" : "text-content-muted"
                           )}>
                             {item.showInPos ? t("inventory.status_visible") : t("inventory.status_hidden")}
                           </span>
                         </div>
                       </div>
-                      <div className="flex items-center justify-end gap-2 shrink-0 pt-2 sm:pt-0 border-t border-border/30 sm:border-none">
+                      <div className="flex items-center justify-end gap-2 shrink-0 pt-2 main-640:pt-0 border-t border-border/30 main-640:border-none">
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
                             setEditingItem(item);
                             setShowEditModal(true);
                           }}
-                          className="p-2 sm:p-3 bg-brand/10 text-brand rounded-xl active:scale-95 transition-all"
+                          className="p-2 main-640:p-3 bg-brand/10 text-brand rounded-xl active:scale-95 transition-all"
                         >
-                          <Edit2 size={16} className="sm:size-5" />
+                          <Edit2 size={16} className="main-640:size-5" />
                         </button>
                         <Menu
                           as="div"
@@ -933,9 +882,9 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
                         >
                           <Menu.Button
                             onClick={(e) => e.stopPropagation()}
-                            className="p-2 sm:p-3 bg-surface border border-border rounded-xl text-content-muted active:scale-95 transition-all outline-none"
+                            className="p-2 main-640:p-3 bg-surface border border-border rounded-xl text-content-muted active:scale-95 transition-all outline-none"
                           >
-                            <MoreVertical size={16} className="sm:size-5" />
+                            <MoreVertical size={16} className="main-640:size-5" />
                           </Menu.Button>
                           <Transition
                             as={Fragment}
@@ -1056,20 +1005,20 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
                               <div className="grid grid-cols-2 gap-2">
                                 {item.collarType && (
                                   <div className="bg-white border border-border p-3 rounded-xl">
-                                    <p className="text-[8px] font-black text-content-muted uppercase">
+                                    <p className="text-sm font-black text-content-muted uppercase">
                                       {t("inventory.collar_type")}
                                     </p>
-                                    <p className="text-xs font-black text-content">
+                                    <p className="text-sm font-black text-content">
                                       {t(item.collarType ? `inventory.collar_${item.collarType}` : 'inventory.collar_default', item.collarType || 'Default')}
                                     </p>
                                   </div>
                                 )}
                                 {item.cuffType && (
                                   <div className="bg-white border border-border p-3 rounded-xl">
-                                    <p className="text-[8px] font-black text-content-muted uppercase">
+                                    <p className="text-sm font-black text-content-muted uppercase">
                                       {t("inventory.cuff_type")}
                                     </p>
-                                    <p className="text-xs font-black text-content">
+                                    <p className="text-sm font-black text-content">
                                       {item.cuffType}
                                     </p>
                                   </div>
@@ -1078,7 +1027,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
                             )}
 
                           <div className="space-y-2">
-                            <p className="text-[10px] font-black text-content-muted uppercase px-1">
+                            <p className="text-sm font-black text-content-muted uppercase px-1">
                               {t("inventory.branch_distribution")}
                             </p>
                             <div className="grid grid-cols-1 gap-2">
@@ -1107,7 +1056,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
                                           <Store size={14} />
                                         )}
                                       </div>
-                                      <span className="text-xs font-black text-content">
+                                      <span className="text-sm font-black text-content">
                                         {branch.name}
                                       </span>
                                     </div>
@@ -1130,43 +1079,45 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
             </div>
 
             {/* Desktop View: Table */}
-            <div className="hidden lg:block overflow-x-auto whitespace-nowrap">
+            <div className="hidden main-900:block overflow-x-auto whitespace-nowrap">
               <table className="w-full text-left border-collapse min-w-max">
                 <thead>
                   <tr className="bg-surface-muted/50">
                     <th className="px-4 py-6 w-12 text-center">
-                      <input
-                        type="checkbox"
-                        checked={filteredItems.length > 0 && selectedItemIds.length === filteredItems.length}
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            setSelectedItemIds(filteredItems.map(item => item.id));
-                          } else {
-                            setSelectedItemIds([]);
-                          }
-                        }}
-                        className="rounded border-border text-brand focus:ring-brand w-5 h-5 cursor-pointer"
-                      />
+                      <label className="inline-flex min-h-12 min-w-12 cursor-pointer items-center justify-center">
+                        <input
+                          type="checkbox"
+                          checked={filteredItems.length > 0 && selectedItemIds.length === filteredItems.length}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedItemIds(filteredItems.map(item => item.id));
+                            } else {
+                              setSelectedItemIds([]);
+                            }
+                          }}
+                          className="rounded border-border text-brand focus:ring-brand w-5 h-5 cursor-pointer"
+                        />
+                      </label>
                     </th>
-                    <th className="px-8 py-6 text-xs font-black text-content-muted uppercase tracking-widest">
+                    <th className="px-8 py-6 text-sm font-black text-content-muted uppercase">
                       {t("inventory.item_name")}
                     </th>
-                    <th className="px-8 py-6 text-xs font-black text-content-muted uppercase tracking-widest">
+                    <th className="px-8 py-6 text-sm font-black text-content-muted uppercase">
                       {t("inventory.category")}
                     </th>
-                    <th className="px-8 py-6 text-xs font-black text-content-muted uppercase tracking-widest">
+                    <th className="px-8 py-6 text-sm font-black text-content-muted uppercase">
                       {t("inventory.total_stock")}
                     </th>
-                    <th className="px-8 py-6 text-xs font-black text-content-muted uppercase tracking-widest">
+                    <th className="px-8 py-6 text-sm font-black text-content-muted uppercase">
                       {t("inventory.price_per_unit")}
                     </th>
-                    <th className="px-8 py-6 text-xs font-black text-content-muted uppercase tracking-widest">
+                    <th className="px-8 py-6 text-sm font-black text-content-muted uppercase">
                       {t("inventory.visible_in_pos")}
                     </th>
-                    <th className="px-8 py-6 text-xs font-black text-content-muted uppercase tracking-widest">
+                    <th className="px-8 py-6 text-sm font-black text-content-muted uppercase">
                       {t("inventory.status")}
                     </th>
-                    <th className="px-8 py-6 text-xs font-black text-content-muted uppercase tracking-widest text-right">
+                    <th className="px-8 py-6 text-sm font-black text-content-muted uppercase text-right">
                       {t("common.actions")}
                     </th>
                   </tr>
@@ -1189,18 +1140,20 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
                           }
                         >
                           <td className="px-4 py-6 text-center w-12" onClick={(e) => e.stopPropagation()}>
-                            <input
-                              type="checkbox"
-                              checked={selectedItemIds.includes(item.id)}
-                              onChange={(e) => {
-                                if (e.target.checked) {
-                                  setSelectedItemIds([...selectedItemIds, item.id]);
-                                } else {
-                                  setSelectedItemIds(selectedItemIds.filter(id => id !== item.id));
-                                }
-                              }}
-                              className="rounded border-border text-brand focus:ring-brand w-5 h-5 cursor-pointer"
-                            />
+                            <label className="inline-flex min-h-12 min-w-12 cursor-pointer items-center justify-center">
+                              <input
+                                type="checkbox"
+                                checked={selectedItemIds.includes(item.id)}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    setSelectedItemIds([...selectedItemIds, item.id]);
+                                  } else {
+                                    setSelectedItemIds(selectedItemIds.filter(id => id !== item.id));
+                                  }
+                                }}
+                                className="rounded border-border text-brand focus:ring-brand w-5 h-5 cursor-pointer"
+                              />
+                            </label>
                           </td>
                           <td className="px-8 py-6">
                             <div className="flex items-center gap-4">
@@ -1223,19 +1176,19 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
                                 <p className="font-black text-content text-lg flex items-center gap-1.5">
                                   {item.name}
                                   {(tenantVariantsByItem[item.id]?.length ?? 0) > 0 && (
-                                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-brand/10 text-brand">
+                                    <span className="text-sm font-bold px-1.5 py-0.5 rounded-full bg-brand/10 text-brand">
                                       {tenantVariantsByItem[item.id].length} {t("inventory.variants.badge_suffix", "سمات")}
                                     </span>
                                   )}
                                 </p>
-                                <p className="text-xs font-bold text-content-muted uppercase tracking-tighter">
+                                <p className="text-sm font-bold text-content-muted uppercase">
                                   SKU: {item.sku || "N/A"}
                                 </p>
                               </div>
                             </div>
                           </td>
                           <td className="px-8 py-6">
-                            <span className="px-4 py-1.5 bg-surface-muted text-content-muted rounded-full text-xs font-black uppercase tracking-widest">
+                            <span className="px-4 py-1.5 bg-surface-muted text-content-muted rounded-full text-sm font-black uppercase">
                               {categoryLabels.get(item.category_key || "") || t(`inventory.category_${item.category}`)}
                             </span>
                           </td>
@@ -1245,7 +1198,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
                                 <p className="font-black text-content text-lg">
                                   {totalStock}
                                 </p>
-                                <p className="text-xs font-bold text-content-muted uppercase">
+                                <p className="text-sm font-bold text-content-muted uppercase">
                                   {/* `totalStock` is stored in the BASE unit, so it must be
                                       labelled with the base unit. Labelling it with the large
                                       unit made this line read "100 roll" directly above a
@@ -1254,7 +1207,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
                                 </p>
                               </div>
                               {isLengthItem(item) && item.conversionRate > 1 && (
-                                <span className="text-[10px] text-brand font-black block mt-0.5">
+                                <span className="text-sm text-brand font-black block mt-0.5">
                                   {formatSmartStockDisplay(totalStock, item.unit, item.baseUnit || "meter", item.conversionRate, undefined, item.contentUnit)}
                                 </span>
                               )}
@@ -1263,7 +1216,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
                           <td className="px-8 py-6">
                             <div className="font-black text-content text-lg">
                               {item.pricePerUnit}{" "}
-                              <span className="text-xs text-content-muted">
+                              <span className="text-sm text-content-muted">
                                 SAR
                               </span>
                             </div>
@@ -1272,12 +1225,12 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
                             {item.showInPos ? (
                               <div className="flex items-center gap-1.5 text-success bg-success/10 px-3 py-1 rounded-full w-fit">
                                 <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse"></span>
-                                <span className="text-[10px] font-black">{t("inventory.status_visible")}</span>
+                                <span className="text-sm font-black">{t("inventory.status_visible")}</span>
                               </div>
                             ) : (
                               <div className="flex items-center gap-1.5 text-content-muted bg-surface-muted px-3 py-1 rounded-full w-fit">
                                 <span className="w-1.5 h-1.5 rounded-full bg-content-muted"></span>
-                                <span className="text-[10px] font-black">{t("inventory.status_hidden")}</span>
+                                <span className="text-sm font-black">{t("inventory.status_hidden")}</span>
                               </div>
                             )}
                           </td>
@@ -1285,14 +1238,14 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
                             {isLow ? (
                               <div className="flex items-center gap-2 text-danger bg-danger/10 px-4 py-1.5 rounded-full w-fit">
                                 <AlertTriangle size={14} />
-                                <span className="text-xs font-black uppercase tracking-widest">
+                                <span className="text-sm font-black uppercase">
                                   {t("inventory.status_low")}
                                 </span>
                               </div>
                             ) : (
                               <div className="flex items-center gap-2 text-success bg-success/10 px-4 py-1.5 rounded-full w-fit">
                                 <CheckCircle2 size={14} />
-                                <span className="text-xs font-black uppercase tracking-widest">
+                                <span className="text-sm font-black uppercase">
                                   {t("inventory.status_good")}
                                 </span>
                               </div>
@@ -1438,9 +1391,9 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
                                 >
                                   <div className="py-6 space-y-6">
                                     {/* Product Image and Main Specs */}
-                                    <div className="flex flex-col md:flex-row gap-8">
+                                    <div className="flex flex-col main-720:flex-row gap-8">
                                       {item.mainImage && (
-                                        <div className="w-full md:w-64 lg:w-80 shrink-0">
+                                        <div className="w-full main-720:w-64 main-900:w-80 shrink-0">
                                           <div className="aspect-square bg-surface border-2 border-border rounded-2xl overflow-hidden shadow-xl group relative">
                                             <img
                                               src={item.mainImage}
@@ -1465,16 +1418,16 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
                                                 <div className="p-2 bg-brand/10 text-brand rounded-xl">
                                                   <Shirt size={20} />
                                                 </div>
-                                                <h4 className="text-sm font-black text-content uppercase tracking-widest">
+                                                <h4 className="text-sm font-black text-content uppercase">
                                                   {t(
                                                     "inventory.ready_made_specs",
                                                   )}
                                                 </h4>
                                               </div>
-                                              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                                              <div className="grid grid-cols-2 main-900:grid-cols-4 gap-4">
                                                 {item.collarType && (
                                                   <div className="bg-surface-muted rounded-2xl p-4 flex flex-col gap-1 border border-border/50">
-                                                    <p className="text-[10px] font-black text-content-muted uppercase tracking-widest">
+                                                    <p className="text-sm font-black text-content-muted uppercase">
                                                       {t(
                                                         "inventory.collar_type",
                                                       )}
@@ -1486,7 +1439,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
                                                 )}
                                                 {item.cuffType && (
                                                   <div className="bg-surface-muted rounded-2xl p-4 flex flex-col gap-1 border border-border/50">
-                                                    <p className="text-[10px] font-black text-content-muted uppercase tracking-widest">
+                                                    <p className="text-sm font-black text-content-muted uppercase">
                                                       {t("inventory.cuff_type")}
                                                     </p>
                                                     <p className="text-sm font-black text-content">
@@ -1496,7 +1449,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
                                                 )}
                                                 {item.pocketType && (
                                                   <div className="bg-surface-muted rounded-2xl p-4 flex flex-col gap-1 border border-border/50">
-                                                    <p className="text-[10px] font-black text-content-muted uppercase tracking-widest">
+                                                    <p className="text-sm font-black text-content-muted uppercase">
                                                       {t(
                                                         "inventory.pocket_type",
                                                       )}
@@ -1508,7 +1461,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
                                                 )}
                                                 {item.chestStyle && (
                                                   <div className="bg-surface-muted rounded-2xl p-4 flex flex-col gap-1 border border-border/50">
-                                                    <p className="text-[10px] font-black text-content-muted uppercase tracking-widest">
+                                                    <p className="text-sm font-black text-content-muted uppercase">
                                                       {t(
                                                         "inventory.chest_style",
                                                       )}
@@ -1523,7 +1476,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
                                           )}
 
                                         {/* Branch Summary */}
-                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                        <div className="grid grid-cols-1 main-720:grid-cols-2 main-900:grid-cols-3 gap-4">
                                           {branches.map((branch) => {
                                             const stock = getStockForBranch(
                                               item.id,
@@ -1555,7 +1508,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
                                                     <p className="font-black text-content text-sm">
                                                       {branch.name}
                                                     </p>
-                                                    <p className="text-[10px] font-bold text-content-muted uppercase tracking-widest">
+                                                    <p className="text-sm font-bold text-content-muted uppercase">
                                                       {t(
                                                         `inventory.type_${branch.type}`,
                                                       )}
@@ -1566,7 +1519,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
                                                   <p className="text-lg font-black text-content">
                                                     {stock}
                                                   </p>
-                                                  <p className="text-[10px] font-bold text-content-muted uppercase">
+                                                  <p className="text-sm font-bold text-content-muted uppercase">
                                                     {t(
                                                       `inventory.unit_${item.unit}`,
                                                     )}
@@ -1747,7 +1700,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
             initial={{ y: 100, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: 100, opacity: 0 }}
-            className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-surface border border-border shadow-2xl rounded-3xl p-4 flex flex-col md:flex-row items-center justify-between gap-4 z-[80] w-[90%] max-w-xl"
+            className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-surface border border-border shadow-2xl rounded-3xl p-4 flex flex-col main-720:flex-row items-center justify-between gap-4 z-[80] w-[90%] max-w-xl"
           >
             <div className="flex items-center gap-3">
               <div className="bg-brand/10 text-brand px-3 py-1.5 rounded-full text-sm font-black">
@@ -1757,14 +1710,14 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
                 {t("inventory.bulk_actions")}
               </p>
             </div>
-            <div className="flex items-center gap-2 w-full md:w-auto">
+            <div className="flex items-center gap-2 w-full main-720:w-auto">
               <button
                 type="button"
                 onClick={() => {
                   setIsBulkDeleteConfirm(true);
                   setDeleteConfirmId(null);
                 }}
-                className="flex-1 md:flex-initial bg-danger hover:bg-danger/90 text-white font-black text-sm px-5 py-2.5 rounded-2xl flex items-center justify-center gap-2 shadow-lg shadow-danger/20 transition-all active:scale-95"
+                className="flex-1 main-720:flex-initial bg-danger hover:bg-danger/90 text-white font-black text-sm px-5 py-2.5 rounded-2xl flex items-center justify-center gap-2 shadow-lg shadow-danger/20 transition-all active:scale-95"
               >
                 <Trash2 size={16} />
                 {t("inventory.delete_selected")} ({selectedItemIds.length})
@@ -2082,7 +2035,7 @@ const AddItemModal = ({ onClose, tenantId, branches }: any) => {
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-2 sm:p-4">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-2 main-640:p-4">
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -2094,18 +2047,18 @@ const AddItemModal = ({ onClose, tenantId, branches }: any) => {
         initial={{ scale: 0.9, opacity: 0, y: 20 }}
         animate={{ scale: 1, opacity: 1, y: 0 }}
         exit={{ scale: 0.9, opacity: 0, y: 20 }}
-        className="bg-surface w-full max-w-3xl rounded-3xl shadow-2xl relative z-10 overflow-hidden flex flex-col max-h-[95vh] sm:max-h-[90vh]"
+        className="bg-surface w-full max-w-3xl rounded-3xl shadow-2xl relative z-10 overflow-hidden flex flex-col max-h-[95vh] main-640:max-h-[90vh]"
       >
-        <div className="p-4 sm:p-8 border-b border-border flex justify-between items-center bg-surface-muted/50">
-          <div className="flex items-center gap-2 sm:gap-4">
-            <div className="p-2.5 sm:p-4 bg-brand text-white rounded-xl sm:rounded-2xl shadow-lg shadow-brand/10 shrink-0">
-              <Plus size={20} className="sm:size-6" />
+        <div className="p-4 main-640:p-8 border-b border-border flex justify-between items-center bg-surface-muted/50">
+          <div className="flex items-center gap-2 main-640:gap-4">
+            <div className="p-2.5 main-640:p-4 bg-brand text-white rounded-xl main-640:rounded-2xl shadow-lg shadow-brand/10 shrink-0">
+              <Plus size={20} className="main-640:size-6" />
             </div>
             <div>
-              <h2 className="text-lg sm:text-2xl font-black text-content">
+              <h2 className="text-lg main-640:text-2xl font-black text-content">
                 {t("inventory.add_item")}
               </h2>
-              <p className="text-[10px] sm:text-xs text-content-muted font-bold uppercase tracking-widest">
+              <p className="text-sm text-content-muted font-bold uppercase">
                 {t("inventory.master_catalog")}
               </p>
             </div>
@@ -2114,18 +2067,18 @@ const AddItemModal = ({ onClose, tenantId, branches }: any) => {
             onClick={onClose}
             className="p-2 hover:bg-surface rounded-full transition-colors shadow-sm min-w-11 min-h-11 inline-flex items-center justify-center"
           >
-            <X size={20} className="text-content-muted sm:size-6" />
+            <X size={20} className="text-content-muted main-640:size-6" />
           </button>
         </div>
 
-        <form onSubmit={handleAdd} dir={dir} className="p-4 sm:p-8 space-y-4 sm:space-y-8 overflow-y-auto text-right">
+        <form onSubmit={handleAdd} dir={dir} className="p-4 main-640:p-8 space-y-4 main-640:space-y-8 overflow-y-auto text-right">
           <div className="flex justify-center">
-            <div className="flex items-center gap-2 bg-surface-muted p-1 rounded-2xl border border-border w-full sm:w-auto">
+            <div className="flex items-center gap-2 bg-surface-muted p-1 rounded-2xl border border-border w-full main-640:w-auto">
               <button
                 type="button"
                 onClick={() => setProductMode("simple")}
                 className={cn(
-                  "flex-1 sm:flex-initial px-5 py-2.5 rounded-xl text-sm font-black transition-all",
+                  "flex-1 main-640:flex-initial px-5 py-2.5 rounded-xl text-sm font-black transition-all",
                   productMode === "simple" ? "bg-brand text-white shadow-sm" : "text-content-muted hover:text-content"
                 )}
               >
@@ -2135,7 +2088,7 @@ const AddItemModal = ({ onClose, tenantId, branches }: any) => {
                 type="button"
                 onClick={() => setProductMode("advanced")}
                 className={cn(
-                  "flex-1 sm:flex-initial px-5 py-2.5 rounded-xl text-sm font-black transition-all",
+                  "flex-1 main-640:flex-initial px-5 py-2.5 rounded-xl text-sm font-black transition-all",
                   productMode === "advanced" ? "bg-brand text-white shadow-sm" : "text-content-muted hover:text-content"
                 )}
               >
@@ -2305,7 +2258,7 @@ const StockTransferModal = ({
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-2 sm:p-4">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-2 main-640:p-4">
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -2319,7 +2272,7 @@ const StockTransferModal = ({
         exit={{ scale: 0.9, opacity: 0, y: 20 }}
         className="bg-surface w-full max-w-2xl rounded-3xl shadow-2xl relative z-10 overflow-hidden flex flex-col"
       >
-        <div className="p-4 sm:p-8 border-b border-border flex justify-between items-center bg-surface-muted/50">
+        <div className="p-4 main-640:p-8 border-b border-border flex justify-between items-center bg-surface-muted/50">
           <div className="flex items-center gap-4">
             <div className="p-4 bg-brand text-white rounded-2xl shadow-lg shadow-brand/10">
               <ArrowRightLeft size={24} className="text-white" />
@@ -2328,7 +2281,7 @@ const StockTransferModal = ({
               <h2 className="text-2xl font-black text-content">
                 {t("inventory.transfer_stock")}
               </h2>
-              <p className="text-xs text-content-muted font-bold uppercase tracking-widest">
+              <p className="text-sm text-content-muted font-bold uppercase">
                 {t("inventory.transfer_workflow")}
               </p>
             </div>
@@ -2341,10 +2294,10 @@ const StockTransferModal = ({
           </button>
         </div>
 
-        <form onSubmit={handleCreateTransfer} className="p-4 sm:p-8 space-y-6">
+        <form onSubmit={handleCreateTransfer} className="p-4 main-640:p-8 space-y-6">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <label className="text-xs font-black text-content-muted uppercase tracking-widest ml-1">
+              <label className="text-sm font-black text-content-muted uppercase ml-1">
                 {t("inventory.from_location")}
               </label>
               <SmartSelect
@@ -2364,7 +2317,7 @@ const StockTransferModal = ({
               />
             </div>
             <div className="space-y-2">
-              <label className="text-xs font-black text-content-muted uppercase tracking-widest ml-1">
+              <label className="text-sm font-black text-content-muted uppercase ml-1">
                 {t("inventory.to_location")}
               </label>
               <SmartSelect
@@ -2387,7 +2340,7 @@ const StockTransferModal = ({
 
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="text-sm font-black text-content uppercase tracking-widest">
+              <h3 className="text-sm font-black text-content uppercase">
                 {t("inventory.transfer_items")}
               </h3>
               <button
@@ -2398,7 +2351,7 @@ const StockTransferModal = ({
                     items: [...formData.items, { itemId: "", quantity: 0 }],
                   })
                 }
-                className="text-xs font-black text-brand hover:text-brand/80 uppercase tracking-widest"
+                className="text-sm font-black text-brand hover:text-brand/80 uppercase"
               >
                 + {t("inventory.add_item")}
               </button>
@@ -2407,10 +2360,10 @@ const StockTransferModal = ({
              {formData.items.map((item, idx) => (
               <div
                 key={idx}
-                className="p-4 bg-surface-muted rounded-2xl grid grid-cols-1 sm:grid-cols-12 gap-4 sm:items-end"
+                className="p-4 bg-surface-muted rounded-2xl grid grid-cols-1 main-640:grid-cols-12 gap-4 main-640:items-end"
               >
-                <div className="sm:col-span-9 space-y-1">
-                  <label className="text-[10px] font-black text-content-muted uppercase tracking-widest">
+                <div className="main-640:col-span-9 space-y-1">
+                  <label className="text-sm font-black text-content-muted uppercase">
                     {t("inventory.item")}
                   </label>
                   <SmartSelect
@@ -2439,7 +2392,7 @@ const StockTransferModal = ({
                     className=""
                   />
                   {itemsWithVariants.length > 0 && (
-                    <p className="text-[10px] text-content-muted mt-1">
+                    <p className="text-sm text-content-muted mt-1">
                       {t(
                         "inventory.variants.transfer_not_supported",
                         "المنتجات ذات السمات غير مدعومة بعد في التحويل بين الفروع -- عدّل مخزونها يدوياً من شاشة المخزون."
@@ -2447,8 +2400,8 @@ const StockTransferModal = ({
                     </p>
                   )}
                 </div>
-                <div className="sm:col-span-2 space-y-1">
-                  <label htmlFor={`transfer-qty-${idx}`} className="text-[10px] font-black text-content-muted uppercase tracking-widest">
+                <div className="main-640:col-span-2 space-y-1">
+                  <label htmlFor={`transfer-qty-${idx}`} className="text-sm font-black text-content-muted uppercase">
                     {t("inventory.qty")}
                   </label>
                   <input
@@ -2466,7 +2419,7 @@ const StockTransferModal = ({
                     className="w-full px-3 py-2 bg-surface border border-border rounded-xl outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand font-semibold text-sm text-content"
                   />
                 </div>
-                <div className="sm:col-span-1 flex justify-center sm:pb-2">
+                <div className="main-640:col-span-1 flex justify-center main-640:pb-2">
                   <button
                     type="button"
                     disabled={submitting || formData.items.length <= 1}
@@ -2626,7 +2579,7 @@ const StockAdjustmentModal = ({ onClose, tenantId, item, branch: initialBranch, 
   };
 
   return (
-    <div className="fixed inset-0 z-[110] flex items-center justify-center p-2 sm:p-4">
+    <div className="fixed inset-0 z-[110] flex items-center justify-center p-2 main-640:p-4">
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -2640,7 +2593,7 @@ const StockAdjustmentModal = ({ onClose, tenantId, item, branch: initialBranch, 
         exit={{ scale: 0.9, opacity: 0, y: 20 }}
         className="bg-surface w-full max-w-md rounded-3xl shadow-2xl relative z-10 overflow-hidden"
       >
-        <div className="p-4 sm:p-6 border-b border-border flex justify-between items-center bg-surface-muted/50">
+        <div className="p-4 main-640:p-6 border-b border-border flex justify-between items-center bg-surface-muted/50">
           <div className="flex items-center gap-3">
             <div className="p-3 bg-warning text-white rounded-xl">
               <History size={20} />
@@ -2649,7 +2602,7 @@ const StockAdjustmentModal = ({ onClose, tenantId, item, branch: initialBranch, 
               <h2 className="text-lg font-black text-content">
                 {t("inventory.adjust_stock")}
               </h2>
-              <p className="text-[10px] text-content-muted font-bold uppercase tracking-widest">
+              <p className="text-sm text-content-muted font-bold uppercase">
                 {branch ? `${branch.name} • ${item.name}` : item.name}
                 {selectedVariantId && ` — ${variants.find((v) => v.id === selectedVariantId)?.name || ""}`}
               </p>
@@ -2663,10 +2616,10 @@ const StockAdjustmentModal = ({ onClose, tenantId, item, branch: initialBranch, 
           </button>
         </div>
 
-        <form onSubmit={handleAdjust} className="p-4 sm:p-6 space-y-6">
+        <form onSubmit={handleAdjust} className="p-4 main-640:p-6 space-y-6">
           {needsBranchChoice && (
             <div className="space-y-2">
-              <label className="text-xs font-black text-content-muted uppercase tracking-widest ml-1">
+              <label className="text-sm font-black text-content-muted uppercase ml-1">
                 {t("inventory.select_branch", "اختر الفرع")}
               </label>
               <SmartSelect
@@ -2680,7 +2633,7 @@ const StockAdjustmentModal = ({ onClose, tenantId, item, branch: initialBranch, 
 
           {needsVariantChoice && (
             <div className={cn("space-y-2", !branchReady && "opacity-40 pointer-events-none")}>
-              <label className="text-xs font-black text-content-muted uppercase tracking-widest ml-1">
+              <label className="text-sm font-black text-content-muted uppercase ml-1">
                 {t("inventory.variants.select_to_adjust", "اختر السمة المطلوب تعديل مخزونها")}
               </label>
               <SmartSelect
@@ -2698,7 +2651,7 @@ const StockAdjustmentModal = ({ onClose, tenantId, item, branch: initialBranch, 
               type="button"
               onClick={() => setMode("add")}
               className={cn(
-                "flex-1 py-2 rounded-xl text-xs font-black transition-all",
+                "flex-1 py-2 rounded-xl text-sm font-black transition-all",
                 mode === "add"
                   ? "bg-surface text-success shadow-sm"
                   : "text-content-muted",
@@ -2710,7 +2663,7 @@ const StockAdjustmentModal = ({ onClose, tenantId, item, branch: initialBranch, 
               type="button"
               onClick={() => setMode("set")}
               className={cn(
-                "flex-1 py-2 rounded-xl text-xs font-black transition-all",
+                "flex-1 py-2 rounded-xl text-sm font-black transition-all",
                 mode === "set"
                   ? "bg-surface text-brand shadow-sm"
                   : "text-content-muted",
@@ -2722,7 +2675,7 @@ const StockAdjustmentModal = ({ onClose, tenantId, item, branch: initialBranch, 
 
           {mode === "add" ? (
             <div className="space-y-2">
-              <label htmlFor="stock-adjust-quantity-add" className="text-xs font-black text-content-muted uppercase tracking-widest ml-1">
+              <label htmlFor="stock-adjust-quantity-add" className="text-sm font-black text-content-muted uppercase ml-1">
                 {t("inventory.quantity_to_add")}
                 {isMeterStock && ` (${t(`inventory.unit_${addUnit}`)})`}
               </label>
@@ -2735,7 +2688,7 @@ const StockAdjustmentModal = ({ onClose, tenantId, item, branch: initialBranch, 
                       aria-pressed={addUnit === u}
                       onClick={() => setAddUnit(u)}
                       className={cn(
-                        "flex-1 py-1.5 rounded-lg text-xs font-black transition-all",
+                        "flex-1 py-1.5 rounded-lg text-sm font-black transition-all",
                         addUnit === u ? "bg-surface text-success shadow-sm" : "text-content-muted",
                       )}
                     >
@@ -2756,7 +2709,7 @@ const StockAdjustmentModal = ({ onClose, tenantId, item, branch: initialBranch, 
               />
               {isMeterStock && addUnit === "roll" && (
                 <div className="space-y-2 pt-1">
-                  <label htmlFor="stock-adjust-roll-content" className="text-xs font-black text-content-muted uppercase tracking-widest ml-1">
+                  <label htmlFor="stock-adjust-roll-content" className="text-sm font-black text-content-muted uppercase ml-1">
                     {t("inventory.roll_content_this_shipment")}
                   </label>
                   <div className="flex gap-2">
@@ -2778,7 +2731,7 @@ const StockAdjustmentModal = ({ onClose, tenantId, item, branch: initialBranch, 
                           aria-pressed={rollContentUnit === u}
                           onClick={() => setRollContentUnit(u)}
                           className={cn(
-                            "px-3 rounded-lg text-xs font-black transition-all",
+                            "px-3 rounded-lg text-sm font-black transition-all",
                             rollContentUnit === u ? "bg-brand text-white" : "text-content-muted hover:bg-surface-muted",
                           )}
                         >
@@ -2790,7 +2743,7 @@ const StockAdjustmentModal = ({ onClose, tenantId, item, branch: initialBranch, 
                 </div>
               )}
               {isMeterStock && addQuantity !== 0 && (
-                <p className="text-xs font-bold text-content-muted" dir="auto">
+                <p className="text-sm font-bold text-content-muted" dir="auto">
                   {addUnit === "roll" && rollContent > 0
                     ? t("inventory.roll_total_line", {
                         count: addQuantity,
@@ -2806,7 +2759,7 @@ const StockAdjustmentModal = ({ onClose, tenantId, item, branch: initialBranch, 
             </div>
           ) : (
             <div className="space-y-2">
-              <label htmlFor="stock-adjust-quantity-new" className="text-xs font-black text-content-muted uppercase tracking-widest ml-1">
+              <label htmlFor="stock-adjust-quantity-new" className="text-sm font-black text-content-muted uppercase ml-1">
                 {t("inventory.new_total_stock")}
                 {` (${t(`inventory.unit_${isMeterStock ? "meter" : item.baseUnit || item.unit}`)})`}
               </label>
@@ -2823,7 +2776,7 @@ const StockAdjustmentModal = ({ onClose, tenantId, item, branch: initialBranch, 
             </div>
           )}
           <div className="space-y-2">
-            <label htmlFor="stock-adjust-reason" className="text-xs font-black text-content-muted uppercase tracking-widest ml-1">
+            <label htmlFor="stock-adjust-reason" className="text-sm font-black text-content-muted uppercase ml-1">
               {t("inventory.adjustment_reason")}
             </label>
             <textarea
@@ -2943,7 +2896,7 @@ const ManualConversionModal = ({ onClose, tenantId, item, branch: initialBranch,
   };
 
   return (
-    <div className="fixed inset-0 z-[110] flex items-center justify-center p-2 sm:p-4">
+    <div className="fixed inset-0 z-[110] flex items-center justify-center p-2 main-640:p-4">
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -2955,7 +2908,7 @@ const ManualConversionModal = ({ onClose, tenantId, item, branch: initialBranch,
         initial={{ scale: 0.9, opacity: 0, y: 20 }}
         animate={{ scale: 1, opacity: 1, y: 0 }}
         exit={{ scale: 0.9, opacity: 0, y: 20 }}
-        className="bg-surface w-full max-w-md rounded-3xl shadow-2xl relative z-10 overflow-hidden border border-border p-4 sm:p-8"
+        className="bg-surface w-full max-w-md rounded-3xl shadow-2xl relative z-10 overflow-hidden border border-border p-4 main-640:p-8"
       >
         <button aria-label={t('common.close')}
           onClick={onClose}
@@ -2972,7 +2925,7 @@ const ManualConversionModal = ({ onClose, tenantId, item, branch: initialBranch,
             <h3 className="text-xl font-black text-content">
               {t("inventory.manual_convert_action", "فك وتحويل يدوي للوحدات")}
             </h3>
-            <p className="text-xs font-bold text-content-muted mt-1">
+            <p className="text-sm font-bold text-content-muted mt-1">
               {branch ? `${item.name} (${branch.name})` : item.name}
             </p>
           </div>
@@ -2981,7 +2934,7 @@ const ManualConversionModal = ({ onClose, tenantId, item, branch: initialBranch,
         <form onSubmit={handleConvert} className="space-y-6">
           {needsBranchChoice && (
             <div className="space-y-2">
-              <label className="text-xs font-black text-content-muted uppercase tracking-widest ml-1">
+              <label className="text-sm font-black text-content-muted uppercase ml-1">
                 {t("inventory.select_branch", "اختر الفرع")}
               </label>
               <SmartSelect
@@ -3000,7 +2953,7 @@ const ManualConversionModal = ({ onClose, tenantId, item, branch: initialBranch,
               type="button"
               onClick={() => setConversionAction("unroll")}
               className={cn(
-                "py-2.5 rounded-xl text-xs font-black transition-all",
+                "py-2.5 rounded-xl text-sm font-black transition-all",
                 conversionAction === "unroll" ? "bg-surface shadow-sm text-brand" : "text-content-muted hover:text-content"
               )}
             >
@@ -3010,7 +2963,7 @@ const ManualConversionModal = ({ onClose, tenantId, item, branch: initialBranch,
               type="button"
               onClick={() => setConversionAction("bundle")}
               className={cn(
-                "py-2.5 rounded-xl text-xs font-black transition-all",
+                "py-2.5 rounded-xl text-sm font-black transition-all",
                 conversionAction === "bundle" ? "bg-surface shadow-sm text-brand" : "text-content-muted hover:text-content"
               )}
             >
@@ -3020,20 +2973,20 @@ const ManualConversionModal = ({ onClose, tenantId, item, branch: initialBranch,
 
           {/* Current Stock */}
           <div className="bg-surface-muted p-4 rounded-2xl border border-border/50 text-center">
-            <p className="text-[10px] font-black text-content-muted uppercase tracking-widest">
+            <p className="text-sm font-black text-content-muted uppercase">
               {t("inventory.current_stock", "المخزون الحالي بالأمتار")}
             </p>
             <p className="text-2xl font-black text-content mt-1">
               {currentQty.toFixed(2)} {String(t(`inventory.unit_${smallUnit}`, smallUnit))}
             </p>
-            <p className="text-[10px] font-bold text-brand mt-1">
+            <p className="text-sm font-bold text-brand mt-1">
               1 {String(t(`inventory.unit_${largeUnit}`, largeUnit))} = {rate} {String(t(`inventory.unit_${smallUnit}`, smallUnit))}
             </p>
           </div>
 
           {/* Quantity Input */}
           <div className="space-y-2">
-            <label htmlFor="manual-conversion-qty" className="text-xs font-black text-content-muted uppercase tracking-widest ml-1">
+            <label htmlFor="manual-conversion-qty" className="text-sm font-black text-content-muted uppercase ml-1">
               {conversionAction === "unroll"
                 ? t("inventory.qty_to_unroll", "عدد الطاقات المراد فكها")
                 : t("inventory.qty_to_bundle", "عدد الأمتار المراد تحويلها لطاقة")}
@@ -3054,7 +3007,7 @@ const ManualConversionModal = ({ onClose, tenantId, item, branch: initialBranch,
           {/* Result Preview */}
           {qty && qty > 0 && (
             <div className="bg-brand/5 border border-brand/10 p-4 rounded-2xl text-center">
-              <p className="text-[10px] font-black text-brand uppercase tracking-widest">
+              <p className="text-sm font-black text-brand uppercase">
                 {t("inventory.conversion_result_preview")}
               </p>
               <p className="text-lg font-black text-brand mt-1">
@@ -3072,7 +3025,7 @@ const ManualConversionModal = ({ onClose, tenantId, item, branch: initialBranch,
                   </>
                 )}
               </p>
-              <p className="text-[10px] font-bold text-content-muted mt-1">
+              <p className="text-sm font-bold text-content-muted mt-1">
                 {t("inventory.repackaging_note")}
               </p>
             </div>
@@ -3080,7 +3033,7 @@ const ManualConversionModal = ({ onClose, tenantId, item, branch: initialBranch,
 
           {/* Notes */}
           <div className="space-y-2">
-            <label htmlFor="manual-conversion-notes" className="text-xs font-black text-content-muted uppercase tracking-widest ml-1">
+            <label htmlFor="manual-conversion-notes" className="text-sm font-black text-content-muted uppercase ml-1">
               {t("common.notes", "ملاحظات")}
             </label>
             <textarea
@@ -3250,7 +3203,7 @@ const ProductImportModal = ({
   const renderRowList = (list: ProductImportRowView[], icon: React.ReactNode, colorClass: string) => (
     <div className="space-y-1.5 max-h-40 overflow-y-auto pr-1">
       {list.map((r) => (
-        <div key={r.rowNumber} className={cn("flex items-center gap-2 text-xs font-bold px-3 py-1.5 rounded-xl bg-surface-muted/60", colorClass)}>
+        <div key={r.rowNumber} className={cn("flex items-center gap-2 text-sm font-bold px-3 py-1.5 rounded-xl bg-surface-muted/60", colorClass)}>
           {icon}
           <span className="truncate">{r.name || '-'} ({r.skuText || '-'})</span>
           <span className="text-content-muted font-medium shrink-0">— {r.reason}</span>
@@ -3260,7 +3213,7 @@ const ProductImportModal = ({
   );
 
   return (
-    <div className="fixed inset-0 z-[110] flex items-center justify-center p-2 sm:p-4">
+    <div className="fixed inset-0 z-[110] flex items-center justify-center p-2 main-640:p-4">
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -3275,14 +3228,14 @@ const ProductImportModal = ({
         className="bg-surface w-full max-w-2xl rounded-3xl shadow-2xl relative z-10 overflow-hidden flex flex-col max-h-[90vh]"
         dir={dir}
       >
-        <div className="p-4 sm:p-8 border-b border-border flex justify-between items-center bg-surface-muted/50">
+        <div className="p-4 main-640:p-8 border-b border-border flex justify-between items-center bg-surface-muted/50">
           <div className="flex items-center gap-4">
             <div className="p-4 bg-brand text-white rounded-2xl shadow-lg shadow-brand/10">
               <Upload size={24} />
             </div>
             <div>
               <h2 className="text-2xl font-black text-content">{t('inventory.bulk_import_modal_title')}</h2>
-              <p className="text-xs text-content-muted font-bold">{t('inventory.bulk_import_modal_subtitle')}</p>
+              <p className="text-sm text-content-muted font-bold">{t('inventory.bulk_import_modal_subtitle')}</p>
             </div>
           </div>
           {step !== 'result' && (
@@ -3292,7 +3245,7 @@ const ProductImportModal = ({
           )}
         </div>
 
-        <div className="p-4 sm:p-8 space-y-6 overflow-y-auto">
+        <div className="p-4 main-640:p-8 space-y-6 overflow-y-auto">
           {step === 'upload' && (
             <>
               <button
@@ -3318,7 +3271,7 @@ const ProductImportModal = ({
                 </div>
               </div>
 
-              <p className="text-xs text-content-muted font-medium px-1">{t('inventory.bulk_import_opening_balance_hint')}</p>
+              <p className="text-sm text-content-muted font-medium px-1">{t('inventory.bulk_import_opening_balance_hint')}</p>
             </>
           )}
 
@@ -3337,7 +3290,7 @@ const ProductImportModal = ({
 
               {duplicateRows.length > 0 && (
                 <div className="space-y-1.5">
-                  <p className="text-xs font-black text-warning uppercase tracking-widest px-1">
+                  <p className="text-sm font-black text-warning uppercase px-1">
                     {duplicateRows.length} {t('inventory.bulk_import_result_duplicate_header')}
                   </p>
                   {renderRowList(duplicateRows, <AlertCircle size={14} className="shrink-0" />, 'text-warning')}
@@ -3346,7 +3299,7 @@ const ProductImportModal = ({
 
               {invalidRows.length > 0 && (
                 <div className="space-y-1.5">
-                  <p className="text-xs font-black text-danger uppercase tracking-widest px-1">
+                  <p className="text-sm font-black text-danger uppercase px-1">
                     {invalidRows.length} {t('inventory.bulk_import_result_error_header')}
                   </p>
                   {renderRowList(invalidRows, <X size={14} className="shrink-0" />, 'text-danger')}
@@ -3356,12 +3309,12 @@ const ProductImportModal = ({
           )}
         </div>
 
-        <div className="sticky bottom-0 shrink-0 p-4 sm:p-8 border-t border-border bg-surface flex justify-end gap-3">
+        <div className="sticky bottom-0 shrink-0 p-4 main-640:p-8 border-t border-border bg-surface flex justify-end gap-3">
           {step === 'preview' && (
             <>
               <button
                 onClick={() => { setRows([]); setStep('upload'); }}
-                className="px-6 py-3 bg-surface-muted text-content hover:bg-surface border border-border rounded-xl font-bold transition-all text-xs sm:text-sm cursor-pointer"
+                className="px-6 py-3 bg-surface-muted text-content hover:bg-surface border border-border rounded-xl font-bold transition-all text-sm cursor-pointer"
               >
                 {t('common.cancel')}
               </button>
@@ -3369,7 +3322,7 @@ const ProductImportModal = ({
                 <button
                   onClick={handleConfirmImport}
                   disabled={loading}
-                  className="px-6 py-3 bg-brand hover:bg-brand/90 text-white rounded-xl font-bold text-xs sm:text-sm transition-all shadow-lg shadow-brand/20 cursor-pointer disabled:opacity-60 disabled:cursor-wait"
+                  className="px-6 py-3 bg-brand hover:bg-brand/90 text-white rounded-xl font-bold text-sm transition-all shadow-lg shadow-brand/20 cursor-pointer disabled:opacity-60 disabled:cursor-wait"
                 >
                   {t('inventory.bulk_import_confirm_button', { count: validRows.length })}
                 </button>
@@ -3379,7 +3332,7 @@ const ProductImportModal = ({
           {step === 'result' && (
             <button
               onClick={onClose}
-              className="px-6 py-3 bg-brand hover:bg-brand/90 text-white rounded-xl font-bold text-xs sm:text-sm transition-all shadow-lg shadow-brand/20 cursor-pointer"
+              className="px-6 py-3 bg-brand hover:bg-brand/90 text-white rounded-xl font-bold text-sm transition-all shadow-lg shadow-brand/20 cursor-pointer"
             >
               {t('inventory.bulk_import_result_done')}
             </button>
@@ -3500,18 +3453,18 @@ const InventoryReports = ({ tenantId, items, branches, branchStock }: any) => {
   return (
     <div className="space-y-8">
       {/* Stock Movement Trend */}
-      <div className="bg-surface p-4 sm:p-6 rounded-2xl border border-border shadow-sm">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+      <div className="bg-surface p-4 main-640:p-6 rounded-2xl border border-border shadow-sm">
+        <div className="flex flex-col main-640:flex-row main-640:items-center justify-between gap-4 mb-8">
           <h3 className="text-xl font-black text-content flex items-center gap-3">
             <TrendingUp className="text-brand" />
             {t("inventory.stock_movement_trend")}
           </h3>
           
-          <div className="flex items-center gap-2 bg-surface-muted p-1 rounded-2xl border border-border self-start sm:self-auto">
+          <div className="flex items-center gap-2 bg-surface-muted p-1 rounded-2xl border border-border self-start main-640:self-auto">
             <button
               onClick={() => setDaysRange(7)}
               className={cn(
-                "px-4 py-1.5 rounded-xl text-xs font-black transition-all",
+                "px-4 py-1.5 rounded-xl text-sm font-black transition-all",
                 daysRange === 7
                   ? "bg-brand text-white shadow-sm"
                   : "text-content-muted hover:text-content"
@@ -3522,7 +3475,7 @@ const InventoryReports = ({ tenantId, items, branches, branchStock }: any) => {
             <button
               onClick={() => setDaysRange(30)}
               className={cn(
-                "px-4 py-1.5 rounded-xl text-xs font-black transition-all",
+                "px-4 py-1.5 rounded-xl text-sm font-black transition-all",
                 daysRange === 30
                   ? "bg-brand text-white shadow-sm"
                   : "text-content-muted hover:text-content"
@@ -3544,12 +3497,12 @@ const InventoryReports = ({ tenantId, items, branches, branchStock }: any) => {
                 dataKey="date"
                 axisLine={false}
                 tickLine={false}
-                tick={{ fontSize: 10, fontWeight: 700 }}
+                tick={{ fontSize: 14, fontWeight: 700 }}
               />
               <YAxis
                 axisLine={false}
                 tickLine={false}
-                tick={{ fontSize: 10, fontWeight: 700 }}
+                tick={{ fontSize: 14, fontWeight: 700 }}
               />
               <Tooltip
                 contentStyle={{
@@ -3571,9 +3524,9 @@ const InventoryReports = ({ tenantId, items, branches, branchStock }: any) => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div className="grid grid-cols-1 main-900:grid-cols-2 gap-8">
         {/* Stock by Category */}
-        <div className="bg-surface p-4 sm:p-6 rounded-2xl border border-border shadow-sm">
+        <div className="bg-surface p-4 main-640:p-6 rounded-2xl border border-border shadow-sm">
           <h3 className="text-xl font-black text-content mb-8 flex items-center gap-3">
             <Tag className="text-brand" />
             {t("inventory.stock_by_category")}
@@ -3608,7 +3561,7 @@ const InventoryReports = ({ tenantId, items, branches, branchStock }: any) => {
                   className="w-3 h-3 rounded-full"
                   style={{ backgroundColor: COLORS[index % COLORS.length] }}
                 />
-                <span className="text-xs font-bold text-content-muted">
+                <span className="text-sm font-bold text-content-muted">
                   {entry.name}: {entry.value}
                 </span>
               </div>
@@ -3617,7 +3570,7 @@ const InventoryReports = ({ tenantId, items, branches, branchStock }: any) => {
         </div>
 
         {/* Stock by Branch */}
-        <div className="bg-surface p-4 sm:p-6 rounded-2xl border border-border shadow-sm">
+        <div className="bg-surface p-4 main-640:p-6 rounded-2xl border border-border shadow-sm">
           <h3 className="text-xl font-black text-content mb-8 flex items-center gap-3">
             <Warehouse className="text-brand" />
             {t("inventory.stock_by_location")}
@@ -3634,12 +3587,12 @@ const InventoryReports = ({ tenantId, items, branches, branchStock }: any) => {
                   dataKey="name"
                   axisLine={false}
                   tickLine={false}
-                  tick={{ fontSize: 12, fontWeight: 700 }}
+                  tick={{ fontSize: 14, fontWeight: 700 }}
                 />
                 <YAxis
                   axisLine={false}
                   tickLine={false}
-                  tick={{ fontSize: 12, fontWeight: 700 }}
+                  tick={{ fontSize: 14, fontWeight: 700 }}
                 />
                 <Tooltip
                   contentStyle={{
@@ -3662,7 +3615,7 @@ const InventoryReports = ({ tenantId, items, branches, branchStock }: any) => {
       </div>
 
       {/* Audit Trail */}
-      <div className="bg-surface p-4 sm:p-6 rounded-2xl border border-border shadow-sm">
+      <div className="bg-surface p-4 main-640:p-6 rounded-2xl border border-border shadow-sm">
         <div className="flex items-center justify-between mb-8">
           <h3 className="text-xl font-black text-content flex items-center gap-3">
             <History className="text-brand" />
@@ -3692,13 +3645,13 @@ const InventoryReports = ({ tenantId, items, branches, branchStock }: any) => {
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
                         <div className="font-bold text-content">{item?.name || ledger.item_name || t("common.unknown")}</div>
-                        <div className="text-xs text-content-muted font-medium mt-0.5">{branch?.name || t("common.unknown")}</div>
+                        <div className="text-sm text-content-muted font-medium mt-0.5">{branch?.name || t("common.unknown")}</div>
                       </div>
-                      <span className={`shrink-0 px-3 py-1 rounded-lg text-xs font-black ${ledger.change > 0 ? 'bg-success/10 text-success' : ledger.change < 0 ? 'bg-danger/10 text-danger' : 'bg-content-muted/10 text-content-muted'}`}>
+                      <span className={`shrink-0 px-3 py-1 rounded-lg text-sm font-black ${ledger.change > 0 ? 'bg-success/10 text-success' : ledger.change < 0 ? 'bg-danger/10 text-danger' : 'bg-content-muted/10 text-content-muted'}`}>
                         {ledger.change > 0 ? '+' : ''}{ledger.change}
                       </span>
                     </div>
-                    <div className="flex items-center justify-between gap-3 text-xs text-content-muted font-medium">
+                    <div className="flex items-center justify-between gap-3 text-sm text-content-muted font-medium">
                       <span>
                         {ledger.type === "addition"
                           ? t("inventory.addition", "إضافة")
@@ -3724,12 +3677,12 @@ const InventoryReports = ({ tenantId, items, branches, branchStock }: any) => {
                 <table className="w-full text-right min-w-max">
                   <thead className="bg-surface-muted text-content-muted text-sm border-b border-border">
                     <tr>
-                      <th className="px-6 py-4 font-black uppercase tracking-widest text-[10px]">{t("common.date")}</th>
-                      <th className="px-6 py-4 font-black uppercase tracking-widest text-[10px]">{t("inventory.item_name")}</th>
-                      <th className="px-6 py-4 font-black uppercase tracking-widest text-[10px]">{t("inventory.branch")}</th>
-                      <th className="px-6 py-4 font-black uppercase tracking-widest text-[10px]">{t("reconciliation.difference")}</th>
-                      <th className="px-6 py-4 font-black uppercase tracking-widest text-[10px]">{t("inventory.type")}</th>
-                      <th className="px-6 py-4 font-black uppercase tracking-widest text-[10px]">{t("reconciliation.reconciled_by")}</th>
+                      <th className="px-6 py-4 font-black uppercase text-sm">{t("common.date")}</th>
+                      <th className="px-6 py-4 font-black uppercase text-sm">{t("inventory.item_name")}</th>
+                      <th className="px-6 py-4 font-black uppercase text-sm">{t("inventory.branch")}</th>
+                      <th className="px-6 py-4 font-black uppercase text-sm">{t("reconciliation.difference")}</th>
+                      <th className="px-6 py-4 font-black uppercase text-sm">{t("inventory.type")}</th>
+                      <th className="px-6 py-4 font-black uppercase text-sm">{t("reconciliation.reconciled_by")}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border">
@@ -3749,7 +3702,7 @@ const InventoryReports = ({ tenantId, items, branches, branchStock }: any) => {
                           <td className="px-6 py-4 font-bold text-content">{item?.name || ledger.item_name || t("common.unknown")}</td>
                           <td className="px-6 py-4 text-sm font-bold text-content-muted">{branch?.name || t("common.unknown")}</td>
                           <td className="px-6 py-4">
-                            <span className={`px-3 py-1 rounded-lg text-xs font-black ${ledger.change > 0 ? 'bg-success/10 text-success' : ledger.change < 0 ? 'bg-danger/10 text-danger' : 'bg-content-muted/10 text-content-muted'}`}>
+                            <span className={`px-3 py-1 rounded-lg text-sm font-black ${ledger.change > 0 ? 'bg-success/10 text-success' : ledger.change < 0 ? 'bg-danger/10 text-danger' : 'bg-content-muted/10 text-content-muted'}`}>
                               {ledger.change > 0 ? '+' : ''}{ledger.change}
                             </span>
                           </td>
@@ -3912,7 +3865,7 @@ const EditItemModal = ({ onClose, tenantId, item, branches }: any) => {
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-2 sm:p-4">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-2 main-640:p-4">
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -3924,18 +3877,18 @@ const EditItemModal = ({ onClose, tenantId, item, branches }: any) => {
         initial={{ scale: 0.9, opacity: 0, y: 20 }}
         animate={{ scale: 1, opacity: 1, y: 0 }}
         exit={{ scale: 0.9, opacity: 0, y: 20 }}
-        className="bg-surface w-full max-w-3xl rounded-3xl shadow-2xl relative z-10 overflow-hidden flex flex-col max-h-[95vh] sm:max-h-[90vh]"
+        className="bg-surface w-full max-w-3xl rounded-3xl shadow-2xl relative z-10 overflow-hidden flex flex-col max-h-[95vh] main-640:max-h-[90vh]"
       >
-        <div className="p-4 sm:p-8 border-b border-border flex justify-between items-center bg-surface-muted/50">
-          <div className="flex items-center gap-2 sm:gap-4">
-            <div className="p-2.5 sm:p-4 bg-brand text-white rounded-xl sm:rounded-2xl shadow-lg shadow-brand/10 shrink-0">
-              <Plus size={20} className="sm:size-6" />
+        <div className="p-4 main-640:p-8 border-b border-border flex justify-between items-center bg-surface-muted/50">
+          <div className="flex items-center gap-2 main-640:gap-4">
+            <div className="p-2.5 main-640:p-4 bg-brand text-white rounded-xl main-640:rounded-2xl shadow-lg shadow-brand/10 shrink-0">
+              <Plus size={20} className="main-640:size-6" />
             </div>
             <div>
-              <h2 className="text-lg sm:text-2xl font-black text-content">
+              <h2 className="text-lg main-640:text-2xl font-black text-content">
                 {t("common.edit")} : {item.name}
               </h2>
-              <p className="text-[10px] sm:text-xs text-content-muted font-bold uppercase tracking-widest">
+              <p className="text-sm text-content-muted font-bold uppercase">
                 {t("inventory.master_catalog")}
               </p>
             </div>
@@ -3944,11 +3897,11 @@ const EditItemModal = ({ onClose, tenantId, item, branches }: any) => {
             onClick={onClose}
             className="p-2 hover:bg-surface rounded-full transition-colors shadow-sm min-w-11 min-h-11 inline-flex items-center justify-center"
           >
-            <X size={20} className="text-content-muted sm:size-6" />
+            <X size={20} className="text-content-muted main-640:size-6" />
           </button>
         </div>
 
-        <form onSubmit={handleUpdate} dir={dir} className="p-4 sm:p-8 space-y-4 sm:space-y-8 overflow-y-auto text-right">
+        <form onSubmit={handleUpdate} dir={dir} className="p-4 main-640:p-8 space-y-4 main-640:space-y-8 overflow-y-auto text-right">
           <ProductFormFields
             idPrefix="edit-item"
             tenantId={tenantId}
@@ -3963,11 +3916,11 @@ const EditItemModal = ({ onClose, tenantId, item, branches }: any) => {
 
           <ProductVariantsSection tenantId={tenantId} itemId={item.id} branches={branches} baseSku={item.sku} />
 
-          <div className="sticky bottom-0 bg-surface -mx-4 sm:-mx-8 -mb-4 sm:-mb-8 px-4 sm:px-8 pb-4 sm:pb-8 flex flex-col sm:flex-row sm:justify-end gap-3 sm:gap-4 pt-6 border-t border-border">
+          <div className="sticky bottom-0 bg-surface -mx-4 main-640:-mx-8 -mb-4 main-640:-mb-8 px-4 main-640:px-8 pb-4 main-640:pb-8 flex flex-col main-640:flex-row main-640:justify-end gap-3 main-640:gap-4 pt-6 border-t border-border">
             <button
               type="button"
               onClick={onClose}
-              className="w-full sm:w-auto px-8 py-3 bg-surface text-content font-bold rounded-2xl border-2 border-border hover:bg-surface-muted transition-colors order-2 sm:order-1"
+              className="w-full main-640:w-auto px-8 py-3 bg-surface text-content font-bold rounded-2xl border-2 border-border hover:bg-surface-muted transition-colors order-2 main-640:order-1"
             >
               {t("common.cancel")}
             </button>
@@ -3975,7 +3928,7 @@ const EditItemModal = ({ onClose, tenantId, item, branches }: any) => {
               type="submit"
               disabled={submitting}
               className={cn(
-                "w-full sm:w-auto px-12 py-3 text-white font-bold rounded-2xl shadow-lg transition-all active:scale-95 flex items-center justify-center gap-2 order-1 sm:order-2",
+                "w-full main-640:w-auto px-12 py-3 text-white font-bold rounded-2xl shadow-lg transition-all active:scale-95 flex items-center justify-center gap-2 order-1 main-640:order-2",
                 submitting ? "bg-brand/50 cursor-not-allowed shadow-none" : "bg-brand shadow-brand/20 hover:bg-brand/90"
               )}
             >

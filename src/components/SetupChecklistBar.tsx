@@ -99,10 +99,10 @@ export default function SetupChecklistBar({ tenantId, hasPermission }: SetupChec
               onClick={() => setExpanded((v) => !v)}
               className="flex-1 min-w-0 flex items-center gap-3 text-start cursor-pointer"
             >
-              <span className="text-xs sm:text-sm font-black text-content truncate">
+              <span className="text-sm font-black text-content truncate">
                 {t('setup_bar.title')}
               </span>
-              <span className="hidden sm:inline text-[11px] font-bold text-content-muted shrink-0">
+              <span className="hidden sm:inline text-sm font-bold text-content-muted shrink-0">
                 {t('tour.finish.progress_count', { completed: completedCount, total: totalCount })}
               </span>
               <div className="hidden sm:block h-1.5 w-24 bg-surface-muted rounded-full overflow-hidden border border-border/40 shrink-0">
@@ -120,7 +120,7 @@ export default function SetupChecklistBar({ tenantId, hasPermission }: SetupChec
             {activeItem && (
               <button
                 onClick={() => navigate(activeItem.route)}
-                className="shrink-0 px-3 py-1.5 rounded-xl text-xs font-black bg-brand text-white hover:bg-brand/90 transition-colors flex items-center gap-1.5"
+                className="shrink-0 px-3 py-1.5 rounded-xl text-sm font-black bg-brand text-white hover:bg-brand/90 transition-colors flex items-center gap-1.5"
               >
                 {t('setup_bar.cta')}
                 <Chevron size={13} />
@@ -145,7 +145,7 @@ export default function SetupChecklistBar({ tenantId, hasPermission }: SetupChec
                         key={item.id}
                         onClick={() => navigate(item.route)}
                         className={cn(
-                          'flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs font-bold transition-colors',
+                          'flex items-center gap-2 px-3 py-1.5 rounded-xl border text-sm font-bold transition-colors',
                           item.completed
                             ? 'bg-success/[0.03] border-success/20 text-success line-through opacity-80'
                             : isActive
@@ -208,7 +208,7 @@ export default function SetupChecklistBar({ tenantId, hasPermission }: SetupChec
                 {activeItem && (
                   <button
                     onClick={() => setJustCompleted(null)}
-                    className="w-full px-5 py-2.5 rounded-2xl font-bold text-xs text-content-muted hover:bg-surface-muted transition-colors"
+                    className="w-full px-5 py-2.5 rounded-2xl font-bold text-sm text-content-muted hover:bg-surface-muted transition-colors"
                   >
                     {t('setup_bar.later')}
                   </button>

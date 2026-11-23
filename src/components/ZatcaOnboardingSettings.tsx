@@ -220,24 +220,24 @@ export default function ZatcaOnboardingSettings({ tenantId }: ZatcaOnboardingSet
   return (
     <div className="space-y-6" dir={dir}>
       {/* Header */}
-      <div className="bg-surface p-5 sm:p-8 rounded-2xl border border-border shadow-xl shadow-brand/5">
+      <div className="bg-surface p-5 main-640:p-8 rounded-2xl border border-border shadow-xl shadow-brand/5">
         <div className="flex items-center gap-4">
           <div className={cn(
-            "w-12 h-12 sm:w-14 sm:h-14 rounded-2xl flex items-center justify-center shrink-0",
+            "w-12 h-12 main-640:w-14 main-640:h-14 rounded-2xl flex items-center justify-center shrink-0",
             connected ? "bg-success/10 text-success" : "bg-brand/10 text-brand"
           )}>
             <ShieldCheck size={28} />
           </div>
           <div>
-            <h3 className="text-xl sm:text-2xl font-black text-content">{t('settings_page.zatca.title', 'ربط زاتكا (ZATCA)')}</h3>
-            <p className="text-xs sm:text-sm text-content-muted font-medium mt-0.5">
+            <h3 className="text-xl main-640:text-2xl font-black text-content">{t('settings_page.zatca.title', 'ربط زاتكا (ZATCA)')}</h3>
+            <p className="text-sm text-content-muted font-medium mt-0.5">
               {connected
                 ? t('settings_page.zatca.connected_subtitle', 'متجرك متصل بزاتكا -- كل فاتورة بيع تُخلَّص/تُبلَّغ تلقائياً.')
                 : t('settings_page.zatca.subtitle', 'اربط متجرك فعلياً بمنظومة الفوترة الإلكترونية السعودية.')}
             </p>
           </div>
           {connected && (
-            <span className="ms-auto shrink-0 hidden sm:flex items-center gap-1.5 bg-success/10 text-success px-3 py-1.5 rounded-full text-xs font-black">
+            <span className="ms-auto shrink-0 hidden main-640:flex items-center gap-1.5 bg-success/10 text-success px-3 py-1.5 rounded-full text-sm font-black">
               <CheckCircle2 size={14} /> {t('settings_page.zatca.connected_badge', 'متصل')}
             </span>
           )}
@@ -245,13 +245,13 @@ export default function ZatcaOnboardingSettings({ tenantId }: ZatcaOnboardingSet
       </div>
 
       {connected ? (
-        <div className="bg-success/5 border border-success/20 rounded-2xl p-5 sm:p-8 flex items-start gap-4">
+        <div className="bg-success/5 border border-success/20 rounded-2xl p-5 main-640:p-8 flex items-start gap-4">
           <div className="p-3 bg-success text-white rounded-2xl shrink-0">
             <CheckCircle2 size={24} />
           </div>
           <div>
-            <h4 className="font-black text-content text-base sm:text-lg">{t('settings_page.zatca.done_title', 'متجرك متصل بزاتكا فعلياً')}</h4>
-            <p className="text-content-muted text-xs sm:text-sm font-medium mt-1 leading-relaxed">
+            <h4 className="font-black text-content text-base main-640:text-lg">{t('settings_page.zatca.done_title', 'متجرك متصل بزاتكا فعلياً')}</h4>
+            <p className="text-content-muted text-sm font-medium mt-1 leading-relaxed">
               {t('settings_page.zatca.done_desc', 'كل عملية بيع حقيقية من الآن تُرسَل تلقائياً لزاتكا للتخليص (فواتير B2B) أو الإبلاغ (فواتير B2C) -- لا حاجة لأي إجراء إضافي.')}
             </p>
           </div>
@@ -259,9 +259,9 @@ export default function ZatcaOnboardingSettings({ tenantId }: ZatcaOnboardingSet
       ) : (
         <>
           {/* Legal prerequisite notice -- Phase 2: the one step Seen cannot do for the merchant */}
-          <div className="bg-warning/5 border border-warning/20 rounded-2xl p-5 sm:p-6 flex items-start gap-3">
+          <div className="bg-warning/5 border border-warning/20 rounded-2xl p-5 main-640:p-6 flex items-start gap-3">
             <AlertTriangle className="text-warning shrink-0 mt-0.5" size={20} />
-            <div className="text-xs sm:text-sm text-content font-medium leading-relaxed">
+            <div className="text-sm text-content font-medium leading-relaxed">
               <p className="font-black text-warning mb-1">{t('settings_page.zatca.prereq_title', 'شرط أساسي قبل البدء')}</p>
               <p>{t('settings_page.zatca.prereq_desc', 'يجب أن يكون متجرك مسجَّلاً فعلياً في ضريبة القيمة المضافة، وأن تملك حساباً خاصاً باسمك التجاري على بوابة فاتورة (fatoora.zatca.gov.sa). سِين لا يستطيع إنشاء هذا الحساب أو التسجيل الضريبي نيابةً عنك -- هذا شرط من زاتكا نفسها.')}</p>
               <a
@@ -276,12 +276,12 @@ export default function ZatcaOnboardingSettings({ tenantId }: ZatcaOnboardingSet
           </div>
 
           {/* Step أ: Confirm data */}
-          <div className="bg-surface border border-border rounded-2xl p-5 sm:p-6">
+          <div className="bg-surface border border-border rounded-2xl p-5 main-640:p-6">
             <div className="flex items-center gap-2 mb-4">
-              <span className="w-6 h-6 rounded-full bg-brand/10 text-brand text-xs font-black flex items-center justify-center shrink-0">1</span>
-              <h4 className="font-black text-content text-sm sm:text-base">{t('settings_page.zatca.step_confirm_title', 'تأكيد بيانات المنشأة')}</h4>
+              <span className="w-6 h-6 rounded-full bg-brand/10 text-brand text-sm font-black flex items-center justify-center shrink-0">1</span>
+              <h4 className="font-black text-content text-sm main-640:text-base">{t('settings_page.zatca.step_confirm_title', 'تأكيد بيانات المنشأة')}</h4>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs sm:text-sm">
+            <div className="grid grid-cols-1 main-640:grid-cols-2 gap-3 text-sm">
               <div className="flex justify-between gap-2 bg-surface-muted/50 rounded-xl px-3 py-2">
                 <span className="text-content-muted font-bold">{t('settings_page.profile.store_name', 'اسم المنشأة التجاري')}</span>
                 <span className="font-black text-content truncate">{profile?.name || '—'}</span>
@@ -298,7 +298,7 @@ export default function ZatcaOnboardingSettings({ tenantId }: ZatcaOnboardingSet
                   <button
                     type="button"
                     onClick={() => navigate('/settings?tab=profile')}
-                    className="flex items-center gap-1.5 text-danger font-black text-xs hover:underline shrink-0"
+                    className="flex items-center gap-1.5 text-danger font-black text-sm hover:underline shrink-0"
                   >
                     <Pencil size={12} />
                     {t('settings_page.zatca.fill_in_profile', 'عدّل في الملف الشخصي')}
@@ -309,21 +309,21 @@ export default function ZatcaOnboardingSettings({ tenantId }: ZatcaOnboardingSet
                 <span className="text-content-muted font-bold">{t('settings_page.profile.city', 'المدينة')}</span>
                 <span className="font-black text-content truncate">{profile?.city || '—'}</span>
               </div>
-              <div className="sm:col-span-2 flex justify-between gap-2 bg-surface-muted/50 rounded-xl px-3 py-2">
+              <div className="main-640:col-span-2 flex justify-between gap-2 bg-surface-muted/50 rounded-xl px-3 py-2">
                 <span className="text-content-muted font-bold">{t('settings_page.profile.address', 'العنوان')}</span>
                 <span className="font-black text-content truncate">{profile?.address || '—'}</span>
               </div>
             </div>
             {!profileComplete && (
               <div className="mt-3 flex flex-wrap items-center gap-2.5">
-                <p className="text-danger text-xs font-bold flex items-center gap-1.5">
+                <p className="text-danger text-sm font-bold flex items-center gap-1.5">
                   <AlertTriangle size={14} />
                   {t('settings_page.zatca.profile_incomplete', 'أكمِل هذه البيانات من تبويبَي "الملف الشخصي" و"الإعدادات الضريبية" قبل المتابعة.')}
                 </p>
                 <button
                   type="button"
                   onClick={() => navigate('/settings?tab=profile')}
-                  className="flex items-center gap-1.5 bg-danger/10 text-danger font-black text-xs px-3 py-1.5 rounded-lg hover:bg-danger/15 transition-all shrink-0"
+                  className="flex items-center gap-1.5 bg-danger/10 text-danger font-black text-sm px-3 py-1.5 rounded-lg hover:bg-danger/15 transition-all shrink-0"
                 >
                   <Pencil size={12} />
                   {t('settings_page.zatca.fill_in_profile', 'عدّل في الملف الشخصي')}
@@ -333,17 +333,17 @@ export default function ZatcaOnboardingSettings({ tenantId }: ZatcaOnboardingSet
           </div>
 
           {/* Step ب: Generate CSR */}
-          <div className={cn("bg-surface border border-border rounded-2xl p-5 sm:p-6", !profileComplete && "opacity-50 pointer-events-none")}>
+          <div className={cn("bg-surface border border-border rounded-2xl p-5 main-640:p-6", !profileComplete && "opacity-50 pointer-events-none")}>
             <div className="flex items-center gap-2 mb-4">
               <span className={cn(
-                "w-6 h-6 rounded-full text-xs font-black flex items-center justify-center shrink-0",
+                "w-6 h-6 rounded-full text-sm font-black flex items-center justify-center shrink-0",
                 status?.hasPendingCsr || status?.hasComplianceCsid ? "bg-success text-white" : "bg-brand/10 text-brand"
               )}>
                 {status?.hasPendingCsr || status?.hasComplianceCsid ? <CheckCircle2 size={14} /> : '2'}
               </span>
-              <h4 className="font-black text-content text-sm sm:text-base">{t('settings_page.zatca.step_csr_title', 'توليد CSR')}</h4>
+              <h4 className="font-black text-content text-sm main-640:text-base">{t('settings_page.zatca.step_csr_title', 'توليد CSR')}</h4>
             </div>
-            <p className="text-content-muted text-xs sm:text-sm font-medium leading-relaxed mb-4">
+            <p className="text-content-muted text-sm font-medium leading-relaxed mb-4">
               {t('settings_page.zatca.step_csr_desc', 'يولِّد هذا الزر طلب شهادة (CSR) خاصاً بمتجرك. انسخه وألصقه في حسابك على بوابة فاتورة عند تسجيل "وحدة إصدار" جديدة، وستحصل من هناك على رمز OTP.')}
             </p>
             {!csrBase64 && !status?.hasPendingCsr ? (
@@ -351,7 +351,7 @@ export default function ZatcaOnboardingSettings({ tenantId }: ZatcaOnboardingSet
                 type="button"
                 onClick={handleGenerateCsr}
                 disabled={generatingCsr}
-                className="flex items-center justify-center gap-2 bg-brand text-white px-5 py-3 rounded-xl font-black text-xs sm:text-sm hover:bg-brand/90 transition-all disabled:opacity-50 min-h-[44px]"
+                className="flex items-center justify-center gap-2 bg-brand text-white px-5 py-3 rounded-xl font-black text-sm hover:bg-brand/90 transition-all disabled:opacity-50 min-h-[44px]"
               >
                 {generatingCsr ? <Loader2 size={16} className="animate-spin" /> : <FileKey size={16} />}
                 {t('settings_page.zatca.generate_csr_button', 'توليد CSR')}
@@ -365,18 +365,18 @@ export default function ZatcaOnboardingSettings({ tenantId }: ZatcaOnboardingSet
                       value={csrBase64}
                       rows={4}
                       dir="ltr"
-                      className="w-full bg-surface-muted border border-border rounded-xl p-3 text-[10px] font-mono text-content-muted resize-none outline-none"
+                      className="w-full bg-surface-muted border border-border rounded-xl p-3 text-sm font-mono text-content-muted resize-none outline-none"
                     />
                     <button
                       type="button"
                       onClick={handleCopyCsr}
-                      className="flex items-center justify-center gap-2 bg-brand/10 text-brand px-4 py-2.5 rounded-xl font-black text-xs hover:bg-brand/15 transition-all min-h-[40px]"
+                      className="flex items-center justify-center gap-2 bg-brand/10 text-brand px-4 py-2.5 rounded-xl font-black text-sm hover:bg-brand/15 transition-all min-h-[40px]"
                     >
                       <Copy size={14} /> {t('common.copy', 'نسخ')}
                     </button>
                   </>
                 ) : (
-                  <p className="text-xs font-bold text-success flex items-center gap-1.5">
+                  <p className="text-sm font-bold text-success flex items-center gap-1.5">
                     <CheckCircle2 size={14} /> {t('settings_page.zatca.csr_already_generated', 'تم توليد CSR مسبقاً -- تابع لخطوة OTP أدناه.')}
                   </p>
                 )}
@@ -386,23 +386,23 @@ export default function ZatcaOnboardingSettings({ tenantId }: ZatcaOnboardingSet
 
           {/* Step ج+د: OTP + Activate */}
           <div className={cn(
-            "bg-surface border border-border rounded-2xl p-5 sm:p-6",
+            "bg-surface border border-border rounded-2xl p-5 main-640:p-6",
             (!status?.hasPendingCsr && !status?.hasComplianceCsid) && "opacity-50 pointer-events-none"
           )}>
             <div className="flex items-center gap-2 mb-4">
               <span className={cn(
-                "w-6 h-6 rounded-full text-xs font-black flex items-center justify-center shrink-0",
+                "w-6 h-6 rounded-full text-sm font-black flex items-center justify-center shrink-0",
                 status?.hasProductionCsid ? "bg-success text-white" : "bg-brand/10 text-brand"
               )}>
                 {status?.hasProductionCsid ? <CheckCircle2 size={14} /> : '3'}
               </span>
-              <h4 className="font-black text-content text-sm sm:text-base">{t('settings_page.zatca.step_activate_title', 'إدخال OTP والتفعيل')}</h4>
+              <h4 className="font-black text-content text-sm main-640:text-base">{t('settings_page.zatca.step_activate_title', 'إدخال OTP والتفعيل')}</h4>
             </div>
-            <p className="text-content-muted text-xs sm:text-sm font-medium leading-relaxed mb-4">
+            <p className="text-content-muted text-sm font-medium leading-relaxed mb-4">
               {t('settings_page.zatca.step_activate_desc', 'أدخل رمز OTP الذي حصلت عليه من بوابة فاتورة بعد لصق CSR هناك. سيُشغِّل زر "تفعيل" تلقائياً: طلب Compliance CSID، ثم اختبارات الامتثال، ثم طلب Production CSID -- بلا أي خطوة يدوية إضافية.')}
             </p>
 
-            <div className="flex flex-col sm:flex-row gap-3">
+            <div className="flex flex-col main-640:flex-row gap-3">
               <input
                 type="text"
                 value={otp}
@@ -416,7 +416,7 @@ export default function ZatcaOnboardingSettings({ tenantId }: ZatcaOnboardingSet
                 type="button"
                 onClick={handleActivate}
                 disabled={activating || !otp.trim() || status?.hasComplianceCsid}
-                className="flex items-center justify-center gap-2 bg-brand text-white px-6 py-3 rounded-xl font-black text-xs sm:text-sm hover:bg-brand/90 transition-all disabled:opacity-50 min-h-[44px] shrink-0"
+                className="flex items-center justify-center gap-2 bg-brand text-white px-6 py-3 rounded-xl font-black text-sm hover:bg-brand/90 transition-all disabled:opacity-50 min-h-[44px] shrink-0"
               >
                 {activating ? <Loader2 size={16} className="animate-spin" /> : <KeyRound size={16} />}
                 {t('settings_page.zatca.activate_button', 'تفعيل')}
@@ -430,7 +430,7 @@ export default function ZatcaOnboardingSettings({ tenantId }: ZatcaOnboardingSet
                   ['tests', t('settings_page.zatca.substep_tests', 'اختبارات الامتثال')],
                   ['production', t('settings_page.zatca.substep_production', 'طلب Production CSID')],
                 ] as [ActivateSubStep, string][]).map(([key, label]) => (
-                  <div key={key} className="flex items-center gap-2.5 text-xs font-bold">
+                  <div key={key} className="flex items-center gap-2.5 text-sm font-bold">
                     {subSteps[key] === 'done' && <CheckCircle2 size={16} className="text-success shrink-0" />}
                     {subSteps[key] === 'running' && <Loader2 size={16} className="text-brand animate-spin shrink-0" />}
                     {subSteps[key] === 'error' && <AlertTriangle size={16} className="text-danger shrink-0" />}
@@ -446,7 +446,7 @@ export default function ZatcaOnboardingSettings({ tenantId }: ZatcaOnboardingSet
             {activateError && (
               <div className="mt-4 bg-danger/5 border border-danger/20 rounded-xl p-3 flex items-start gap-2.5">
                 <AlertTriangle size={16} className="text-danger shrink-0 mt-0.5" />
-                <p className="text-xs font-bold text-danger leading-relaxed">{activateError}</p>
+                <p className="text-sm font-bold text-danger leading-relaxed">{activateError}</p>
               </div>
             )}
           </div>
@@ -454,7 +454,7 @@ export default function ZatcaOnboardingSettings({ tenantId }: ZatcaOnboardingSet
           <button
             type="button"
             onClick={() => void loadStatus()}
-            className="flex items-center gap-2 text-content-muted hover:text-content text-xs font-bold transition-colors"
+            className="flex items-center gap-2 text-content-muted hover:text-content text-sm font-bold transition-colors"
           >
             <RefreshCw size={14} /> {t('settings_page.zatca.refresh_status', 'تحديث الحالة')}
           </button>

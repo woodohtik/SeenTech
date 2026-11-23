@@ -32,7 +32,7 @@ export default function Branding({ className, light = false, collapsed = false }
         rel="noopener noreferrer"
         dir="ltr"
         className={cn(
-          "flex items-center gap-1 text-[10px] font-bold tracking-wider transition-all hover:opacity-80",
+          "flex items-center gap-1 text-sm font-bold transition-all hover:opacity-80",
           light ? "text-white/60" : "text-content-muted",
           collapsed && "flex-col gap-0.5"
         )}

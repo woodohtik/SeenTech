@@ -140,7 +140,7 @@ export default function TailorStatementReport({ tenantId }: TailorStatementRepor
 
   return (
     <div className="space-y-6" dir={dir}>
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
+      <div className="flex flex-col main-640:flex-row items-stretch main-640:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 bg-brand/10 text-brand rounded-xl flex items-center justify-center">
             <Scissors size={20} />
@@ -164,7 +164,7 @@ export default function TailorStatementReport({ tenantId }: TailorStatementRepor
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 main-720:grid-cols-3 gap-6">
         <div className="bg-brand/5 p-6 rounded-2xl border border-brand/10 flex items-center gap-4">
           <div className="w-12 h-12 bg-brand/10 text-brand rounded-xl flex items-center justify-center">
             <DollarSign size={24} />
@@ -191,7 +191,7 @@ export default function TailorStatementReport({ tenantId }: TailorStatementRepor
       </div>
 
       {!loading && commissions.length > 0 && (
-        <div className={`grid grid-cols-1 ${selectedTailor === 'all' && tailorChartData.length > 0 ? 'lg:grid-cols-2' : ''} gap-6`}>
+        <div className={`grid grid-cols-1 ${selectedTailor === 'all' && tailorChartData.length > 0 ? 'main-900:grid-cols-2' : ''} gap-6`}>
           <div className="bg-surface p-6 rounded-2xl border border-border shadow-sm">
             <h3 className="text-lg font-bold text-content mb-6">{t('tailors.statement.monthly_trend')}</h3>
             <div className="h-64">
@@ -204,8 +204,8 @@ export default function TailorStatementReport({ tenantId }: TailorStatementRepor
                     </linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" />
-                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: 'var(--content-muted)' }} dy={10} />
-                  <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: 'var(--content-muted)' }} />
+                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 14, fill: 'var(--content-muted)' }} dy={10} />
+                  <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 14, fill: 'var(--content-muted)' }} />
                   <Tooltip 
                     contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
                     formatter={(value?: TooltipValueType) => [`${(Number(value) || 0).toFixed(2)} ﷼`, t('tailors.statement.commissions')]}
@@ -223,8 +223,8 @@ export default function TailorStatementReport({ tenantId }: TailorStatementRepor
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={tailorChartData} layout="vertical" margin={{ top: 0, right: 0, left: 40, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="var(--border)" />
-                    <XAxis type="number" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: 'var(--content-muted)' }} />
-                    <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: 'var(--content-muted)' }} />
+                    <XAxis type="number" axisLine={false} tickLine={false} tick={{ fontSize: 14, fill: 'var(--content-muted)' }} />
+                    <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fontSize: 14, fill: 'var(--content-muted)' }} />
                     <Tooltip 
                       cursor={{ fill: 'var(--surface-muted)' }}
                       contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
@@ -253,11 +253,11 @@ export default function TailorStatementReport({ tenantId }: TailorStatementRepor
             <table className="w-full text-right min-w-max">
               <thead className="bg-surface-muted/50">
                 <tr>
-                  <th className="px-6 py-4 text-xs font-black text-content-muted uppercase tracking-widest">{t('dashboard.cashier.col_order_number')}</th>
-                  <th className="px-6 py-4 text-xs font-black text-content-muted uppercase tracking-widest">{t('tailors.statement.col_customer')}</th>
-                  <th className="px-6 py-4 text-xs font-black text-content-muted uppercase tracking-widest">{t('tailors.statement.col_tailor')}</th>
-                  <th className="px-6 py-4 text-xs font-black text-content-muted uppercase tracking-widest">{t('tailors.statement.col_completion_date')}</th>
-                  <th className="px-6 py-4 text-xs font-black text-content-muted uppercase tracking-widest">{t('tailors.statement.col_earned_commission')}</th>
+                  <th className="px-6 py-4 text-sm font-black text-content-muted uppercase">{t('dashboard.cashier.col_order_number')}</th>
+                  <th className="px-6 py-4 text-sm font-black text-content-muted uppercase">{t('tailors.statement.col_customer')}</th>
+                  <th className="px-6 py-4 text-sm font-black text-content-muted uppercase">{t('tailors.statement.col_tailor')}</th>
+                  <th className="px-6 py-4 text-sm font-black text-content-muted uppercase">{t('tailors.statement.col_completion_date')}</th>
+                  <th className="px-6 py-4 text-sm font-black text-content-muted uppercase">{t('tailors.statement.col_earned_commission')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">

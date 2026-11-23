@@ -56,7 +56,7 @@ export default function StaffTutorialModal({ role }: { role?: string | null }) {
                   <Users size={24} />
                 </div>
                 <h3 className="font-bold text-content mb-2">{t('staff.tutorial_step1_title')}</h3>
-                <p className="text-xs text-content-muted">{t('staff.tutorial_step1_desc')}</p>
+                <p className="text-sm text-content-muted">{t('staff.tutorial_step1_desc')}</p>
               </div>
 
               <div className="bg-surface-muted/30 p-5 rounded-2xl border border-border flex flex-col items-center text-center">
@@ -64,7 +64,7 @@ export default function StaffTutorialModal({ role }: { role?: string | null }) {
                   <ShoppingCart size={24} />
                 </div>
                 <h3 className="font-bold text-content mb-2">{t('staff.tutorial_step2_title')}</h3>
-                <p className="text-xs text-content-muted">{t('staff.tutorial_step2_desc')}</p>
+                <p className="text-sm text-content-muted">{t('staff.tutorial_step2_desc')}</p>
               </div>
 
               <div className="bg-surface-muted/30 p-5 rounded-2xl border border-border flex flex-col items-center text-center">
@@ -72,7 +72,7 @@ export default function StaffTutorialModal({ role }: { role?: string | null }) {
                   <CreditCard size={24} />
                 </div>
                 <h3 className="font-bold text-content mb-2">{t('staff.tutorial_step3_title')}</h3>
-                <p className="text-xs text-content-muted">{t('staff.tutorial_step3_desc')}</p>
+                <p className="text-sm text-content-muted">{t('staff.tutorial_step3_desc')}</p>
               </div>
             </div>
           </div>

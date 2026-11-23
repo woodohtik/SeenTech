@@ -557,7 +557,7 @@ export const InventoryAdjustment: React.FC<InventoryAdjustmentProps> = ({
         <button
           onClick={() => setActiveSubTab("new_adjustment")}
           className={cn(
-            "relative px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all flex items-center gap-2 cursor-pointer z-10",
+            "relative px-4 py-2.5 rounded-xl text-sm font-semibold transition-all flex items-center gap-2 cursor-pointer z-10",
             activeSubTab === "new_adjustment"
               ? "text-white font-bold"
               : "text-content-muted hover:text-content"
@@ -576,7 +576,7 @@ export const InventoryAdjustment: React.FC<InventoryAdjustmentProps> = ({
         <button
           onClick={() => setActiveSubTab("adjustment_history")}
           className={cn(
-            "relative px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all flex items-center gap-2 cursor-pointer z-10",
+            "relative px-4 py-2.5 rounded-xl text-sm font-semibold transition-all flex items-center gap-2 cursor-pointer z-10",
             activeSubTab === "adjustment_history"
               ? "text-white font-bold"
               : "text-content-muted hover:text-content"
@@ -597,14 +597,14 @@ export const InventoryAdjustment: React.FC<InventoryAdjustmentProps> = ({
       {activeSubTab === "new_adjustment" && (
         <div className="space-y-6">
           {isSchemaMissing && (
-            <div className="bg-warning/10 border border-warning/20 text-warning p-5 rounded-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-sm" id="schema-missing-banner-new">
+            <div className="bg-warning/10 border border-warning/20 text-warning p-5 rounded-2xl flex flex-col main-720:flex-row items-start main-720:items-center justify-between gap-4 shadow-sm" id="schema-missing-banner-new">
               <div className="flex gap-3">
                 <Database className="text-warning shrink-0 mt-0.5" size={20} />
                 <div className="space-y-1">
                   <h4 className="font-black text-sm text-warning">
                     {t("inventory.schema_missing_title", "تنبيه: ميزة جرد وتسوية المخزون بحاجة لتفعيل")}
                   </h4>
-                  <p className="text-xs text-warning/80 leading-relaxed max-w-2xl">
+                  <p className="text-sm text-warning/80 leading-relaxed max-w-2xl">
                     {t("inventory.schema_missing_desc_merchant", "ميزة جرد وتسوية المخزون بحاجة إلى تفعيل من قبل فريق الإدارة أو الدعم الفني للربط مع قاعدة البيانات الخاصة بمتجرك.")}
                   </p>
                 </div>
@@ -612,8 +612,8 @@ export const InventoryAdjustment: React.FC<InventoryAdjustmentProps> = ({
             </div>
           )}
           {/* Header Configuration Panel - Sophisticated Layout */}
-          <div className="bg-surface p-5 sm:p-6 rounded-2xl border border-border/80 shadow-xs space-y-6">
-            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div className="bg-surface p-5 main-640:p-6 rounded-2xl border border-border/80 shadow-xs space-y-6">
+            <div className="flex flex-col main-900:flex-row main-900:items-center justify-between gap-4">
               <div className="space-y-1">
                 <div className="flex items-center gap-2.5">
                   <div className="p-2 bg-brand/10 text-brand rounded-xl">
@@ -623,7 +623,7 @@ export const InventoryAdjustment: React.FC<InventoryAdjustmentProps> = ({
                     <h3 className="text-lg font-black text-content">
                       {t("inventory.reconciliation_title", "وحدة تسوية وجرد المخزون")}
                     </h3>
-                    <p className="text-xs text-content-muted">
+                    <p className="text-sm text-content-muted">
                       {t(
                         "inventory.reconciliation_subtitle",
                         "متوافقة تماماً مع معايير IFRS للمحاسبة. اختر الفرع ونوع الجرد ثم قم بمطابقة الكميات الدفترية مع الكميات الفعلية."
@@ -634,7 +634,7 @@ export const InventoryAdjustment: React.FC<InventoryAdjustmentProps> = ({
               </div>
 
               {/* RBAC Info Indicator - Elegant compact badge style */}
-              <div className="flex items-center gap-2.5 bg-surface-muted/60 p-3 rounded-xl border border-border/40 text-xs max-w-md">
+              <div className="flex items-center gap-2.5 bg-surface-muted/60 p-3 rounded-xl border border-border/40 text-sm max-w-md">
                 <Lock className="text-brand shrink-0" size={15} />
                 <div className="space-y-0.5">
                   <p className="font-bold text-content">
@@ -643,7 +643,7 @@ export const InventoryAdjustment: React.FC<InventoryAdjustmentProps> = ({
                       {String(t(`roles.${currentStaff?.role || "cashier"}`, currentStaff?.role || "Cashier"))}
                     </span>
                   </p>
-                  <p className="text-content-muted text-[11px] leading-tight font-medium">
+                  <p className="text-content-muted text-sm leading-tight font-medium">
                     {hasApprovePermission
                       ? t("inventory.has_full_reconcile_rights", "لديك صلاحية الاعتماد المباشر وتحديث المخزون.")
                       : t("inventory.cashier_draft_only", "يمكنك فقط حفظ الجرد كمسودة ليقوم مدير النظام باعتمادها.")}
@@ -652,10 +652,10 @@ export const InventoryAdjustment: React.FC<InventoryAdjustmentProps> = ({
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-5 pt-5 border-t border-border/60">
+            <div className="grid grid-cols-1 main-720:grid-cols-3 gap-5 pt-5 border-t border-border/60">
               {/* Branch Selector */}
               <div className="space-y-1.5">
-                <label className="block text-xs font-bold text-content-muted uppercase tracking-wider">
+                <label className="block text-sm font-bold text-content-muted uppercase">
                   {t("inventory.select_branch_label", "1. حدد فرع الجرد المستهدف")}
                 </label>
                 <SmartSelect
@@ -672,7 +672,7 @@ export const InventoryAdjustment: React.FC<InventoryAdjustmentProps> = ({
 
               {/* Adjustment Reason Type */}
               <div className="space-y-1.5">
-                <label className="block text-xs font-bold text-content-muted uppercase tracking-wider">
+                <label className="block text-sm font-bold text-content-muted uppercase">
                   {t("inventory.adjustment_type_label", "2. غرض التسوية والجرد")}
                 </label>
                 <SmartSelect
@@ -690,12 +690,12 @@ export const InventoryAdjustment: React.FC<InventoryAdjustmentProps> = ({
 
               {/* Unique Reference Number Display */}
               <div className="space-y-1.5">
-                <label className="block text-xs font-bold text-content-muted uppercase tracking-wider">
+                <label className="block text-sm font-bold text-content-muted uppercase">
                   {t("inventory.reference_number_label", "الرقم المرجعي التلقائي (IFRS)")}
                 </label>
                 <div className="bg-surface-muted/80 border border-border/80 text-content font-mono px-3.5 py-2.5 rounded-xl font-bold text-sm select-all flex items-center justify-between">
-                  <span className="text-brand font-semibold tracking-wider">{computedReferenceNumber}</span>
-                  <span className="text-[10px] bg-brand/15 text-brand px-2 py-0.5 rounded-md font-bold uppercase tracking-widest">
+                  <span className="text-brand font-semibold">{computedReferenceNumber}</span>
+                  <span className="text-sm bg-brand/15 text-brand px-2 py-0.5 rounded-md font-bold uppercase">
                     {t("inventory.reference_auto", "تلقائي")}
                   </span>
                 </div>
@@ -712,7 +712,7 @@ export const InventoryAdjustment: React.FC<InventoryAdjustmentProps> = ({
                 <h4 className="text-base font-black text-content">
                   {t("inventory.ready_to_reconcile_title", "بانتظار تحديد الفرع")}
                 </h4>
-                <p className="text-xs text-content-muted max-w-xs mx-auto leading-relaxed">
+                <p className="text-sm text-content-muted max-w-xs mx-auto leading-relaxed">
                   {t(
                     "inventory.ready_to_reconcile_desc",
                     "يرجى تحديد المستودع أو المعرض الذي ترغب في جرد ومطابقة مخزونه الفعلي للبدء."
@@ -723,23 +723,23 @@ export const InventoryAdjustment: React.FC<InventoryAdjustmentProps> = ({
           ) : (
             <div className="space-y-6">
               {/* Financial & Count Stats Cards - Elegant flat cards */}
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 main-900:grid-cols-4 gap-4">
                 <div className="bg-surface p-5 rounded-2xl border border-border/80 shadow-xs flex flex-col justify-between">
-                  <p className="text-[11px] font-bold text-content-muted uppercase tracking-wider">
+                  <p className="text-sm font-bold text-content-muted uppercase">
                     {t("inventory.items_modified_in_take", "الأصناف المجرودة حالياً")}
                   </p>
                   <div className="flex items-baseline gap-1.5 mt-2">
                     <span className="text-xl font-black text-content">
                       {sessionStats.touchedCount}
                     </span>
-                    <span className="text-xs text-content-muted font-bold">
+                    <span className="text-sm text-content-muted font-bold">
                       / {items.length} {t("common.products_count", "منتج")}
                     </span>
                   </div>
                 </div>
 
                 <div className="bg-surface p-5 rounded-2xl border border-border/80 shadow-xs flex flex-col justify-between">
-                  <p className="text-[11px] font-bold text-content-muted uppercase tracking-wider">
+                  <p className="text-sm font-bold text-content-muted uppercase">
                     {t("inventory.impact_financial_title", "الأثر المالي الصافي (WAC)")}
                   </p>
                   <div
@@ -759,7 +759,7 @@ export const InventoryAdjustment: React.FC<InventoryAdjustmentProps> = ({
                 </div>
 
                 <div className="bg-surface p-5 rounded-2xl border border-border/80 shadow-xs flex flex-col justify-between">
-                  <p className="text-[11px] font-bold text-danger uppercase tracking-wider">
+                  <p className="text-sm font-bold text-danger uppercase">
                     {t("inventory.reconcile_deficits", "عدد الأصناف بالعجز")}
                   </p>
                   <div className="flex items-center gap-1.5 mt-2 text-danger">
@@ -769,7 +769,7 @@ export const InventoryAdjustment: React.FC<InventoryAdjustmentProps> = ({
                 </div>
 
                 <div className="bg-surface p-5 rounded-2xl border border-border/80 shadow-xs flex flex-col justify-between">
-                  <p className="text-[11px] font-bold text-success uppercase tracking-wider">
+                  <p className="text-sm font-bold text-success uppercase">
                     {t("inventory.reconcile_surpluses", "عدد الأصناف بالزيادة")}
                   </p>
                   <div className="flex items-center gap-1.5 mt-2 text-success">
@@ -780,8 +780,8 @@ export const InventoryAdjustment: React.FC<InventoryAdjustmentProps> = ({
               </div>
 
               {/* Filters / Search Bar - Pristine Layout */}
-              <div className="bg-surface p-4 rounded-2xl border border-border/80 shadow-xs flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
-                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 flex-1">
+              <div className="bg-surface p-4 rounded-2xl border border-border/80 shadow-xs flex flex-col main-720:flex-row items-stretch main-720:items-center justify-between gap-3">
+                <div className="flex flex-col main-640:flex-row items-stretch main-640:items-center gap-2.5 flex-1">
                   {/* Search Input */}
                   <IconInput
                     type="text"
@@ -793,11 +793,11 @@ export const InventoryAdjustment: React.FC<InventoryAdjustmentProps> = ({
                   />
 
                   {/* Category select filter */}
-                  <div className="w-full sm:w-44">
+                  <div className="w-full main-640:w-44">
                     <SmartSelect
                       value={selectedCategory}
                       onChange={setSelectedCategory}
-                      className="rounded-xl px-3 py-2 text-xs sm:text-sm"
+                      className="rounded-xl px-3 py-2 text-sm"
                       options={[
                         { value: "all", label: t("inventory.all_categories", "كل الفئات") },
                         ...categories.map((cat) => ({ value: cat, label: cat })),
@@ -809,7 +809,7 @@ export const InventoryAdjustment: React.FC<InventoryAdjustmentProps> = ({
                 <div className="flex items-center gap-2">
                   <button
                     onClick={handleSetAllToBook}
-                    className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-success/10 text-success border border-success/20 hover:bg-success/20 transition-all cursor-pointer"
+                    className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-bold bg-success/10 text-success border border-success/20 hover:bg-success/20 transition-all cursor-pointer"
                   >
                     <CheckCircle2 size={13} />
                     {t("inventory.import_all_current", "تعبئة الدفتري للكل")}
@@ -817,7 +817,7 @@ export const InventoryAdjustment: React.FC<InventoryAdjustmentProps> = ({
                   {sessionStats.touchedCount > 0 && (
                     <button
                       onClick={handleReset}
-                      className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-danger/10 text-danger border border-danger/20 hover:bg-danger/20 transition-all cursor-pointer"
+                      className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-bold bg-danger/10 text-danger border border-danger/20 hover:bg-danger/20 transition-all cursor-pointer"
                     >
                       <RotateCcw size={13} />
                       {t("inventory.reset_all", "تفريغ المسودة")}
@@ -827,7 +827,7 @@ export const InventoryAdjustment: React.FC<InventoryAdjustmentProps> = ({
               </div>
 
               {itemsWithVariants.length > 0 && (
-                <p className="text-[10px] text-content-muted px-1">
+                <p className="text-sm text-content-muted px-1">
                   {t(
                     "inventory.variants.stock_take_not_supported",
                     "المنتجات ذات السمات غير مدعومة بعد في هذه الشاشة -- عدّل مخزون كل سمة يدوياً من شاشة المخزون."
@@ -843,14 +843,14 @@ export const InventoryAdjustment: React.FC<InventoryAdjustmentProps> = ({
                     <h4 className="text-sm font-black text-content">
                       {t("inventory.no_results_filters", "لم نجد نتائج مطابقة لخيارات الفلترة")}
                     </h4>
-                    <p className="text-xs text-content-muted max-w-xs mx-auto">
+                    <p className="text-sm text-content-muted max-w-xs mx-auto">
                       {t("inventory.no_results_filters_desc", "جرب إزالة كلمات البحث أو تغيير فئة الفلتر الحالية.")}
                     </p>
                   </div>
                 ) : (
                   <div className="overflow-x-auto whitespace-nowrap scrollbar-hide">
                     <table className="w-full text-right min-w-max border-collapse">
-                      <thead className="bg-surface-muted text-content-muted text-[10px] font-extrabold uppercase tracking-widest border-b border-border/60">
+                      <thead className="bg-surface-muted text-content-muted text-sm font-extrabold uppercase border-b border-border/60">
                         <tr>
                           <th className="px-5 py-3 text-start">{t("inventory.table_item_name", "المادة / الصنف")}</th>
                           <th className="px-5 py-3 text-start">{t("inventory.table_sku_barcode", "SKU / باركود")}</th>
@@ -892,13 +892,13 @@ export const InventoryAdjustment: React.FC<InventoryAdjustmentProps> = ({
                                       className="w-9 h-9 rounded-lg object-cover border border-border/80 shrink-0"
                                     />
                                   ) : (
-                                    <div className="w-9 h-9 bg-brand/10 text-brand rounded-lg flex items-center justify-center shrink-0 font-extrabold text-xs">
+                                    <div className="w-9 h-9 bg-brand/10 text-brand rounded-lg flex items-center justify-center shrink-0 font-extrabold text-sm">
                                       {item.name.charAt(0)}
                                     </div>
                                   )}
                                   <div className="space-y-0.5">
-                                    <p className="font-bold text-content text-xs sm:text-sm leading-tight">{item.name}</p>
-                                    <p className="text-[10px] text-content-muted font-semibold uppercase tracking-wider">
+                                    <p className="font-bold text-content text-sm leading-tight">{item.name}</p>
+                                    <p className="text-sm text-content-muted font-semibold uppercase">
                                       {t(`category.${item.category}`, item.category)}
                                     </p>
                                   </div>
@@ -907,16 +907,16 @@ export const InventoryAdjustment: React.FC<InventoryAdjustmentProps> = ({
 
                               {/* SKU & Barcode */}
                               <td className="px-5 py-3.5 text-start">
-                                <p className="text-xs font-mono font-semibold text-content">{item.sku || "—"}</p>
+                                <p className="text-sm font-mono font-semibold text-content">{item.sku || "—"}</p>
                                 {item.barcode && (
-                                  <p className="text-[10px] font-mono text-content-muted font-medium mt-0.5">{item.barcode}</p>
+                                  <p className="text-sm font-mono text-content-muted font-medium mt-0.5">{item.barcode}</p>
                                 )}
                               </td>
 
                               {/* System Book Stock */}
-                              <td className="px-5 py-3.5 text-center text-xs sm:text-sm font-bold text-content-muted">
+                              <td className="px-5 py-3.5 text-center text-sm font-bold text-content-muted">
                                 {bookQty}{" "}
-                                <span className="text-[10px] font-medium opacity-80">
+                                <span className="text-sm font-medium opacity-80">
                                   {t(`units.${item.baseUnit || "piece"}`, item.baseUnit || "Pcs")}
                                 </span>
                               </td>
@@ -936,7 +936,7 @@ export const InventoryAdjustment: React.FC<InventoryAdjustmentProps> = ({
                                     value={isTouched ? actualCounts[item.id] : ""}
                                     onChange={(e) => handleActualStockChange(item.id, e.target.value)}
                                     placeholder={bookQty.toString()}
-                                    className="w-12 bg-surface text-center text-content border border-border py-1 rounded-lg font-bold text-xs sm:text-sm outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand"
+                                    className="w-12 bg-surface text-center text-content border border-border py-1 rounded-lg font-bold text-sm outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand"
                                   />
                                   <button
                                     type="button"
@@ -952,7 +952,7 @@ export const InventoryAdjustment: React.FC<InventoryAdjustmentProps> = ({
                               <td className="px-5 py-3.5 text-center">
                                 <span
                                   className={cn(
-                                    "inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold",
+                                    "inline-flex items-center px-2 py-0.5 rounded-full text-sm font-bold",
                                     varianceQty > 0
                                       ? "text-success bg-success/10"
                                       : varianceQty < 0
@@ -972,13 +972,13 @@ export const InventoryAdjustment: React.FC<InventoryAdjustmentProps> = ({
                                     value={unitCosts[item.id] !== undefined ? unitCosts[item.id] : ""}
                                     onChange={(e) => handleCostChange(item.id, e.target.value)}
                                     placeholder={getUnitCost(item).toString()}
-                                    className="w-full bg-surface text-center text-content border border-border py-1 rounded-lg text-xs font-bold outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand"
+                                    className="w-full bg-surface text-center text-content border border-border py-1 rounded-lg text-sm font-bold outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand"
                                   />
                                 </div>
                               </td>
 
                               {/* Total Variance Cost */}
-                              <td className="px-5 py-3.5 text-center font-bold text-xs sm:text-sm">
+                              <td className="px-5 py-3.5 text-center font-bold text-sm">
                                 <span
                                   className={cn(
                                     varianceQty > 0
@@ -999,7 +999,7 @@ export const InventoryAdjustment: React.FC<InventoryAdjustmentProps> = ({
                                   value={reasonVal}
                                   onChange={(e) => handleItemReasonChange(item.id, e.target.value)}
                                   placeholder={t("inventory.reason_placeholder", "إتلاف، كسر، فقد...")}
-                                  className="w-full bg-surface text-content border border-border px-2.5 py-1 rounded-lg text-xs font-semibold outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand"
+                                  className="w-full bg-surface text-content border border-border px-2.5 py-1 rounded-lg text-sm font-semibold outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand"
                                 />
                               </td>
 
@@ -1009,7 +1009,7 @@ export const InventoryAdjustment: React.FC<InventoryAdjustmentProps> = ({
                                   <button
                                     type="button"
                                     onClick={() => handleCopyBookStock(item)}
-                                    className="text-xs font-bold text-brand hover:underline cursor-pointer"
+                                    className="text-sm font-bold text-brand hover:underline cursor-pointer"
                                   >
                                     {t("inventory.start_take_btn", "بدء العدّ")}
                                   </button>
@@ -1026,7 +1026,7 @@ export const InventoryAdjustment: React.FC<InventoryAdjustmentProps> = ({
 
               {/* Notes & Submission Panel */}
               {sessionStats.touchedCount > 0 && (
-                <div className="bg-surface p-5 sm:p-6 rounded-2xl border border-border/80 shadow-xs space-y-5">
+                <div className="bg-surface p-5 main-640:p-6 rounded-2xl border border-border/80 shadow-xs space-y-5">
                   <div className="space-y-1.5">
                     <h4 className="text-sm font-black text-content">
                       {t("inventory.global_notes_label", "ملاحظات وتبرير عام للمستند")}
@@ -1039,28 +1039,28 @@ export const InventoryAdjustment: React.FC<InventoryAdjustmentProps> = ({
                         "اكتب هنا تفاصيل الجرد، مثلاً: جرد ربع سنوي لشهر أغسطس، تم استبعاد الأقمشة التالفة وتسوية الرصيد تلقائياً."
                       )}
                       rows={2.5}
-                      className="w-full bg-surface text-content border border-border p-3 rounded-xl text-xs sm:text-sm outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand"
+                      className="w-full bg-surface text-content border border-border p-3 rounded-xl text-sm outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand"
                     />
                   </div>
 
-                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-5 pt-4 border-t border-border/60">
+                  <div className="flex flex-col main-720:flex-row main-720:items-center justify-between gap-5 pt-4 border-t border-border/60">
                     <div className="space-y-0.5">
-                      <p className="text-xs sm:text-sm font-bold text-content flex items-center gap-1.5">
+                      <p className="text-sm font-bold text-content flex items-center gap-1.5">
                         <Check size={16} className="text-success" />
                         {t("inventory.ready_to_commit_take", "مستند الجرد جاهز للتأكيد والاعتماد")}
                       </p>
-                      <p className="text-xs text-content-muted leading-relaxed max-w-xl font-medium">
+                      <p className="text-sm text-content-muted leading-relaxed max-w-xl font-medium">
                         {hasApprovePermission
                           ? t("inventory.admin_submit_hint", "بصفتك مديراً، يمكنك اعتماد الجرد لتحديث كمية المستودعات ومستندات الأرصدة فوراً.")
                           : t("inventory.cashier_submit_hint", "بصفتك صرافاً، سيتم حفظ هذه كمسودة معلقة للمراجعة والموافقة من قبل الإدارة.")}
                       </p>
                     </div>
 
-                    <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto shrink-0">
+                    <div className="flex flex-col main-640:flex-row items-center gap-3 w-full main-720:w-auto shrink-0">
                       {/* Admin Toggle for Draft vs Direct Approval */}
                       {hasApprovePermission && (
-                        <div className="flex items-center gap-3 bg-surface-muted px-3 py-1.5 rounded-xl border border-border/80 w-full sm:w-auto justify-between">
-                          <span className="text-xs font-bold text-content whitespace-nowrap">
+                        <div className="flex items-center gap-3 bg-surface-muted px-3 py-1.5 rounded-xl border border-border/80 w-full main-640:w-auto justify-between">
+                          <span className="text-sm font-bold text-content whitespace-nowrap">
                             {t("inventory.approve_immediately", "اعتماد فوري")}
                           </span>
                           <button
@@ -1084,7 +1084,7 @@ export const InventoryAdjustment: React.FC<InventoryAdjustmentProps> = ({
                       <button
                         type="button"
                         onClick={() => setShowConfirmModal(true)}
-                        className="w-full sm:w-auto flex items-center justify-center gap-2 bg-brand text-white px-6 py-2.5 rounded-xl font-bold text-xs sm:text-sm hover:opacity-90 transition-all cursor-pointer shadow-sm shadow-brand/10 shrink-0"
+                        className="w-full main-640:w-auto flex items-center justify-center gap-2 bg-brand text-white px-6 py-2.5 rounded-xl font-bold text-sm hover:opacity-90 transition-all cursor-pointer shadow-sm shadow-brand/10 shrink-0"
                       >
                         <Save size={15} />
                         {isApprovedState && hasApprovePermission
@@ -1103,14 +1103,14 @@ export const InventoryAdjustment: React.FC<InventoryAdjustmentProps> = ({
       {activeSubTab === "adjustment_history" && (
         <div className="space-y-6">
           {isSchemaMissing && (
-            <div className="bg-warning/10 border border-warning/20 text-warning p-5 rounded-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-sm" id="schema-missing-banner-history">
+            <div className="bg-warning/10 border border-warning/20 text-warning p-5 rounded-2xl flex flex-col main-720:flex-row items-start main-720:items-center justify-between gap-4 shadow-sm" id="schema-missing-banner-history">
               <div className="flex gap-3">
                 <Database className="text-warning shrink-0 mt-0.5" size={20} />
                 <div className="space-y-1">
                   <h4 className="font-black text-sm text-warning">
                     {t("inventory.schema_missing_title", "تنبيه: ميزة جرد وتسوية المخزون بحاجة لتفعيل")}
                   </h4>
-                  <p className="text-xs text-warning/80 leading-relaxed max-w-2xl">
+                  <p className="text-sm text-warning/80 leading-relaxed max-w-2xl">
                     {t("inventory.schema_missing_desc_merchant", "ميزة جرد وتسوية المخزون بحاجة إلى تفعيل من قبل فريق الإدارة أو الدعم الفني للربط مع قاعدة البيانات الخاصة بمتجرك.")}
                   </p>
                 </div>
@@ -1118,10 +1118,10 @@ export const InventoryAdjustment: React.FC<InventoryAdjustmentProps> = ({
             </div>
           )}
           
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+          <div className="grid grid-cols-1 main-900:grid-cols-12 gap-5">
           
           {/* History List Header & Table - Structured cleanly */}
-          <div className="lg:col-span-7 bg-surface p-5 sm:p-6 rounded-2xl border border-border/80 shadow-xs space-y-4">
+          <div className="main-900:col-span-7 bg-surface p-5 main-640:p-6 rounded-2xl border border-border/80 shadow-xs space-y-4">
             <h3 className="text-base font-black text-content flex items-center gap-2">
               <Clock className="text-brand" size={18} />
               {t("inventory.past_reconciles_list", "سجل مستندات جرد المخزون")}
@@ -1137,14 +1137,14 @@ export const InventoryAdjustment: React.FC<InventoryAdjustmentProps> = ({
                 <h4 className="text-sm font-black text-content">
                   {t("inventory.no_history_records", "لا توجد مستندات جرد مسجلة بعد")}
                 </h4>
-                <p className="text-xs text-content-muted max-w-xs mx-auto">
+                <p className="text-sm text-content-muted max-w-xs mx-auto">
                   {t("inventory.no_history_records_desc", "ستظهر هنا كافة حركات الجرد والمسودات بمجرد إنشائها.")}
                 </p>
               </div>
             ) : (
               <div className="overflow-x-auto whitespace-nowrap scrollbar-hide">
                 <table className="w-full text-right min-w-max border-collapse">
-                  <thead className="bg-surface-muted text-content-muted text-[10px] font-extrabold uppercase tracking-widest border-b border-border/60">
+                  <thead className="bg-surface-muted text-content-muted text-sm font-extrabold uppercase border-b border-border/60">
                     <tr>
                       <th className="px-4 py-2.5 text-start">{t("inventory.history_ref", "الرقم المرجعي")}</th>
                       <th className="px-4 py-2.5 text-start">{t("inventory.history_branch", "الفرع / المستودع")}</th>
@@ -1166,19 +1166,19 @@ export const InventoryAdjustment: React.FC<InventoryAdjustmentProps> = ({
                           )}
                           onClick={() => fetchAdjustmentDetails(record)}
                         >
-                          <td className="px-4 py-3 text-start font-mono font-bold text-xs text-brand">
+                          <td className="px-4 py-3 text-start font-mono font-bold text-sm text-brand">
                             {record.reference_number}
                           </td>
-                          <td className="px-4 py-3 text-start text-xs font-semibold text-content">
+                          <td className="px-4 py-3 text-start text-sm font-semibold text-content">
                             {branch?.name || t("common.unknown")}
                           </td>
-                          <td className="px-4 py-3 text-start text-xs font-medium text-content-muted">
+                          <td className="px-4 py-3 text-start text-sm font-medium text-content-muted">
                             {adjustmentTypeLabel(record.adjustment_type)}
                           </td>
                           <td className="px-4 py-3 text-center">
                             <span
                               className={cn(
-                                "inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold",
+                                "inline-flex items-center px-2 py-0.5 rounded-md text-sm font-bold",
                                 record.status === "Approved"
                                   ? "bg-success/10 text-success"
                                   : record.status === "Draft"
@@ -1193,7 +1193,7 @@ export const InventoryAdjustment: React.FC<InventoryAdjustmentProps> = ({
                                 : t("inventory.status_cancelled", "ملغي")}
                             </span>
                           </td>
-                          <td className="px-4 py-3 text-start text-xs text-content-muted">
+                          <td className="px-4 py-3 text-start text-sm text-content-muted">
                             {new Date(record.created_at).toLocaleString(localeOf(), {
                               day: "numeric",
                               month: "short",
@@ -1214,7 +1214,7 @@ export const InventoryAdjustment: React.FC<InventoryAdjustmentProps> = ({
           </div>
 
           {/* Details / Audit Viewer - Styled like an elegant statement */}
-          <div className="lg:col-span-5 bg-surface p-5 sm:p-6 rounded-2xl border border-border/80 shadow-xs space-y-4">
+          <div className="main-900:col-span-5 bg-surface p-5 main-640:p-6 rounded-2xl border border-border/80 shadow-xs space-y-4">
             <h3 className="text-base font-black text-content flex items-center gap-2">
               <FileText className="text-brand" size={18} />
               {t("inventory.audit_details_title", "تفاصيل مستند المراجعة")}
@@ -1226,10 +1226,10 @@ export const InventoryAdjustment: React.FC<InventoryAdjustmentProps> = ({
                   <ClipboardList size={24} />
                 </div>
                 <div className="space-y-1">
-                  <h4 className="text-xs sm:text-sm font-black text-content">
+                  <h4 className="text-sm font-black text-content">
                     {t("inventory.select_record_to_view", "بانتظار تحديد مستند")}
                   </h4>
-                  <p className="text-xs text-content-muted max-w-[200px] mx-auto leading-relaxed">
+                  <p className="text-sm text-content-muted max-w-[200px] mx-auto leading-relaxed">
                     {t("inventory.select_record_desc", "اضغط على أي مستند تسوية من القائمة المقابلة لعرض تفاصيل المواد والتحقق المالي.")}
                   </p>
                 </div>
@@ -1238,7 +1238,7 @@ export const InventoryAdjustment: React.FC<InventoryAdjustmentProps> = ({
               <div className="space-y-4">
                 
                 {/* Header Metadata - Receipt Style */}
-                <div className="bg-surface-muted/60 p-4 rounded-xl border border-border/60 text-xs space-y-2.5">
+                <div className="bg-surface-muted/60 p-4 rounded-xl border border-border/60 text-sm space-y-2.5">
                   <div className="flex justify-between items-center">
                     <span className="text-content-muted">{t("inventory.history_ref_label", "الرقم المرجعي:")}</span>
                     <span className="font-mono font-bold text-brand bg-brand/10 px-2 py-0.5 rounded-md">{selectedHistoryItem.reference_number}</span>
@@ -1247,7 +1247,7 @@ export const InventoryAdjustment: React.FC<InventoryAdjustmentProps> = ({
                     <span className="text-content-muted">{t("inventory.history_status_label", "حالة المستند:")}</span>
                     <span
                       className={cn(
-                        "font-extrabold px-1.5 py-0.5 rounded-md text-[11px]",
+                        "font-extrabold px-1.5 py-0.5 rounded-md text-sm",
                         selectedHistoryItem.status === "Approved"
                           ? "bg-success/10 text-success"
                           : "bg-warning/10 text-warning"
@@ -1292,7 +1292,7 @@ export const InventoryAdjustment: React.FC<InventoryAdjustmentProps> = ({
 
                 {/* Details Table */}
                 <div className="space-y-2">
-                  <h4 className="text-xs font-bold text-content-muted uppercase tracking-wider">
+                  <h4 className="text-sm font-bold text-content-muted uppercase">
                     {t("inventory.adjusted_items_table_title", "الأصناف والتسويات المدرجة")}
                   </h4>
 
@@ -1310,14 +1310,14 @@ export const InventoryAdjustment: React.FC<InventoryAdjustmentProps> = ({
                             className="bg-surface border border-border/80 p-3 rounded-xl flex items-center justify-between gap-3 shadow-xs"
                           >
                             <div className="space-y-0.5">
-                              <p className="text-xs font-extrabold text-content">{detail.product_name}</p>
-                              <div className="flex items-center gap-1.5 text-[10px] text-content-muted font-semibold">
+                              <p className="text-sm font-extrabold text-content">{detail.product_name}</p>
+                              <div className="flex items-center gap-1.5 text-sm text-content-muted font-semibold">
                                 <span>{t("inventory.details_book_prefix", "دفتري:")} {detail.system_qty}</span>
                                 <span>•</span>
                                 <span>{t("inventory.details_actual_prefix", "فعلي:")} {detail.physical_qty}</span>
                               </div>
                               {detail.reason && (
-                                <p className="text-[10px] text-brand font-medium mt-1">
+                                <p className="text-sm text-brand font-medium mt-1">
                                   {t("common.reason", "السبب:")} {detail.reason}
                                 </p>
                               )}
@@ -1326,13 +1326,13 @@ export const InventoryAdjustment: React.FC<InventoryAdjustmentProps> = ({
                             <div className="text-end space-y-0.5 shrink-0">
                               <span
                                 className={cn(
-                                  "inline-flex px-1.5 py-0.5 rounded-md text-[9px] font-bold",
+                                  "inline-flex px-1.5 py-0.5 rounded-md text-sm font-bold",
                                   isLoss ? "bg-danger/10 text-danger" : "bg-success/10 text-success"
                                 )}
                               >
                                 {detail.variance_qty > 0 ? `+${detail.variance_qty}` : detail.variance_qty}
                               </span>
-                              <p className="text-xs font-bold text-content">
+                              <p className="text-sm font-bold text-content">
                                 {formatCurrency(detail.total_variance_cost)}
                               </p>
                             </div>
@@ -1367,14 +1367,14 @@ export const InventoryAdjustment: React.FC<InventoryAdjustmentProps> = ({
               initial={{ opacity: 0, scale: 0.95, y: 10 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 10 }}
-              className="bg-surface w-full max-w-md p-5 sm:p-6 rounded-2xl border border-border shadow-xl space-y-5 z-10 relative"
+              className="bg-surface w-full max-w-md p-5 main-640:p-6 rounded-2xl border border-border shadow-xl space-y-5 z-10 relative"
             >
               <div className="flex items-start justify-between">
                 <div className="space-y-0.5">
                   <h3 className="text-base font-black text-content">
                     {t("inventory.confirm_title", "تأكيد مستند الجرد والتسوية")}
                   </h3>
-                  <p className="text-xs text-content-muted">
+                  <p className="text-sm text-content-muted">
                     {t("inventory.confirm_desc", "متوافق مع معايير IFRS. يرجى المراجعة بعناية قبل المتابعة.")}
                   </p>
                 </div>
@@ -1387,7 +1387,7 @@ export const InventoryAdjustment: React.FC<InventoryAdjustmentProps> = ({
                 </button>
               </div>
 
-              <div className="bg-surface-muted/60 p-4 rounded-xl border border-border/60 space-y-2.5 text-xs sm:text-sm">
+              <div className="bg-surface-muted/60 p-4 rounded-xl border border-border/60 space-y-2.5 text-sm">
                 <div className="flex justify-between items-center">
                   <span className="text-content-muted">{t("inventory.confirm_branch", "الفرع المستهدف:")}</span>
                   <span className="font-bold text-content">
@@ -1419,7 +1419,7 @@ export const InventoryAdjustment: React.FC<InventoryAdjustmentProps> = ({
                   <span className="text-content-muted">{t("inventory.confirm_status", "حالة الحفظ المستهدفة:")}</span>
                   <span
                     className={cn(
-                      "font-bold px-1.5 py-0.5 rounded-md text-xs",
+                      "font-bold px-1.5 py-0.5 rounded-md text-sm",
                       isApprovedState && hasApprovePermission
                         ? "bg-success/10 text-success"
                         : "bg-warning/10 text-warning"
@@ -1435,7 +1435,7 @@ export const InventoryAdjustment: React.FC<InventoryAdjustmentProps> = ({
                   type="button"
                   onClick={() => setShowConfirmModal(false)}
                   disabled={submitting}
-                  className="flex-1 bg-surface-muted hover:bg-border/60 text-content-muted py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all cursor-pointer"
+                  className="flex-1 bg-surface-muted hover:bg-border/60 text-content-muted py-2.5 rounded-xl font-bold text-sm transition-all cursor-pointer"
                 >
                   {t("common.cancel", "إلغاء")}
                 </button>
@@ -1443,7 +1443,7 @@ export const InventoryAdjustment: React.FC<InventoryAdjustmentProps> = ({
                   type="button"
                   onClick={handleCommitReconciliation}
                   disabled={submitting}
-                  className="flex-1 bg-brand hover:opacity-90 text-white py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all flex items-center justify-center gap-1.5 shadow-sm shadow-brand/10 cursor-pointer disabled:opacity-50"
+                  className="flex-1 bg-brand hover:opacity-90 text-white py-2.5 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-1.5 shadow-sm shadow-brand/10 cursor-pointer disabled:opacity-50"
                 >
                   {submitting ? (
                     <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />

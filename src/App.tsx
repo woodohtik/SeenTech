@@ -195,8 +195,8 @@ function AccountIssueScreen({ variant, email, detail, onRetry, onLogout }: {
         <p className="text-content-muted font-medium leading-relaxed mb-2 px-2 text-sm">
           {copy.desc}
         </p>
-        {email && <p className="text-content-muted font-mono text-xs mt-2">{email}</p>}
-        {detail && <p className="text-content-muted font-mono text-[10px] mt-1 break-all" dir="ltr">{detail}</p>}
+        {email && <p className="text-content-muted font-mono text-sm mt-2">{email}</p>}
+        {detail && <p className="text-content-muted font-mono text-sm mt-1 break-all" dir="ltr">{detail}</p>}
         <div className="space-y-3 mt-8">
           <button
             onClick={onRetry}
@@ -566,7 +566,7 @@ function AppContent() {
             <AlertCircle size={40} className="animate-pulse" />
           </div>
 
-          <h2 className="text-2xl font-black text-content text-center mb-3 tracking-tight leading-tight">{t('login.multi_device_title')}</h2>
+          <h2 className="text-2xl font-black text-content text-center mb-3 leading-tight">{t('login.multi_device_title')}</h2>
           <p className="text-content-muted text-center font-medium leading-relaxed mb-8 px-2 text-sm">
             {t('login.multi_device_desc')}
           </p>

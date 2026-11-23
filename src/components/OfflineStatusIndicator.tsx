@@ -114,26 +114,26 @@ export default function OfflineStatusIndicator({ tenantId }: { tenantId?: string
           )}
           {exhausted.length > 0 && (
             <div className="space-y-2">
-              <p className="text-xs text-content-muted font-bold leading-relaxed">
+              <p className="text-sm text-content-muted font-bold leading-relaxed">
                 {t('offline.review_hint', 'حُصِّل مبلغ لهذه العمليات. أعد إرسالها؛ وإن رُفضت مرة أخرى فأنشئ الطلب يدوياً بنفس البيانات ولا تحذف هذا السجل.')}
               </p>
               <ul className="space-y-2 max-h-64 overflow-y-auto">
                 {exhausted.map((op) => (
                   <li key={op.id} className="border border-danger/30 rounded-xl p-2.5 space-y-1">
                     <div className="flex items-center justify-between gap-2">
-                      <span className="font-black text-content text-xs">{kindLabel(op.kind)}</span>
-                      <span className="text-[10px] text-content-muted font-bold" dir="ltr">
+                      <span className="font-black text-content text-sm">{kindLabel(op.kind)}</span>
+                      <span className="text-sm text-content-muted font-bold" dir="ltr">
                         {new Date(op.createdAt).toLocaleString(localeOf(i18n.language), { dateStyle: 'short', timeStyle: 'short' })}
                       </span>
                     </div>
-                    <div className="text-xs font-bold text-content">
+                    <div className="text-sm font-bold text-content">
                       {op.customerName || t('offline.review_unknown_customer', 'عميل غير محدد')}
                       {op.paid > 0 && (
                         <span className="text-content-muted"> · {t('offline.review_paid', 'المحصَّل')}: <PriceDisplay amount={op.paid} /></span>
                       )}
                     </div>
                     {op.reason && (
-                      <div className="text-[11px] text-danger font-bold leading-relaxed break-words">
+                      <div className="text-sm text-danger font-bold leading-relaxed break-words">
                         {t('offline.review_reason', 'السبب')}: {op.reason}
                       </div>
                     )}
@@ -141,7 +141,7 @@ export default function OfflineStatusIndicator({ tenantId }: { tenantId?: string
                       type="button"
                       onClick={() => retry(op.id)}
                       disabled={retrying !== null}
-                      className="mt-1 w-full flex items-center justify-center gap-1.5 py-1.5 rounded-lg bg-surface-muted hover:bg-border text-content text-xs font-black disabled:opacity-60 transition-colors"
+                      className="mt-1 w-full flex items-center justify-center gap-1.5 py-1.5 rounded-lg bg-surface-muted hover:bg-border text-content text-sm font-black disabled:opacity-60 transition-colors"
                     >
                       <RotateCw size={12} className={retrying === op.id ? 'animate-spin' : ''} />
                       {t('offline.review_retry', 'إعادة الإرسال')}
