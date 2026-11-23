@@ -178,7 +178,7 @@ export default function TailorStatementReport({ tenantId }: TailorStatementRepor
         </div>
 
         <div className="bg-success/5 p-6 rounded-2xl border border-success/10 flex items-center gap-4">
-          <div className="w-12 h-12 bg-success/10 text-success rounded-xl flex items-center justify-center">
+          <div className="w-12 h-12 bg-[var(--seen-success-bg)] text-success rounded-xl flex items-center justify-center">
             <Scissors size={24} />
           </div>
           <div>
@@ -278,7 +278,7 @@ export default function TailorStatementReport({ tenantId }: TailorStatementRepor
                         {new Date(item.commission_at || item.updated_at).toLocaleString(localeOf(i18n.language))}
                       </td>
                       <td className="px-6 py-4">
-                        <span className="inline-flex items-center px-3 py-1 bg-success/10 text-success font-bold rounded-lg text-sm">
+                        <span className="inline-flex items-center px-3 py-1 bg-[var(--seen-success-bg)] text-success font-bold rounded-lg text-sm">
                           <PriceDisplay amount={item.calculated_commission} />
                         </span>
                       </td>

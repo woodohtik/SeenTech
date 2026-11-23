@@ -135,7 +135,7 @@ export default function SubscriptionRequestsAdminManager() {
             <p className="text-sm font-black text-content-muted uppercase mb-1">{t('subscription.requests.pending_count_label')}</p>
             <p className="text-3xl font-black text-warning">{pendingCount}</p>
           </div>
-          <div className="p-4 bg-warning/10 text-warning rounded-2xl">
+          <div className="p-4 bg-[var(--seen-warning-bg)] text-warning rounded-2xl">
             <Clock size={28} />
           </div>
         </div>
@@ -145,7 +145,7 @@ export default function SubscriptionRequestsAdminManager() {
             <p className="text-sm font-black text-content-muted uppercase mb-1">{t('subscription.requests.approved_count_label')}</p>
             <p className="text-3xl font-black text-success">{approvedCount}</p>
           </div>
-          <div className="p-4 bg-success/10 text-success rounded-2xl">
+          <div className="p-4 bg-[var(--seen-success-bg)] text-success rounded-2xl">
             <CheckCircle2 size={28} />
           </div>
         </div>
@@ -155,7 +155,7 @@ export default function SubscriptionRequestsAdminManager() {
             <p className="text-sm font-black text-content-muted uppercase mb-1">{t('subscription.requests.rejected_count_label')}</p>
             <p className="text-3xl font-black text-danger">{rejectedCount}</p>
           </div>
-          <div className="p-4 bg-danger/10 text-danger rounded-2xl">
+          <div className="p-4 bg-[var(--seen-danger-bg)] text-danger rounded-2xl">
             <XCircle size={28} />
           </div>
         </div>
@@ -269,19 +269,19 @@ export default function SubscriptionRequestsAdminManager() {
 
                     {/* Status Badge */}
                     {req.status === 'pending' && (
-                      <span className="px-3 py-1 bg-warning/10 text-warning border border-warning/20 rounded-full text-sm font-black flex items-center gap-1.5 animate-pulse">
+                      <span className="px-3 py-1 bg-[var(--seen-warning-bg)] text-warning border border-warning/20 rounded-full text-sm font-black flex items-center gap-1.5 animate-pulse">
                         <Clock size={12} />
                         {t('referral.withdrawal.pending')}
                       </span>
                     )}
                     {req.status === 'approved' && (
-                      <span className="px-3 py-1 bg-success/10 text-success border border-success/20 rounded-full text-sm font-black flex items-center gap-1.5">
+                      <span className="px-3 py-1 bg-[var(--seen-success-bg)] text-success border border-success/20 rounded-full text-sm font-black flex items-center gap-1.5">
                         <CheckCircle2 size={12} />
                         {t('subscription.requests.status_approved_active')}
                       </span>
                     )}
                     {req.status === 'rejected' && (
-                      <span className="px-3 py-1 bg-danger/10 text-danger border border-danger/20 rounded-full text-sm font-black flex items-center gap-1.5">
+                      <span className="px-3 py-1 bg-[var(--seen-danger-bg)] text-danger border border-danger/20 rounded-full text-sm font-black flex items-center gap-1.5">
                         <XCircle size={12} />
                         {t('referral.withdrawal.approved')}
                       </span>
@@ -357,7 +357,7 @@ export default function SubscriptionRequestsAdminManager() {
                   </div>
 
                   {req.rejection_reason && (
-                    <p className="text-sm font-bold text-danger bg-danger/5 p-2.5 rounded-xl border border-danger/20">
+                    <p className="text-sm font-bold text-danger bg-[var(--seen-danger-bg)] p-2.5 rounded-xl border border-danger/20">
                       {t('subscription.requests.rejection_reason_value', { reason: req.rejection_reason })}
                     </p>
                   )}
@@ -402,7 +402,7 @@ export default function SubscriptionRequestsAdminManager() {
                         type="button"
                         disabled={processingId === req.id}
                         onClick={() => setRejectingReq(req)}
-                        className="px-4 py-2.5 bg-danger/10 hover:bg-danger/20 text-danger rounded-2xl text-sm font-black flex items-center gap-1.5 transition-all cursor-pointer active:scale-95 border border-danger/20"
+                        className="px-4 py-2.5 bg-[var(--seen-danger-bg)] hover:bg-danger/20 text-danger rounded-2xl text-sm font-black flex items-center gap-1.5 transition-all cursor-pointer active:scale-95 border border-danger/20"
                       >
                         <XCircle size={16} />
                         <span>{t('saas.reject')}</span>

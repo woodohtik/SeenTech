@@ -694,7 +694,7 @@ export default function Login() {
           {searchParams.get('conflict') === 'true' && (
             <div
               style={{ ['--seen-rise' as string]: '-10px' }}
-              className="seen-enter-rise bg-warning/10 border border-warning/20 text-warning p-4 rounded-2xl flex items-start gap-3 text-sm font-bold"
+              className="seen-enter-rise bg-[var(--seen-warning-bg)] border border-warning/20 text-warning p-4 rounded-2xl flex items-start gap-3 text-sm font-bold"
             >
               <AlertCircle size={18} className="shrink-0 mt-0.5" />
               <span>{t('login.session_conflict_logout')}</span>
@@ -706,7 +706,7 @@ export default function Login() {
               role="alert"
               aria-live="polite"
               style={{ ['--seen-rise' as string]: '-10px' }}
-              className="seen-enter-rise bg-danger/10 border border-danger/20 text-danger p-4 rounded-2xl flex items-center gap-3 text-sm font-bold"
+              className="seen-enter-rise bg-[var(--seen-danger-bg)] border border-danger/20 text-danger p-4 rounded-2xl flex items-center gap-3 text-sm font-bold"
             >
               <AlertCircle size={18} />
               <span>{error}</span>
@@ -848,7 +848,7 @@ export default function Login() {
                     className={cn(googleUser && "bg-surface-muted text-content-muted cursor-not-allowed")}
                   />
                   {googleUser && (
-                    <span className="absolute top-1 left-2 text-sm font-bold text-success bg-success/10 px-2 py-0.5 rounded-full">
+                    <span className="absolute top-1 left-2 text-sm font-bold text-success bg-[var(--seen-success-bg)] px-2 py-0.5 rounded-full">
                       {t('login.google_verified')}
                     </span>
                   )}
@@ -993,7 +993,7 @@ export default function Login() {
                 key="reset-sent"
                 className="seen-enter-zoom text-center space-y-6 py-4"
               >
-                <div className="inline-flex items-center justify-center w-20 h-20 bg-success/10 text-success rounded-full">
+                <div className="inline-flex items-center justify-center w-20 h-20 bg-[var(--seen-success-bg)] text-success rounded-full">
                   <CheckCircle size={40} />
                 </div>
                 <Button type="button" onClick={() => setView('login')} className="w-full h-14 text-lg">

@@ -708,7 +708,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
                             className="flex-1 min-w-0 bg-transparent border-none py-2.5 sm:py-3 px-3 text-sm sm:text-base font-bold outline-none ring-0 placeholder:text-content-muted text-content"
                           />
                           {checkVatValid(watch('taxNumber')) && (
-                            <div className="mx-2 bg-success/10 text-success px-2.5 py-0.5 rounded-full text-sm font-black flex items-center gap-1 shrink-0">
+                            <div className="mx-2 bg-[var(--seen-success-bg)] text-success px-2.5 py-0.5 rounded-full text-sm font-black flex items-center gap-1 shrink-0">
                               <Check size={10} /> {t('common.verified')}
                             </div>
                           )}

@@ -21,12 +21,12 @@ type Row = {
 };
 
 const STATUS_STYLE: Record<string, string> = {
-  sent: 'bg-success/10 text-success',
+  sent: 'bg-[var(--seen-success-bg)] text-success',
   pending: 'bg-surface-muted text-content-muted',
   sending: 'bg-brand/10 text-brand',
-  retry: 'bg-warning/10 text-warning',
-  rejected: 'bg-danger/10 text-danger',
-  failed: 'bg-danger/10 text-danger',
+  retry: 'bg-[var(--seen-warning-bg)] text-warning',
+  rejected: 'bg-[var(--seen-danger-bg)] text-danger',
+  failed: 'bg-[var(--seen-danger-bg)] text-danger',
   not_applicable: 'bg-surface-muted text-content-muted',
 };
 

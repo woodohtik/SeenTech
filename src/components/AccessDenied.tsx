@@ -33,7 +33,7 @@ export default function AccessDenied({ userRole, requiredRoles, redirectPath }: 
       {/* CSS enter animations: this screen can show before the motion library
           has loaded (seen-performance-first-open-login-task.md Phase 2.4). */}
       <div className="seen-enter-pop relative mb-6">
-        <div className="w-28 h-28 main-720:w-32 main-720:h-32 bg-danger/10 text-danger rounded-3xl flex items-center justify-center shadow-xl shadow-danger/10 border border-danger/20">
+        <div className="w-28 h-28 main-720:w-32 main-720:h-32 bg-[var(--seen-danger-bg)] text-danger rounded-3xl flex items-center justify-center shadow-xl shadow-danger/10 border border-danger/20">
           <ShieldAlert size={56} className="animate-pulse" />
         </div>
         <div className="absolute -bottom-2 -right-2 bg-surface p-2 rounded-2xl shadow-md border border-border text-danger">
@@ -45,7 +45,7 @@ export default function AccessDenied({ userRole, requiredRoles, redirectPath }: 
         className="seen-enter-rise max-w-md mx-auto space-y-3"
         style={{ ['--seen-rise' as string]: '20px', animationDelay: '0.1s' }}
       >
-        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-danger/10 text-danger text-sm font-black border border-danger/20">
+        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[var(--seen-danger-bg)] text-danger text-sm font-black border border-danger/20">
           <span>{t('permissions.error_403_forbidden')}</span>
         </div>
 

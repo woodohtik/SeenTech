@@ -426,7 +426,7 @@ export default function InvoiceLayoutSettings({ tenantId }: InvoiceLayoutSetting
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
                       <p className="font-black text-content text-sm">{t('settings_page.invoice.fast_thermal')}</p>
-                      <span className="text-sm bg-warning/10 text-warning peer peer-checked:after:translate-x-full peer-checked:after:border-white px-2 py-0.5 rounded-full font-black border border-warning/20">
+                      <span className="text-sm bg-[var(--seen-warning-bg)] text-warning peer peer-checked:after:translate-x-full peer-checked:after:border-white px-2 py-0.5 rounded-full font-black border border-warning/20">
                         {t('settings_page.invoice.paper_saving')}
                       </span>
                     </div>

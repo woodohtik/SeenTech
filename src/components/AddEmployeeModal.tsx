@@ -229,7 +229,7 @@ export default function AddEmployeeModal({
         
         <form onSubmit={handleSubmit(onSubmit)} className="p-8 space-y-6">
           {errorMsg && (
-            <div className="p-4 bg-danger/10 text-danger rounded-2xl border border-danger/20 font-bold text-sm">
+            <div className="p-4 bg-[var(--seen-danger-bg)] text-danger rounded-2xl border border-danger/20 font-bold text-sm">
               {errorMsg}
             </div>
           )}

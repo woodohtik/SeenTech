@@ -360,7 +360,7 @@ export default function SupplierLedger({
               <PriceDisplay amount={totalCredit} />
             </span>
           </div>
-          <div className="p-3 bg-success/10 text-success rounded-2xl">
+          <div className="p-3 bg-[var(--seen-success-bg)] text-success rounded-2xl">
             <TrendingUp size={20} />
           </div>
         </div>
@@ -373,7 +373,7 @@ export default function SupplierLedger({
               <PriceDisplay amount={totalDebit} />
             </span>
           </div>
-          <div className="p-3 bg-danger/10 text-danger rounded-2xl">
+          <div className="p-3 bg-[var(--seen-danger-bg)] text-danger rounded-2xl">
             <TrendingDown size={20} />
           </div>
         </div>
@@ -487,9 +487,9 @@ export default function SupplierLedger({
                       <td className="p-4 font-mono font-black text-content uppercase">
                         <span className={cn(
                           "px-2 py-1 rounded-md text-sm",
-                          tx.type === 'payment' ? "bg-danger/10 text-danger border border-danger/20" :
+                          tx.type === 'payment' ? "bg-[var(--seen-danger-bg)] text-danger border border-danger/20" :
                           tx.type === 'purchase' ? "bg-surface-muted text-content-muted border border-border" :
-                          "bg-warning/10 text-warning border border-warning/20"
+                          "bg-[var(--seen-warning-bg)] text-warning border border-warning/20"
                         )}>
                           {tx.reference_number}
                         </span>
@@ -563,9 +563,9 @@ export default function SupplierLedger({
                     <DateTimeDisplay date={txDate} showTime={true} size="xs" />
                     <span className={cn(
                       "px-2 py-0.5 rounded-md text-sm font-mono font-bold uppercase",
-                      tx.type === 'payment' ? "bg-danger/10 text-danger border border-danger/20" :
+                      tx.type === 'payment' ? "bg-[var(--seen-danger-bg)] text-danger border border-danger/20" :
                       tx.type === 'purchase' ? "bg-surface-muted text-content-muted border border-border" :
-                      "bg-warning/10 text-warning border border-warning/20"
+                      "bg-[var(--seen-warning-bg)] text-warning border border-warning/20"
                     )}>
                       {tx.reference_number}
                     </span>

@@ -305,7 +305,7 @@ export default function SalesReturns({ tenantId, shiftId }: { tenantId: string, 
                     </div>
                   </div>
                   {srvOrder.status === 'cancelled' && (
-                    <span className="mt-2 text-sm self-start bg-danger/10 text-danger px-2 py-0.5 rounded-full font-bold">
+                    <span className="mt-2 text-sm self-start bg-[var(--seen-danger-bg)] text-danger px-2 py-0.5 rounded-full font-bold">
                       {t('procurement.return')}
                     </span>
                   )}
@@ -379,12 +379,12 @@ export default function SalesReturns({ tenantId, shiftId }: { tenantId: string, 
                       
                       <div className="flex items-center gap-3 self-end main-640:self-center">
                         {isCustom ? (
-                          <span className="text-sm font-bold px-3 py-1 bg-warning/10 text-warning rounded-full flex items-center gap-1">
+                          <span className="text-sm font-bold px-3 py-1 bg-[var(--seen-warning-bg)] text-warning rounded-full flex items-center gap-1">
                             <AlertTriangle size={12} />
                             {t('sales_returns.non_returnable')}
                           </span>
                         ) : (
-                          <span className="text-sm font-bold px-3 py-1 bg-success/10 text-success rounded-full flex items-center gap-1">
+                          <span className="text-sm font-bold px-3 py-1 bg-[var(--seen-success-bg)] text-success rounded-full flex items-center gap-1">
                             <CheckCircle2 size={12} />
                             {t('sales_returns.returnable_restock')}
                           </span>
@@ -522,7 +522,7 @@ export default function SalesReturns({ tenantId, shiftId }: { tenantId: string, 
               exit={{ opacity: 0, scale: 0.95, y: 10 }}
               className="bg-surface rounded-3xl border border-border p-6 max-w-md w-full shadow-2xl space-y-6 text-center"
             >
-              <div className="w-16 h-16 bg-danger/10 rounded-full flex items-center justify-center mx-auto text-danger">
+              <div className="w-16 h-16 bg-[var(--seen-danger-bg)] rounded-full flex items-center justify-center mx-auto text-danger">
                 <RotateCcw size={32} />
               </div>
               

@@ -173,7 +173,7 @@ export default function ShiftHistory({ tenantId, staffId, isManager }: ShiftHist
                   <td className="px-6 py-4">
                     <span className={cn(
                       "px-3 py-1 rounded-full text-sm font-bold",
-                      shift.status === 'open' ? "bg-success/10 text-success" : "bg-content-muted/10 text-content-muted"
+                      shift.status === 'open' ? "bg-[var(--seen-success-bg)] text-success" : "bg-content-muted/10 text-content-muted"
                     )}>
                       {shift.status === 'open' ? t('shift_history.open') : t('shift_history.closed')}
                     </span>

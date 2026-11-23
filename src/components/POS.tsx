@@ -1755,7 +1755,7 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
                 <span className="font-mono font-bold text-content">{selectedCustomer.phone}</span>
               </div>
               {customerUnpaidBalance > 0 ? (
-                <div className="mt-2 p-2 bg-danger/10 border border-danger/20 text-danger rounded-lg flex flex-col gap-2">
+                <div className="mt-2 p-2 bg-[var(--seen-danger-bg)] border border-danger/20 text-danger rounded-lg flex flex-col gap-2">
                   <div className="flex justify-between items-center font-bold">
                     <span>{t('pos.previous_due_balance')}</span>
                     <span className="font-mono font-black text-sm text-danger">
@@ -1771,7 +1771,7 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
                   </button>
                 </div>
               ) : (
-                <div className="mt-2 p-1.5 px-2 bg-success/10 border border-success/20 text-success rounded-lg text-center font-bold text-sm">
+                <div className="mt-2 p-1.5 px-2 bg-[var(--seen-success-bg)] border border-success/20 text-success rounded-lg text-center font-bold text-sm">
                   {t('pos.no_previous_due')}
                 </div>
               )}
@@ -2225,8 +2225,8 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                       <span className={cn(
                         "text-sm font-bold px-2 py-0.5 rounded-full",
                         getItemDisplayStock(item) <= 0
-                          ? "bg-danger/10 text-danger"
-                          : "bg-success/10 text-success"
+                          ? "bg-[var(--seen-danger-bg)] text-danger"
+                          : "bg-[var(--seen-success-bg)] text-success"
                       )}>
                         {t('inventory.available')}: {getItemDisplayStock(item)}
                       </span>
@@ -2285,8 +2285,8 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                         <span className={cn(
                           "text-sm font-bold px-2 py-0.5 rounded-full",
                           getItemDisplayStock(item) <= 0
-                            ? "bg-danger/10 text-danger"
-                            : "bg-success/10 text-success"
+                            ? "bg-[var(--seen-danger-bg)] text-danger"
+                            : "bg-[var(--seen-success-bg)] text-success"
                         )}>
                           {t('inventory.available')}: {getItemDisplayStock(item)}
                         </span>
@@ -2503,7 +2503,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                   <div className="space-y-6 flex-1">
                     {/* Customer Unpaid Balance Alert */}
                     {selectedCustomer && customerUnpaidBalance > 0 && (
-                      <div className="bg-danger/10 border border-danger/20 p-4 rounded-2xl flex items-center justify-between text-danger gap-3">
+                      <div className="bg-[var(--seen-danger-bg)] border border-danger/20 p-4 rounded-2xl flex items-center justify-between text-danger gap-3">
                         <div className="flex items-center gap-2.5">
                           <AlertTriangle size={22} />
                           <div>
@@ -2758,7 +2758,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
               {/* Header */}
               <div className="sticky top-0 z-10 flex items-center justify-between p-6 border-b border-border bg-surface shrink-0 bg-danger/5">
                 <div className="flex items-center gap-3">
-                  <div className="p-3 bg-danger/10 text-danger rounded-2xl shrink-0 shadow-sm">
+                  <div className="p-3 bg-[var(--seen-danger-bg)] text-danger rounded-2xl shrink-0 shadow-sm">
                     <AlertTriangle size={24} />
                   </div>
                   <div>
@@ -2822,7 +2822,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                               type="button"
                               onClick={() => handleSettleDebtOrder(order)}
                               disabled={settlingOrderId === order.id}
-                              className="flex-1 py-2 bg-danger/10 text-danger rounded-lg font-bold text-sm hover:bg-danger hover:text-white transition-colors disabled:opacity-50 cursor-pointer"
+                              className="flex-1 py-2 bg-[var(--seen-danger-bg)] text-danger rounded-lg font-bold text-sm hover:bg-danger hover:text-white transition-colors disabled:opacity-50 cursor-pointer"
                             >
                               {settlingOrderId === order.id ? t('common.processing') : t('pos.settle_order')}
                             </button>
@@ -2856,7 +2856,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
             >
               <div className="flex items-center justify-between p-6 border-b border-border bg-success/5 shrink-0">
                 <div className="flex items-center gap-3">
-                  <div className="p-3 bg-success/10 text-success rounded-2xl shrink-0 shadow-sm">
+                  <div className="p-3 bg-[var(--seen-success-bg)] text-success rounded-2xl shrink-0 shadow-sm">
                     <CheckCircle2 size={24} />
                   </div>
                   <h2 className="text-lg font-black text-content">{t('pos.payment_confirmation_title')}</h2>
@@ -2946,7 +2946,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
             >
               <div className="flex items-center justify-between p-6 border-b border-border bg-success/5 shrink-0">
                 <div className="flex items-center gap-3">
-                  <div className="p-3 bg-success/10 text-success rounded-2xl shrink-0 shadow-sm">
+                  <div className="p-3 bg-[var(--seen-success-bg)] text-success rounded-2xl shrink-0 shadow-sm">
                     <CheckCircle2 size={24} />
                   </div>
                   <h2 className="text-lg font-black text-content">{t('pos.debt_settled_all')}</h2>
@@ -3051,7 +3051,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                     {/* Cash Sales */}
                     <div className="flex items-center justify-between p-3.5 bg-surface-muted/30 border border-border rounded-2xl">
                       <div className="flex items-center gap-2.5">
-                        <div className="p-2 bg-success/10 text-success rounded-xl">
+                        <div className="p-2 bg-[var(--seen-success-bg)] text-success rounded-xl">
                           <TrendingUp size={18} />
                         </div>
                         <span className="text-sm font-bold text-content">{t('sales.cash_sales')}</span>
@@ -3065,7 +3065,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                     {cashDrawerBreakdown.deposits > 0 && (
                       <div className="flex items-center justify-between p-3.5 bg-surface-muted/30 border border-border rounded-2xl">
                         <div className="flex items-center gap-2.5">
-                          <div className="p-2 bg-success/10 text-success rounded-xl">
+                          <div className="p-2 bg-[var(--seen-success-bg)] text-success rounded-xl">
                             <Plus size={18} />
                           </div>
                           <span className="text-sm font-bold text-content">{t('sales.cash_deposits')}</span>
@@ -3080,7 +3080,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                     {cashDrawerBreakdown.returns > 0 && (
                       <div className="flex items-center justify-between p-3.5 bg-surface-muted/30 border border-border rounded-2xl">
                         <div className="flex items-center gap-2.5">
-                          <div className="p-2 bg-danger/10 text-danger rounded-xl">
+                          <div className="p-2 bg-[var(--seen-danger-bg)] text-danger rounded-xl">
                             <TrendingDown size={18} />
                           </div>
                           <span className="text-sm font-bold text-content">{t('sales.cash_returns')}</span>
@@ -3095,7 +3095,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                     {cashDrawerBreakdown.withdrawals > 0 && (
                       <div className="flex items-center justify-between p-3.5 bg-surface-muted/30 border border-border rounded-2xl">
                         <div className="flex items-center gap-2.5">
-                          <div className="p-2 bg-danger/10 text-danger rounded-xl">
+                          <div className="p-2 bg-[var(--seen-danger-bg)] text-danger rounded-xl">
                             <X size={18} />
                           </div>
                           <span className="text-sm font-bold text-content">{t('sales.expenses_withdrawals')}</span>

@@ -1061,7 +1061,7 @@ export default function Customers({ tenantId }: CustomersProps) {
           </div>
 
           <div className="flex items-center gap-3 p-4 bg-surface rounded-2xl border border-border/80 shadow-sm transition-all hover:border-danger/20">
-            <div className="w-9 h-9 rounded-xl bg-danger/10 text-danger flex items-center justify-center shrink-0">
+            <div className="w-9 h-9 rounded-xl bg-[var(--seen-danger-bg)] text-danger flex items-center justify-center shrink-0">
               <ArrowDownLeft size={16} />
             </div>
             <div className="min-w-0">
@@ -1073,7 +1073,7 @@ export default function Customers({ tenantId }: CustomersProps) {
           </div>
 
           <div className="flex items-center gap-3 p-4 bg-surface rounded-2xl border border-border/80 shadow-sm transition-all hover:border-success/20">
-            <div className="w-9 h-9 rounded-xl bg-success/10 text-success flex items-center justify-center shrink-0">
+            <div className="w-9 h-9 rounded-xl bg-[var(--seen-success-bg)] text-success flex items-center justify-center shrink-0">
               <ArrowUpRight size={16} />
             </div>
             <div className="min-w-0">
@@ -1183,7 +1183,7 @@ export default function Customers({ tenantId }: CustomersProps) {
 
                     <div className="flex items-center gap-2 shrink-0">
                       {customer.isTest && (
-                        <span className="bg-warning/10 text-warning px-2 py-0.5 rounded-md text-sm font-black flex items-center gap-0.5">
+                        <span className="bg-[var(--seen-warning-bg)] text-warning px-2 py-0.5 rounded-md text-sm font-black flex items-center gap-0.5">
                           <Zap size={8} />
                           {t('common.test_data')}
                         </span>
@@ -1317,7 +1317,7 @@ export default function Customers({ tenantId }: CustomersProps) {
                                     className="w-full flex items-center justify-between px-2.5 py-2 text-start rounded-xl text-sm font-bold text-danger hover:text-danger/90 hover:bg-danger/5 transition-all cursor-pointer group"
                                   >
                                     <span className="truncate">{t('common.delete')}</span>
-                                    <div className="w-6 h-6 rounded-lg bg-danger/5 flex items-center justify-center shrink-0 group-hover:bg-danger/15 text-danger transition-all">
+                                    <div className="w-6 h-6 rounded-lg bg-[var(--seen-danger-bg)] flex items-center justify-center shrink-0 group-hover:bg-danger/15 text-danger transition-all">
                                       <Trash2 size={12} />
                                     </div>
                                   </button>
@@ -1378,7 +1378,7 @@ export default function Customers({ tenantId }: CustomersProps) {
                         {(() => {
                           if (balance > 0) {
                             return (
-                              <span className="bg-danger/10 text-danger border border-danger/20 px-2 py-0.5 rounded-md text-sm font-black flex items-center gap-1 truncate">
+                              <span className="bg-[var(--seen-danger-bg)] text-danger border border-danger/20 px-2 py-0.5 rounded-md text-sm font-black flex items-center gap-1 truncate">
                                 <span className="w-1.5 h-1.5 bg-danger rounded-full animate-pulse shrink-0" />
                                 <span>{t('customers.debtor')}:</span>
                                 <PriceDisplay amount={balance} />
@@ -1386,7 +1386,7 @@ export default function Customers({ tenantId }: CustomersProps) {
                             );
                           } else if (balance < 0) {
                             return (
-                              <span className="bg-success/10 text-success border border-success/20 px-2 py-0.5 rounded-md text-sm font-black flex items-center gap-1 truncate">
+                              <span className="bg-[var(--seen-success-bg)] text-success border border-success/20 px-2 py-0.5 rounded-md text-sm font-black flex items-center gap-1 truncate">
                                 <span className="w-1.5 h-1.5 bg-success rounded-full shrink-0" />
                                 <span>{t('customers.creditor')}:</span>
                                 <PriceDisplay amount={Math.abs(balance)} />
@@ -1442,7 +1442,7 @@ export default function Customers({ tenantId }: CustomersProps) {
                         )}
                       </h3>
                       {customer.isTest && (
-                        <span className="inline-flex bg-warning/10 text-warning px-1.5 py-0.5 rounded-md text-sm font-black mt-0.5 items-center gap-0.5">
+                        <span className="inline-flex bg-[var(--seen-warning-bg)] text-warning px-1.5 py-0.5 rounded-md text-sm font-black mt-0.5 items-center gap-0.5">
                           <Zap size={8} />
                           {t('common.test_data')}
                         </span>
@@ -1481,7 +1481,7 @@ export default function Customers({ tenantId }: CustomersProps) {
                     {(() => {
                       if (balance > 0) {
                         return (
-                          <span className="bg-danger/10 text-danger border border-danger/20 px-2.5 py-1 rounded-full text-sm font-black whitespace-nowrap flex items-center gap-1.5">
+                          <span className="bg-[var(--seen-danger-bg)] text-danger border border-danger/20 px-2.5 py-1 rounded-full text-sm font-black whitespace-nowrap flex items-center gap-1.5">
                             <span className="w-1.5 h-1.5 bg-danger rounded-full animate-pulse shrink-0" />
                             <span>{t('customers.debtor')}:</span>
                             <PriceDisplay amount={balance} />
@@ -1489,7 +1489,7 @@ export default function Customers({ tenantId }: CustomersProps) {
                         );
                       } else if (balance < 0) {
                         return (
-                          <span className="bg-success/10 text-success border border-success/20 px-2.5 py-1 rounded-full text-sm font-black whitespace-nowrap flex items-center gap-1.5">
+                          <span className="bg-[var(--seen-success-bg)] text-success border border-success/20 px-2.5 py-1 rounded-full text-sm font-black whitespace-nowrap flex items-center gap-1.5">
                             <span className="w-1.5 h-1.5 bg-success rounded-full shrink-0" />
                             <span>{t('customers.creditor')}:</span>
                             <PriceDisplay amount={Math.abs(balance)} />
@@ -1641,7 +1641,7 @@ export default function Customers({ tenantId }: CustomersProps) {
                                   className="w-full flex items-center justify-between px-2.5 py-2 text-start rounded-xl text-sm font-bold text-danger hover:text-danger/90 hover:bg-danger/5 transition-all cursor-pointer group"
                                 >
                                   <span className="truncate">{t('common.delete')}</span>
-                                  <div className="w-6 h-6 rounded-lg bg-danger/5 flex items-center justify-center shrink-0 group-hover:bg-danger/15 text-danger transition-all">
+                                  <div className="w-6 h-6 rounded-lg bg-[var(--seen-danger-bg)] flex items-center justify-center shrink-0 group-hover:bg-danger/15 text-danger transition-all">
                                     <Trash2 size={12} />
                                   </div>
                                 </button>
@@ -2254,7 +2254,7 @@ const CustomerDetailsModal = ({
                       <p className="text-sm font-black text-brand"><PriceDisplay amount={order.totalAmount} /></p>
                       <span className={cn(
                         "text-sm font-bold px-2 py-0.5 rounded-full",
-                        order.status === 'delivered' ? "bg-success/10 text-success" : "bg-warning/10 text-warning"
+                        order.status === 'delivered' ? "bg-[var(--seen-success-bg)] text-success" : "bg-[var(--seen-warning-bg)] text-warning"
                       )}>
                         {order.status === 'delivered' ? t('common.status_delivered') : t('common.status_in_progress')}
                       </span>
@@ -2605,9 +2605,9 @@ const CustomerStatementModal = ({
             <div className={cn(
               "p-4 rounded-2xl border flex flex-col justify-between print:border-black print:bg-white",
               netBalance > 0 
-                ? "bg-danger/5 border-danger/10 text-danger print:text-black" 
+                ? "bg-[var(--seen-danger-bg)] border-danger/10 text-danger print:text-black" 
                 : netBalance < 0 
-                  ? "bg-success/5 border-success/10 text-success print:text-black" 
+                  ? "bg-[var(--seen-success-bg)] border-success/10 text-success print:text-black" 
                   : "bg-surface-muted/50 border-border text-content print:text-black"
             )}>
               <span className="text-sm opacity-80 font-black uppercase mb-1 flex items-center gap-1">
@@ -2653,10 +2653,10 @@ const CustomerStatementModal = ({
                               <span className={cn(
                                 "text-sm font-black px-2.5 py-0.5 rounded-full inline-block mt-2",
                                 order.status === 'delivered'
-                                  ? "bg-success/10 text-success"
+                                  ? "bg-[var(--seen-success-bg)] text-success"
                                   : order.status === 'cancelled'
                                     ? "bg-surface-muted text-content-muted"
-                                    : "bg-warning/10 text-warning"
+                                    : "bg-[var(--seen-warning-bg)] text-warning"
                               )}>
                                 {order.status === 'delivered'
                                   ? t('common.status_delivered')
@@ -2749,10 +2749,10 @@ const CustomerStatementModal = ({
                                   <span className={cn(
                                     "text-sm font-black px-2.5 py-0.5 rounded-full inline-block",
                                     order.status === 'delivered'
-                                      ? "bg-success/10 text-success print:bg-transparent print:text-black print:border print:border-black"
+                                      ? "bg-[var(--seen-success-bg)] text-success print:bg-transparent print:text-black print:border print:border-black"
                                       : order.status === 'cancelled'
                                         ? "bg-surface-muted text-content-muted print:bg-transparent print:text-black print:border print:border-black"
-                                        : "bg-warning/10 text-warning print:bg-transparent print:text-black print:border print:border-black"
+                                        : "bg-[var(--seen-warning-bg)] text-warning print:bg-transparent print:text-black print:border print:border-black"
                                   )}>
                                     {order.status === 'delivered'
                                       ? t('common.status_delivered')

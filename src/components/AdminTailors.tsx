@@ -798,7 +798,7 @@ export default function AdminTailors() {
               <p className="text-content-muted text-sm font-medium mb-1">{t('saas.tenants.active_subscribers')}</p>
               <h3 className="text-4xl font-black text-content">{activeTenantsCount}</h3>
             </div>
-            <div className="bg-success/10 w-12 h-12 rounded-2xl flex items-center justify-center text-success">
+            <div className="bg-[var(--seen-success-bg)] w-12 h-12 rounded-2xl flex items-center justify-center text-success">
               <BadgeCheck size={24} />
             </div>
           </div>
@@ -830,7 +830,7 @@ export default function AdminTailors() {
               <p className="text-content-muted text-sm font-medium mb-1">{t('saas.tenants.trials_ending_soon')}</p>
               <h3 className="text-4xl font-black text-warning">{trialExpiringTenantsCount}</h3>
             </div>
-            <div className="bg-warning/10 w-12 h-12 rounded-2xl flex items-center justify-center text-warning">
+            <div className="bg-[var(--seen-warning-bg)] w-12 h-12 rounded-2xl flex items-center justify-center text-warning">
               <Clock size={24} />
             </div>
           </div>
@@ -925,7 +925,7 @@ export default function AdminTailors() {
                 className={cn(
                   "px-5 py-3 rounded-2xl font-bold text-sm flex items-center gap-2 transition-all border",
                   trashViewOpen
-                    ? "bg-danger/10 text-danger border-danger/30"
+                    ? "bg-[var(--seen-danger-bg)] text-danger border-danger/30"
                     : "bg-surface-muted border-border hover:bg-border"
                 )}
               >
@@ -972,7 +972,7 @@ export default function AdminTailors() {
                     <button
                       disabled={deletingTenantId === tenant.id}
                       onClick={() => handleRestoreTenant(tenant)}
-                      className="flex items-center gap-1.5 px-4 py-2 bg-success/10 text-success border border-success/20 rounded-xl text-sm font-black hover:bg-success/20 transition-all disabled:opacity-50"
+                      className="flex items-center gap-1.5 px-4 py-2 bg-[var(--seen-success-bg)] text-success border border-success/20 rounded-xl text-sm font-black hover:bg-success/20 transition-all disabled:opacity-50"
                     >
                       <RotateCcw size={14} />
                       {t('saas.tenants.restore', 'استعادة')}
@@ -980,7 +980,7 @@ export default function AdminTailors() {
                     <button
                       disabled={deletingTenantId === tenant.id}
                       onClick={() => handlePermanentlyDeleteTenant(tenant)}
-                      className="flex items-center gap-1.5 px-4 py-2 bg-danger/10 text-danger border border-danger/20 rounded-xl text-sm font-black hover:bg-danger/20 transition-all disabled:opacity-50"
+                      className="flex items-center gap-1.5 px-4 py-2 bg-[var(--seen-danger-bg)] text-danger border border-danger/20 rounded-xl text-sm font-black hover:bg-danger/20 transition-all disabled:opacity-50"
                     >
                       <Trash2 size={14} />
                       {t('saas.tenants.permanent_delete', 'حذف نهائي')}
@@ -1068,12 +1068,12 @@ export default function AdminTailors() {
                           </td>
                           <td className="px-8 py-6 text-center">
                             {isActive ? (
-                              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-black uppercase bg-success/10 text-success border border-success/20">
+                              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-black uppercase bg-[var(--seen-success-bg)] text-success border border-success/20">
                                 <BadgeCheck size={12} />
                                 {t('common.active')}
                               </span>
                             ) : (
-                              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-black uppercase bg-danger/10 text-danger border border-danger/20">
+                              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-black uppercase bg-[var(--seen-danger-bg)] text-danger border border-danger/20">
                                 <Ban size={12} />
                                 {t('settings_page.staff.permissions.disabled')}
                               </span>
@@ -1586,7 +1586,7 @@ export default function AdminTailors() {
                   <ShieldAlert size={18} />
                   {t('saas.tenants.stealth_login')}
                   {!(userRole === 'super_admin' || userRole === 'owner' as any || (dbUser as any)?.can_stealth_login === true || (dbUser as any)?.stealth_login_enabled === true) && (
-                    <span className="text-sm bg-danger/20 text-danger px-1.5 py-0.5 rounded ml-1">{t('saas.tenants.locked_badge')}</span>
+                    <span className="text-sm bg-[var(--seen-danger-bg)] text-danger px-1.5 py-0.5 rounded ml-1">{t('saas.tenants.locked_badge')}</span>
                   )}
                 </button>
               </div>

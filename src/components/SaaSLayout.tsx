@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { SkipLink } from './ui/SkipLink';
 import { useMeasuredSteps } from '../hooks/useShellLayout';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
@@ -465,6 +466,7 @@ export default function SaaSLayout({ children, userRole }: SaaSLayoutProps) {
       }}
       dir={isRtl ? 'rtl' : 'ltr'}
     >
+      <SkipLink targetId="saas-main" />
       <ImpersonationBanner
         tenantId={impersonationTenantId}
         tenantLabel={impersonatedTenantName}
@@ -557,7 +559,7 @@ export default function SaaSLayout({ children, userRole }: SaaSLayoutProps) {
       </motion.aside>
 
       {/* Main Content */}
-      <main ref={mainRef} className="flex-1 flex flex-col min-w-0 overflow-hidden">
+      <main ref={mainRef} id="saas-main" tabIndex={-1} className="flex-1 flex flex-col min-w-0 overflow-hidden outline-none focus-visible:shadow-none">
         {/* Top Header */}
         <header className="h-20 bg-surface border-b border-border px-8 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-4">
@@ -651,9 +653,9 @@ export default function SaaSLayout({ children, userRole }: SaaSLayoutProps) {
                             >
                               <div className={cn(
                                 "w-10 h-10 rounded-full flex items-center justify-center shrink-0 shadow-sm",
-                                notif.type === 'new_tenant' ? "bg-success/10 text-success"
+                                notif.type === 'new_tenant' ? "bg-[var(--seen-success-bg)] text-success"
                                   : notif.type === 'subscription_request' ? "bg-brand/10 text-brand"
-                                  : "bg-warning/10 text-warning"
+                                  : "bg-[var(--seen-warning-bg)] text-warning"
                               )}>
                                 {notif.type === 'new_tenant' ? <User size={18} />
                                   : notif.type === 'subscription_request' ? <CreditCard size={18} />
@@ -839,7 +841,7 @@ export default function SaaSLayout({ children, userRole }: SaaSLayoutProps) {
               exit={{ opacity: 0, y: 20 }}
               className="pointer-events-auto bg-surface border border-warning/30 shadow-2xl rounded-2xl px-5 py-4 flex items-center gap-4 max-w-md w-full"
             >
-              <div className="w-10 h-10 bg-warning/10 text-warning rounded-xl flex items-center justify-center shrink-0">
+              <div className="w-10 h-10 bg-[var(--seen-warning-bg)] text-warning rounded-xl flex items-center justify-center shrink-0">
                 <Clock size={20} />
               </div>
               <div className="flex-1 min-w-0">

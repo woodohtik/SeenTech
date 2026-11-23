@@ -138,7 +138,7 @@ export default function ThobeMeasurementSelector({ values, onChange, readOnly = 
               onClick={() => setIsInstructionMode(!isInstructionMode)}
               title={t('measurements.instructions_mode')}
               aria-pressed={isInstructionMode}
-              className={cn("min-w-[40px] min-h-[40px] flex items-center justify-center rounded-xl transition-colors", isInstructionMode ? "bg-warning/10 text-warning" : "bg-surface-muted text-content-muted hover:bg-border")}
+              className={cn("min-w-[40px] min-h-[40px] flex items-center justify-center rounded-xl transition-colors", isInstructionMode ? "bg-[var(--seen-warning-bg)] text-warning" : "bg-surface-muted text-content-muted hover:bg-border")}
             >
               <Lightbulb size={20} />
             </button>

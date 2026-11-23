@@ -93,8 +93,8 @@ export default function SaaSTeamManagement() {
   const roleColors: Record<SaasUserRole, string> = {
     super_admin: 'bg-brand/10 text-brand',
     support_tech: 'bg-info/10 text-info',
-    sales: 'bg-success/10 text-success',
-    billing_admin: 'bg-warning/10 text-warning'
+    sales: 'bg-[var(--seen-success-bg)] text-success',
+    billing_admin: 'bg-[var(--seen-warning-bg)] text-warning'
   };
 
   const handleOpenModal = (user?: SaasUser) => {

@@ -1125,7 +1125,7 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
               exit={{ opacity: 0, scale: 0.95, y: 10 }}
               className="bg-surface rounded-3xl shadow-2xl w-full max-w-sm border border-border p-6 space-y-5 text-center"
             >
-              <div className="w-14 h-14 mx-auto rounded-full bg-danger/10 text-danger flex items-center justify-center">
+              <div className="w-14 h-14 mx-auto rounded-full bg-[var(--seen-danger-bg)] text-danger flex items-center justify-center">
                 <AlertTriangle size={26} />
               </div>
               <div>
@@ -1238,7 +1238,7 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
             exit={{ opacity: 0, y: -20 }}
             className={cn(
               "fixed top-6 left-1/2 -translate-x-1/2 z-[200] px-6 py-3 rounded-2xl shadow-2xl font-bold text-sm flex items-center gap-2 border",
-              toast.type === 'success' ? "bg-success/5 text-success border-success/10" : "bg-danger/5 text-danger border-danger/10"
+              toast.type === 'success' ? "bg-[var(--seen-success-bg)] text-success border-success/10" : "bg-[var(--seen-danger-bg)] text-danger border-danger/10"
             )}
           >
             {toast.type === 'success' ? <CheckCircle2 size={18} /> : <XCircle size={18} />}
@@ -1317,7 +1317,7 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
                   <div className={cn(
                     "w-12 h-12 main-640:w-14 main-640:h-14 rounded-2xl shrink-0 flex items-center justify-center font-black text-lg shadow-inner",
                     member.role === 'manager' || member.role === 'owner' ? 'bg-brand/10 text-brand' :
-                    member.role === 'cashier' ? 'bg-info/10 text-info' : 'bg-warning/10 text-warning'
+                    member.role === 'cashier' ? 'bg-info/10 text-info' : 'bg-[var(--seen-warning-bg)] text-warning'
                   )}>
                     {member.name.charAt(0)}
                   </div>
@@ -1328,7 +1328,7 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
                         {member.name}
                       </h3>
                       {member.isTest && (
-                        <span className="text-sm bg-danger/10 text-danger px-2 py-0.5 rounded-full font-black uppercase flex items-center gap-1 shrink-0">
+                        <span className="text-sm bg-[var(--seen-danger-bg)] text-danger px-2 py-0.5 rounded-full font-black uppercase flex items-center gap-1 shrink-0">
                           <Zap size={9} />
                           {t('common.test')}
                         </span>
@@ -1597,8 +1597,8 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
                         <div className="flex items-center gap-3 min-w-0 flex-1">
                           <div className={cn(
                             "w-9 h-9 main-640:w-10 main-640:h-10 rounded-xl flex items-center justify-center shrink-0",
-                            role.roleKey === 'owner' ? "bg-warning/10 text-warning" : 
-                            role.roleKey === 'manager' ? "bg-success/10 text-success" :
+                            role.roleKey === 'owner' ? "bg-[var(--seen-warning-bg)] text-warning" : 
+                            role.roleKey === 'manager' ? "bg-[var(--seen-success-bg)] text-success" :
                             "bg-brand/10 text-brand"
                           )}>
                             <Shield size={18} />
@@ -1798,7 +1798,7 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
                                           <div className="shrink-0 flex items-center gap-2 pt-0.5">
                                             <span className={cn(
                                               "text-sm font-black px-2 py-0.5 rounded-full hidden main-640:inline-block",
-                                              isEnabled ? "bg-success/10 text-success" : "bg-surface-muted text-content-muted"
+                                              isEnabled ? "bg-[var(--seen-success-bg)] text-success" : "bg-surface-muted text-content-muted"
                                             )}>
                                               {isEnabled ? t('settings_page.staff.permissions.enabled') : t('settings_page.staff.permissions.disabled')}
                                             </span>
@@ -1875,7 +1875,7 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
                            </p>
                          </div>
                          {Object.keys(overrides[member.id] || {}).length > 0 && (
-                           <span className="bg-warning/10 text-warning border border-warning/20 text-sm px-1.5 py-0.5 rounded-full font-black shrink-0">
+                           <span className="bg-[var(--seen-warning-bg)] text-warning border border-warning/20 text-sm px-1.5 py-0.5 rounded-full font-black shrink-0">
                              {t('settings_page.staff.permissions.exceptions_count', { count: Object.keys(overrides[member.id] || {}).length })}
                            </span>
                          )}
@@ -1910,7 +1910,7 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
                           <button
                             onClick={() => handleResetOverrides(selectedStaffForPermissions.id)}
                             disabled={isSavingPermissions || !overrides[selectedStaffForPermissions.id] || Object.keys(overrides[selectedStaffForPermissions.id]).length === 0}
-                            className="flex-1 main-640:flex-initial px-4 py-2 bg-danger/10 hover:bg-danger/20 text-danger rounded-xl text-sm font-black transition-all border border-danger/20 flex items-center justify-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                            className="flex-1 main-640:flex-initial px-4 py-2 bg-[var(--seen-danger-bg)] hover:bg-danger/20 text-danger rounded-xl text-sm font-black transition-all border border-danger/20 flex items-center justify-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
                           >
                             <TrendingUp className="rotate-180 shrink-0" size={14} />
                             <span>{t('settings_page.staff.permissions.restore_defaults')}</span>
@@ -1947,7 +1947,7 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
                               <span className="text-sm underline">{t('settings_page.staff.permissions.edit_role_link')}</span>
                             </button>
                             {staffOverrideCount > 0 ? (
-                              <span className="bg-warning/10 text-warning border border-warning/20 px-3 py-1 rounded-xl text-sm font-black flex items-center gap-1">
+                              <span className="bg-[var(--seen-warning-bg)] text-warning border border-warning/20 px-3 py-1 rounded-xl text-sm font-black flex items-center gap-1">
                                 <Zap size={12} />
                                 <span>{t('settings_page.staff.permissions.exceptions_present', { count: staffOverrideCount })}</span>
                               </span>
@@ -2017,7 +2017,7 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
                                               <span className="text-sm font-bold text-content leading-tight">{getTransPermName(perm.id, perm.categoryKey, perm.name)}</span>
                                               <span className={cn(
                                                 "text-sm font-black px-2 py-0.5 rounded-full uppercase",
-                                                isOverridden ? "bg-warning/10 text-warning border border-warning/20" : "bg-surface-muted text-content-muted border border-border/40"
+                                                isOverridden ? "bg-[var(--seen-warning-bg)] text-warning border border-warning/20" : "bg-surface-muted text-content-muted border border-border/40"
                                               )}>
                                                 {isOverridden ? t('settings_page.staff.permissions.custom_exception') : t('settings_page.staff.permissions.inherited')}
                                               </span>
@@ -2291,8 +2291,8 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
                           <div className="flex items-center gap-3">
                             <span className={cn(
                               "text-sm font-black px-3 py-1 rounded-full uppercase",
-                              order.status === 'delivered' ? "bg-success/10 text-success" :
-                              order.status === 'ready' ? "bg-info/10 text-info" : "bg-warning/10 text-warning"
+                              order.status === 'delivered' ? "bg-[var(--seen-success-bg)] text-success" :
+                              order.status === 'ready' ? "bg-info/10 text-info" : "bg-[var(--seen-warning-bg)] text-warning"
                             )}>
                               {t(`common.status_${order.status}`, order.status)}
                             </span>
@@ -2597,11 +2597,11 @@ const RolePermissionsModal = ({ role, onClose }: { role: Role; onClose: () => vo
                                   <span className="text-sm text-content-muted font-medium">{transPermDesc(perm.id, perm.categoryKey, perm.description)}</span>
                                 </div>
                                 {isEnabled ? (
-                                  <div className="bg-success/10 text-success p-1 rounded-full">
+                                  <div className="bg-[var(--seen-success-bg)] text-success p-1 rounded-full">
                                     <CheckCircle2 size={16} />
                                   </div>
                                 ) : (
-                                  <div className="bg-danger/10 text-danger p-1 rounded-full">
+                                  <div className="bg-[var(--seen-danger-bg)] text-danger p-1 rounded-full">
                                     <XCircle size={16} />
                                   </div>
                                 )}

@@ -203,9 +203,9 @@ function Chip({ tone, icon, children }: { tone: 'neutral' | 'info' | 'warning' |
   const tones = {
     neutral: 'bg-surface-muted text-content',
     info: 'bg-info/10 text-info',
-    warning: 'bg-warning/10 text-warning',
-    success: 'bg-success/10 text-success',
-    danger: 'bg-danger/10 text-danger',
+    warning: 'bg-[var(--seen-warning-bg)] text-warning',
+    success: 'bg-[var(--seen-success-bg)] text-success',
+    danger: 'bg-[var(--seen-danger-bg)] text-danger',
   } as const;
   return (
     <span className={cn("inline-flex items-center gap-1.5 h-8 px-3 rounded-full text-sm font-medium whitespace-nowrap", tones[tone])}>

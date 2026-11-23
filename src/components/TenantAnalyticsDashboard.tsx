@@ -237,7 +237,7 @@ export default function TenantAnalyticsDashboard() {
             <h1 className="text-2xl font-black text-content flex items-center gap-3">
               {data.tenant.name || data.tenant.store_name}
               {data.health.churnRisk === 'high' && (
-                <span className="flex items-center gap-1.5 px-2.5 py-1 bg-danger/10 text-danger text-sm rounded-lg font-bold">
+                <span className="flex items-center gap-1.5 px-2.5 py-1 bg-[var(--seen-danger-bg)] text-danger text-sm rounded-lg font-bold">
                   <AlertTriangle size={14} />
                   {t('saas.churn_risk')}
                 </span>
@@ -368,7 +368,7 @@ export default function TenantAnalyticsDashboard() {
                 <Activity className="text-success" size={20} />
                 {t('saas.online_now')}
               </div>
-              <span className="bg-success/10 text-success text-sm font-black px-2.5 py-1 rounded-lg">
+              <span className="bg-[var(--seen-success-bg)] text-success text-sm font-black px-2.5 py-1 rounded-lg">
                 {data.staff.activeNow.length} {t('saas.status_active')}
               </span>
             </h3>
@@ -433,7 +433,7 @@ function StatCard({
         </div>
         {trend && (
           <div className={cn("flex items-center gap-1 text-sm font-bold px-2 py-1 rounded-lg", 
-            trend === 'up' ? "bg-success/10 text-success" : "bg-danger/10 text-danger"
+            trend === 'up' ? "bg-[var(--seen-success-bg)] text-success" : "bg-[var(--seen-danger-bg)] text-danger"
           )}>
             {trend === 'up' ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
             <span dir="ltr">{trendValue}%</span>

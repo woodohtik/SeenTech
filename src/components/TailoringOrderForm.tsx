@@ -816,7 +816,7 @@ function TailoringOrderFormBody({
               </dl>
             </div>
             {savedOrder.depositSkipped && (
-              <p role="alert" className="max-w-md mx-auto mt-3 text-sm font-bold text-warning bg-warning/10 border border-warning/20 rounded-xl p-3">
+              <p role="alert" className="max-w-md mx-auto mt-3 text-sm font-bold text-warning bg-[var(--seen-warning-bg)] border border-warning/20 rounded-xl p-3">
                 {t('orders.deposit_needs_shift_desc')}
               </p>
             )}
@@ -1115,7 +1115,7 @@ function TailoringOrderFormBody({
                             />
                             {fabric.isManual && (
                               <>
-                                <span className="text-sm font-black text-warning bg-warning/10 border border-warning/20 rounded-lg px-2 py-1">
+                                <span className="text-sm font-black text-warning bg-[var(--seen-warning-bg)] border border-warning/20 rounded-lg px-2 py-1">
                                   {t('orders.fabric_manual_badge')}
                                 </span>
                                 <button

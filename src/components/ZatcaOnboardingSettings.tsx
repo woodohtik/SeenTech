@@ -224,7 +224,7 @@ export default function ZatcaOnboardingSettings({ tenantId }: ZatcaOnboardingSet
         <div className="flex items-center gap-4">
           <div className={cn(
             "w-12 h-12 main-640:w-14 main-640:h-14 rounded-2xl flex items-center justify-center shrink-0",
-            connected ? "bg-success/10 text-success" : "bg-brand/10 text-brand"
+            connected ? "bg-[var(--seen-success-bg)] text-success" : "bg-brand/10 text-brand"
           )}>
             <ShieldCheck size={28} />
           </div>
@@ -237,7 +237,7 @@ export default function ZatcaOnboardingSettings({ tenantId }: ZatcaOnboardingSet
             </p>
           </div>
           {connected && (
-            <span className="ms-auto shrink-0 hidden main-640:flex items-center gap-1.5 bg-success/10 text-success px-3 py-1.5 rounded-full text-sm font-black">
+            <span className="ms-auto shrink-0 hidden main-640:flex items-center gap-1.5 bg-[var(--seen-success-bg)] text-success px-3 py-1.5 rounded-full text-sm font-black">
               <CheckCircle2 size={14} /> {t('settings_page.zatca.connected_badge', 'متصل')}
             </span>
           )}
@@ -323,7 +323,7 @@ export default function ZatcaOnboardingSettings({ tenantId }: ZatcaOnboardingSet
                 <button
                   type="button"
                   onClick={() => navigate('/settings?tab=profile')}
-                  className="flex items-center gap-1.5 bg-danger/10 text-danger font-black text-sm px-3 py-1.5 rounded-lg hover:bg-danger/15 transition-all shrink-0"
+                  className="flex items-center gap-1.5 bg-[var(--seen-danger-bg)] text-danger font-black text-sm px-3 py-1.5 rounded-lg hover:bg-danger/15 transition-all shrink-0"
                 >
                   <Pencil size={12} />
                   {t('settings_page.zatca.fill_in_profile', 'عدّل في الملف الشخصي')}

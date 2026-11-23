@@ -188,7 +188,7 @@ function AccountIssueScreen({ variant, email, detail, onRetry, onLogout }: {
         className="seen-enter-zoom max-w-md w-full bg-surface rounded-3xl shadow-2xl p-10 border border-warning/20 text-center relative overflow-hidden"
       >
         <div className="absolute top-0 right-0 w-32 h-32 bg-warning/10 rounded-full blur-3xl opacity-50 -mr-16 -mt-16" />
-        <div className="w-20 h-20 bg-warning/10 text-warning rounded-3xl flex items-center justify-center mx-auto mb-6 border border-warning/20">
+        <div className="w-20 h-20 bg-[var(--seen-warning-bg)] text-warning rounded-3xl flex items-center justify-center mx-auto mb-6 border border-warning/20">
           <AlertCircle size={40} />
         </div>
         <h2 className="text-2xl font-black text-content mb-3">{copy.title}</h2>
@@ -562,7 +562,7 @@ function AppContent() {
           <div className="absolute top-0 right-0 w-32 h-32 bg-warning/5 rounded-full blur-3xl -mr-16 -mt-16" />
           <div className="absolute bottom-0 left-0 w-32 h-32 bg-brand/5 rounded-full blur-3xl -ml-16 -mb-16" />
 
-          <div className="w-20 h-20 bg-warning/10 text-warning rounded-3xl flex items-center justify-center mx-auto mb-6 border border-warning/10 shadow-sm">
+          <div className="w-20 h-20 bg-[var(--seen-warning-bg)] text-warning rounded-3xl flex items-center justify-center mx-auto mb-6 border border-warning/10 shadow-sm">
             <AlertCircle size={40} className="animate-pulse" />
           </div>
 

@@ -159,10 +159,10 @@ const StockTransferWorkflow: React.FC<StockTransferWorkflowProps> = ({ tenantId 
   };
 
   const statusMap: Record<string, { label: string, color: string, icon: any }> = {
-    pending: { label: t('inventory.status_pending'), color: 'bg-warning/10 text-warning', icon: Clock },
+    pending: { label: t('inventory.status_pending'), color: 'bg-[var(--seen-warning-bg)] text-warning', icon: Clock },
     in_transit: { label: t('inventory.status_in_transit'), color: 'bg-brand/10 text-brand', icon: Truck },
-    completed: { label: t('inventory.status_completed'), color: 'bg-success/10 text-success', icon: CheckCircle2 },
-    rejected: { label: t('inventory.status_rejected'), color: 'bg-danger/10 text-danger', icon: XCircle }
+    completed: { label: t('inventory.status_completed'), color: 'bg-[var(--seen-success-bg)] text-success', icon: CheckCircle2 },
+    rejected: { label: t('inventory.status_rejected'), color: 'bg-[var(--seen-danger-bg)] text-danger', icon: XCircle }
   };
 
   return (
@@ -252,7 +252,7 @@ const StockTransferWorkflow: React.FC<StockTransferWorkflowProps> = ({ tenantId 
                       <button
                         onClick={() => { setRejectReason(''); setRejecting(transfer); }}
                         disabled={busyTransferId === transfer.id}
-                        className="bg-danger/10 text-danger px-4 py-2.5 rounded-xl font-black text-sm hover:bg-danger/20 transition-all disabled:opacity-50"
+                        className="bg-[var(--seen-danger-bg)] text-danger px-4 py-2.5 rounded-xl font-black text-sm hover:bg-danger/20 transition-all disabled:opacity-50"
                       >
                         {transfer.status === 'pending' ? t('inventory.transfer_reject') : t('inventory.transfer_cancel')}
                       </button>

@@ -161,7 +161,7 @@ export default function TourFinishModal({
                     className={cn(
                       'w-9 h-9 shrink-0 rounded-xl border flex items-center justify-center transition-all',
                       isCompleted
-                        ? 'bg-success/10 border-success/20 text-success'
+                        ? 'bg-[var(--seen-success-bg)] border-success/20 text-success'
                         : isActive
                         ? 'bg-brand text-white border-brand shadow-sm animate-pulse-subtle'
                         : 'bg-surface border-border text-content-muted group-hover:bg-brand group-hover:text-white group-hover:border-brand'
@@ -184,7 +184,7 @@ export default function TourFinishModal({
                       </p>
 
                       {isCompleted && (
-                        <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-sm font-black bg-success/10 text-success border border-success/20 uppercase">
+                        <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-sm font-black bg-[var(--seen-success-bg)] text-success border border-success/20 uppercase">
                           {t('common.completed')}
                         </span>
                       )}

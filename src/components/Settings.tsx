@@ -648,8 +648,8 @@ export default function Settings({ tenantId }: SettingsProps) {
                         {t('settings_page.profile.store_identity_desc', 'قم بتحميل شعار متجرك وتعديل المعلومات الأساسية التي تظهر لعملائك في النظام وعلى الفواتير الضريبية.')}
                       </p>
                       <div className="flex flex-wrap justify-center main-640:justify-start gap-2 pt-1">
-                         <span className="px-2.5 py-0.5 bg-surface-muted rounded-full text-sm font-black text-content-muted uppercase border border-border">Base64 Support</span>
-                         <span className="px-2.5 py-0.5 bg-brand/5 rounded-full text-sm font-black text-brand uppercase border border-brand/10">Bilingual Print</span>
+                         {/* Was two fixed English tags ("Base64 Support", "Bilingual Print"); the first meant nothing to a shop (ux-ui-audit B5). */}
+                         <span className="px-2.5 py-0.5 bg-surface rounded-full text-sm font-bold text-brand border border-brand/20">{t('settings_page.profile.bilingual_print')}</span>
                       </div>
                     </div>
                   </div>
@@ -658,10 +658,10 @@ export default function Settings({ tenantId }: SettingsProps) {
                   <FormGrid columns={2}>
                     <div className="space-y-1.5">
                       <div className="flex items-center justify-between px-1">
-                        <label className="text-sm font-black text-content-muted">{t('settings_page.profile.store_name', 'اسم المنشأة التجاري')} <span className="text-danger">*</span></label>
+                        <label htmlFor="settings-profile-store-name" className="text-sm font-black text-content-muted">{t('settings_page.profile.store_name', 'اسم المنشأة التجاري')} <span className="text-danger">*</span></label>
                         <HelpCircle size={14} className="text-content-muted/80 cursor-help" />
                       </div>
-                      <IconInput 
+                      <IconInput id="settings-profile-store-name" 
                         type="text" 
                         {...register('name')}
                         startIcon={Store}
@@ -670,10 +670,10 @@ export default function Settings({ tenantId }: SettingsProps) {
                     </div>
                     <div className="space-y-1.5">
                       <div className="flex items-center justify-between px-1">
-                        <label className="text-sm font-black text-content-muted">{t('settings_page.profile.phone', 'رقم التواصل الموحد')}</label>
+                        <label htmlFor="settings-profile-phone" className="text-sm font-black text-content-muted">{t('settings_page.profile.phone', 'رقم التواصل الموحد')}</label>
                         <HelpCircle size={14} className="text-content-muted/80 cursor-help" />
                       </div>
-                      <IconInput 
+                      <IconInput id="settings-profile-phone" 
                         type="text" 
                         {...register('phone')}
                         placeholder="05XXXXXXXX / 9200XXXXX"
@@ -683,10 +683,10 @@ export default function Settings({ tenantId }: SettingsProps) {
                     </div>
                     <div className="main-640:col-span-2 space-y-1.5">
                       <div className="flex flex-wrap items-center justify-between gap-1 px-1">
-                        <label className="text-sm font-black text-content-muted">{t('settings_page.profile.email_protected', 'البريد الإلكتروني (غير قابل للتعديل)')}</label>
+                        <label htmlFor="settings-profile-email-protected" className="text-sm font-black text-content-muted">{t('settings_page.profile.email_protected', 'البريد الإلكتروني (غير قابل للتعديل)')}</label>
                         <span className="text-sm text-content-muted font-black bg-surface-muted rounded px-2 py-0.5 select-none shrink-0" dir={isRtl ? "rtl" : "ltr"}>{t('settings_page.profile.official_protected', 'رسمي ومحمي')}</span>
                       </div>
-                      <IconInput
+                      <IconInput id="settings-profile-email-protected"
                         type="email"
                         value={userEmail || ''}
                         readOnly
@@ -697,10 +697,10 @@ export default function Settings({ tenantId }: SettingsProps) {
                     </div>
                     <div className="main-640:col-span-2 space-y-1.5">
                       <div className="flex items-center justify-between px-1">
-                        <label className="text-sm font-black text-content-muted">{t('settings_page.profile.address', 'العنوان التفصيلي')} <span className="text-danger">*</span></label>
+                        <label htmlFor="settings-profile-address" className="text-sm font-black text-content-muted">{t('settings_page.profile.address', 'العنوان التفصيلي')} <span className="text-danger">*</span></label>
                         <HelpCircle size={14} className="text-content-muted/80 cursor-help" />
                       </div>
-                      <IconInput
+                      <IconInput id="settings-profile-address"
                         type="text"
                         {...register('address')}
                         placeholder={t('settings_page.profile.address_placeholder', 'الحي، الشارع، رقم المبنى')}
@@ -718,10 +718,10 @@ export default function Settings({ tenantId }: SettingsProps) {
                     </div>
                     <div className="space-y-1.5">
                       <div className="flex items-center justify-between px-1">
-                        <label className="text-sm font-black text-content-muted">{t('settings_page.profile.city', 'المدينة')}</label>
+                        <label htmlFor="settings-profile-city" className="text-sm font-black text-content-muted">{t('settings_page.profile.city', 'المدينة')}</label>
                         <HelpCircle size={14} className="text-content-muted/80 cursor-help" />
                       </div>
-                      <IconInput
+                      <IconInput id="settings-profile-city"
                         type="text"
                         {...register('city')}
                         startIcon={MapPin}
@@ -730,10 +730,10 @@ export default function Settings({ tenantId }: SettingsProps) {
                     </div>
                     <div className="space-y-1.5">
                       <div className="flex items-center justify-between px-1">
-                        <label className="text-sm font-black text-content-muted">{t('settings_page.profile.postal_code', 'الرمز البريدي')}</label>
+                        <label htmlFor="settings-profile-postal-code" className="text-sm font-black text-content-muted">{t('settings_page.profile.postal_code', 'الرمز البريدي')}</label>
                         <HelpCircle size={14} className="text-content-muted/80 cursor-help" />
                       </div>
-                      <IconInput
+                      <IconInput id="settings-profile-postal-code"
                         type="text"
                         {...register('postalCode')}
                         startIcon={Hash}
@@ -743,10 +743,10 @@ export default function Settings({ tenantId }: SettingsProps) {
                     </div>
                     <div className="main-640:col-span-2 space-y-1.5">
                       <div className="flex items-center justify-between px-1">
-                        <label className="text-sm font-black text-content-muted">{t('settings_page.profile.commercial_register', 'رقم السجل التجاري (CR)')} <span className="text-danger">*</span></label>
+                        <label htmlFor="settings-profile-commercial-register" className="text-sm font-black text-content-muted">{t('settings_page.profile.commercial_register', 'رقم السجل التجاري (CR)')} <span className="text-danger">*</span></label>
                         <HelpCircle size={14} className="text-content-muted/80 cursor-help" />
                       </div>
-                      <IconInput
+                      <IconInput id="settings-profile-commercial-register"
                         type="text"
                         {...register('commercialRegister')}
                         startIcon={FileText}
@@ -817,7 +817,7 @@ export default function Settings({ tenantId }: SettingsProps) {
                         initial={{ opacity: 0, scale: 0.9 }}
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.9 }}
-                        className="flex items-center gap-2 px-3.5 py-2 bg-success/10 text-success border border-success/20 rounded-xl text-sm font-bold"
+                        className="flex items-center gap-2 px-3.5 py-2 bg-[var(--seen-success-bg)] text-success border border-success/20 rounded-xl text-sm font-bold"
                       >
                         <CheckCircle2 size={16} />
                         <span>{t('settings_page.profile.save_success', 'تم حفظ البيانات بنجاح')}</span>
@@ -994,10 +994,10 @@ export default function Settings({ tenantId }: SettingsProps) {
                           />
                           <div className="space-y-1.5 main-640:col-span-2">
                              <div className="flex flex-wrap items-center justify-between gap-1.5 px-1">
-                                <label className="text-sm font-black text-content-muted">{t('settings_page.tax.vat_rate', 'نسبة الضريبة القياسية')}</label>
+                                <label htmlFor="settings-tax-vat-rate" className="text-sm font-black text-content-muted">{t('settings_page.tax.vat_rate', 'نسبة الضريبة القياسية')}</label>
                                 <span className="text-sm font-black text-brand bg-brand/10 px-2 py-0.5 rounded-full shrink-0">{t('settings_page.tax.saudi_vat_note', 'المملكة العربية السعودية: 15%')}</span>
                              </div>
-                            <IconInput
+                            <IconInput id="settings-tax-vat-rate"
                               type="number"
                               {...register('taxSettings.vatRate')}
                               endIcon={<span className="font-black text-content-muted">%</span>}
@@ -1038,7 +1038,7 @@ export default function Settings({ tenantId }: SettingsProps) {
 
                     {/* Overall Form Errors */}
                     {Object.keys(errors).length > 0 && (
-                      <div className="p-3.5 bg-danger/5 border border-danger/10 rounded-xl flex items-center gap-3 text-danger">
+                      <div className="p-3.5 bg-[var(--seen-danger-bg)] border border-danger/10 rounded-xl flex items-center gap-3 text-danger">
                         <AlertCircle size={18} className="shrink-0" />
                         <div className="text-sm font-bold">
                           {t('settings_page.tax.form_errors', 'يوجد أخطاء في البيانات المدخلة. يرجى التأكد من ملء جميع الحقول المطلوبة (بما في ذلك الاسم والعنوان في تبويب الملف الشخصي).')}
@@ -1053,7 +1053,7 @@ export default function Settings({ tenantId }: SettingsProps) {
                         initial={{ opacity: 0, scale: 0.9 }}
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.9 }}
-                        className="flex items-center gap-2 px-3.5 py-2 bg-success/10 text-success border border-success/20 rounded-xl text-sm font-bold"
+                        className="flex items-center gap-2 px-3.5 py-2 bg-[var(--seen-success-bg)] text-success border border-success/20 rounded-xl text-sm font-bold"
                       >
                         <CheckCircle2 size={16} />
                         <span>{t('settings_page.tax.save_success', 'تم حفظ البيانات الضريبية بنجاح')}</span>
@@ -1109,7 +1109,7 @@ export default function Settings({ tenantId }: SettingsProps) {
               {activeTab === 'notifications' && canViewNotifications && (
                 <form onSubmit={handleSubmit(onSave)} className="bg-surface p-5 main-640:p-8 main-720:p-10 rounded-2xl border border-border shadow-xl shadow-brand/5 space-y-6 main-720:space-y-10 w-full">
                    <div className={cn("flex flex-col main-640:flex-row items-center main-640:items-start gap-4 border-b border-border pb-6 main-640:pb-8 text-center", isRtl ? "main-640:text-right" : "main-640:text-left")}>
-                      <div className="p-4 bg-warning/10 text-warning rounded-2xl shadow-inner">
+                      <div className="p-4 bg-[var(--seen-warning-bg)] text-warning rounded-2xl shadow-inner">
                         <Bell size={32} />
                       </div>
                       <div>
@@ -1152,7 +1152,7 @@ export default function Settings({ tenantId }: SettingsProps) {
                             initial={{ opacity: 0, scale: 0.9 }}
                             animate={{ opacity: 1, scale: 1 }}
                             exit={{ opacity: 0, scale: 0.9 }}
-                            className="flex items-center gap-2 px-3.5 py-2 bg-success/10 text-success border border-success/20 rounded-xl text-sm font-bold"
+                            className="flex items-center gap-2 px-3.5 py-2 bg-[var(--seen-success-bg)] text-success border border-success/20 rounded-xl text-sm font-bold"
                           >
                             <CheckCircle2 size={16} />
                             <span>{t('settings_page.notifications.save_success', 'تم حفظ إعدادات التنبيهات بنجاح')}</span>
@@ -1186,7 +1186,7 @@ export default function Settings({ tenantId }: SettingsProps) {
               {activeTab === 'data' && (currentStaff?.role === 'owner' || currentStaff?.role === 'super_admin') && (
                 <div className="bg-surface p-5 main-640:p-8 main-720:p-10 rounded-2xl border border-border shadow-xl shadow-brand/5 space-y-6 main-720:space-y-10 w-full">
                    <div className={cn("flex flex-col main-640:flex-row items-center main-640:items-start gap-4 border-b border-border pb-6 main-640:pb-8 text-center", isRtl ? "main-640:text-right" : "main-640:text-left")}>
-                      <div className="p-4 bg-danger/10 text-danger rounded-2xl shadow-inner">
+                      <div className="p-4 bg-[var(--seen-danger-bg)] text-danger rounded-2xl shadow-inner">
                         <Database size={32} />
                       </div>
                       <div>
@@ -1275,7 +1275,7 @@ export default function Settings({ tenantId }: SettingsProps) {
               exit={{ opacity: 0, scale: 0.95, y: 10 }}
               className="bg-surface rounded-3xl shadow-2xl w-full max-w-sm border border-border p-6 space-y-5 text-center"
             >
-              <div className="w-14 h-14 mx-auto rounded-full bg-danger/10 text-danger flex items-center justify-center">
+              <div className="w-14 h-14 mx-auto rounded-full bg-[var(--seen-danger-bg)] text-danger flex items-center justify-center">
                 <AlertTriangle size={26} />
               </div>
               <div>
@@ -1325,7 +1325,7 @@ export default function Settings({ tenantId }: SettingsProps) {
               <div
                 className={cn(
                   "w-14 h-14 mx-auto rounded-full flex items-center justify-center",
-                  resetResult.type === 'success' ? "bg-success/10 text-success" : "bg-danger/10 text-danger"
+                  resetResult.type === 'success' ? "bg-[var(--seen-success-bg)] text-success" : "bg-[var(--seen-danger-bg)] text-danger"
                 )}
               >
                 {resetResult.type === 'success' ? <CheckCircle2 size={26} /> : <AlertCircle size={26} />}
@@ -1363,7 +1363,7 @@ export default function Settings({ tenantId }: SettingsProps) {
               {/* Modal Header */}
               <div className="p-5 main-640:p-6 border-b border-border flex items-center justify-between bg-surface-muted/50">
                 <div className="flex items-center gap-3">
-                  <div className="p-3 bg-success/10 text-success rounded-2xl shrink-0">
+                  <div className="p-3 bg-[var(--seen-success-bg)] text-success rounded-2xl shrink-0">
                     <FileText size={24} />
                   </div>
                   <div>
@@ -1439,7 +1439,7 @@ export default function Settings({ tenantId }: SettingsProps) {
                                 {log.action}
                               </span>
                               {log.branch_name && (
-                                <span className="text-sm bg-warning/5 text-warning px-2 py-0.5 rounded-full font-black border border-warning/10">
+                                <span className="text-sm bg-[var(--seen-warning-bg)] text-warning px-2 py-0.5 rounded-full font-black border border-warning/10">
                                   {log.branch_name}
                                 </span>
                               )}

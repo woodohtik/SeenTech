@@ -230,7 +230,7 @@ export default function LockScreen({ currentStaff, onUnlock, tenantId, onUnlockW
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
-              className="px-4 py-2 bg-danger/10 border border-danger/20 text-danger text-sm font-semibold rounded-2xl flex items-center gap-2"
+              className="px-4 py-2 bg-[var(--seen-danger-bg)] border border-danger/20 text-danger text-sm font-semibold rounded-2xl flex items-center gap-2"
             >
               <AlertCircle size={14} />
               <span>{error}</span>

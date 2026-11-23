@@ -68,7 +68,7 @@ export default function StaffTutorialModal({ role }: { role?: string | null }) {
               </div>
 
               <div className="bg-surface-muted/30 p-5 rounded-2xl border border-border flex flex-col items-center text-center">
-                <div className="w-12 h-12 bg-success/10 text-success rounded-xl flex items-center justify-center mb-4">
+                <div className="w-12 h-12 bg-[var(--seen-success-bg)] text-success rounded-xl flex items-center justify-center mb-4">
                   <CreditCard size={24} />
                 </div>
                 <h3 className="font-bold text-content mb-2">{t('staff.tutorial_step3_title')}</h3>

@@ -462,12 +462,12 @@ export default function AdminBlogEditor(): React.JSX.Element {
                       <td className="px-8 py-6 font-black text-content">{article.title}</td>
                       <td className="px-8 py-6">
                         {article.status === 'published' ? (
-                          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-black uppercase bg-success/10 text-success border border-success/20">
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-black uppercase bg-[var(--seen-success-bg)] text-success border border-success/20">
                             <BadgeCheck size={12} />
                             {statusLabel(article)}
                           </span>
                         ) : (
-                          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-black uppercase bg-warning/10 text-warning border border-warning/20">
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-black uppercase bg-[var(--seen-warning-bg)] text-warning border border-warning/20">
                             <Clock size={12} />
                             {statusLabel(article)}
                           </span>

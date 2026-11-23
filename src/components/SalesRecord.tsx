@@ -321,11 +321,11 @@ export default function SalesRecord({ tenantId, shiftId, filterStatus }: { tenan
   }, [tenantId, shiftId, filterStatus, dateRange.start, dateRange.end, page]);
 
   const getStatusBadge = (status?: string) => {
-    if (status === 'delivered') return { label: t('pos.delivered'), className: 'bg-success/10 text-success' };
+    if (status === 'delivered') return { label: t('pos.delivered'), className: 'bg-[var(--seen-success-bg)] text-success' };
     // A returned order is set to 'cancelled' -- falling through to the
     // generic "pending" bucket below made every returned invoice in the
     // Returns Record list misleadingly show as still awaiting processing.
-    if (status === 'cancelled') return { label: t('common.status_cancelled'), className: 'bg-danger/10 text-danger' };
+    if (status === 'cancelled') return { label: t('common.status_cancelled'), className: 'bg-[var(--seen-danger-bg)] text-danger' };
     return { label: t('pos.pending'), className: 'bg-brand/10 text-brand' };
   };
 
@@ -340,7 +340,7 @@ export default function SalesRecord({ tenantId, shiftId, filterStatus }: { tenan
   if (error) {
     return (
       <div className="p-6 font-sans flex flex-col items-center justify-center h-64 text-center bg-surface border border-border rounded-2xl max-w-md mx-auto my-12 shadow-sm animate-fade-in" dir={isRtl ? 'rtl' : 'ltr'}>
-        <div className="w-12 h-12 bg-danger/10 text-danger rounded-full flex items-center justify-center mb-4"><AlertTriangle size={22} /></div>
+        <div className="w-12 h-12 bg-[var(--seen-danger-bg)] text-danger rounded-full flex items-center justify-center mb-4"><AlertTriangle size={22} /></div>
         <h3 className="text-sm font-black text-content mb-2">{t('sales_record.failed_to_load', 'فشل تحميل سجل المبيعات')}</h3>
         <p className="text-sm text-content-muted mb-4 font-bold max-w-[280px] leading-relaxed">{error}</p>
         <button

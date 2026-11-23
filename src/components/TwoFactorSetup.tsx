@@ -122,7 +122,7 @@ export default function TwoFactorSetup() {
   return (
     <div className="bg-surface p-6 rounded-2xl border border-border shadow-sm space-y-4">
       <div className="flex items-center gap-3">
-        <div className={verifiedFactorId ? 'w-12 h-12 bg-success/10 text-success rounded-xl flex items-center justify-center shrink-0' : 'w-12 h-12 bg-warning/10 text-warning rounded-xl flex items-center justify-center shrink-0'}>
+        <div className={verifiedFactorId ? 'w-12 h-12 bg-[var(--seen-success-bg)] text-success rounded-xl flex items-center justify-center shrink-0' : 'w-12 h-12 bg-[var(--seen-warning-bg)] text-warning rounded-xl flex items-center justify-center shrink-0'}>
           {verifiedFactorId ? <ShieldCheck size={22} /> : <ShieldAlert size={22} />}
         </div>
         <div>
@@ -140,7 +140,7 @@ export default function TwoFactorSetup() {
           <button
             onClick={disableMfa}
             disabled={busy}
-            className="px-4 py-2.5 bg-danger/5 text-danger border border-danger/20 rounded-xl text-sm font-black hover:bg-danger/10 transition-all cursor-pointer disabled:opacity-50"
+            className="px-4 py-2.5 bg-[var(--seen-danger-bg)] text-danger border border-danger/20 rounded-xl text-sm font-black hover:bg-danger/10 transition-all cursor-pointer disabled:opacity-50"
           >
             {t('saas.mfa_disable_button', 'تعطيل التحقق الثنائي')}
           </button>

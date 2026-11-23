@@ -237,7 +237,7 @@ export default function ResetPassword() {
                 exit={{ opacity: 0, y: -10 }}
                 className="text-center space-y-6 py-4"
               >
-                <div className="inline-flex items-center justify-center w-16 h-16 bg-danger/10 text-danger rounded-full">
+                <div className="inline-flex items-center justify-center w-16 h-16 bg-[var(--seen-danger-bg)] text-danger rounded-full">
                   <AlertCircle size={32} />
                 </div>
                 <div>
@@ -263,7 +263,7 @@ export default function ResetPassword() {
                 animate={{ opacity: 1, scale: 1 }}
                 className="text-center space-y-4 py-8"
               >
-                <div className="inline-flex items-center justify-center w-20 h-20 bg-success/10 text-success rounded-full">
+                <div className="inline-flex items-center justify-center w-20 h-20 bg-[var(--seen-success-bg)] text-success rounded-full">
                   <CheckCircle size={40} />
                 </div>
                 <p className="text-content-muted font-medium leading-relaxed">{t('login.reset_password_success')}</p>
@@ -285,7 +285,7 @@ export default function ResetPassword() {
                     aria-live="polite"
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="bg-danger/10 border border-danger/20 text-danger p-4 rounded-2xl flex items-center gap-3 text-sm font-bold"
+                    className="bg-[var(--seen-danger-bg)] border border-danger/20 text-danger p-4 rounded-2xl flex items-center gap-3 text-sm font-bold"
                   >
                     <AlertCircle size={18} />
                     <span>{error}</span>

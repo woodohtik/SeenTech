@@ -287,13 +287,13 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
     const status = tenant?.status || 'active';
     switch (status) {
       case 'active':
-        return { label: t('billing.status.active'), bg: 'bg-success/10 text-success border-success/20' };
+        return { label: t('billing.status.active'), bg: 'bg-[var(--seen-success-bg)] text-success border-success/20' };
       case 'trial':
       case 'onboarding':
-        return { label: t('billing.status.trial'), bg: 'bg-warning/10 text-warning border-warning/20' };
+        return { label: t('billing.status.trial'), bg: 'bg-[var(--seen-warning-bg)] text-warning border-warning/20' };
       case 'suspended':
       case 'locked':
-        return { label: t('billing.status.suspended'), bg: 'bg-danger/10 text-danger border-danger/20' };
+        return { label: t('billing.status.suspended'), bg: 'bg-[var(--seen-danger-bg)] text-danger border-danger/20' };
       default:
         return { label: t('billing.status.active'), bg: 'bg-brand/10 text-brand border-brand/20' };
     }
@@ -339,9 +339,9 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
 
       {/* Pending Request Alert Banner */}
       {pendingRequests.length > 0 && (
-        <div className="bg-warning/10 border-2 border-warning/30 p-5 rounded-3xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 text-warning shadow-sm">
+        <div className="bg-[var(--seen-warning-bg)] border-2 border-warning/30 p-5 rounded-3xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 text-warning shadow-sm">
           <div className="flex items-center gap-3.5">
-            <div className="p-3 bg-warning/20 text-warning rounded-2xl shrink-0">
+            <div className="p-3 bg-[var(--seen-warning-bg)] text-warning rounded-2xl shrink-0">
               <Clock size={24} className="animate-spin" />
             </div>
             <div>
@@ -370,7 +370,7 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
               )}
             </div>
           </div>
-          <span className="px-4 py-1.5 bg-warning/20 border border-warning/40 rounded-full text-sm font-black text-warning shrink-0">
+          <span className="px-4 py-1.5 bg-[var(--seen-warning-bg)] border border-warning/40 rounded-full text-sm font-black text-warning shrink-0">
             {t('billing.pending_request_status')}
           </span>
         </div>
@@ -461,7 +461,7 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
                     <div className="flex items-center justify-between">
                       <h4 className="text-xl sm:text-2xl font-black text-content">{plan.name}</h4>
                       {isCurrent && (
-                        <span className="px-3 py-1 bg-success/10 text-success border border-success/20 rounded-full text-sm font-black">
+                        <span className="px-3 py-1 bg-[var(--seen-success-bg)] text-success border border-success/20 rounded-full text-sm font-black">
                           {t('billing.card_current_plan')}
                         </span>
                       )}
@@ -550,7 +550,7 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
                 className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center p-4 sm:p-5 bg-surface-muted/40 hover:bg-surface border-2 border-transparent hover:border-brand/20 rounded-2xl transition-all group gap-4"
               >
                 <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 text-center sm:text-right">
-                  <div className="w-12 h-12 bg-success/10 text-success rounded-2xl flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+                  <div className="w-12 h-12 bg-[var(--seen-success-bg)] text-success rounded-2xl flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
                     <CheckCircle2 size={24} />
                   </div>
                   <div>
@@ -575,7 +575,7 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
                   <span className="text-xl font-black text-content">
                     <PriceDisplay amount={Number(inv.amount)} />
                   </span>
-                  <div className="p-2 bg-success/10 text-success rounded-xl text-sm font-black flex items-center gap-1">
+                  <div className="p-2 bg-[var(--seen-success-bg)] text-success rounded-xl text-sm font-black flex items-center gap-1">
                     <span>{t('billing.status_completed')}</span>
                   </div>
                   <button
@@ -796,7 +796,7 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
                         setProofFile(null);
                         setProofPreview(null);
                       }}
-                      className="p-2 bg-danger/10 text-danger hover:bg-danger/20 rounded-xl transition-all cursor-pointer shrink-0"
+                      className="p-2 bg-[var(--seen-danger-bg)] text-danger hover:bg-danger/20 rounded-xl transition-all cursor-pointer shrink-0"
                       title={t('billing.modal_proof_delete')}
                     >
                       <X size={18} />
@@ -860,7 +860,7 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
                   <p className="text-sm text-danger font-bold">{couponError}</p>
                 )}
                 {couponPreview && (
-                  <div className="p-3.5 bg-success/10 border border-success/20 rounded-xl text-sm font-bold text-success space-y-1.5">
+                  <div className="p-3.5 bg-[var(--seen-success-bg)] border border-success/20 rounded-xl text-sm font-bold text-success space-y-1.5">
                     <p className="font-black">{t('billing.modal_coupon_applied', 'تم تطبيق الخصم 🎉')}</p>
                     <div className="flex items-center justify-between text-content-muted">
                       <span>{t('billing.modal_coupon_price_before', 'السعر قبل الخصم')}</span>

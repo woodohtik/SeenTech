@@ -94,6 +94,12 @@
      في design-system/tokens.css (المصدر الفعلي لـv5.1) ينص على 8 لنفس
      الفئة بالضبط. البطاقات (--radius-card) تبقى منفصلة عند 12 كما هي. */
   --radius-md: 0.5rem;
+
+  /* سين v5.1 §2: «ارتفاع السطر: المتن 1.7» -- العربي يحتاج مساحة للنقاط
+     والهمزات. سطر Tailwind الافتراضي لـtext-sm كان 1.43 (تدقيق ux-ui-audit
+     B4). leading-* الصريحة في أي مكوّن ما زالت تقرر لنفسها. */
+  --text-sm--line-height: 1.6;
+  --text-base--line-height: 1.7;
 }
 
 :root {
@@ -115,7 +121,11 @@
   --surface: #FFFFFF;    /* أبيض (seen-surface) -- بلا تغيير */
   --surface-muted: var(--secondary);
   --content: var(--dark);
-  --content-muted: #686E74; /* نص ثانوي (seen-neutral-600) -- كان #555555 */
+  /* نص ثانوي. DESIGN.md يعطي #686E74 (neutral-600) «أقل لون لنص يُقرأ» على
+     الورق والأبيض، لكن خلفية التطبيق والصفوف والرقائق هنا هي الغسلة
+     #EBEDEF، وعليها #686E74 = 4.39:1 (تحت 4.5). #5F656B نفس الرمادي أغمق
+     درجة: 5.03:1 على الغسلة و5.9:1 على الأبيض (تدقيق ux-ui-audit B1). */
+  --content-muted: #5F656B;
   --border: #D6D9DD;     /* خط رفيع (seen-neutral-200) -- كان #E0E0E0 */
   --success: #018256;    /* نجاح (seen-success-fg) -- كان #22C55E */
   --danger: #CE0500;     /* خطأ (seen-danger-fg) -- كان #EF4444 */

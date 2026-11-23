@@ -157,7 +157,7 @@ export default function PaymentVoucherModal({
         >
           <div className="p-6 border-b border-border flex justify-between items-center bg-surface-muted/50">
             <div className="flex items-center gap-3">
-              <div className="p-3 bg-danger/10 text-danger rounded-2xl shadow-inner">
+              <div className="p-3 bg-[var(--seen-danger-bg)] text-danger rounded-2xl shadow-inner">
                 <DollarSign size={22} className="stroke-[2.5]" />
               </div>
               <div>
@@ -249,7 +249,7 @@ export default function PaymentVoucherModal({
                   className={cn(
                     "py-3 rounded-xl border font-bold text-sm flex flex-col items-center justify-center gap-1.5 transition-all cursor-pointer",
                     paymentMethod === 'cash'
-                      ? "border-danger bg-danger/10 text-danger shadow-md shadow-danger/5"
+                      ? "border-danger bg-[var(--seen-danger-bg)] text-danger shadow-md shadow-danger/5"
                       : "border-border hover:border-border text-content-muted"
                   )}
                 >
@@ -263,7 +263,7 @@ export default function PaymentVoucherModal({
                   className={cn(
                     "py-3 rounded-xl border font-bold text-sm flex flex-col items-center justify-center gap-1.5 transition-all cursor-pointer",
                     paymentMethod === 'bank_transfer'
-                      ? "border-danger bg-danger/10 text-danger shadow-md shadow-danger/5"
+                      ? "border-danger bg-[var(--seen-danger-bg)] text-danger shadow-md shadow-danger/5"
                       : "border-border hover:border-border text-content-muted"
                   )}
                 >

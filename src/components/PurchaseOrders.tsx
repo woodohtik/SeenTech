@@ -653,7 +653,7 @@ export default function PurchaseOrders({
             onClick={() => setStatusFilter('confirmed')}
             className={cn(
               "flex-1 text-center py-2 text-sm font-black rounded-xl transition-all",
-              statusFilter === 'confirmed' ? "bg-success/10 text-success" : "text-content-muted hover:text-content"
+              statusFilter === 'confirmed' ? "bg-[var(--seen-success-bg)] text-success" : "text-content-muted hover:text-content"
             )}
           >
             {t('procurement.po_status_confirmed_short', 'مؤكد')}
@@ -687,7 +687,7 @@ export default function PurchaseOrders({
                       {poType === 'purchase' ? (
                         <span className="px-2.5 py-1 text-sm font-black bg-brand/10 text-brand border border-brand/10 rounded-full">{t('procurement.po_type_purchase', 'أمر شراء')}</span>
                       ) : (
-                        <span className="px-2.5 py-1 text-sm font-black bg-danger/10 text-danger border border-danger/10 rounded-full">{t('procurement.po_type_return', 'أمر إرجاع')}</span>
+                        <span className="px-2.5 py-1 text-sm font-black bg-[var(--seen-danger-bg)] text-danger border border-danger/10 rounded-full">{t('procurement.po_type_return', 'أمر إرجاع')}</span>
                       )}
                     </td>
                     <td className="px-6 py-4 font-mono font-bold text-sm text-content-muted">{po.poNumber || (po as any).po_number || po.id.slice(0, 8)}</td>
@@ -696,7 +696,7 @@ export default function PurchaseOrders({
                     <td className="px-6 py-4 text-sm font-bold text-content-muted">{new Date(po.orderDate).toLocaleDateString(localeOf())}</td>
                     <td className="px-6 py-4">
                       {poStatus === 'confirmed' || poStatus === 'received' || poStatus === 'returned' ? (
-                        <div className="flex items-center gap-1.5 text-success bg-success/10 px-3 py-1 rounded-full w-fit border border-success/10">
+                        <div className="flex items-center gap-1.5 text-success bg-[var(--seen-success-bg)] px-3 py-1 rounded-full w-fit border border-success/10">
                           <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse"></span>
                           <span className="text-sm font-black">{t('procurement.po_status_confirmed', 'مؤكد ومرحل')}</span>
                         </div>
@@ -712,7 +712,7 @@ export default function PurchaseOrders({
                         {poType === 'purchase' && poStatus === 'received' && (
                           <button
                             onClick={() => handleStartReturnFromOrder(po)}
-                            className="min-w-[40px] min-h-[40px] p-2 bg-danger/10 text-danger hover:bg-danger hover:text-white rounded-xl transition-all flex items-center justify-center cursor-pointer"
+                            className="min-w-[40px] min-h-[40px] p-2 bg-[var(--seen-danger-bg)] text-danger hover:bg-danger hover:text-white rounded-xl transition-all flex items-center justify-center cursor-pointer"
                             title={t('procurement.return_goods', 'إرجاع بضاعة')}
                           >
                             <RotateCcw size={16} />
@@ -757,7 +757,7 @@ export default function PurchaseOrders({
                     {poType === 'purchase' ? (
                       <span className="px-2 py-0.5 text-sm font-black bg-brand/10 text-brand rounded-full">{t('procurement.po_type_purchase', 'أمر شراء')}</span>
                     ) : (
-                      <span className="px-2 py-0.5 text-sm font-black bg-danger/10 text-danger rounded-full">{t('procurement.po_type_return', 'أمر إرجاع')}</span>
+                      <span className="px-2 py-0.5 text-sm font-black bg-[var(--seen-danger-bg)] text-danger rounded-full">{t('procurement.po_type_return', 'أمر إرجاع')}</span>
                     )}
                   </div>
                 </div>
@@ -780,7 +780,7 @@ export default function PurchaseOrders({
                 <div className="flex items-center justify-between gap-2 pt-1">
                   <div>
                     {poStatus === 'confirmed' || poStatus === 'received' || poStatus === 'returned' ? (
-                      <div className="flex items-center gap-1 text-success bg-success/10 px-2.5 py-0.5 rounded-full border border-success/10">
+                      <div className="flex items-center gap-1 text-success bg-[var(--seen-success-bg)] px-2.5 py-0.5 rounded-full border border-success/10">
                         <span className="w-1 h-1 rounded-full bg-success"></span>
                         <span className="text-sm font-black">{t('procurement.po_status_confirmed', 'مؤكد ومرحل')}</span>
                       </div>
@@ -796,7 +796,7 @@ export default function PurchaseOrders({
                     {poType === 'purchase' && poStatus === 'received' && (
                       <button
                         onClick={() => handleStartReturnFromOrder(po)}
-                        className="flex items-center justify-center gap-1.5 bg-danger/10 text-danger px-3 py-1.5 rounded-xl text-sm font-black hover:bg-danger hover:text-white transition-all cursor-pointer min-h-[38px]"
+                        className="flex items-center justify-center gap-1.5 bg-[var(--seen-danger-bg)] text-danger px-3 py-1.5 rounded-xl text-sm font-black hover:bg-danger hover:text-white transition-all cursor-pointer min-h-[38px]"
                       >
                         <RotateCcw size={13} />
                         <span>{t('procurement.return_goods', 'إرجاع بضاعة')}</span>
@@ -834,7 +834,7 @@ export default function PurchaseOrders({
                   <h2 className="text-lg font-black text-content">{t('procurement.po_detail_title', 'عرض تفاصيل المستند')}</h2>
                   <span className={cn(
                     "text-sm font-black px-2.5 py-1 rounded-full",
-                    (selectedOrder.orderType || (selectedOrder as any).order_type) === 'purchase' ? "bg-brand/15 text-brand" : "bg-danger/15 text-danger"
+                    (selectedOrder.orderType || (selectedOrder as any).order_type) === 'purchase' ? "bg-brand/15 text-brand" : "bg-[var(--seen-danger-bg)] text-danger"
                   )}>
                     {(selectedOrder.orderType || (selectedOrder as any).order_type) === 'purchase' ? t('procurement.po_type_purchase', 'أمر شراء') : t('procurement.po_type_return', 'أمر إرجاع')}
                   </span>
@@ -869,7 +869,7 @@ export default function PurchaseOrders({
                   <span className="text-sm font-black uppercase text-content-muted">{t('procurement.po_status_lbl', 'حالة السند')}</span>
                   <div className="mt-1">
                     {(selectedOrder.status || 'draft') === 'confirmed' || (selectedOrder.status || 'draft') === 'received' ? (
-                      <span className="text-success text-sm font-black bg-success/15 px-2.5 py-1 rounded-full">{t('procurement.po_status_confirmed_desc', 'مؤكد ومرحل للمخزن')}</span>
+                      <span className="text-success text-sm font-black bg-[var(--seen-success-bg)] px-2.5 py-1 rounded-full">{t('procurement.po_status_confirmed_desc', 'مؤكد ومرحل للمخزن')}</span>
                     ) : (
                       <span className="text-content-muted text-sm font-black bg-surface-muted px-2.5 py-1 rounded-full">{t('procurement.po_status_draft_desc', 'مسودة (انتظار التأكيد)')}</span>
                     )}

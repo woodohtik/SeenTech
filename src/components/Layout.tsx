@@ -1,4 +1,5 @@
 import React from 'react';
+import { SkipLink } from './ui/SkipLink';
 import { useMeasuredSteps, useShellLayout } from '../hooks/useShellLayout';
 import { assistantWidthCss } from '../lib/shellLayout';
 import SubscriptionExpiryBanner from './SubscriptionExpiryBanner';
@@ -276,6 +277,9 @@ function LayoutShell({ children, role, tenantId, currentStaff, onLock, isLocked 
         paddingInlineEnd: shell.assistant === 'docked' ? assistantWidthCss(shell.expanded) : undefined,
       }}
     >
+      <SkipLink targetId="tour-dashboard-container" />
+      {/* The document's one h1: which shop this is. Each screen's title is the h2 under it. */}
+      <h1 className="sr-only">{tenantName || t('common.tailor_system')}</h1>
       <ImpersonationBanner
         tenantId={impersonationTenantId}
         tenantLabel={tenantName}
@@ -659,9 +663,10 @@ function LayoutShell({ children, role, tenantId, currentStaff, onLock, isLocked 
 
         <main
           ref={mainRef}
+          tabIndex={-1}
           id="tour-dashboard-container"
           data-tour="dashboard-container"
-          className="flex-1 overflow-x-hidden flex flex-col p-4 main-640:p-8 pb-[calc(5.5rem+env(safe-area-inset-bottom))] lg:pb-0"
+          className="flex-1 overflow-x-hidden flex flex-col outline-none focus-visible:shadow-none p-4 main-640:p-8 pb-[calc(5.5rem+env(safe-area-inset-bottom))] lg:pb-0"
         >
           {layoutMode === 'grid' && location.pathname === '/' ? (
             <div className="max-w-7xl mx-auto space-y-12 py-8 flex-1">

@@ -1924,7 +1924,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
     <div className="fixed inset-0 z-[80] flex items-center justify-center p-4">
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setIsConfirmDeliveryOpen(false)} />
       <motion.div role="dialog" aria-modal="true" aria-label={t('orders.confirm_delivery_title')} initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-surface w-full max-w-sm rounded-3xl shadow-2xl relative z-10 p-8 text-center" dir={isRtlLang(i18n.language) ? 'rtl' : 'ltr'}>
-        <div className="w-20 h-20 bg-success/10 text-success rounded-full flex items-center justify-center mx-auto mb-6">
+        <div className="w-20 h-20 bg-[var(--seen-success-bg)] text-success rounded-full flex items-center justify-center mx-auto mb-6">
           <CheckCircle2 size={40} />
         </div>
         <h3 className="text-xl font-black text-content mb-2">{t('orders.confirm_delivery_title')}</h3>
@@ -2066,7 +2066,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                     onClick={() => setMethod(m.id as PaymentMethod)}
                     className={cn(
                       "flex items-center gap-2 p-3 rounded-xl border-2 transition-all text-sm font-bold",
-                      method === m.id ? "border-success bg-success/10 text-success" : "border-border bg-surface text-content-muted"
+                      method === m.id ? "border-success bg-[var(--seen-success-bg)] text-success" : "border-border bg-surface text-content-muted"
                     )}
                   >
                     <m.icon size={16} />
@@ -2178,7 +2178,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
               XLSX.utils.book_append_sheet(workbook, worksheet, "Orders");
               XLSX.writeFile(workbook, `${t('common.orders')}_${new Date().toLocaleDateString(localeOf(i18n.language))}.xlsx`);
             }}
-            className="bg-success/5 text-success px-6 py-3 rounded-2xl font-bold flex items-center gap-2 hover:bg-success/10 transition-all border border-success/10"
+            className="bg-[var(--seen-success-bg)] text-success px-6 py-3 rounded-2xl font-bold flex items-center gap-2 hover:bg-success/10 transition-all border border-success/10"
           >
             <FileSpreadsheet size={20} />
             <span>{t('orders.export_excel')}</span>
@@ -2373,14 +2373,14 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                                 } as Customer;
                                 setDueDetailsCustomer(matchingCustomer);
                               }}
-                              className="flex items-center gap-1 bg-danger/10 text-danger border border-danger/20 px-1.5 py-0.5 rounded-md text-sm font-black shrink-0 animate-pulse"
+                              className="flex items-center gap-1 bg-[var(--seen-danger-bg)] text-danger border border-danger/20 px-1.5 py-0.5 rounded-md text-sm font-black shrink-0 animate-pulse"
                             >
                               <AlertCircle size={10} />
                               {money(totalUnpaid)}
                             </button>
                           )}
                           {order.isTest && (
-                            <span className="text-sm bg-danger/10 text-danger px-1.5 py-0.5 rounded-md font-black flex items-center gap-0.5 shrink-0">
+                            <span className="text-sm bg-[var(--seen-danger-bg)] text-danger px-1.5 py-0.5 rounded-md font-black flex items-center gap-0.5 shrink-0">
                               <Zap size={8} />
                               {t('orders.test_data_badge')}
                             </span>
@@ -2486,12 +2486,12 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                       </span>
                       <div>
                         {order.remainingAmount > 0 ? (
-                          <span className="bg-danger/10 text-danger border border-danger/20 px-2 py-0.5 rounded-md text-sm font-black inline-flex items-center gap-1 truncate">
+                          <span className="bg-[var(--seen-danger-bg)] text-danger border border-danger/20 px-2 py-0.5 rounded-md text-sm font-black inline-flex items-center gap-1 truncate">
                             <span className="w-1.5 h-1.5 bg-danger rounded-full animate-pulse shrink-0" />
                             {money(order.remainingAmount)}
                           </span>
                         ) : (
-                          <span className="bg-success/10 text-success border border-success/20 px-2 py-0.5 rounded-md text-sm font-black inline-flex items-center gap-1 truncate">
+                          <span className="bg-[var(--seen-success-bg)] text-success border border-success/20 px-2 py-0.5 rounded-md text-sm font-black inline-flex items-center gap-1 truncate">
                             <span className="w-1.5 h-1.5 bg-success rounded-full shrink-0" />
                             {t('orders.fully_paid')}
                           </span>
@@ -2592,7 +2592,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                               } as Customer;
                               setDueDetailsCustomer(matchingCustomer);
                             }}
-                            className="flex items-center gap-1 bg-danger/10 hover:bg-danger/20 text-danger border border-danger/20 px-2.5 py-1 rounded-full text-sm font-black transition-all animate-pulse"
+                            className="flex items-center gap-1 bg-[var(--seen-danger-bg)] hover:bg-danger/20 text-danger border border-danger/20 px-2.5 py-1 rounded-full text-sm font-black transition-all animate-pulse"
                             title={t('orders.customer_has_dues')}
                           >
                             <AlertCircle size={14} className="text-danger" />
@@ -2603,7 +2603,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                           #{order.orderNumber || order.id.slice(-6).toUpperCase()}
                         </span>
                         {order.isTest && (
-                          <span className="text-sm bg-danger/10 text-danger px-2 py-0.5 rounded-full font-black uppercase flex items-center gap-1">
+                          <span className="text-sm bg-[var(--seen-danger-bg)] text-danger px-2 py-0.5 rounded-full font-black uppercase flex items-center gap-1">
                             <Zap size={10} />
                             {t('orders.test_data_badge')}
                           </span>

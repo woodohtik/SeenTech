@@ -188,16 +188,16 @@ export default function SuppliersRegistry({
                   {/* Status labels */}
                   <td className="p-4 text-center">
                     {currentDue <= 0 ? (
-                      <span className="inline-flex items-center gap-1 bg-success/10 text-success px-2.5 py-1 rounded-full text-sm font-black border border-success/20 uppercase">
+                      <span className="inline-flex items-center gap-1 bg-[var(--seen-success-bg)] text-success px-2.5 py-1 rounded-full text-sm font-black border border-success/20 uppercase">
                         <CheckCircle size={12} />
                         <span>{t('procurement.status_paid_full', 'مخلص بالكامل')}</span>
                       </span>
                     ) : currentDue > 10000 ? (
-                      <span className="inline-flex items-center gap-1 bg-danger/10 text-danger px-2.5 py-1 rounded-full text-sm font-black border border-danger/20 uppercase">
+                      <span className="inline-flex items-center gap-1 bg-[var(--seen-danger-bg)] text-danger px-2.5 py-1 rounded-full text-sm font-black border border-danger/20 uppercase">
                         <span>{t('procurement.status_high_due', 'ذمة معلقة مرتفعة')}</span>
                       </span>
                     ) : (
-                      <span className="inline-flex items-center gap-1 bg-warning/10 text-warning px-2.5 py-1 rounded-full text-sm font-black border border-warning/20 uppercase">
+                      <span className="inline-flex items-center gap-1 bg-[var(--seen-warning-bg)] text-warning px-2.5 py-1 rounded-full text-sm font-black border border-warning/20 uppercase">
                         <span>{t('procurement.status_partially_paid', 'قرض قيد السداد')}</span>
                       </span>
                     )}
@@ -289,15 +289,15 @@ export default function SuppliersRegistry({
                 </div>
                 <div className="shrink-0">
                   {currentDue <= 0 ? (
-                    <span className="inline-flex items-center gap-1 bg-success/10 text-success px-2 py-0.5 rounded-full text-sm font-black border border-success/20">
+                    <span className="inline-flex items-center gap-1 bg-[var(--seen-success-bg)] text-success px-2 py-0.5 rounded-full text-sm font-black border border-success/20">
                       <span>{t('procurement.status_paid_full', 'مخلص بالكامل')}</span>
                     </span>
                   ) : currentDue > 10000 ? (
-                    <span className="inline-flex items-center gap-1 bg-danger/10 text-danger px-2 py-0.5 rounded-full text-sm font-black border border-danger/20">
+                    <span className="inline-flex items-center gap-1 bg-[var(--seen-danger-bg)] text-danger px-2 py-0.5 rounded-full text-sm font-black border border-danger/20">
                       <span>{t('procurement.status_high_due', 'ذمة معلقة مرتفعة')}</span>
                     </span>
                   ) : (
-                    <span className="inline-flex items-center gap-1 bg-warning/10 text-warning px-2 py-0.5 rounded-full text-sm font-black border border-warning/20">
+                    <span className="inline-flex items-center gap-1 bg-[var(--seen-warning-bg)] text-warning px-2 py-0.5 rounded-full text-sm font-black border border-warning/20">
                       <span>{t('procurement.status_partially_paid', 'قرض قيد السداد')}</span>
                     </span>
                   )}

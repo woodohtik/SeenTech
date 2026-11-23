@@ -597,7 +597,7 @@ export const InventoryAdjustment: React.FC<InventoryAdjustmentProps> = ({
       {activeSubTab === "new_adjustment" && (
         <div className="space-y-6">
           {isSchemaMissing && (
-            <div className="bg-warning/10 border border-warning/20 text-warning p-5 rounded-2xl flex flex-col main-720:flex-row items-start main-720:items-center justify-between gap-4 shadow-sm" id="schema-missing-banner-new">
+            <div className="bg-[var(--seen-warning-bg)] border border-warning/20 text-warning p-5 rounded-2xl flex flex-col main-720:flex-row items-start main-720:items-center justify-between gap-4 shadow-sm" id="schema-missing-banner-new">
               <div className="flex gap-3">
                 <Database className="text-warning shrink-0 mt-0.5" size={20} />
                 <div className="space-y-1">
@@ -809,7 +809,7 @@ export const InventoryAdjustment: React.FC<InventoryAdjustmentProps> = ({
                 <div className="flex items-center gap-2">
                   <button
                     onClick={handleSetAllToBook}
-                    className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-bold bg-success/10 text-success border border-success/20 hover:bg-success/20 transition-all cursor-pointer"
+                    className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-bold bg-[var(--seen-success-bg)] text-success border border-success/20 hover:bg-success/20 transition-all cursor-pointer"
                   >
                     <CheckCircle2 size={13} />
                     {t("inventory.import_all_current", "تعبئة الدفتري للكل")}
@@ -817,7 +817,7 @@ export const InventoryAdjustment: React.FC<InventoryAdjustmentProps> = ({
                   {sessionStats.touchedCount > 0 && (
                     <button
                       onClick={handleReset}
-                      className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-bold bg-danger/10 text-danger border border-danger/20 hover:bg-danger/20 transition-all cursor-pointer"
+                      className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-bold bg-[var(--seen-danger-bg)] text-danger border border-danger/20 hover:bg-danger/20 transition-all cursor-pointer"
                     >
                       <RotateCcw size={13} />
                       {t("inventory.reset_all", "تفريغ المسودة")}
@@ -954,9 +954,9 @@ export const InventoryAdjustment: React.FC<InventoryAdjustmentProps> = ({
                                   className={cn(
                                     "inline-flex items-center px-2 py-0.5 rounded-full text-sm font-bold",
                                     varianceQty > 0
-                                      ? "text-success bg-success/10"
+                                      ? "text-success bg-[var(--seen-success-bg)]"
                                       : varianceQty < 0
-                                      ? "text-danger bg-danger/10"
+                                      ? "text-danger bg-[var(--seen-danger-bg)]"
                                       : "text-content-muted bg-surface-muted"
                                   )}
                                 >
@@ -1103,7 +1103,7 @@ export const InventoryAdjustment: React.FC<InventoryAdjustmentProps> = ({
       {activeSubTab === "adjustment_history" && (
         <div className="space-y-6">
           {isSchemaMissing && (
-            <div className="bg-warning/10 border border-warning/20 text-warning p-5 rounded-2xl flex flex-col main-720:flex-row items-start main-720:items-center justify-between gap-4 shadow-sm" id="schema-missing-banner-history">
+            <div className="bg-[var(--seen-warning-bg)] border border-warning/20 text-warning p-5 rounded-2xl flex flex-col main-720:flex-row items-start main-720:items-center justify-between gap-4 shadow-sm" id="schema-missing-banner-history">
               <div className="flex gap-3">
                 <Database className="text-warning shrink-0 mt-0.5" size={20} />
                 <div className="space-y-1">
@@ -1180,10 +1180,10 @@ export const InventoryAdjustment: React.FC<InventoryAdjustmentProps> = ({
                               className={cn(
                                 "inline-flex items-center px-2 py-0.5 rounded-md text-sm font-bold",
                                 record.status === "Approved"
-                                  ? "bg-success/10 text-success"
+                                  ? "bg-[var(--seen-success-bg)] text-success"
                                   : record.status === "Draft"
-                                  ? "bg-warning/10 text-warning"
-                                  : "bg-danger/10 text-danger"
+                                  ? "bg-[var(--seen-warning-bg)] text-warning"
+                                  : "bg-[var(--seen-danger-bg)] text-danger"
                               )}
                             >
                               {record.status === "Approved"
@@ -1249,8 +1249,8 @@ export const InventoryAdjustment: React.FC<InventoryAdjustmentProps> = ({
                       className={cn(
                         "font-extrabold px-1.5 py-0.5 rounded-md text-sm",
                         selectedHistoryItem.status === "Approved"
-                          ? "bg-success/10 text-success"
-                          : "bg-warning/10 text-warning"
+                          ? "bg-[var(--seen-success-bg)] text-success"
+                          : "bg-[var(--seen-warning-bg)] text-warning"
                       )}
                     >
                       {selectedHistoryItem.status === "Approved"
@@ -1327,7 +1327,7 @@ export const InventoryAdjustment: React.FC<InventoryAdjustmentProps> = ({
                               <span
                                 className={cn(
                                   "inline-flex px-1.5 py-0.5 rounded-md text-sm font-bold",
-                                  isLoss ? "bg-danger/10 text-danger" : "bg-success/10 text-success"
+                                  isLoss ? "bg-[var(--seen-danger-bg)] text-danger" : "bg-[var(--seen-success-bg)] text-success"
                                 )}
                               >
                                 {detail.variance_qty > 0 ? `+${detail.variance_qty}` : detail.variance_qty}
@@ -1421,8 +1421,8 @@ export const InventoryAdjustment: React.FC<InventoryAdjustmentProps> = ({
                     className={cn(
                       "font-bold px-1.5 py-0.5 rounded-md text-sm",
                       isApprovedState && hasApprovePermission
-                        ? "bg-success/10 text-success"
-                        : "bg-warning/10 text-warning"
+                        ? "bg-[var(--seen-success-bg)] text-success"
+                        : "bg-[var(--seen-warning-bg)] text-warning"
                     )}
                   >
                     {isApprovedState && hasApprovePermission ? t("inventory.confirm_status_approved") : t("inventory.confirm_status_draft")}

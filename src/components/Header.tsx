@@ -85,8 +85,8 @@ export default function Header({ tenantId, title, subtitle, children }: HeaderPr
     <span className={cn(
       "inline-flex shrink-0 select-none items-center gap-1.5 whitespace-nowrap rounded-full border px-3 py-1 text-sm font-bold",
       trialDays <= 3
-        ? "border-danger/20 bg-danger/10 text-danger motion-safe:animate-pulse"
-        : "border-info/20 bg-info/10 text-info"
+        ? "border-danger/20 bg-[var(--seen-danger-bg)] text-danger motion-safe:animate-pulse"
+        : "border-info/30 bg-surface text-info"
     )}>
       <Calendar size={14} strokeWidth={2.5} aria-hidden="true" />
       {trialDays === 0

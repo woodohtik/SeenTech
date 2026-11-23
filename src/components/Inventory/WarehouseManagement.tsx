@@ -142,14 +142,14 @@ const WarehouseManagement: React.FC<WarehouseManagementProps> = ({ tenantId }) =
                 <div className="flex items-center gap-2 flex-wrap">
                   <h3 className="text-base main-640:text-lg font-black text-content truncate">{branch.name}</h3>
                   {branch.isMain && (
-                    <span className="flex items-center gap-1 bg-success/5 text-success px-2 py-0.5 rounded-full text-sm font-black uppercase border border-success/10 shrink-0">
+                    <span className="flex items-center gap-1 bg-[var(--seen-success-bg)] text-success px-2 py-0.5 rounded-full text-sm font-black uppercase border border-success/10 shrink-0">
                       <ShieldCheck size={10} />
                       {t('branches.master')}
                     </span>
                   )}
                   <span className={cn(
                     "px-2 py-0.5 rounded-full text-sm font-black uppercase border shrink-0",
-                    branch.type === 'warehouse' ? "bg-brand/5 text-brand border-brand/10" : "bg-warning/5 text-warning border-warning/10"
+                    branch.type === 'warehouse' ? "bg-brand/5 text-brand border-brand/10" : "bg-[var(--seen-warning-bg)] text-warning border-warning/10"
                   )}>
                     {t(`inventory.type_${branch.type}`)}
                   </span>

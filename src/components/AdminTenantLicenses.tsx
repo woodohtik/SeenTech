@@ -228,7 +228,7 @@ export default function AdminTenantLicenses() {
                             tenant.planId === 'basic'
                               ? 'bg-info/10 text-info border border-info/20'
                               : tenant.planId === 'free'
-                                ? 'bg-success/10 text-success border border-success/20'
+                                ? 'bg-[var(--seen-success-bg)] text-success border border-success/20'
                                 : 'bg-surface-muted text-content-muted shadow-sm'
                           )}
                         >

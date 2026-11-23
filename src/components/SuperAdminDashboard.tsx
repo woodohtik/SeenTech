@@ -522,7 +522,7 @@ export default function SuperAdminDashboard() {
                     </div>
                     <div className={cn(
                       "flex items-center gap-1 px-2.5 py-1 rounded-full text-sm font-black",
-                      stat.isPositive ? "bg-success/5 text-success" : "bg-danger/5 text-danger"
+                      stat.isPositive ? "bg-[var(--seen-success-bg)] text-success" : "bg-[var(--seen-danger-bg)] text-danger"
                     )}>
                       {stat.isPositive ? <ArrowUpRight size={10} /> : <ArrowDownRight size={10} />}
                       <span>{stat.trend}</span>
@@ -828,7 +828,7 @@ export default function SuperAdminDashboard() {
           >
             {/* Security Alert Header */}
             <div className="bg-danger/5 p-8 rounded-2xl border border-danger/10 flex flex-col main-720:flex-row items-start main-720:items-center gap-6">
-              <div className="w-16 h-16 bg-danger/10 text-danger rounded-2xl flex items-center justify-center shrink-0">
+              <div className="w-16 h-16 bg-[var(--seen-danger-bg)] text-danger rounded-2xl flex items-center justify-center shrink-0">
                 <Shield size={32} />
               </div>
               <div>
@@ -876,7 +876,7 @@ export default function SuperAdminDashboard() {
               <div className="space-y-3">
                 {auditLogs.map((log) => (
                   <div key={log.id} className="flex items-start gap-4 p-5 bg-surface-muted/20 rounded-2xl border border-border border-r-4 border-r-rose-400">
-                    <div className="p-2 bg-danger/10 text-danger rounded-lg shrink-0 mt-0.5">
+                    <div className="p-2 bg-[var(--seen-danger-bg)] text-danger rounded-lg shrink-0 mt-0.5">
                       <AlertCircle size={14} />
                     </div>
                     <div className="flex-1">
@@ -957,7 +957,7 @@ export default function SuperAdminDashboard() {
                           onClick={() => handleTogglePlanActive(plan)}
                           className={cn(
                             "px-3 py-1 rounded-full text-sm font-black uppercase cursor-pointer",
-                            plan.is_active ? "bg-success/10 text-success" : "bg-danger/10 text-danger"
+                            plan.is_active ? "bg-[var(--seen-success-bg)] text-success" : "bg-[var(--seen-danger-bg)] text-danger"
                           )}
                         >
                           {plan.is_active ? t('saas.plans_status_active') : t('saas.plans_status_inactive')}
@@ -1060,7 +1060,7 @@ export default function SuperAdminDashboard() {
                             disabled={updatingCouponId === coupon.id}
                             className={cn(
                               "px-3 py-1 rounded-full text-sm font-black uppercase cursor-pointer disabled:opacity-50",
-                              coupon.is_active ? "bg-success/10 text-success" : "bg-danger/10 text-danger"
+                              coupon.is_active ? "bg-[var(--seen-success-bg)] text-success" : "bg-[var(--seen-danger-bg)] text-danger"
                             )}
                           >
                             {coupon.is_active ? t('saas.plans_status_active', 'فعّالة') : t('saas.plans_status_inactive', 'معطّلة')}

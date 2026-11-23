@@ -31,7 +31,7 @@ export default function RoleGuard({ children, allowedRoles }: RoleGuardProps) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] text-center p-6">
         {/* CSS pop: no motion library on the startup path (Phase 2.4). */}
-        <div className="seen-enter-grow w-32 h-32 bg-danger/10 text-danger rounded-full flex items-center justify-center mb-8">
+        <div className="seen-enter-grow w-32 h-32 bg-[var(--seen-danger-bg)] text-danger rounded-full flex items-center justify-center mb-8">
           <ShieldAlert size={64} />
         </div>
         <h2 className="text-4xl font-black text-content mb-4">{t('permissions.role_guard_title')}</h2>

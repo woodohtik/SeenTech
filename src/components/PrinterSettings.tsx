@@ -1008,7 +1008,7 @@ export default function PrinterSettings() {
                 <span
                   className={cn(
                     'text-sm font-black px-2.5 py-0.5 rounded-full inline-flex items-center gap-1.5 mt-1',
-                    station?.online ? 'bg-success/15 text-success' : 'bg-warning/15 text-warning'
+                    station?.online ? 'bg-[var(--seen-success-bg)] text-success' : 'bg-[var(--seen-warning-bg)] text-warning'
                   )}
                 >
                   <span className="w-1.5 h-1.5 rounded-full bg-current" />
@@ -1192,8 +1192,8 @@ export default function PrinterSettings() {
         <div
           className={cn(
             'p-4 border rounded-2xl text-sm font-bold flex items-start justify-between gap-3',
-            feedback.kind === 'success' && 'bg-success/10 border-success/30 text-success',
-            feedback.kind === 'error' && 'bg-danger/10 border-danger/30 text-danger',
+            feedback.kind === 'success' && 'bg-[var(--seen-success-bg)] border-success/30 text-success',
+            feedback.kind === 'error' && 'bg-[var(--seen-danger-bg)] border-danger/30 text-danger',
             feedback.kind === 'info' && 'bg-brand/10 border-brand/30 text-brand'
           )}
         >
@@ -1246,7 +1246,7 @@ export default function PrinterSettings() {
                     <span
                       className={cn(
                         'text-sm font-black px-2 py-0.5 rounded-full',
-                        p.status === 'online' ? 'bg-success/15 text-success' : 'bg-warning/15 text-warning'
+                        p.status === 'online' ? 'bg-[var(--seen-success-bg)] text-success' : 'bg-[var(--seen-warning-bg)] text-warning'
                       )}
                     >
                       {p.status === 'online' ? t('settings_page.printer.status_connected') : t('settings_page.printer.status_offline')}
@@ -1286,7 +1286,7 @@ export default function PrinterSettings() {
                   type="button"
                   onClick={() => void handleTestPrint(p)}
                   disabled={busyId === p.id}
-                  className="px-3.5 py-2 bg-success/10 text-success hover:bg-success hover:text-white rounded-xl text-sm font-black transition-all disabled:opacity-50 flex items-center gap-1.5"
+                  className="px-3.5 py-2 bg-[var(--seen-success-bg)] text-success hover:bg-success hover:text-white rounded-xl text-sm font-black transition-all disabled:opacity-50 flex items-center gap-1.5"
                 >
                   {busyId === p.id && <Loader2 size={13} className="animate-spin" />}
                   <span>{t('settings_page.printer.test')}</span>

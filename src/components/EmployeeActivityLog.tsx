@@ -57,9 +57,9 @@ export default function EmployeeActivityLogTab({ tenantId }: { tenantId: string 
   });
 
   const getActionColor = (action: string) => {
-    if (action.includes('delete') || action.includes('cancel')) return 'text-danger bg-danger/10 border-danger/20';
-    if (action.includes('edit') || action.includes('adjust')) return 'text-warning bg-warning/10 border-warning/20';
-    if (action.includes('create') || action.includes('open')) return 'text-success bg-success/10 border-success/20';
+    if (action.includes('delete') || action.includes('cancel')) return 'text-danger bg-[var(--seen-danger-bg)] border-danger/20';
+    if (action.includes('edit') || action.includes('adjust')) return 'text-warning bg-[var(--seen-warning-bg)] border-warning/20';
+    if (action.includes('create') || action.includes('open')) return 'text-success bg-[var(--seen-success-bg)] border-success/20';
     return 'text-brand bg-brand/10 border-brand/20';
   };
   

@@ -846,7 +846,7 @@ export default function Reports({ tenantId }: { tenantId: string }) {
   if (!canViewReports) {
     return (
       <div className="flex flex-col items-center justify-center h-[70vh] text-right" dir={dir}>
-        <div className="p-6 bg-danger/10 text-danger rounded-2xl mb-6">
+        <div className="p-6 bg-[var(--seen-danger-bg)] text-danger rounded-2xl mb-6">
           <AlertTriangle size={48} />
         </div>
         <h2 className="text-2xl font-black text-content mb-2">{t('reports.access_denied_title')}</h2>
@@ -1327,7 +1327,7 @@ export default function Reports({ tenantId }: { tenantId: string }) {
 
           {activeTab === 'profit_loss' && (
             <div className="space-y-4 main-640:space-y-8">
-              <div className="bg-warning/5 border border-warning/15 text-warning rounded-2xl p-4 text-sm font-bold flex items-start gap-3">
+              <div className="bg-[var(--seen-warning-bg)] border border-warning/15 text-warning rounded-2xl p-4 text-sm font-bold flex items-start gap-3">
                 <AlertTriangle size={18} className="shrink-0 mt-0.5" />
                 <span>{t('reports.pl_estimate_disclaimer')}</span>
               </div>
@@ -1418,7 +1418,7 @@ export default function Reports({ tenantId }: { tenantId: string }) {
                 <div className="bg-surface p-4 main-640:p-8 rounded-2xl border border-border cursor-default flex flex-col justify-between">
                   <div>
                     <div className="flex items-center gap-2 main-640:gap-4 mb-2 main-640:mb-4">
-                      <div className="p-2 bg-warning/10 text-warning rounded-lg main-640:rounded-xl shrink-0"><Clock size={16} className="main-640:w-6 main-640:h-6" /></div>
+                      <div className="p-2 bg-[var(--seen-warning-bg)] text-warning rounded-lg main-640:rounded-xl shrink-0"><Clock size={16} className="main-640:w-6 main-640:h-6" /></div>
                       <h4 className="font-black text-sm main-640:text-base text-content">{t('reports.completion_time')}</h4>
                     </div>
                     <h3 className="text-lg main-640:text-3xl font-black text-content">{t('reports.days_value', { n: orderStats.avgTime })}</h3>
@@ -1441,7 +1441,7 @@ export default function Reports({ tenantId }: { tenantId: string }) {
                 >
                   <div>
                     <div className="flex items-center gap-2 main-640:gap-4 mb-2 main-640:mb-4">
-                      <div className="p-2 bg-danger/10 text-danger rounded-lg main-640:rounded-xl shrink-0"><AlertTriangle size={16} className="main-640:w-6 main-640:h-6" /></div>
+                      <div className="p-2 bg-[var(--seen-danger-bg)] text-danger rounded-lg main-640:rounded-xl shrink-0"><AlertTriangle size={16} className="main-640:w-6 main-640:h-6" /></div>
                       <h4 className="font-black text-sm main-640:text-base text-content">{t('reports.delayed_orders')}</h4>
                     </div>
                     <h3 className="text-lg main-640:text-3xl font-black text-danger">{orderStats.delayedCount}</h3>
@@ -1461,7 +1461,7 @@ export default function Reports({ tenantId }: { tenantId: string }) {
                     <AlertTriangle className="text-danger shrink-0 main-640:w-5 main-640:h-5" size={18} />
                     {t('reports.low_stock_alerts')}
                   </h3>
-                  <span className="px-2.5 py-0.5 main-640:px-3 main-640:py-1 bg-danger/10 text-danger rounded-full text-sm font-black">
+                  <span className="px-2.5 py-0.5 main-640:px-3 main-640:py-1 bg-[var(--seen-danger-bg)] text-danger rounded-full text-sm font-black">
                     {t('reports.items_count', { n: inventoryStats.lowStockItems.length })}
                   </span>
                 </div>
@@ -1926,7 +1926,7 @@ export default function Reports({ tenantId }: { tenantId: string }) {
 
           {activeTab === 'vat' && (
             <div className="space-y-4 main-640:space-y-8">
-              <div className="bg-warning/5 border border-warning/15 text-warning rounded-2xl p-4 text-sm font-bold flex items-start gap-3">
+              <div className="bg-[var(--seen-warning-bg)] border border-warning/15 text-warning rounded-2xl p-4 text-sm font-bold flex items-start gap-3">
                 <AlertTriangle size={18} className="shrink-0 mt-0.5" />
                 <span>{t('reports.vat_estimate_disclaimer')}</span>
               </div>
@@ -2044,7 +2044,7 @@ export default function Reports({ tenantId }: { tenantId: string }) {
                 <div className="flex items-center justify-between main-640:justify-end gap-3 w-full main-640:w-auto border-t main-640:border-0 pt-3 main-640:pt-0 border-border">
                   <button 
                     onClick={() => exportToExcel(drillDown.data, drillDown.title)}
-                    className="flex-1 main-640:flex-none flex items-center justify-center gap-2 bg-success/10 px-4 py-2 main-640:py-2.5 rounded-xl border border-success/20 text-sm font-bold text-success hover:bg-success/20 transition-all"
+                    className="flex-1 main-640:flex-none flex items-center justify-center gap-2 bg-[var(--seen-success-bg)] px-4 py-2 main-640:py-2.5 rounded-xl border border-success/20 text-sm font-bold text-success hover:bg-success/20 transition-all"
                   >
                     <FileSpreadsheet size={16} />
                     {t('dashboard.export_excel')}

@@ -25,10 +25,10 @@ import { taxRatePercent } from '../shared/taxRate';
 function ZatcaStatusBadge({ status }: { status?: CreditNote['zatcaStatus'] }) {
   const { t } = useTranslation();
   const styles: Record<string, string> = {
-    cleared: 'bg-success/10 text-success',
-    reported: 'bg-success/10 text-success',
-    pending: 'bg-warning/10 text-warning',
-    rejected: 'bg-danger/10 text-danger',
+    cleared: 'bg-[var(--seen-success-bg)] text-success',
+    reported: 'bg-[var(--seen-success-bg)] text-success',
+    pending: 'bg-[var(--seen-warning-bg)] text-warning',
+    rejected: 'bg-[var(--seen-danger-bg)] text-danger',
     not_applicable: 'bg-surface-muted text-content-muted',
   };
   const labels: Record<string, string> = {
@@ -385,7 +385,7 @@ export default function CreditNotes({ tenantId }: { tenantId: string }) {
                   {creditNotes.map((note) => (
                     <tr key={note.id} className="hover:bg-danger/5 transition-colors">
                       <td className="p-4">
-                        <span className="font-mono font-bold text-danger bg-danger/10 px-2 py-1 rounded-lg">
+                        <span className="font-mono font-bold text-danger bg-[var(--seen-danger-bg)] px-2 py-1 rounded-lg">
                           {note.creditNoteNumber}
                         </span>
                       </td>

@@ -293,7 +293,7 @@ export default function VoiceMeasurementWizard({ values, onChange, onClose, meas
           <button
             type="button"
             onClick={handleTapResult}
-            className="w-full py-3 rounded-xl bg-success/10 text-success font-bold hover:bg-success/20 transition-colors"
+            className="w-full py-3 rounded-xl bg-[var(--seen-success-bg)] text-success font-bold hover:bg-success/20 transition-colors"
           >
             ✓ {t(measurementLabelKey(lastResult.part))}: {lastResult.value}
           </button>

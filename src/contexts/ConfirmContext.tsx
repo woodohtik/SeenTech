@@ -109,7 +109,7 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
           <div
             className={cn(
               "w-14 h-14 mx-auto rounded-full flex items-center justify-center",
-              'danger' in dialog && dialog.danger ? "bg-danger/10 text-danger" : "bg-brand/10 text-brand"
+              'danger' in dialog && dialog.danger ? "bg-[var(--seen-danger-bg)] text-danger" : "bg-brand/10 text-brand"
             )}
           >
             {dialog.kind === 'confirm' ? (

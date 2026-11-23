@@ -398,7 +398,7 @@ export const RolePermissionsSettings: React.FC<RolePermissionsSettingsProps> = (
             <div>
               <h2 className="text-2xl font-black text-content flex items-center gap-2">
                 {isSuperAdmin ? t('permissions.title_super_admin') : t('permissions.title_tenant')}
-                <span className="text-sm bg-success/10 text-success px-3 py-1 rounded-full border border-success/20 font-bold flex items-center gap-1.5">
+                <span className="text-sm bg-[var(--seen-success-bg)] text-success px-3 py-1 rounded-full border border-success/20 font-bold flex items-center gap-1.5">
                   <span className="w-2 h-2 rounded-full bg-success animate-ping"></span>
                   {isSuperAdmin ? t('permissions.badge_super_admin') : t('permissions.badge_tenant')}
                 </span>
@@ -549,11 +549,11 @@ export const RolePermissionsSettings: React.FC<RolePermissionsSettingsProps> = (
                         <div className="flex items-center gap-3">
                           <div className={cn(
                             "w-10 h-10 rounded-xl flex items-center justify-center font-black transition-colors shrink-0",
-                            isOwner ? "bg-warning/10 text-warning" :
+                            isOwner ? "bg-[var(--seen-warning-bg)] text-warning" :
                             isSaas ? "bg-purple-500/10 text-purple-600" :
                             role.roleKey === 'manager' ? "bg-brand/10 text-brand" :
                             role.roleKey === 'cashier' ? "bg-info/10 text-info" :
-                            role.roleKey === 'accountant' ? "bg-success/10 text-success" :
+                            role.roleKey === 'accountant' ? "bg-[var(--seen-success-bg)] text-success" :
                             "bg-brand/10 text-brand"
                           )}>
                             {isOwner ? <Lock size={18} /> : <Shield size={18} />}
@@ -563,7 +563,7 @@ export const RolePermissionsSettings: React.FC<RolePermissionsSettingsProps> = (
                             <div className="flex items-center gap-2 flex-wrap">
                               <span className="text-sm font-black text-content truncate">{role.name}</span>
                               {isOwner && (
-                                <span className="text-sm bg-warning/10 text-warning px-2 py-0.5 rounded-full font-bold">
+                                <span className="text-sm bg-[var(--seen-warning-bg)] text-warning px-2 py-0.5 rounded-full font-bold">
                                   {t('permissions.badge_full_access')}
                                 </span>
                               )}
@@ -578,7 +578,7 @@ export const RolePermissionsSettings: React.FC<RolePermissionsSettingsProps> = (
                                 </span>
                               )}
                               {!isOwner && isTenantCustom && !isSuperAdmin && (
-                                <span className="text-sm bg-success/10 text-success px-2 py-0.5 rounded-full font-bold">
+                                <span className="text-sm bg-[var(--seen-success-bg)] text-success px-2 py-0.5 rounded-full font-bold">
                                   {t('permissions.badge_custom_to_store')}
                                 </span>
                               )}
@@ -654,7 +654,7 @@ export const RolePermissionsSettings: React.FC<RolePermissionsSettingsProps> = (
                   <button
                     onClick={handleResetToDefault}
                     disabled={isReadOnlyRole}
-                    className="px-3.5 py-2 bg-warning/10 hover:bg-warning/20 text-warning text-sm font-bold rounded-xl border border-warning/20 transition-all flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed"
+                    className="px-3.5 py-2 bg-[var(--seen-warning-bg)] hover:bg-warning/20 text-warning text-sm font-bold rounded-xl border border-warning/20 transition-all flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed"
                   >
                     <RotateCcw size={14} />
                     <span>{t('permissions.default_button')}</span>

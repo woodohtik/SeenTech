@@ -105,7 +105,7 @@ export default function OfflineStatusIndicator({ tenantId }: { tenantId?: string
             </div>
           )}
           {exhaustedCount > 0 && (
-            <div className="flex items-start gap-2 text-danger font-bold bg-danger/10 rounded-xl p-2.5">
+            <div className="flex items-start gap-2 text-danger font-bold bg-[var(--seen-danger-bg)] rounded-xl p-2.5">
               <AlertTriangle size={16} className="shrink-0 mt-0.5" />
               <span>
                 {t('offline.exhausted_warning', '{{count}} عملية فشلت في المزامنة نهائياً ولن تُعاد محاولتها تلقائياً — تحتاج مراجعة يدوية.', { count: exhaustedCount })}
@@ -152,7 +152,7 @@ export default function OfflineStatusIndicator({ tenantId }: { tenantId?: string
             </div>
           )}
           {zatcaWarningCount > 0 && (
-            <div className="flex items-start gap-2 text-danger font-bold bg-danger/10 rounded-xl p-2.5">
+            <div className="flex items-start gap-2 text-danger font-bold bg-[var(--seen-danger-bg)] rounded-xl p-2.5">
               <AlertTriangle size={16} className="shrink-0 mt-0.5" />
               <span>
                 {t('offline.zatca_warning', '{{count}} فاتورة تقترب من سقف الـ24 ساعة القانوني للإبلاغ لهيئة الزكاة والضريبة دون مزامنة بعد.', { count: zatcaWarningCount })}
@@ -160,7 +160,7 @@ export default function OfflineStatusIndicator({ tenantId }: { tenantId?: string
             </div>
           )}
           {stockConflictCount > 0 && (
-            <div className="flex items-start gap-2 text-warning font-bold bg-warning/10 rounded-xl p-2.5">
+            <div className="flex items-start gap-2 text-warning font-bold bg-[var(--seen-warning-bg)] rounded-xl p-2.5">
               <AlertTriangle size={16} className="shrink-0 mt-0.5" />
               <span>
                 {t('offline.stock_conflict_warning', '{{count}} صنف بِيع أكثر من المتاح فعلياً — يحتاج مطابقة مخزون يدوية.', { count: stockConflictCount })}

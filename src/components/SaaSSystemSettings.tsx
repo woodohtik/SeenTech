@@ -352,7 +352,7 @@ export default function SaaSSystemSettings() {
           </div>
         </div>
         {userRole === 'support_tech' && (
-          <span className="px-4 py-2 bg-warning/10 text-warning rounded-xl text-sm font-black">
+          <span className="px-4 py-2 bg-[var(--seen-warning-bg)] text-warning rounded-xl text-sm font-black">
             {t('common.support_mode')}
           </span>
         )}
@@ -655,7 +655,7 @@ export default function SaaSSystemSettings() {
                   });
                 }
               }}
-              className="flex-1 flex items-center justify-center gap-2 px-6 py-4 bg-warning/10 text-warning rounded-2xl font-black hover:bg-warning/20 disabled:opacity-50 transition-all text-sm"
+              className="flex-1 flex items-center justify-center gap-2 px-6 py-4 bg-[var(--seen-warning-bg)] text-warning rounded-2xl font-black hover:bg-warning/20 disabled:opacity-50 transition-all text-sm"
             >
               <Zap size={20} />
               <span>{t('common.delete_test_data')}</span>
@@ -674,7 +674,7 @@ export default function SaaSSystemSettings() {
                   });
                 }
               }}
-              className="flex-1 flex items-center justify-center gap-2 px-6 py-4 bg-danger/10 text-danger rounded-2xl font-black hover:bg-danger/20 disabled:opacity-50 transition-all text-sm"
+              className="flex-1 flex items-center justify-center gap-2 px-6 py-4 bg-[var(--seen-danger-bg)] text-danger rounded-2xl font-black hover:bg-danger/20 disabled:opacity-50 transition-all text-sm"
             >
               <Ban size={20} />
               <span>{t('common.wipe_data')}</span>
@@ -695,7 +695,7 @@ export default function SaaSSystemSettings() {
             >
               <div className="p-8 border-b border-border flex items-center justify-between bg-danger/5">
                 <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 bg-danger/10 text-danger rounded-2xl flex items-center justify-center">
+                  <div className="w-12 h-12 bg-[var(--seen-danger-bg)] text-danger rounded-2xl flex items-center justify-center">
                     <AlertCircle size={24} />
                   </div>
                   <div>

@@ -108,7 +108,7 @@ export default function RevenueChart({
                   <div className="flex items-center justify-between pb-2.5 mb-2.5 border-b border-border/60">
                     <span className="text-sm font-black text-content">{label}</span>
                     {isPeak ? (
-                      <span className="text-sm font-black bg-success/15 text-success px-2 py-0.5 rounded-full flex items-center gap-1">
+                      <span className="text-sm font-black bg-[var(--seen-success-bg)] text-success px-2 py-0.5 rounded-full flex items-center gap-1">
                         🔥 {t('dashboard.peak_day_badge', 'أعلى مبيعات')}
                       </span>
                     ) : revVal > avgDailyRevenue && revVal > 0 ? (

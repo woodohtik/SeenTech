@@ -1062,8 +1062,8 @@ export default function Suppliers({ tenantId }: { tenantId: string }) {
                                   <span>{t('procurement.po_number_prefix', 'أمر شراء رقم:')} {po.poNumber}</span>
                                   <span className={cn(
                                     "text-sm font-black px-2 py-0.5 rounded-full",
-                                    (po.status === 'confirmed' || po.status === 'received' || po.status === 'returned') ? "bg-success/10 text-success" :
-                                    po.status === 'draft' ? "bg-surface-muted text-content-muted" : "bg-warning/10 text-warning"
+                                    (po.status === 'confirmed' || po.status === 'received' || po.status === 'returned') ? "bg-[var(--seen-success-bg)] text-success" :
+                                    po.status === 'draft' ? "bg-surface-muted text-content-muted" : "bg-[var(--seen-warning-bg)] text-warning"
                                   )}>
                                     {(po.status === 'confirmed' || po.status === 'received' || po.status === 'returned') ? t('procurement.status_approved_received', 'معتمد ومستلم') : po.status === 'draft' ? t('procurement.status_draft', 'مسودة') : t('procurement.status_pending', 'معلق')}
                                   </span>

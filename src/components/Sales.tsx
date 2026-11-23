@@ -332,7 +332,7 @@ export default function Sales({ tenantId }: { tenantId: string }) {
             {activeShift && (
               <button
                 onClick={() => setIsCashDrawerDetailsOpen(true)}
-                className="flex main-720:hidden items-center gap-1.5 bg-success/10 text-success px-3 py-1.5 rounded-xl border border-success/20 text-sm font-black cursor-pointer shadow-sm active:scale-95"
+                className="flex main-720:hidden items-center gap-1.5 bg-[var(--seen-success-bg)] text-success px-3 py-1.5 rounded-xl border border-success/20 text-sm font-black cursor-pointer shadow-sm active:scale-95"
               >
                 <Wallet size={14} className="text-success shrink-0" />
                 <span>
@@ -358,7 +358,7 @@ export default function Sales({ tenantId }: { tenantId: string }) {
                 {/* Desktop Cash Drawer */}
                 <button
                   onClick={() => setIsCashDrawerDetailsOpen(true)}
-                  className="hidden main-720:flex items-center gap-2 bg-success/10 text-success px-3.5 py-1.5 rounded-xl border border-success/20 shadow-sm hover:bg-success/20 transition-all cursor-pointer active:scale-95 shrink-0"
+                  className="hidden main-720:flex items-center gap-2 bg-[var(--seen-success-bg)] text-success px-3.5 py-1.5 rounded-xl border border-success/20 shadow-sm hover:bg-success/20 transition-all cursor-pointer active:scale-95 shrink-0"
                   title={t('sales.cash_drawer_tooltip')}
                 >
                   <Wallet size={16} className="text-success shrink-0" />
@@ -696,7 +696,7 @@ export default function Sales({ tenantId }: { tenantId: string }) {
                     {/* Cash Sales */}
                     <div className="flex items-center justify-between p-3.5 bg-surface-muted/30 border border-border rounded-2xl">
                       <div className="flex items-center gap-2.5">
-                        <div className="p-2 bg-success/10 text-success rounded-xl">
+                        <div className="p-2 bg-[var(--seen-success-bg)] text-success rounded-xl">
                           <TrendingUp size={18} />
                         </div>
                         <span className="text-sm font-bold text-content">{t('sales.cash_sales')}</span>
@@ -710,7 +710,7 @@ export default function Sales({ tenantId }: { tenantId: string }) {
                     {cashDrawerBreakdown.deposits > 0 && (
                       <div className="flex items-center justify-between p-3.5 bg-surface-muted/30 border border-border rounded-2xl">
                         <div className="flex items-center gap-2.5">
-                          <div className="p-2 bg-success/10 text-success rounded-xl">
+                          <div className="p-2 bg-[var(--seen-success-bg)] text-success rounded-xl">
                             <Plus size={18} />
                           </div>
                           <span className="text-sm font-bold text-content">{t('sales.cash_deposits')}</span>
@@ -725,7 +725,7 @@ export default function Sales({ tenantId }: { tenantId: string }) {
                     {cashDrawerBreakdown.returns > 0 && (
                       <div className="flex items-center justify-between p-3.5 bg-surface-muted/30 border border-border rounded-2xl">
                         <div className="flex items-center gap-2.5">
-                          <div className="p-2 bg-danger/10 text-danger rounded-xl">
+                          <div className="p-2 bg-[var(--seen-danger-bg)] text-danger rounded-xl">
                             <TrendingDown size={18} />
                           </div>
                           <span className="text-sm font-bold text-content">{t('sales.cash_returns')}</span>
@@ -740,7 +740,7 @@ export default function Sales({ tenantId }: { tenantId: string }) {
                     {cashDrawerBreakdown.withdrawals > 0 && (
                       <div className="flex items-center justify-between p-3.5 bg-surface-muted/30 border border-border rounded-2xl">
                         <div className="flex items-center gap-2.5">
-                          <div className="p-2 bg-danger/10 text-danger rounded-xl">
+                          <div className="p-2 bg-[var(--seen-danger-bg)] text-danger rounded-xl">
                             <X size={18} />
                           </div>
                           <span className="text-sm font-bold text-content">{t('sales.expenses_withdrawals')}</span>

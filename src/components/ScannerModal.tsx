@@ -100,7 +100,7 @@ export default function ScannerModal({ isOpen, onClose, onScan }: ScannerModalPr
         <div className="p-4 flex flex-col items-center">
           {error ? (
             <div className="w-full space-y-3">
-              <div className="text-danger font-bold text-sm text-center p-4 bg-danger/10 rounded-lg w-full">
+              <div className="text-danger font-bold text-sm text-center p-4 bg-[var(--seen-danger-bg)] rounded-lg w-full">
                 {error}
               </div>
               <form

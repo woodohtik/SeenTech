@@ -18,12 +18,20 @@ export const IconInput = forwardRef<HTMLInputElement, IconInputProps>(({
   containerClassName,
   wrapperClassName,
   className,
-  id,
+  id: idProp,
   type = 'text',
   disabled,
   required,
   ...props
 }, ref) => {
+  // A label is linked to its field even when the caller gave no id.
+  const autoId = React.useId();
+  const id = idProp ?? (label ? autoId : undefined);
+  // With no label of its own and none pointing at it, the placeholder names
+  // the field for screen readers (ux-ui-audit B2) -- an explicit aria-label wins.
+  const fallbackName = !label && !idProp && !props['aria-label'] && !props['aria-labelledby'] && typeof props.placeholder === 'string'
+    ? props.placeholder
+    : undefined;
   
   const renderIcon = (icon: React.ComponentType<{ className?: string }> | React.ReactNode) => {
     if (!icon) return null;
@@ -76,7 +84,7 @@ export const IconInput = forwardRef<HTMLInputElement, IconInputProps>(({
             className={cn(
               "flex items-center justify-center h-full px-3.5 bg-surface-muted/10 border-e transition-all duration-200",
               error
-                ? "text-danger border-danger/20 bg-danger/5"
+                ? "text-danger border-danger/20 bg-[var(--seen-danger-bg)]"
                 : "text-content-muted border-border group-focus-within:border-brand/40 group-focus-within:text-brand bg-surface-muted/20"
             )}
           >
@@ -93,6 +101,7 @@ export const IconInput = forwardRef<HTMLInputElement, IconInputProps>(({
           required={required}
           aria-invalid={error ? true : undefined}
           aria-describedby={error && id ? `${id}-error` : undefined}
+          aria-label={fallbackName}
           className={cn(
             "flex-1 h-full min-w-0 bg-transparent px-3 text-sm text-content outline-none border-none placeholder:text-content-muted/80 font-semibold focus:ring-0 focus:border-none",
             disabled && "cursor-not-allowed",
@@ -107,7 +116,7 @@ export const IconInput = forwardRef<HTMLInputElement, IconInputProps>(({
             className={cn(
               "flex items-center justify-center h-full px-3.5 bg-surface-muted/10 border-s transition-all duration-200",
               error
-                ? "text-danger border-danger/20 bg-danger/5"
+                ? "text-danger border-danger/20 bg-[var(--seen-danger-bg)]"
                 : "text-content-muted border-border group-focus-within:border-brand/40 group-focus-within:text-brand bg-surface-muted/20"
             )}
           >

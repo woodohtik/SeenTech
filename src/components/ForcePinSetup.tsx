@@ -226,7 +226,7 @@ export default function ForcePinSetup({ tenantId, onSuccess }: ForcePinSetupProp
                 animate={{ opacity: 1, scale: 1 }}
                 className="text-center py-6 space-y-4"
               >
-                <div className="w-16 h-16 bg-success/10 text-success rounded-full flex items-center justify-center mx-auto border border-success/20">
+                <div className="w-16 h-16 bg-[var(--seen-success-bg)] text-success rounded-full flex items-center justify-center mx-auto border border-success/20">
                   <CheckCircle2 size={36} />
                 </div>
                 <div>
@@ -352,7 +352,7 @@ export default function ForcePinSetup({ tenantId, onSuccess }: ForcePinSetupProp
                     aria-live="polite"
                     initial={{ opacity: 0, y: -5 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="flex items-start gap-2.5 text-danger text-sm font-semibold bg-danger/10 p-3 rounded-xl border border-danger/20"
+                    className="flex items-start gap-2.5 text-danger text-sm font-semibold bg-[var(--seen-danger-bg)] p-3 rounded-xl border border-danger/20"
                   >
                     <AlertCircle size={16} className="mt-0.5 flex-shrink-0" />
                     <span>{error}</span>

@@ -336,7 +336,7 @@ export default function PinLogin({ tenantId, currentUserStaff, onLogin }: PinLog
                   />
 
                   {passwordError && (
-                    <div role="alert" aria-live="polite" className="flex items-center gap-2 text-danger text-sm font-bold bg-danger/10 px-4 py-2 rounded-xl border border-danger/20">
+                    <div role="alert" aria-live="polite" className="flex items-center gap-2 text-danger text-sm font-bold bg-[var(--seen-danger-bg)] px-4 py-2 rounded-xl border border-danger/20">
                       <AlertCircle size={14} />
                       <span>{passwordError}</span>
                     </div>
@@ -372,7 +372,7 @@ export default function PinLogin({ tenantId, currentUserStaff, onLogin }: PinLog
                 exit={{ opacity: 0, scale: 0.95 }}
                 className={cardClassName}
               >
-                <div className="w-16 h-16 sm:w-20 sm:h-20 bg-warning/10 rounded-2xl flex items-center justify-center text-warning mb-5 sm:mb-6 shadow-inner">
+                <div className="w-16 h-16 sm:w-20 sm:h-20 bg-[var(--seen-warning-bg)] rounded-2xl flex items-center justify-center text-warning mb-5 sm:mb-6 shadow-inner">
                   <Lock size={36} />
                 </div>
                 <h2 className="text-2xl font-black text-content mb-2 text-center">{t('login.change_pin_title')}</h2>
@@ -403,7 +403,7 @@ export default function PinLogin({ tenantId, currentUserStaff, onLogin }: PinLog
                   </div>
 
                   {error && (
-                    <div className="flex items-center gap-2 text-danger text-sm font-bold bg-danger/10 px-4 py-2 rounded-xl border border-danger/20">
+                    <div className="flex items-center gap-2 text-danger text-sm font-bold bg-[var(--seen-danger-bg)] px-4 py-2 rounded-xl border border-danger/20">
                       <AlertCircle size={14} />
                       <span>{error}</span>
                     </div>
@@ -455,7 +455,7 @@ export default function PinLogin({ tenantId, currentUserStaff, onLogin }: PinLog
                       className={cn(
                         "w-12 h-14 rounded-2xl border-2 flex items-center justify-center transition-all duration-200 text-2xl font-black",
                         pin.length > i ? "bg-brand border-brand text-white" : "bg-surface-muted border-border",
-                        error && "border-danger bg-danger/5 text-danger"
+                        error && "border-danger bg-[var(--seen-danger-bg)] text-danger"
                       )}
                     >
                       {pin.length > i ? (
@@ -487,7 +487,7 @@ export default function PinLogin({ tenantId, currentUserStaff, onLogin }: PinLog
                       initial={{ opacity: 0, y: -10 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -10 }}
-                      className="flex items-center gap-2 text-danger text-sm font-bold mb-6 bg-danger/10 px-6 py-3 rounded-2xl border border-danger/20"
+                      className="flex items-center gap-2 text-danger text-sm font-bold mb-6 bg-[var(--seen-danger-bg)] px-6 py-3 rounded-2xl border border-danger/20"
                     >
                       <AlertCircle size={18} />
                       <span>{error}</span>

@@ -158,7 +158,7 @@ const DrillDownModal = ({
           <div className="flex items-center gap-3">
             <button 
               onClick={() => exportToExcel(filteredData, drillDown.type)}
-              className="flex items-center gap-2 bg-success/10 px-4 py-2 rounded-xl border border-success/20 text-sm font-bold text-success hover:bg-success/20 transition-all cursor-pointer"
+              className="flex items-center gap-2 bg-[var(--seen-success-bg)] px-4 py-2 rounded-xl border border-success/20 text-sm font-bold text-success hover:bg-success/20 transition-all cursor-pointer"
             >
               <FileSpreadsheet size={16} />
               {t('dashboard.export_excel')}
@@ -1171,7 +1171,7 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
             </button>
             {hasRevenuePermission && (
               <div className="bg-surface p-2 main-640:p-2.5 rounded-xl main-640:rounded-2xl border border-border flex items-center gap-2 main-640:gap-3 shadow-sm shrink-0">
-                <div className="p-1 main-640:p-1.5 bg-success/10 text-success rounded-lg main-640:rounded-xl">
+                <div className="p-1 main-640:p-1.5 bg-[var(--seen-success-bg)] text-success rounded-lg main-640:rounded-xl">
                   <TrendingUp size={16} />
                 </div>
                 <div className="min-w-0">
@@ -1246,7 +1246,7 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
                               <div className="flex gap-3 flex-1">
                                 <div className={cn(
                                   "p-2 rounded-xl h-fit",
-                                  notif.type === 'inventory' ? "bg-danger/10 text-danger" : "bg-brand/10 text-brand"
+                                  notif.type === 'inventory' ? "bg-[var(--seen-danger-bg)] text-danger" : "bg-brand/10 text-brand"
                                 )}>
                                   {notif.type === 'inventory' ? <AlertTriangle size={16} /> : <Bell size={16} />}
                                 </div>
@@ -1364,7 +1364,7 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
               exit={{ scale: 0.9, opacity: 0, y: 20 }}
               className="bg-surface w-full max-w-md rounded-3xl shadow-2xl relative z-10 p-8 text-center border border-border"
             >
-              <div className="w-20 h-20 bg-danger/10 text-danger rounded-full flex items-center justify-center mx-auto mb-6">
+              <div className="w-20 h-20 bg-[var(--seen-danger-bg)] text-danger rounded-full flex items-center justify-center mx-auto mb-6">
                 <AlertTriangle size={40} />
               </div>
               <h3 className="text-2xl font-black text-content mb-2">{t('dashboard.delete_test_data')}</h3>
@@ -1399,7 +1399,7 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
             exit={{ opacity: 0, y: 50, x: '-50%' }}
             className={cn(
               "fixed bottom-8 left-1/2 z-[120] px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-3 border min-w-[300px]",
-              toast.type === 'success' ? "bg-success/10 text-success border-success/20" : toast.type === 'info' ? "bg-brand/10 text-brand border-brand/20" : "bg-danger/10 text-danger border-danger/20"
+              toast.type === 'success' ? "bg-[var(--seen-success-bg)] text-success border-success/20" : toast.type === 'info' ? "bg-brand/10 text-brand border-brand/20" : "bg-[var(--seen-danger-bg)] text-danger border-danger/20"
             )}
           >
             {toast.type === 'success' ? <CheckCircle2 size={20} /> : toast.type === 'info' ? <Info size={20} /> : <AlertTriangle size={20} />}
@@ -1753,7 +1753,7 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
                             <div className="flex items-center gap-3">
                               <div className={cn(
                                 "w-8 h-8 rounded-full flex items-center justify-center text-sm font-black transition-transform group-hover:scale-110",
-                                order.status === 'delivered' ? "bg-success/10 text-success" : "bg-brand/10 text-brand"
+                                order.status === 'delivered' ? "bg-[var(--seen-success-bg)] text-success" : "bg-brand/10 text-brand"
                               )}>
                                 {order.customerName.charAt(0)}
                               </div>
@@ -1871,7 +1871,7 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
           <div className="bg-surface rounded-2xl border border-border shadow-sm p-4 main-640:p-6 main-720:p-8">
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-lg main-640:text-xl font-black text-content">{t('dashboard.notifications', 'التنبيهات')}</h3>
-              <span className="bg-danger/10 text-danger text-sm font-black px-2 py-1 rounded-lg">{t('common.active', 'نشط')}</span>
+              <span className="bg-[var(--seen-danger-bg)] text-danger text-sm font-black px-2 py-1 rounded-lg">{t('common.active', 'نشط')}</span>
             </div>
             <div className="space-y-4">
               {notifications.length > 0 ? (
@@ -1888,7 +1888,7 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
                   >
                     <div className={cn(
                       "p-2 rounded-xl h-fit",
-                      notif.type === 'inventory' ? "bg-danger/10 text-danger" : "bg-brand/10 text-brand"
+                      notif.type === 'inventory' ? "bg-[var(--seen-danger-bg)] text-danger" : "bg-brand/10 text-brand"
                     )}>
                       {notif.type === 'inventory' ? <AlertTriangle size={18} /> : <Bell size={18} />}
                     </div>

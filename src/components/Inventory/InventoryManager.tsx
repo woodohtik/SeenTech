@@ -613,9 +613,9 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
           <AutoGrid min={160} maxColumns={4}>
             {[
               { label: t("inventory.total_items"), value: items.length, icon: Layers, tone: "bg-brand/10 text-brand" },
-              { label: t("inventory.warehouses"), value: branches.filter((b) => b.type === "warehouse").length, icon: Warehouse, tone: "bg-success/10 text-success" },
-              { label: t("inventory.branches"), value: branches.filter((b) => b.type === "store").length, icon: Store, tone: "bg-warning/10 text-warning" },
-              { label: t("inventory.low_stock"), value: items.filter((item) => getTotalStock(item.id) <= item.minThreshold).length, icon: AlertCircle, tone: "bg-danger/10 text-danger" },
+              { label: t("inventory.warehouses"), value: branches.filter((b) => b.type === "warehouse").length, icon: Warehouse, tone: "bg-[var(--seen-success-bg)] text-success" },
+              { label: t("inventory.branches"), value: branches.filter((b) => b.type === "store").length, icon: Store, tone: "bg-[var(--seen-warning-bg)] text-warning" },
+              { label: t("inventory.low_stock"), value: items.filter((item) => getTotalStock(item.id) <= item.minThreshold).length, icon: AlertCircle, tone: "bg-[var(--seen-danger-bg)] text-danger" },
             ].map((stat) => (
               <StatCard
                 key={stat.label}
@@ -713,7 +713,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
                         </div>
                       ))}
                       {lowStockItems.length > 3 && (
-                        <div className="w-8 h-8 rounded-full bg-danger/10 border-2 border-danger/5 flex items-center justify-center text-sm font-black text-danger shadow-sm">
+                        <div className="w-8 h-8 rounded-full bg-[var(--seen-danger-bg)] border-2 border-danger/5 flex items-center justify-center text-sm font-black text-danger shadow-sm">
                           +{lowStockItems.length - 3}
                         </div>
                       )}
@@ -770,7 +770,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
                       <div className="flex items-center gap-3">
                         {/* A 48px target: the whole box toggles the checkbox (seen-responsive-layout-task.md Phase 5). */}
                         <label onClick={(e) => e.stopPropagation()} className="flex items-center justify-center min-w-12 min-h-12 -m-3.5 p-3.5 cursor-pointer">
-                          <input
+                          <input aria-label={t('common.select')}
                             type="checkbox"
                             checked={selectedItemIds.includes(item.id)}
                             onChange={(e) => {
@@ -811,11 +811,11 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
                       </div>
                       <div className="flex flex-col items-end gap-1">
                         {isLow ? (
-                          <span className="bg-danger/10 text-danger p-1.5 rounded-full">
+                          <span className="bg-[var(--seen-danger-bg)] text-danger p-1.5 rounded-full">
                             <AlertTriangle size={14} />
                           </span>
                         ) : (
-                          <span className="bg-success/10 text-success p-1.5 rounded-full">
+                          <span className="bg-[var(--seen-success-bg)] text-success p-1.5 rounded-full">
                             <CheckCircle2 size={14} />
                           </span>
                         )}
@@ -880,7 +880,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
                           as="div"
                           className="relative inline-block text-left"
                         >
-                          <Menu.Button
+                          <Menu.Button aria-label={t('common.actions')}
                             onClick={(e) => e.stopPropagation()}
                             className="p-2 main-640:p-3 bg-surface border border-border rounded-xl text-content-muted active:scale-95 transition-all outline-none"
                           >
@@ -910,7 +910,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
                                           setShowAdjustmentModal(true);
                                         }}
                                         className={cn(
-                                          active ? "bg-success/10 text-success" : "text-success",
+                                          active ? "bg-[var(--seen-success-bg)] text-success" : "text-success",
                                           "flex w-full items-center gap-2 rounded-xl px-4 py-3 text-sm font-bold",
                                         )}
                                       >
@@ -930,7 +930,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
                                           setShowConversionModal(true);
                                         }}
                                         className={cn(
-                                          active ? "bg-warning/10 text-warning" : "text-warning",
+                                          active ? "bg-[var(--seen-warning-bg)] text-warning" : "text-warning",
                                           "flex w-full items-center gap-2 rounded-xl px-4 py-3 text-sm font-bold",
                                         )}
                                       >
@@ -970,7 +970,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
                                         }}
                                         className={cn(
                                           active
-                                            ? "bg-danger/10 text-danger"
+                                            ? "bg-[var(--seen-danger-bg)] text-danger"
                                             : "text-danger",
                                           "flex w-full items-center gap-2 rounded-xl px-4 py-3 text-sm font-bold",
                                         )}
@@ -1047,7 +1047,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
                                           "p-1.5 rounded-lg",
                                           branch.type === "warehouse"
                                             ? "bg-brand/10 text-brand"
-                                            : "bg-warning/10 text-warning",
+                                            : "bg-[var(--seen-warning-bg)] text-warning",
                                         )}
                                       >
                                         {branch.type === "warehouse" ? (
@@ -1085,7 +1085,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
                   <tr className="bg-surface-muted/50">
                     <th className="px-4 py-6 w-12 text-center">
                       <label className="inline-flex min-h-12 min-w-12 cursor-pointer items-center justify-center">
-                        <input
+                        <input aria-label={t('common.select')}
                           type="checkbox"
                           checked={filteredItems.length > 0 && selectedItemIds.length === filteredItems.length}
                           onChange={(e) => {
@@ -1141,7 +1141,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
                         >
                           <td className="px-4 py-6 text-center w-12" onClick={(e) => e.stopPropagation()}>
                             <label className="inline-flex min-h-12 min-w-12 cursor-pointer items-center justify-center">
-                              <input
+                              <input aria-label={t('common.select')}
                                 type="checkbox"
                                 checked={selectedItemIds.includes(item.id)}
                                 onChange={(e) => {
@@ -1223,7 +1223,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
                           </td>
                           <td className="px-8 py-6">
                             {item.showInPos ? (
-                              <div className="flex items-center gap-1.5 text-success bg-success/10 px-3 py-1 rounded-full w-fit">
+                              <div className="flex items-center gap-1.5 text-success bg-[var(--seen-success-bg)] px-3 py-1 rounded-full w-fit">
                                 <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse"></span>
                                 <span className="text-sm font-black">{t("inventory.status_visible")}</span>
                               </div>
@@ -1236,14 +1236,14 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
                           </td>
                           <td className="px-8 py-6">
                             {isLow ? (
-                              <div className="flex items-center gap-2 text-danger bg-danger/10 px-4 py-1.5 rounded-full w-fit">
+                              <div className="flex items-center gap-2 text-danger bg-[var(--seen-danger-bg)] px-4 py-1.5 rounded-full w-fit">
                                 <AlertTriangle size={14} />
                                 <span className="text-sm font-black uppercase">
                                   {t("inventory.status_low")}
                                 </span>
                               </div>
                             ) : (
-                              <div className="flex items-center gap-2 text-success bg-success/10 px-4 py-1.5 rounded-full w-fit">
+                              <div className="flex items-center gap-2 text-success bg-[var(--seen-success-bg)] px-4 py-1.5 rounded-full w-fit">
                                 <CheckCircle2 size={14} />
                                 <span className="text-sm font-black uppercase">
                                   {t("inventory.status_good")}
@@ -1267,7 +1267,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
                               as="div"
                               className="relative inline-block text-left"
                             >
-                              <Menu.Button
+                              <Menu.Button aria-label={t('common.actions')}
                                 onClick={(e) => e.stopPropagation()}
                                 className="p-2 hover:bg-surface rounded-xl transition-all border border-transparent hover:border-border hover:shadow-sm outline-none"
                               >
@@ -1300,7 +1300,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
                                               setShowAdjustmentModal(true);
                                             }}
                                             className={cn(
-                                              active ? "bg-success/10 text-success" : "text-success",
+                                              active ? "bg-[var(--seen-success-bg)] text-success" : "text-success",
                                               "flex w-full items-center gap-2 rounded-xl px-4 py-3 text-sm font-bold",
                                             )}
                                           >
@@ -1320,7 +1320,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
                                               setShowConversionModal(true);
                                             }}
                                             className={cn(
-                                              active ? "bg-warning/10 text-warning" : "text-warning",
+                                              active ? "bg-[var(--seen-warning-bg)] text-warning" : "text-warning",
                                               "flex w-full items-center gap-2 rounded-xl px-4 py-3 text-sm font-bold",
                                             )}
                                           >
@@ -1360,7 +1360,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
                                             }}
                                             className={cn(
                                               active
-                                                ? "bg-danger/10 text-danger"
+                                                ? "bg-[var(--seen-danger-bg)] text-danger"
                                                 : "text-danger",
                                               "flex w-full items-center gap-2 rounded-xl px-4 py-3 text-sm font-bold",
                                             )}
@@ -1494,7 +1494,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
                                                       branch.type ===
                                                         "warehouse"
                                                         ? "bg-brand/10 text-brand"
-                                                        : "bg-warning/10 text-warning",
+                                                        : "bg-[var(--seen-warning-bg)] text-warning",
                                                     )}
                                                   >
                                                     {branch.type ===
@@ -1654,7 +1654,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
               className="bg-surface w-full max-w-md rounded-3xl shadow-2xl relative z-10 overflow-hidden border border-border p-8"
             >
               <div className="flex flex-col items-center text-center space-y-6">
-                <div className="p-4 bg-danger/10 text-danger rounded-full shadow-lg shadow-danger/5">
+                <div className="p-4 bg-[var(--seen-danger-bg)] text-danger rounded-full shadow-lg shadow-danger/5">
                   <AlertTriangle size={32} />
                 </div>
                 <div className="space-y-2 col-span-1">
@@ -3330,7 +3330,7 @@ const ProductImportModal = ({
             </>
           )}
           {step === 'result' && (
-            <button
+            <button aria-label={t('common.close')}
               onClick={onClose}
               className="px-6 py-3 bg-brand hover:bg-brand/90 text-white rounded-xl font-bold text-sm transition-all shadow-lg shadow-brand/20 cursor-pointer"
             >
@@ -3917,7 +3917,7 @@ const EditItemModal = ({ onClose, tenantId, item, branches }: any) => {
           <ProductVariantsSection tenantId={tenantId} itemId={item.id} branches={branches} baseSku={item.sku} />
 
           <div className="sticky bottom-0 bg-surface -mx-4 main-640:-mx-8 -mb-4 main-640:-mb-8 px-4 main-640:px-8 pb-4 main-640:pb-8 flex flex-col main-640:flex-row main-640:justify-end gap-3 main-640:gap-4 pt-6 border-t border-border">
-            <button
+            <button aria-label={t('common.close')}
               type="button"
               onClick={onClose}
               className="w-full main-640:w-auto px-8 py-3 bg-surface text-content font-bold rounded-2xl border-2 border-border hover:bg-surface-muted transition-colors order-2 main-640:order-1"

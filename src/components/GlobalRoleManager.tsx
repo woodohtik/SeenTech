@@ -636,8 +636,8 @@ export default function GlobalRoleManager() {
             className={cn(
               "fixed top-6 left-6 z-[9999] px-6 py-4 rounded-2xl shadow-xl flex items-center gap-3 border font-black text-sm",
               toast.type === 'success'
-                ? 'bg-success/10 text-success border-success/20'
-                : 'bg-danger/10 text-danger border-danger/20'
+                ? 'bg-[var(--seen-success-bg)] text-success border-success/20'
+                : 'bg-[var(--seen-danger-bg)] text-danger border-danger/20'
             )}
           >
             {toast.type === 'success' ? (

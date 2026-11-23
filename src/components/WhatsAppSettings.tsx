@@ -135,13 +135,13 @@ export default function WhatsAppSettings() {
 
       {/* Header */}
       <div className={cn("flex flex-col main-640:flex-row items-center gap-4 border-b border-border pb-6 main-640:pb-8", isRtl ? "main-640:items-start text-center main-640:text-right" : "main-640:items-start text-center main-640:text-left")}>
-        <div className="p-4 bg-success/10 text-success rounded-2xl shadow-inner shrink-0">
+        <div className="p-4 bg-[var(--seen-success-bg)] text-success rounded-2xl shadow-inner shrink-0">
           <MessageSquare size={32} />
         </div>
         <div className="flex-1">
           <div className="flex flex-col main-640:flex-row main-640:items-center justify-between gap-2">
             <h3 className="text-2xl font-black text-content">{t('settings_page.whatsapp.title')}</h3>
-            <span className="text-sm font-black text-success bg-success/10 px-3 py-1 rounded-full self-center main-640:self-auto">
+            <span className="text-sm font-black text-success bg-[var(--seen-success-bg)] px-3 py-1 rounded-full self-center main-640:self-auto">
               {t('settings_page.whatsapp.status_tag')}
             </span>
           </div>
@@ -244,7 +244,7 @@ export default function WhatsAppSettings() {
               <Info size={14} className="text-success" />
               {t('settings_page.whatsapp.preview_label')}
             </span>
-            <span className="text-sm font-bold bg-success/10 text-success px-2 py-0.5 rounded-full">
+            <span className="text-sm font-bold bg-[var(--seen-success-bg)] text-success px-2 py-0.5 rounded-full">
               {t('settings_page.whatsapp.preview_badge')}
             </span>
           </div>
@@ -279,7 +279,7 @@ export default function WhatsAppSettings() {
             <button
               type="button"
               onClick={() => setShowTestModal(true)}
-              className="flex items-center justify-center gap-2 px-4 py-3 bg-success/10 hover:bg-success/20 text-success rounded-xl text-sm font-black transition-all w-full main-640:w-auto"
+              className="flex items-center justify-center gap-2 px-4 py-3 bg-[var(--seen-success-bg)] hover:bg-success/20 text-success rounded-xl text-sm font-black transition-all w-full main-640:w-auto"
             >
               <Send size={16} />
               <span>{t('settings_page.whatsapp.test_send_btn')}</span>
