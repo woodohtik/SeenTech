@@ -1,0 +1,128 @@
+[
+ {
+  "place": "order",
+  "width": 360,
+  "state": "closed",
+  "visible": 7,
+  "maxGapPx": 8
+ },
+ {
+  "place": "order",
+  "width": 360,
+  "state": "open",
+  "visible": 15,
+  "maxGapPx": 8
+ },
+ {
+  "place": "customer",
+  "width": 360,
+  "state": "closed",
+  "visible": 7,
+  "maxGapPx": 8
+ },
+ {
+  "place": "customer",
+  "width": 360,
+  "state": "open",
+  "visible": 15,
+  "maxGapPx": 8
+ },
+ {
+  "place": "public",
+  "width": 360,
+  "state": "closed",
+  "visible": 7,
+  "maxGapPx": 8
+ },
+ {
+  "place": "public",
+  "width": 360,
+  "state": "open",
+  "visible": 15,
+  "maxGapPx": 8
+ },
+ {
+  "place": "order",
+  "width": 768,
+  "state": "closed",
+  "visible": 7,
+  "maxGapPx": 6
+ },
+ {
+  "place": "order",
+  "width": 768,
+  "state": "open",
+  "visible": 15,
+  "maxGapPx": 6
+ },
+ {
+  "place": "customer",
+  "width": 768,
+  "state": "closed",
+  "visible": 7,
+  "maxGapPx": 6
+ },
+ {
+  "place": "customer",
+  "width": 768,
+  "state": "open",
+  "visible": 15,
+  "maxGapPx": 6
+ },
+ {
+  "place": "public",
+  "width": 768,
+  "state": "closed",
+  "visible": 7,
+  "maxGapPx": 6
+ },
+ {
+  "place": "public",
+  "width": 768,
+  "state": "open",
+  "visible": 15,
+  "maxGapPx": 6
+ },
+ {
+  "place": "order",
+  "width": 1280,
+  "state": "closed",
+  "visible": 7,
+  "maxGapPx": 6
+ },
+ {
+  "place": "order",
+  "width": 1280,
+  "state": "open",
+  "visible": 15,
+  "maxGapPx": 6
+ },
+ {
+  "place": "customer",
+  "width": 1280,
+  "state": "closed",
+  "visible": 7,
+  "maxGapPx": 6
+ },
+ {
+  "place": "customer",
+  "width": 1280,
+  "state": "open",
+  "visible": 15,
+  "maxGapPx": 6
+ },
+ {
+  "place": "public",
+  "width": 1280,
+  "state": "closed",
+  "visible": 7,
+  "maxGapPx": 6
+ },
+ {
+  "place": "public",
+  "width": 1280,
+  "state": "open",
+  "visible": 15,
+  "maxGapPx": 6
+ }
+]

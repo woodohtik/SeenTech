@@ -1,8 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import {
+  ADVANCED_MEASUREMENT_KEYS,
   ALL_NUMERIC_MEASUREMENT_KEYS,
+  BASIC_MEASUREMENT_KEYS,
   MEASUREMENT_FIELDS,
   MEASUREMENT_KEYS,
+  countAdvancedValues,
+  hasAdvancedValues,
   measurementRows,
 } from './measurementFields';
 import { customerSchema } from '../lib/validations';
@@ -60,5 +64,28 @@ describe('both validators accept every key in the list', () => {
     const result = validateMeasurementsPayload({ ...allFifteen, midSleeveWidth: 14 });
     expect(result.ok).toBe(true);
     if (result.ok) expect(result.value).toMatchObject(allFifteen);
+  });
+});
+
+// seen-measurements-basic-advanced-task.md, acceptance 1.
+describe('basic and advanced measurements', () => {
+  it('seven basic and eight advanced, together the fifteen in the same order', () => {
+    expect(BASIC_MEASUREMENT_KEYS).toEqual(['length', 'shoulder', 'sleeve', 'handWidth', 'cuffLength', 'chest', 'neck']);
+    expect(ADVANCED_MEASUREMENT_KEYS).toEqual(['sleeveCuff', 'sleeveTopWidth', 'sleeveHem', 'cuffWidth', 'waist', 'bottomHem', 'bottomWidth', 'neckFold']);
+    const merged = MEASUREMENT_KEYS.filter((k) => BASIC_MEASUREMENT_KEYS.includes(k) || ADVANCED_MEASUREMENT_KEYS.includes(k));
+    expect(merged).toEqual(MEASUREMENT_KEYS);
+    expect(new Set([...BASIC_MEASUREMENT_KEYS, ...ADVANCED_MEASUREMENT_KEYS]).size).toBe(15);
+  });
+
+  it('the mid-sleeve width stays out of entry', () => {
+    expect(MEASUREMENT_KEYS).not.toContain('midSleeveWidth');
+    expect(MEASUREMENT_FIELDS.every((f) => f.tier === 'basic' || f.tier === 'advanced')).toBe(true);
+  });
+
+  it('counts advanced values: a stored waist opens the section, zeros and basics do not', () => {
+    expect(hasAdvancedValues({ waist: 90 })).toBe(true);
+    expect(hasAdvancedValues({ length: 145, chest: 110, waist: 0 })).toBe(false);
+    expect(hasAdvancedValues(null)).toBe(false);
+    expect(countAdvancedValues({ waist: 90, neckFold: 41, bottomHem: 5, length: 145 })).toBe(3);
   });
 });

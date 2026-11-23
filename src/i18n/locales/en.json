@@ -1907,6 +1907,9 @@
     "your_referrals": "Your referrals ({{n}})"
   },
   "measurements": {
+    "advanced_show": "Advanced measurements ({{count}})",
+    "advanced_hide": "Hide advanced measurements",
+    "advanced_filled": "{{count}} filled",
     "bottomWidth": "Bottom width",
     "chest": "Chest width",
     "chestStyle": "Chest",

@@ -1,0 +1,65 @@
+[
+ {
+  "place": "order",
+  "width": 360,
+  "state": "all",
+  "visible": 15,
+  "maxGapPx": 8
+ },
+ {
+  "place": "customer",
+  "width": 360,
+  "state": "all",
+  "visible": 15,
+  "maxGapPx": 8
+ },
+ {
+  "place": "public",
+  "width": 360,
+  "state": "all",
+  "visible": 15,
+  "maxGapPx": 8
+ },
+ {
+  "place": "order",
+  "width": 768,
+  "state": "all",
+  "visible": 15,
+  "maxGapPx": 15
+ },
+ {
+  "place": "customer",
+  "width": 768,
+  "state": "all",
+  "visible": 15,
+  "maxGapPx": 15
+ },
+ {
+  "place": "public",
+  "width": 768,
+  "state": "all",
+  "visible": 15,
+  "maxGapPx": 8
+ },
+ {
+  "place": "order",
+  "width": 1280,
+  "state": "all",
+  "visible": 15,
+  "maxGapPx": 15
+ },
+ {
+  "place": "customer",
+  "width": 1280,
+  "state": "all",
+  "visible": 15,
+  "maxGapPx": 15
+ },
+ {
+  "place": "public",
+  "width": 1280,
+  "state": "all",
+  "visible": 15,
+  "maxGapPx": 8
+ }
+]

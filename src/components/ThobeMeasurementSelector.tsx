@@ -1,7 +1,7 @@
-import React, { useState, useRef } from 'react';
+import React, { useEffect, useMemo, useState, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'motion/react';
-import { Lightbulb, Mic } from 'lucide-react';
+import { ChevronDown, Lightbulb, Mic } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { Measurements } from '../types';
 import Branding from './Branding';
@@ -11,7 +11,9 @@ import { MeasurementUnit, cmToDisplayUnit, displayUnitToCm, unitLabelKey } from 
 import { FractionPicker } from './ui/FractionPicker';
 import { useDirection } from '../lib/direction';
 import {
+  ADVANCED_MEASUREMENT_KEYS,
   MEASUREMENT_FIELDS,
+  countAdvancedValues,
   measurementHintKey,
   measurementLabelKey,
   type MeasurementKey,
@@ -29,17 +31,43 @@ interface ThobeMeasurementSelectorProps {
    * figure, recomputed on every change. Leave it out on the customer form.
    */
   fabricEstimate?: { settings: FabricEstimateSettings; fabricWidthCm?: number | null };
+  /**
+   * Whether the eight advanced measurements are on screen
+   * (seen-measurements-basic-advanced-task.md). Leave both out and the
+   * selector decides by itself: open when any advanced value is stored, or
+   * when this device last left it open.
+   */
+  showAdvanced?: boolean;
+  onShowAdvancedChange?: (show: boolean) => void;
+  /** Remember the open/closed choice on this device. Off on the customer's own link. */
+  rememberAdvanced?: boolean;
+}
+
+/** This device's last choice for the advanced section. */
+export const SHOW_ADVANCED_KEY = 'seen.measurements.showAdvanced';
+function readShowAdvanced(): boolean {
+  try { return localStorage.getItem(SHOW_ADVANCED_KEY) === '1'; } catch { return false; }
+}
+function writeShowAdvanced(show: boolean) {
+  try { localStorage.setItem(SHOW_ADVANCED_KEY, show ? '1' : '0'); } catch { /* no storage: the choice lasts for this visit */ }
 }
 
 type ThobePart = MeasurementKey;
 
 // Each field's row inside its own column (body on the right, sleeve and cuff
-// on the left), in list order. DOM order stays the list order so Tab follows it.
-const FIELD_ROW: Record<string, number> = {};
-{
+// on the left), in list order, counting only the fields on screen -- so the
+// columns close up when the advanced ones are hidden. DOM order stays the
+// list order so Tab follows it.
+function fieldRows(showAdvanced: boolean) {
+  const row: Record<string, number> = {};
   const next = { right: 1, left: 1 };
-  for (const field of MEASUREMENT_FIELDS) FIELD_ROW[field.key] = next[field.side]++;
+  for (const field of MEASUREMENT_FIELDS) {
+    if (field.tier === 'advanced' && !showAdvanced) continue;
+    row[field.key] = next[field.side]++;
+  }
+  return { row, rows: Math.max(next.right, next.left) - 1 };
 }
+const ADVANCED = new Set<string>(ADVANCED_MEASUREMENT_KEYS);
 const ZONE_OF = Object.fromEntries(MEASUREMENT_FIELDS.map((f) => [f.key, f.zone])) as Record<ThobePart, MeasurementZone>;
 const ZONE_KEYS = MEASUREMENT_FIELDS.reduce((acc, f) => {
   (acc[f.zone] ||= []).push(f.key);
@@ -62,7 +90,10 @@ const ZONE_LABEL_AT: Record<MeasurementZone, { x: number; y: number }> = {
   bottomHem: { x: 200, y: 752 },
 };
 
-export default function ThobeMeasurementSelector({ values, onChange, readOnly = false, measurementUnit, fabricEstimate }: ThobeMeasurementSelectorProps) {
+export default function ThobeMeasurementSelector({
+  values, onChange, readOnly = false, measurementUnit, fabricEstimate,
+  showAdvanced: showAdvancedProp, onShowAdvancedChange, rememberAdvanced = true,
+}: ThobeMeasurementSelectorProps) {
   const { t } = useTranslation();
   const { isRtl } = useDirection();
   const highlightColor = "#0F6E96";
@@ -82,12 +113,44 @@ export default function ThobeMeasurementSelector({ values, onChange, readOnly = 
   const inputRefs = useRef<Record<string, HTMLInputElement | null>>({});
   const activeZone = activePart ? ZONE_OF[activePart] : null;
 
+  // The advanced section. Open when the parent says so; otherwise when the
+  // person opened or closed it here, else when any advanced value is stored
+  // (question 1: stored data is never out of sight) or this device last left
+  // it open (question 2).
+  const advancedFilled = countAdvancedValues(values);
+  const [rememberedOpen] = useState(() => (rememberAdvanced ? readShowAdvanced() : false));
+  const [ownChoice, setOwnChoice] = useState<boolean | null>(null);
+  const showAdvanced = showAdvancedProp ?? ownChoice ?? (advancedFilled > 0 || rememberedOpen);
+  const { row: fieldRow, rows } = useMemo(() => fieldRows(showAdvanced), [showAdvanced]);
+  const [focusAfterOpen, setFocusAfterOpen] = useState<ThobePart | null>(null);
+  const setShowAdvanced = (show: boolean, focus?: ThobePart) => {
+    if (showAdvancedProp === undefined) setOwnChoice(show);
+    onShowAdvancedChange?.(show);
+    if (rememberAdvanced) writeShowAdvanced(show);
+    if (show && focus) setFocusAfterOpen(focus);
+  };
+  // After opening, focus goes to the field asked for (the first advanced one
+  // from the button, or the one whose zone was pressed on the drawing).
+  useEffect(() => {
+    if (!focusAfterOpen || !showAdvanced) return;
+    inputRefs.current[focusAfterOpen]?.focus();
+    setActivePart(focusAfterOpen);
+    setFocusAfterOpen(null);
+  }, [focusAfterOpen, showAdvanced]);
+  const isShown = (key: ThobePart) => showAdvanced || !ADVANCED.has(key);
+
   // A zone shared by two fields (the two sleeve lengths, the two neck widths)
   // sends focus to whichever of them is still empty.
   const handleZoneClick = (zone: MeasurementZone) => {
     if (readOnly) return;
-    const keys = ZONE_KEYS[zone];
-    const target = keys.find((key) => !(values as any)[key]) ?? keys[0];
+    const shown = ZONE_KEYS[zone].filter(isShown);
+    // A zone whose fields are all advanced, while they are hidden: open the
+    // section and go to its field.
+    if (shown.length === 0) {
+      setShowAdvanced(true, ZONE_KEYS[zone][0]);
+      return;
+    }
+    const target = shown.find((key) => !(values as any)[key]) ?? shown[0];
     setActivePart(target);
     inputRefs.current[target]?.focus();
   };
@@ -97,7 +160,8 @@ export default function ThobeMeasurementSelector({ values, onChange, readOnly = 
     className: "cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand",
     role: "button",
     tabIndex: -1,
-    'aria-label': ZONE_KEYS[zone].map((key) => t(measurementLabelKey(key))).join(' / '),
+    'aria-label': ZONE_KEYS[zone].filter((key) => readOnly || isShown(key)).map((key) => t(measurementLabelKey(key))).join(' / ')
+      || ZONE_KEYS[zone].map((key) => t(measurementLabelKey(key))).join(' / '),
     onClick: () => handleZoneClick(zone),
     animate: { opacity: activeZone && activeZone !== zone ? 0.3 : 1 },
   });
@@ -146,17 +210,23 @@ export default function ThobeMeasurementSelector({ values, onChange, readOnly = 
         </div>
       )}
       {wizardOpen && (
-        <VoiceMeasurementWizard values={values} onChange={onChange} onClose={() => setWizardOpen(false)} measurementUnit={measurementUnit} />
+        <VoiceMeasurementWizard values={values} onChange={onChange} onClose={() => setWizardOpen(false)} measurementUnit={measurementUnit} includeAdvanced={showAdvanced} />
       )}
 
-      <div className={cn(
-        !readOnly && "grid grid-cols-2 gap-2 md:grid-cols-[minmax(0,1fr)_minmax(170px,230px)_minmax(0,1fr)] md:grid-rows-8 md:gap-x-4 md:gap-y-1.5 md:items-center",
-        readOnly && "w-full"
-      )}>
+      <div
+        // From md up: the fields sit packed in the middle rows, with a
+        // stretchable row above and below, so a short list (seven fields)
+        // closes up beside the figure instead of spreading over its height.
+        style={{ '--rows': rows, '--rows-total': rows + 2 } as React.CSSProperties}
+        className={cn(
+          !readOnly && "grid grid-cols-2 gap-2 md:grid-cols-[minmax(0,1fr)_minmax(170px,230px)_minmax(0,1fr)] md:grid-rows-[1fr_repeat(var(--rows),auto)_1fr] md:gap-x-4 md:gap-y-1.5 md:items-center",
+          readOnly && "w-full"
+        )}
+      >
       {/* Interactive SVG Section */}
       <div className={cn(
         "relative w-full mx-auto flex flex-col items-center select-none touch-none",
-        readOnly ? "max-w-[400px]" : "col-span-2 md:col-span-1 md:col-start-2 md:row-start-1 md:row-span-8"
+        readOnly ? "max-w-[400px]" : "col-span-2 md:col-span-1 md:col-start-2 md:row-start-1 md:row-span-[var(--rows-total)]"
       )}>
         <svg
           viewBox="0 0 400 800"
@@ -382,20 +452,25 @@ export default function ThobeMeasurementSelector({ values, onChange, readOnly = 
       </div>
 
       {/* Input fields in list order; placed around the figure from md up */}
-      {!readOnly && MEASUREMENT_FIELDS.map(({ key: part, side }) => {
+      {!readOnly && MEASUREMENT_FIELDS.map(({ key: part, side, tier }) => {
         const isActive = activePart === part;
         const stored = (values as any)[part];
         const hintOpen = isInstructionMode && activeHint === part;
+        const hidden = !isShown(part);
         return (
           <div
             key={part}
+            id={`thobe-field-${part}`}
+            // Hidden, not removed: the button's aria-controls points at it, and the value stays in the form.
+            hidden={hidden}
             onBlur={(e) => {
               // Keep the field active while focus moves to its own fraction buttons.
               if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setActivePart(null);
             }}
-            style={{ '--field-row': FIELD_ROW[part] } as React.CSSProperties}
+            style={{ '--field-row': (fieldRow[part] ?? 1) + 1 } as React.CSSProperties}
             className={cn(
               "relative rounded-xl border px-2.5 py-1 transition-colors md:row-start-[var(--field-row)]",
+              tier === 'advanced' && "motion-safe:animate-[seen-enter-fade_200ms_cubic-bezier(.2,.8,.2,1)]",
               isActive ? "border-brand bg-brand/5" : "border-border bg-surface hover:border-brand/30",
               sideColumn(side)
             )}
@@ -478,6 +553,28 @@ export default function ThobeMeasurementSelector({ values, onChange, readOnly = 
         );
       })}
       </div>
+
+      {!readOnly && (
+        <div className="mt-3 flex justify-center border-t border-border pt-3">
+          <button
+            type="button"
+            aria-expanded={showAdvanced}
+            aria-controls={ADVANCED_MEASUREMENT_KEYS.map((key) => `thobe-field-${key}`).join(' ')}
+            onClick={() => setShowAdvanced(!showAdvanced, showAdvanced ? undefined : ADVANCED_MEASUREMENT_KEYS[0])}
+            className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-[8px] border border-border bg-surface px-5 text-base font-semibold text-brand hover:bg-surface-muted sm:w-auto"
+          >
+            <span>
+              {showAdvanced
+                ? t('measurements.advanced_hide')
+                : t('measurements.advanced_show', { count: ADVANCED_MEASUREMENT_KEYS.length })}
+              {!showAdvanced && advancedFilled > 0 && (
+                <span className="font-normal text-content-muted"> · {t('measurements.advanced_filled', { count: advancedFilled })}</span>
+              )}
+            </span>
+            <ChevronDown size={18} aria-hidden="true" className={cn('shrink-0 transition-transform duration-200 motion-reduce:transition-none', showAdvanced && 'rotate-180')} />
+          </button>
+        </div>
+      )}
     </div>
   );
 }

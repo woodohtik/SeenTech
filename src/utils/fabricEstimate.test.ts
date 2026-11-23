@@ -94,3 +94,12 @@ describe('normalizeFabricEstimateSettings', () => {
     });
   });
 });
+
+// seen-measurements-basic-advanced-task.md, acceptance 5.
+describe('with the basic measurements only', () => {
+  it('estimates from the length and the plain sleeve, the advanced ones counting as zero', () => {
+    const basicOnly = { length: 145, shoulder: 48, sleeve: 62, handWidth: 18, cuffLength: 25, chest: 110, neck: 40 };
+    // 2*145 + 62 + 25 = 377 -> 380
+    expect(estimateFabricMeters(fabricInputFromMeasurements(basicOnly, 150))).toBe(3.8);
+  });
+});

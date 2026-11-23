@@ -51,28 +51,52 @@ export interface MeasurementField {
   zone: MeasurementZone;
   /** Upper bound in cm accepted by the form schema. */
   maxCm: number;
+  /**
+   * basic: always on screen. advanced: behind the "advanced measurements"
+   * button (founder decision, 23 Nov 2026 -- the seven of before 19 Nov,
+   * less the mid-sleeve width, are basic). Display only: all fifteen are
+   * accepted, kept and shown wherever a value is stored.
+   */
+  tier: 'basic' | 'advanced';
 }
 
 /** In the founder's order, 1 to 15. Tab and the voice wizard follow it. */
 export const MEASUREMENT_FIELDS: readonly MeasurementField[] = [
-  { key: 'length', side: 'right', zone: 'length', maxCm: 300 },
-  { key: 'shoulder', side: 'right', zone: 'shoulder', maxCm: 100 },
-  { key: 'sleeveCuff', side: 'left', zone: 'sleeve', maxCm: 150 },
-  { key: 'sleeve', side: 'left', zone: 'sleeve', maxCm: 150 },
-  { key: 'sleeveTopWidth', side: 'left', zone: 'sleeveTop', maxCm: 100 },
-  { key: 'handWidth', side: 'left', zone: 'wrist', maxCm: 100 },
-  { key: 'sleeveHem', side: 'left', zone: 'cuff', maxCm: 50 },
-  { key: 'cuffLength', side: 'left', zone: 'cuff', maxCm: 100 },
-  { key: 'cuffWidth', side: 'left', zone: 'cuffWidth', maxCm: 50 },
-  { key: 'waist', side: 'right', zone: 'waist', maxCm: 200 },
-  { key: 'chest', side: 'right', zone: 'chest', maxCm: 200 },
-  { key: 'bottomHem', side: 'right', zone: 'bottomHem', maxCm: 50 },
-  { key: 'bottomWidth', side: 'right', zone: 'bottomWidth', maxCm: 200 },
-  { key: 'neck', side: 'right', zone: 'neck', maxCm: 100 },
-  { key: 'neckFold', side: 'right', zone: 'neck', maxCm: 100 },
+  { key: 'length', side: 'right', zone: 'length', maxCm: 300, tier: 'basic' },
+  { key: 'shoulder', side: 'right', zone: 'shoulder', maxCm: 100, tier: 'basic' },
+  { key: 'sleeveCuff', side: 'left', zone: 'sleeve', maxCm: 150, tier: 'advanced' },
+  { key: 'sleeve', side: 'left', zone: 'sleeve', maxCm: 150, tier: 'basic' },
+  { key: 'sleeveTopWidth', side: 'left', zone: 'sleeveTop', maxCm: 100, tier: 'advanced' },
+  { key: 'handWidth', side: 'left', zone: 'wrist', maxCm: 100, tier: 'basic' },
+  { key: 'sleeveHem', side: 'left', zone: 'cuff', maxCm: 50, tier: 'advanced' },
+  { key: 'cuffLength', side: 'left', zone: 'cuff', maxCm: 100, tier: 'basic' },
+  { key: 'cuffWidth', side: 'left', zone: 'cuffWidth', maxCm: 50, tier: 'advanced' },
+  { key: 'waist', side: 'right', zone: 'waist', maxCm: 200, tier: 'advanced' },
+  { key: 'chest', side: 'right', zone: 'chest', maxCm: 200, tier: 'basic' },
+  { key: 'bottomHem', side: 'right', zone: 'bottomHem', maxCm: 50, tier: 'advanced' },
+  { key: 'bottomWidth', side: 'right', zone: 'bottomWidth', maxCm: 200, tier: 'advanced' },
+  { key: 'neck', side: 'right', zone: 'neck', maxCm: 100, tier: 'basic' },
+  { key: 'neckFold', side: 'right', zone: 'neck', maxCm: 100, tier: 'advanced' },
 ];
 
 export const MEASUREMENT_KEYS: readonly MeasurementKey[] = MEASUREMENT_FIELDS.map((f) => f.key);
+
+/** The seven always on screen, in list order. */
+export const BASIC_MEASUREMENT_KEYS: readonly MeasurementKey[] = MEASUREMENT_FIELDS.filter((f) => f.tier === 'basic').map((f) => f.key);
+/** The eight behind the "advanced measurements" button, in list order. */
+export const ADVANCED_MEASUREMENT_KEYS: readonly MeasurementKey[] = MEASUREMENT_FIELDS.filter((f) => f.tier === 'advanced').map((f) => f.key);
+
+/** How many advanced measurements carry a value. */
+export function countAdvancedValues(measurements: unknown): number {
+  const source = (measurements && typeof measurements === 'object' ? measurements : {}) as Record<string, unknown>;
+  return ADVANCED_MEASUREMENT_KEYS.filter((key) => {
+    const value = Number(source[key]);
+    return Number.isFinite(value) && value > 0;
+  }).length;
+}
+
+/** Whether any advanced measurement carries a value: then the section opens on its own, so stored data is never out of sight. */
+export const hasAdvancedValues = (measurements: unknown): boolean => countAdvancedValues(measurements) > 0;
 
 /**
  * Measurement sets by activity (seen-verticals-readiness-task.md Phase 4):

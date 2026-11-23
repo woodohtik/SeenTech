@@ -7,7 +7,7 @@ import { cn } from '../lib/utils';
 import { Measurements } from '../types';
 import { useSpeechRecognition } from '../hooks/useSpeechRecognition';
 import { parseArabicNumber } from '../utils/parseArabicNumber';
-import { ThobePart, getNextMeasurementStep } from '../utils/measurementWizardSteps';
+import { ThobePart, getNextMeasurementStep, measurementWizardOrder } from '../utils/measurementWizardSteps';
 import { measurementLabelKey } from '../constants/measurementFields';
 import { MeasurementUnit, displayUnitToCm, cmToDisplayUnit } from '../utils/measurementUnits';
 import { FractionPicker } from './ui/FractionPicker';
@@ -22,13 +22,17 @@ export interface VoiceMeasurementWizardProps {
   onChange: (values: Measurements) => void;
   onClose: () => void;
   measurementUnit: MeasurementUnit;
+  /** Read the eight advanced measurements too: true when their section is open on screen. */
+  includeAdvanced?: boolean;
 }
 
 // How long the "✓ label: value" confirmation stays tappable before the
 // wizard auto-advances to the next field.
 const CONFIRM_DISPLAY_MS = 1500;
 
-export default function VoiceMeasurementWizard({ values, onChange, onClose, measurementUnit }: VoiceMeasurementWizardProps) {
+export default function VoiceMeasurementWizard({ values, onChange, onClose, measurementUnit, includeAdvanced = false }: VoiceMeasurementWizardProps) {
+  // The fields on screen, in list order (seen-measurements-basic-advanced-task.md, question 3).
+  const order = measurementWizardOrder(includeAdvanced);
   const { t } = useTranslation();
   const { isListening, transcript, error, start, stop } = useSpeechRecognition();
 
@@ -63,7 +67,7 @@ export default function VoiceMeasurementWizard({ values, onChange, onClose, meas
   // prompt would start listening on top of the next one.
   const promptIdRef = useRef(0);
 
-  const part = getNextMeasurementStep(stepIndex);
+  const part = getNextMeasurementStep(stepIndex, order);
 
   // On mount, and whenever stepIndex advances to a new part: speak the
   // Arabic prompt, then start listening once speech ends (or immediately,
@@ -77,7 +81,7 @@ export default function VoiceMeasurementWizard({ values, onChange, onClose, meas
     setRetryError(null);
     setManualEditPart(null);
 
-    const nextPart = getNextMeasurementStep(stepIndex);
+    const nextPart = getNextMeasurementStep(stepIndex, order);
     currentPartRef.current = nextPart;
 
     if (!nextPart) {

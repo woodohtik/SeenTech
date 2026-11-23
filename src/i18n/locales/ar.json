@@ -1907,6 +1907,9 @@
     "your_referrals": "إحالاتك ({{n}})"
   },
   "measurements": {
+    "advanced_show": "مقاسات متقدمة ({{count}})",
+    "advanced_hide": "إخفاء المقاسات المتقدمة",
+    "advanced_filled": "{{count}} مُدخلة",
     "bottomWidth": "وسع أسفل",
     "chest": "وسع الصدر",
     "chestStyle": "الصدر",

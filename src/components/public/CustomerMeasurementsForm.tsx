@@ -181,6 +181,9 @@ export default function CustomerMeasurementsForm({ token }: { token: string }) {
                   setSaved(false);
                 }}
                 measurementUnit={measurementUnit}
+                // The customer's own phone: the advanced section starts closed
+                // unless a value is stored there; no choice is remembered.
+                rememberAdvanced={false}
               />
             </div>
 

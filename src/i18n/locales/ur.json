@@ -1907,6 +1907,9 @@
     "your_referrals": "آپ کی ریفرلز ({{n}})"
   },
   "measurements": {
+    "advanced_show": "اضافی پیمائشیں ({{count}})",
+    "advanced_hide": "اضافی پیمائشیں چھپائیں",
+    "advanced_filled": "{{count}} درج",
     "bottomWidth": "نچلی چوڑائی",
     "chest": "سینے کی چوڑائی",
     "chestStyle": "سینہ",
