@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { downloadFile, exportTenantData, toCsv } from '../services/tenantExportService';
 import { 
   CheckCircle, 
   XCircle, 
@@ -546,6 +547,31 @@ export default function AdminTailors() {
     }
   };
 
+  // P5 (PLATFORM-08): a shop's records, saved by the server and downloaded --
+  // required before a permanent delete.
+  const [exportingTenantId, setExportingTenantId] = useState<string | null>(null);
+  const handleExportTenant = async (tenant: Tenant) => {
+    setExportingTenantId(tenant.id);
+    try {
+      await exportTenantData(tenant.id, tenant.name);
+      showToast(t('saas.tenants.export_done'), 'success');
+    } catch (err) {
+      console.error('Error exporting tenant:', err);
+      showToast(t('saas.tenants.export_failed'), 'error');
+    } finally {
+      setExportingTenantId(null);
+    }
+  };
+
+  const handleExportTenantList = () => {
+    const rows = tenants.map((tn) => ({
+      id: tn.id, name: tn.name, owner_email: tn.ownerEmail, plan: tn.planId,
+      created_at: tn.createdAt, trashed_at: tn.trashedAt || '',
+    }));
+    downloadFile(`seen-tenants-${new Date().toISOString().slice(0, 10)}.csv`,
+      toCsv(rows, ['id', 'name', 'owner_email', 'plan', 'created_at', 'trashed_at']), 'text/csv;charset=utf-8');
+  };
+
   const handleRestoreTenant = (tenant: Tenant) => {
     if (userRole !== 'super_admin') {
       showToast(t('saas.unauthorized_action'), 'error');
@@ -619,7 +645,9 @@ export default function AdminTailors() {
       });
     } catch (err) {
       console.error('Error permanently deleting tenant:', err);
-      showToast(t('saas.tenants.permanent_delete_failed', 'تعذّر الحذف النهائي'), 'error');
+      // P5 (PLATFORM-08): "export first" is the server's own words -- show them.
+      const e = err as { code?: string; message?: string };
+      showToast(e?.code === '22023' && e.message ? e.message : t('saas.tenants.permanent_delete_failed', 'تعذّر الحذف النهائي'), 'error');
     } finally {
       setDeletingTenantId(null);
     }
@@ -974,7 +1002,11 @@ export default function AdminTailors() {
                 {t('saas.tenants.trash_bin', 'سلة المهملات')} ({tenants.filter(t => !!t.trashedAt).length})
               </button>
 
-              <button className="px-6 py-3 bg-surface-muted border border-border rounded-2xl font-bold text-sm flex items-center gap-2 hover:bg-border transition-all">
+              <button
+                type="button"
+                onClick={handleExportTenantList}
+                className="px-6 py-3 bg-surface-muted border border-border rounded-2xl font-bold text-sm flex items-center gap-2 hover:bg-border transition-all"
+              >
                 <Download size={18} />
                 {t('saas.tenants.export_data')}
               </button>
@@ -997,6 +1029,15 @@ export default function AdminTailors() {
                     </p>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
+                    <button
+                      type="button"
+                      disabled={exportingTenantId === tenant.id || deletingTenantId === tenant.id}
+                      onClick={() => handleExportTenant(tenant)}
+                      className="flex items-center gap-1.5 px-4 py-2 bg-surface-muted text-content border border-border rounded-xl text-xs font-black hover:bg-border transition-all disabled:opacity-50"
+                    >
+                      <Download size={14} />
+                      {t('saas.tenants.export_shop_data')}
+                    </button>
                     <button
                       disabled={deletingTenantId === tenant.id}
                       onClick={() => handleRestoreTenant(tenant)}

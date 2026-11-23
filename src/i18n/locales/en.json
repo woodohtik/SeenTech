@@ -364,6 +364,14 @@
       "total": "Amount paid",
       "issuer": "Seen — shop management platform",
       "popup_blocked": "The receipt could not open. Allow pop-ups and try again."
+    },
+    "data": {
+      "title": "Your shop's data",
+      "desc": "Export all of the shop's data (orders, customers, invoices, inventory) in one file, or ask for it to be deleted. Tax invoices are kept for the legal period even after deletion.",
+      "export": "Export the shop's data",
+      "exporting": "Exporting…",
+      "request_delete": "Ask for the shop's data to be deleted",
+      "delete_subject": "Request to delete the shop's data"
     }
   },
   "branches": {

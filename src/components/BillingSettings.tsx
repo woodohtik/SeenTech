@@ -33,6 +33,9 @@ import { previewCoupon, CouponPreview } from '../services/couponService';
 import { getBankTransferSettings, DEFAULT_BANK_TRANSFER_SETTINGS, BankTransferSettings } from '../services/bankTransferService';
 import { useToast } from '../contexts/ToastContext';
 import { printSubscriptionReceipt, subscriptionReceiptHtml, type SubscriptionPayment } from '../lib/subscriptionReceipt';
+import { exportTenantData } from '../services/tenantExportService';
+import { useAuth } from '../contexts/AuthContext';
+import { SUPPORT_EMAIL } from '../constants/support';
 
 import { isRtlLang, localeOf } from '../lib/direction';
 
@@ -44,6 +47,8 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
   const { t, i18n } = useTranslation();
   const isRtl = isRtlLang(i18n.language);
   const { error: toastError } = useToast();
+  const { user } = useAuth();
+  const [exporting, setExporting] = useState(false);
 
   const methodLabel = (m: string | null) =>
     m === 'card' ? t('billing.payment_method_card') : m === 'bank_transfer' ? t('billing.payment_method_bank') : m === 'cash' ? t('billing.payment_method_cash') : t('billing.payment_method_pos');
@@ -607,6 +612,36 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
           </div>
         )}
       </div>
+
+      {/* P5 (PLATFORM-08): the owner's own data -- export it, or ask for it to be deleted. */}
+      {tenant?.owner_uid && user?.id === tenant.owner_uid && (
+        <section className="bg-surface rounded-3xl border border-border p-5 sm:p-6 space-y-3" aria-labelledby="billing-data-heading">
+          <h3 id="billing-data-heading" className="text-base font-black text-content">{t('billing.data.title')}</h3>
+          <p className="text-xs text-content-muted font-bold leading-relaxed">{t('billing.data.desc')}</p>
+          <div className="flex flex-wrap gap-3">
+            <button
+              type="button"
+              disabled={exporting}
+              onClick={async () => {
+                setExporting(true);
+                try { await exportTenantData(tenantId, tenant?.name); }
+                catch (err) { toastError(getFriendlyErrorMessage(err)); }
+                finally { setExporting(false); }
+              }}
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border-2 border-border text-xs font-black text-content hover:border-brand/40 disabled:opacity-50 cursor-pointer"
+            >
+              <Download size={16} />
+              {exporting ? t('billing.data.exporting') : t('billing.data.export')}
+            </button>
+            <a
+              href={`mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(t('billing.data.delete_subject'))}&body=${encodeURIComponent(`${tenant?.name || ''} (${tenantId})`)}`}
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border-2 border-danger/30 text-xs font-black text-danger hover:bg-danger/5"
+            >
+              {t('billing.data.request_delete')}
+            </a>
+          </div>
+        </section>
+      )}
 
       {/* Upgrade / Renewal Modal (إرفاق إثبات الدفع) */}
       {showUpgradeModal && (
