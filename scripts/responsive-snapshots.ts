@@ -82,8 +82,11 @@ function statesFor(width: number, screen: string): State[] {
       : [{ assistant: 'closed', sidebar: 'open' }];
   }
   const out: State[] = [];
+  // A screen that is a window (the new-order form) covers the assistant's
+  // launcher, as it should: it is measured with the assistant closed.
+  const assistants = SCREENS.find((s) => s.key === screen)?.open ? (['closed'] as const) : (['closed', 'open', 'expanded'] as const);
   for (const sidebar of ['open', 'collapsed'] as const) {
-    for (const assistant of ['closed', 'open', 'expanded'] as const) out.push({ assistant, sidebar });
+    for (const assistant of assistants) out.push({ assistant, sidebar });
   }
   return out;
 }
@@ -91,7 +94,8 @@ function statesFor(width: number, screen: string): State[] {
 /** The state shown in the founder's report for a width (acceptance criterion 7). */
 function isReportState(width: number, s: State, screen: string): boolean {
   if (!REPORT_WIDTHS.includes(width)) return false;
-  if (width === 1280) return s.sidebar === 'open' && (s.assistant === 'open' || (screen === 'dashboard' && s.assistant === 'expanded'));
+  const isWindow = !!SCREENS.find((x) => x.key === screen)?.open;
+  if (width === 1280 && !isWindow) return s.sidebar === 'open' && (s.assistant === 'open' || (screen === 'dashboard' && s.assistant === 'expanded'));
   return s.assistant === 'closed' && s.sidebar === 'open';
 }
 
@@ -258,8 +262,12 @@ async function main() {
           try {
             // Each state from a clean screen: close what the last one opened.
             await setAssistant(page, 'closed');
-            // A screen that opens a window: leave it first, so the last state's window is gone.
-            if (screen.open) await goTo(page, { key: 'away', path: '/403' });
+            // After a screen that opens a window, or a state that failed: leave
+            // first, so nothing the last state opened is still on screen.
+            if (screen.open || rows[rows.length - 1]?.error || rows[rows.length - 1]?.screen !== screen.key) {
+              await page.keyboard.press('Escape').catch(() => {});
+              await goTo(page, { key: 'away', path: '/403' });
+            }
             if (width >= 1024) await setSidebar(page, state.sidebar, width);
             await goTo(page, screen);
             await setAssistant(page, state.assistant);

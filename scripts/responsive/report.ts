@@ -55,8 +55,10 @@ function shot(label: string, screen: string, width: number, kind: string) {
 }
 
 function figure(label: string, res: Results, screen: string, slot: typeof SLOTS[number], tag: string) {
-  const src = shot(label, screen, slot.width, slot.kind);
-  const row = rowFor(res, screen, slot.width, slot.kind);
+  // A screen that is a window covers the assistant's launcher: shown without it.
+  const kind = shot(label, screen, slot.width, slot.kind) ? slot.kind : 'page';
+  const src = shot(label, screen, slot.width, kind);
+  const row = rowFor(res, screen, slot.width, kind);
   const meta = row?.report ? `عرض المحتوى ${row.report.mainWidth}px، العنوان ${row.report.title.lines === 1 ? 'سطر واحد' : `${row.report.title.lines} أسطر`}` : '';
   const ok = row && row.failures.length === 0;
   return `<figure class="shot">

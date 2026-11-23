@@ -1,0 +1,489 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>سين — العرض المرن: قبل وبعد</title>
+<style>
+  :root { --ink: #0E2A42; --muted: #686E74; --wash: #EBEDEF; --line: #D6D9DD; --blue: #0F6E96; --ok: #018256; --bad: #CE0500; --surface: #FFFFFF; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--wash); color: var(--ink); font: 400 18px/1.7 "IBM Plex Sans Arabic", "Segoe UI", Tahoma, sans-serif; }
+  h1, h2, h3 { font-family: "Tajawal", "IBM Plex Sans Arabic", sans-serif; line-height: 1.3; margin: 0; }
+  header.top { background: var(--ink); color: #fff; padding: 40px 16px; }
+  header.top .in, main { max-width: 1280px; margin: 0 auto; }
+  header.top h1 { font-size: 36px; font-weight: 800; }
+  header.top p { color: #cfe0f2; margin: 8px 0 0; max-width: 70ch; }
+  main { padding: 24px 16px 64px; }
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 24px; margin-bottom: 24px; }
+  .lead { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr)); }
+  .big { font: 800 44px/1.1 "Tajawal", sans-serif; font-variant-numeric: tabular-nums; }
+  .big small { font-size: 18px; color: var(--muted); font-weight: 500; }
+  table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
+  th, td { text-align: start; padding: 10px 12px; border-bottom: 1px solid var(--line); }
+  thead th { color: var(--muted); font-weight: 600; font-size: 16px; }
+  td { font-weight: 700; }
+  nav.toc { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 24px; }
+  nav.toc a { display: inline-flex; align-items: center; min-height: 44px; padding: 0 16px; border-radius: 9999px; background: var(--surface); border: 1px solid var(--line); color: var(--ink); text-decoration: none; font-weight: 600; }
+  nav.toc a:focus-visible, a:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+  .screen { margin-top: 40px; }
+  .screen > h2 { font-size: 28px; font-weight: 800; margin-bottom: 16px; }
+  .pair { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px; margin-bottom: 16px; }
+  .pair h3 { font-size: 18px; font-weight: 700; margin-bottom: 12px; }
+  .grid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(min(420px, 100%), 1fr)); }
+  figure { margin: 0; }
+  figcaption { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 8px; font-size: 16px; }
+  .tag { display: inline-flex; align-items: center; padding: 2px 10px; border-radius: 6px; font-weight: 700; }
+  .tag.before { background: #f3f4f6; color: var(--muted); }
+  .tag.after { background: #e6f1f6; color: var(--blue); }
+  .state.ok { color: var(--ok); font-weight: 600; }
+  .state.bad { color: var(--bad); font-weight: 600; }
+  img { display: block; max-width: 100%; height: auto; border: 1px solid var(--line); border-radius: 8px; background: #fff; }
+  .meta { margin: 6px 0 0; color: var(--muted); font-size: 16px; }
+  .missing { color: var(--muted); }
+  .note { color: var(--muted); font-size: 16px; margin: 12px 0 0; }
+</style>
+</head>
+<body>
+<header class="top"><div class="in">
+  <h1>العرض المرن في سين: قبل وبعد</h1>
+  <p>كل لقطة من نسخة الفرع نفسها، على بيانات تجريبية ثابتة (لا حساب حقيقي ولا بيانات محل حقيقي). «قبل» من الكود قبل المهمة، و«بعد» من آخر نسخة على الفرع <code>feat/responsive-layout</code>.</p>
+</div></header>
+<main>
+  <section class="card">
+    <h2 style="font-size:28px;margin-bottom:16px">حالتك: لابتوب 1280px والمساعد مفتوح</h2>
+    <div class="lead">
+      <div><div class="big">584px <small>عرض لوحة التحكم قبل</small></div><p class="note">العنوان 2 أسطر. عنصر يخرج من مكانه أو يُقص ×22، كلمة في كل سطر ×8، نص فوق نص ×7، نص أصغر من 14px ×92</p></div>
+      <div><div class="big">1024px <small>عرضها بعد</small></div><p class="note">العنوان سطر واحد. المساعد يطفو فوق الصفحة ولا يضغطها. لا ملاحظات</p></div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2 style="font-size:28px;margin-bottom:16px">الفحوص الآلية على كل الحالات</h2>
+    <p class="note" style="margin:0 0 12px">8 شاشات × 9 عروض × المساعد مغلق/مفتوح/موسّع × القائمة مفتوحة/مطوية، مع عينة بالإنجليزي وفحص 320px. الرقم = عدد الحالات التي فشل فيها الفحص.</p>
+    <table>
+      <thead><tr><th scope="col">الفحص</th><th scope="col">قبل</th><th scope="col">بعد</th></tr></thead>
+      <tbody><tr><th scope="row">نص أصغر من 14px</th><td>321</td><td>0</td></tr><tr><th scope="row">هدف لمس أصغر من 44px</th><td>76</td><td>0</td></tr><tr><th scope="row">عنصر يخرج من مكانه أو يُقص</th><td>61</td><td>0</td></tr><tr><th scope="row">نص فوق نص</th><td>54</td><td>0</td></tr><tr><th scope="row">كلمة في كل سطر</th><td>49</td><td>0</td></tr><tr><th scope="row">حالات فيها ملاحظة واحدة على الأقل</th><td>321 من 329</td><td>0 من 305</td></tr></tbody>
+    </table>
+  </section>
+
+  <nav class="toc" aria-label="الشاشات"><a href="#dashboard">لوحة التحكم</a><a href="#pos">نقطة البيع</a><a href="#orders">الطلبات</a><a href="#order-new">طلب تفصيل جديد</a><a href="#customers">العملاء</a><a href="#inventory">المخزون</a><a href="#reports">التقارير</a><a href="#settings">الإعدادات</a></nav>
+  
+  <section class="screen" id="dashboard">
+    <h2>لوحة التحكم</h2>
+    
+      <div class="pair">
+        <h3>جوال 360px</h3>
+        <div class="grid"><figure class="shot">
+    <figcaption><span class="tag before">قبل</span><span class="state bad">عنصر يخرج من مكانه أو يُقص ×1، نص أصغر من 14px ×43، هدف لمس أصغر من 44px ×12</span></figcaption>
+    <a href="baseline/shots/dashboard-360-rtl-page.jpg" target="_blank" rel="noopener"><img loading="lazy" src="baseline/shots/dashboard-360-rtl-page.jpg" alt="قبل: جوال 360px" width="360"></a>
+    <p class="meta">عرض المحتوى 360px، العنوان سطر واحد</p>
+  </figure><figure class="shot">
+    <figcaption><span class="tag after">بعد</span><span class="state ok">لا ملاحظات</span></figcaption>
+    <a href="after/shots/dashboard-360-rtl-page.jpg" target="_blank" rel="noopener"><img loading="lazy" src="after/shots/dashboard-360-rtl-page.jpg" alt="بعد: جوال 360px" width="360"></a>
+    <p class="meta">عرض المحتوى 360px، العنوان سطر واحد</p>
+  </figure></div>
+      </div>
+      <div class="pair">
+        <h3>تابلت أفقي 1024px</h3>
+        <div class="grid"><figure class="shot">
+    <figcaption><span class="tag before">قبل</span><span class="state bad">عنصر يخرج من مكانه أو يُقص ×2، كلمة في كل سطر ×1، نص فوق نص ×2، نص أصغر من 14px ×94، هدف لمس أصغر من 44px ×8</span></figcaption>
+    <a href="baseline/shots/dashboard-1024-rtl-page.jpg" target="_blank" rel="noopener"><img loading="lazy" src="baseline/shots/dashboard-1024-rtl-page.jpg" alt="قبل: تابلت أفقي 1024px" width="640"></a>
+    <p class="meta">عرض المحتوى 768px، العنوان سطر واحد</p>
+  </figure><figure class="shot">
+    <figcaption><span class="tag after">بعد</span><span class="state ok">لا ملاحظات</span></figcaption>
+    <a href="after/shots/dashboard-1024-rtl-page.jpg" target="_blank" rel="noopener"><img loading="lazy" src="after/shots/dashboard-1024-rtl-page.jpg" alt="بعد: تابلت أفقي 1024px" width="640"></a>
+    <p class="meta">عرض المحتوى 768px، العنوان سطر واحد</p>
+  </figure></div>
+      </div>
+      <div class="pair">
+        <h3>لابتوب 1280px والمساعد مفتوح</h3>
+        <div class="grid"><figure class="shot">
+    <figcaption><span class="tag before">قبل</span><span class="state bad">عنصر يخرج من مكانه أو يُقص ×22، كلمة في كل سطر ×8، نص فوق نص ×7، نص أصغر من 14px ×92</span></figcaption>
+    <a href="baseline/shots/dashboard-1280-rtl-assistant-open.jpg" target="_blank" rel="noopener"><img loading="lazy" src="baseline/shots/dashboard-1280-rtl-assistant-open.jpg" alt="قبل: لابتوب 1280px والمساعد مفتوح" width="640"></a>
+    <p class="meta">عرض المحتوى 584px، العنوان 2 أسطر</p>
+  </figure><figure class="shot">
+    <figcaption><span class="tag after">بعد</span><span class="state ok">لا ملاحظات</span></figcaption>
+    <a href="after/shots/dashboard-1280-rtl-assistant-open.jpg" target="_blank" rel="noopener"><img loading="lazy" src="after/shots/dashboard-1280-rtl-assistant-open.jpg" alt="بعد: لابتوب 1280px والمساعد مفتوح" width="640"></a>
+    <p class="meta">عرض المحتوى 1024px، العنوان سطر واحد</p>
+  </figure></div>
+      </div>
+      <div class="pair">
+        <h3>شاشة 1920px</h3>
+        <div class="grid"><figure class="shot">
+    <figcaption><span class="tag before">قبل</span><span class="state bad">نص أصغر من 14px ×97</span></figcaption>
+    <a href="baseline/shots/dashboard-1920-rtl-page.jpg" target="_blank" rel="noopener"><img loading="lazy" src="baseline/shots/dashboard-1920-rtl-page.jpg" alt="قبل: شاشة 1920px" width="640"></a>
+    <p class="meta">عرض المحتوى 1664px، العنوان سطر واحد</p>
+  </figure><figure class="shot">
+    <figcaption><span class="tag after">بعد</span><span class="state ok">لا ملاحظات</span></figcaption>
+    <a href="after/shots/dashboard-1920-rtl-page.jpg" target="_blank" rel="noopener"><img loading="lazy" src="after/shots/dashboard-1920-rtl-page.jpg" alt="بعد: شاشة 1920px" width="640"></a>
+    <p class="meta">عرض المحتوى 1664px، العنوان سطر واحد</p>
+  </figure></div>
+      </div>
+  </section>
+  <section class="screen" id="pos">
+    <h2>نقطة البيع</h2>
+    
+      <div class="pair">
+        <h3>جوال 360px</h3>
+        <div class="grid"><figure class="shot">
+    <figcaption><span class="tag before">قبل</span><span class="state bad">نص أصغر من 14px ×30، هدف لمس أصغر من 44px ×16</span></figcaption>
+    <a href="baseline/shots/pos-360-rtl-page.jpg" target="_blank" rel="noopener"><img loading="lazy" src="baseline/shots/pos-360-rtl-page.jpg" alt="قبل: جوال 360px" width="360"></a>
+    <p class="meta">عرض المحتوى 360px، العنوان سطر واحد</p>
+  </figure><figure class="shot">
+    <figcaption><span class="tag after">بعد</span><span class="state ok">لا ملاحظات</span></figcaption>
+    <a href="after/shots/pos-360-rtl-page.jpg" target="_blank" rel="noopener"><img loading="lazy" src="after/shots/pos-360-rtl-page.jpg" alt="بعد: جوال 360px" width="360"></a>
+    <p class="meta">عرض المحتوى 360px، العنوان سطر واحد</p>
+  </figure></div>
+      </div>
+      <div class="pair">
+        <h3>تابلت أفقي 1024px</h3>
+        <div class="grid"><figure class="shot">
+    <figcaption><span class="tag before">قبل</span><span class="state bad">عنصر يخرج من مكانه أو يُقص ×6، كلمة في كل سطر ×3، نص فوق نص ×5، نص أصغر من 14px ×14، هدف لمس أصغر من 44px ×19</span></figcaption>
+    <a href="baseline/shots/pos-1024-rtl-page.jpg" target="_blank" rel="noopener"><img loading="lazy" src="baseline/shots/pos-1024-rtl-page.jpg" alt="قبل: تابلت أفقي 1024px" width="640"></a>
+    <p class="meta">عرض المحتوى 768px، العنوان سطر واحد</p>
+  </figure><figure class="shot">
+    <figcaption><span class="tag after">بعد</span><span class="state ok">لا ملاحظات</span></figcaption>
+    <a href="after/shots/pos-1024-rtl-page.jpg" target="_blank" rel="noopener"><img loading="lazy" src="after/shots/pos-1024-rtl-page.jpg" alt="بعد: تابلت أفقي 1024px" width="640"></a>
+    <p class="meta">عرض المحتوى 768px، العنوان سطر واحد</p>
+  </figure></div>
+      </div>
+      <div class="pair">
+        <h3>لابتوب 1280px والمساعد مفتوح</h3>
+        <div class="grid"><figure class="shot">
+    <figcaption><span class="tag before">قبل</span><span class="state bad">عنصر يخرج من مكانه أو يُقص ×1، نص فوق نص ×9، نص أصغر من 14px ×14</span></figcaption>
+    <a href="baseline/shots/pos-1280-rtl-assistant-open.jpg" target="_blank" rel="noopener"><img loading="lazy" src="baseline/shots/pos-1280-rtl-assistant-open.jpg" alt="قبل: لابتوب 1280px والمساعد مفتوح" width="640"></a>
+    <p class="meta">عرض المحتوى 584px، العنوان سطر واحد</p>
+  </figure><figure class="shot">
+    <figcaption><span class="tag after">بعد</span><span class="state ok">لا ملاحظات</span></figcaption>
+    <a href="after/shots/pos-1280-rtl-assistant-open.jpg" target="_blank" rel="noopener"><img loading="lazy" src="after/shots/pos-1280-rtl-assistant-open.jpg" alt="بعد: لابتوب 1280px والمساعد مفتوح" width="640"></a>
+    <p class="meta">عرض المحتوى 1024px، العنوان سطر واحد</p>
+  </figure></div>
+      </div>
+      <div class="pair">
+        <h3>شاشة 1920px</h3>
+        <div class="grid"><figure class="shot">
+    <figcaption><span class="tag before">قبل</span><span class="state bad">نص أصغر من 14px ×14</span></figcaption>
+    <a href="baseline/shots/pos-1920-rtl-page.jpg" target="_blank" rel="noopener"><img loading="lazy" src="baseline/shots/pos-1920-rtl-page.jpg" alt="قبل: شاشة 1920px" width="640"></a>
+    <p class="meta">عرض المحتوى 1664px، العنوان سطر واحد</p>
+  </figure><figure class="shot">
+    <figcaption><span class="tag after">بعد</span><span class="state ok">لا ملاحظات</span></figcaption>
+    <a href="after/shots/pos-1920-rtl-page.jpg" target="_blank" rel="noopener"><img loading="lazy" src="after/shots/pos-1920-rtl-page.jpg" alt="بعد: شاشة 1920px" width="640"></a>
+    <p class="meta">عرض المحتوى 1664px، العنوان سطر واحد</p>
+  </figure></div>
+      </div>
+  </section>
+  <section class="screen" id="orders">
+    <h2>الطلبات</h2>
+    
+      <div class="pair">
+        <h3>جوال 360px</h3>
+        <div class="grid"><figure class="shot">
+    <figcaption><span class="tag before">قبل</span><span class="state bad">نص أصغر من 14px ×73، هدف لمس أصغر من 44px ×42</span></figcaption>
+    <a href="baseline/shots/orders-360-rtl-page.jpg" target="_blank" rel="noopener"><img loading="lazy" src="baseline/shots/orders-360-rtl-page.jpg" alt="قبل: جوال 360px" width="360"></a>
+    <p class="meta">عرض المحتوى 360px، العنوان سطر واحد</p>
+  </figure><figure class="shot">
+    <figcaption><span class="tag after">بعد</span><span class="state ok">لا ملاحظات</span></figcaption>
+    <a href="after/shots/orders-360-rtl-page.jpg" target="_blank" rel="noopener"><img loading="lazy" src="after/shots/orders-360-rtl-page.jpg" alt="بعد: جوال 360px" width="360"></a>
+    <p class="meta">عرض المحتوى 360px، العنوان سطر واحد</p>
+  </figure></div>
+      </div>
+      <div class="pair">
+        <h3>تابلت أفقي 1024px</h3>
+        <div class="grid"><figure class="shot">
+    <figcaption><span class="tag before">قبل</span><span class="state bad">نص أصغر من 14px ×50، هدف لمس أصغر من 44px ×38</span></figcaption>
+    <a href="baseline/shots/orders-1024-rtl-page.jpg" target="_blank" rel="noopener"><img loading="lazy" src="baseline/shots/orders-1024-rtl-page.jpg" alt="قبل: تابلت أفقي 1024px" width="640"></a>
+    <p class="meta">عرض المحتوى 768px، العنوان سطر واحد</p>
+  </figure><figure class="shot">
+    <figcaption><span class="tag after">بعد</span><span class="state ok">لا ملاحظات</span></figcaption>
+    <a href="after/shots/orders-1024-rtl-page.jpg" target="_blank" rel="noopener"><img loading="lazy" src="after/shots/orders-1024-rtl-page.jpg" alt="بعد: تابلت أفقي 1024px" width="640"></a>
+    <p class="meta">عرض المحتوى 768px، العنوان سطر واحد</p>
+  </figure></div>
+      </div>
+      <div class="pair">
+        <h3>لابتوب 1280px والمساعد مفتوح</h3>
+        <div class="grid"><figure class="shot">
+    <figcaption><span class="tag before">قبل</span><span class="state bad">نص أصغر من 14px ×50</span></figcaption>
+    <a href="baseline/shots/orders-1280-rtl-assistant-open.jpg" target="_blank" rel="noopener"><img loading="lazy" src="baseline/shots/orders-1280-rtl-assistant-open.jpg" alt="قبل: لابتوب 1280px والمساعد مفتوح" width="640"></a>
+    <p class="meta">عرض المحتوى 584px، العنوان سطر واحد</p>
+  </figure><figure class="shot">
+    <figcaption><span class="tag after">بعد</span><span class="state ok">لا ملاحظات</span></figcaption>
+    <a href="after/shots/orders-1280-rtl-assistant-open.jpg" target="_blank" rel="noopener"><img loading="lazy" src="after/shots/orders-1280-rtl-assistant-open.jpg" alt="بعد: لابتوب 1280px والمساعد مفتوح" width="640"></a>
+    <p class="meta">عرض المحتوى 1024px، العنوان سطر واحد</p>
+  </figure></div>
+      </div>
+      <div class="pair">
+        <h3>شاشة 1920px</h3>
+        <div class="grid"><figure class="shot">
+    <figcaption><span class="tag before">قبل</span><span class="state bad">نص أصغر من 14px ×50</span></figcaption>
+    <a href="baseline/shots/orders-1920-rtl-page.jpg" target="_blank" rel="noopener"><img loading="lazy" src="baseline/shots/orders-1920-rtl-page.jpg" alt="قبل: شاشة 1920px" width="640"></a>
+    <p class="meta">عرض المحتوى 1664px، العنوان سطر واحد</p>
+  </figure><figure class="shot">
+    <figcaption><span class="tag after">بعد</span><span class="state ok">لا ملاحظات</span></figcaption>
+    <a href="after/shots/orders-1920-rtl-page.jpg" target="_blank" rel="noopener"><img loading="lazy" src="after/shots/orders-1920-rtl-page.jpg" alt="بعد: شاشة 1920px" width="640"></a>
+    <p class="meta">عرض المحتوى 1664px، العنوان سطر واحد</p>
+  </figure></div>
+      </div>
+  </section>
+  <section class="screen" id="order-new">
+    <h2>طلب تفصيل جديد</h2>
+    
+      <div class="pair">
+        <h3>جوال 360px</h3>
+        <div class="grid"><figure class="shot">
+    <figcaption><span class="tag before">قبل</span><span class="state bad">نص أصغر من 14px ×73، هدف لمس أصغر من 44px ×42</span></figcaption>
+    <a href="baseline/shots/order-new-360-rtl-page.jpg" target="_blank" rel="noopener"><img loading="lazy" src="baseline/shots/order-new-360-rtl-page.jpg" alt="قبل: جوال 360px" width="360"></a>
+    <p class="meta">عرض المحتوى 360px، العنوان سطر واحد</p>
+  </figure><figure class="shot">
+    <figcaption><span class="tag after">بعد</span><span class="state ok">لا ملاحظات</span></figcaption>
+    <a href="after/shots/order-new-360-rtl-page.jpg" target="_blank" rel="noopener"><img loading="lazy" src="after/shots/order-new-360-rtl-page.jpg" alt="بعد: جوال 360px" width="360"></a>
+    <p class="meta">عرض المحتوى 360px، العنوان سطر واحد</p>
+  </figure></div>
+      </div>
+      <div class="pair">
+        <h3>تابلت أفقي 1024px</h3>
+        <div class="grid"><figure class="shot">
+    <figcaption><span class="tag before">قبل</span><span class="state bad">نص أصغر من 14px ×50، هدف لمس أصغر من 44px ×38</span></figcaption>
+    <a href="baseline/shots/order-new-1024-rtl-page.jpg" target="_blank" rel="noopener"><img loading="lazy" src="baseline/shots/order-new-1024-rtl-page.jpg" alt="قبل: تابلت أفقي 1024px" width="640"></a>
+    <p class="meta">عرض المحتوى 768px، العنوان سطر واحد</p>
+  </figure><figure class="shot">
+    <figcaption><span class="tag after">بعد</span><span class="state ok">لا ملاحظات</span></figcaption>
+    <a href="after/shots/order-new-1024-rtl-page.jpg" target="_blank" rel="noopener"><img loading="lazy" src="after/shots/order-new-1024-rtl-page.jpg" alt="بعد: تابلت أفقي 1024px" width="640"></a>
+    <p class="meta">عرض المحتوى 768px، العنوان سطر واحد</p>
+  </figure></div>
+      </div>
+      <div class="pair">
+        <h3>لابتوب 1280px والمساعد مفتوح</h3>
+        <div class="grid"><figure class="shot">
+    <figcaption><span class="tag before">قبل</span><span class="state bad">نص أصغر من 14px ×90</span></figcaption>
+    <a href="baseline/shots/order-new-1280-rtl-assistant-open.jpg" target="_blank" rel="noopener"><img loading="lazy" src="baseline/shots/order-new-1280-rtl-assistant-open.jpg" alt="قبل: لابتوب 1280px والمساعد مفتوح" width="640"></a>
+    <p class="meta">عرض المحتوى 1024px، العنوان سطر واحد</p>
+  </figure><figure class="shot">
+    <figcaption><span class="tag after">بعد</span><span class="state ok">لا ملاحظات</span></figcaption>
+    <a href="after/shots/order-new-1280-rtl-page.jpg" target="_blank" rel="noopener"><img loading="lazy" src="after/shots/order-new-1280-rtl-page.jpg" alt="بعد: لابتوب 1280px والمساعد مفتوح" width="640"></a>
+    <p class="meta">عرض المحتوى 1024px، العنوان سطر واحد</p>
+  </figure></div>
+      </div>
+      <div class="pair">
+        <h3>شاشة 1920px</h3>
+        <div class="grid"><figure class="shot">
+    <figcaption><span class="tag before">قبل</span><span class="state bad">نص أصغر من 14px ×50</span></figcaption>
+    <a href="baseline/shots/order-new-1920-rtl-page.jpg" target="_blank" rel="noopener"><img loading="lazy" src="baseline/shots/order-new-1920-rtl-page.jpg" alt="قبل: شاشة 1920px" width="640"></a>
+    <p class="meta">عرض المحتوى 1664px، العنوان سطر واحد</p>
+  </figure><figure class="shot">
+    <figcaption><span class="tag after">بعد</span><span class="state ok">لا ملاحظات</span></figcaption>
+    <a href="after/shots/order-new-1920-rtl-page.jpg" target="_blank" rel="noopener"><img loading="lazy" src="after/shots/order-new-1920-rtl-page.jpg" alt="بعد: شاشة 1920px" width="640"></a>
+    <p class="meta">عرض المحتوى 1664px، العنوان سطر واحد</p>
+  </figure></div>
+      </div>
+  </section>
+  <section class="screen" id="customers">
+    <h2>العملاء</h2>
+    
+      <div class="pair">
+        <h3>جوال 360px</h3>
+        <div class="grid"><figure class="shot">
+    <figcaption><span class="tag before">قبل</span><span class="state bad">نص أصغر من 14px ×93، هدف لمس أصغر من 44px ×28</span></figcaption>
+    <a href="baseline/shots/customers-360-rtl-page.jpg" target="_blank" rel="noopener"><img loading="lazy" src="baseline/shots/customers-360-rtl-page.jpg" alt="قبل: جوال 360px" width="360"></a>
+    <p class="meta">عرض المحتوى 360px، العنوان سطر واحد</p>
+  </figure><figure class="shot">
+    <figcaption><span class="tag after">بعد</span><span class="state ok">لا ملاحظات</span></figcaption>
+    <a href="after/shots/customers-360-rtl-page.jpg" target="_blank" rel="noopener"><img loading="lazy" src="after/shots/customers-360-rtl-page.jpg" alt="بعد: جوال 360px" width="360"></a>
+    <p class="meta">عرض المحتوى 360px، العنوان سطر واحد</p>
+  </figure></div>
+      </div>
+      <div class="pair">
+        <h3>تابلت أفقي 1024px</h3>
+        <div class="grid"><figure class="shot">
+    <figcaption><span class="tag before">قبل</span><span class="state bad">نص أصغر من 14px ×48، هدف لمس أصغر من 44px ×33</span></figcaption>
+    <a href="baseline/shots/customers-1024-rtl-page.jpg" target="_blank" rel="noopener"><img loading="lazy" src="baseline/shots/customers-1024-rtl-page.jpg" alt="قبل: تابلت أفقي 1024px" width="640"></a>
+    <p class="meta">عرض المحتوى 768px، العنوان سطر واحد</p>
+  </figure><figure class="shot">
+    <figcaption><span class="tag after">بعد</span><span class="state ok">لا ملاحظات</span></figcaption>
+    <a href="after/shots/customers-1024-rtl-page.jpg" target="_blank" rel="noopener"><img loading="lazy" src="after/shots/customers-1024-rtl-page.jpg" alt="بعد: تابلت أفقي 1024px" width="640"></a>
+    <p class="meta">عرض المحتوى 768px، العنوان سطر واحد</p>
+  </figure></div>
+      </div>
+      <div class="pair">
+        <h3>لابتوب 1280px والمساعد مفتوح</h3>
+        <div class="grid"><figure class="shot">
+    <figcaption><span class="tag before">قبل</span><span class="state bad">كلمة في كل سطر ×3، نص فوق نص ×14، نص أصغر من 14px ×48</span></figcaption>
+    <a href="baseline/shots/customers-1280-rtl-assistant-open.jpg" target="_blank" rel="noopener"><img loading="lazy" src="baseline/shots/customers-1280-rtl-assistant-open.jpg" alt="قبل: لابتوب 1280px والمساعد مفتوح" width="640"></a>
+    <p class="meta">عرض المحتوى 584px، العنوان سطر واحد</p>
+  </figure><figure class="shot">
+    <figcaption><span class="tag after">بعد</span><span class="state ok">لا ملاحظات</span></figcaption>
+    <a href="after/shots/customers-1280-rtl-assistant-open.jpg" target="_blank" rel="noopener"><img loading="lazy" src="after/shots/customers-1280-rtl-assistant-open.jpg" alt="بعد: لابتوب 1280px والمساعد مفتوح" width="640"></a>
+    <p class="meta">عرض المحتوى 1024px، العنوان سطر واحد</p>
+  </figure></div>
+      </div>
+      <div class="pair">
+        <h3>شاشة 1920px</h3>
+        <div class="grid"><figure class="shot">
+    <figcaption><span class="tag before">قبل</span><span class="state bad">نص أصغر من 14px ×48</span></figcaption>
+    <a href="baseline/shots/customers-1920-rtl-page.jpg" target="_blank" rel="noopener"><img loading="lazy" src="baseline/shots/customers-1920-rtl-page.jpg" alt="قبل: شاشة 1920px" width="640"></a>
+    <p class="meta">عرض المحتوى 1664px، العنوان سطر واحد</p>
+  </figure><figure class="shot">
+    <figcaption><span class="tag after">بعد</span><span class="state ok">لا ملاحظات</span></figcaption>
+    <a href="after/shots/customers-1920-rtl-page.jpg" target="_blank" rel="noopener"><img loading="lazy" src="after/shots/customers-1920-rtl-page.jpg" alt="بعد: شاشة 1920px" width="640"></a>
+    <p class="meta">عرض المحتوى 1664px، العنوان سطر واحد</p>
+  </figure></div>
+      </div>
+  </section>
+  <section class="screen" id="inventory">
+    <h2>المخزون</h2>
+    
+      <div class="pair">
+        <h3>جوال 360px</h3>
+        <div class="grid"><figure class="shot">
+    <figcaption><span class="tag before">قبل</span><span class="state bad">نص أصغر من 14px ×61، هدف لمس أصغر من 44px ×26</span></figcaption>
+    <a href="baseline/shots/inventory-360-rtl-page.jpg" target="_blank" rel="noopener"><img loading="lazy" src="baseline/shots/inventory-360-rtl-page.jpg" alt="قبل: جوال 360px" width="360"></a>
+    <p class="meta">عرض المحتوى 360px، العنوان سطر واحد</p>
+  </figure><figure class="shot">
+    <figcaption><span class="tag after">بعد</span><span class="state ok">لا ملاحظات</span></figcaption>
+    <a href="after/shots/inventory-360-rtl-page.jpg" target="_blank" rel="noopener"><img loading="lazy" src="after/shots/inventory-360-rtl-page.jpg" alt="بعد: جوال 360px" width="360"></a>
+    <p class="meta">عرض المحتوى 360px، العنوان سطر واحد</p>
+  </figure></div>
+      </div>
+      <div class="pair">
+        <h3>تابلت أفقي 1024px</h3>
+        <div class="grid"><figure class="shot">
+    <figcaption><span class="tag before">قبل</span><span class="state bad">نص أصغر من 14px ×23، هدف لمس أصغر من 44px ×14</span></figcaption>
+    <a href="baseline/shots/inventory-1024-rtl-page.jpg" target="_blank" rel="noopener"><img loading="lazy" src="baseline/shots/inventory-1024-rtl-page.jpg" alt="قبل: تابلت أفقي 1024px" width="640"></a>
+    <p class="meta">عرض المحتوى 768px، العنوان 2 أسطر</p>
+  </figure><figure class="shot">
+    <figcaption><span class="tag after">بعد</span><span class="state ok">لا ملاحظات</span></figcaption>
+    <a href="after/shots/inventory-1024-rtl-page.jpg" target="_blank" rel="noopener"><img loading="lazy" src="after/shots/inventory-1024-rtl-page.jpg" alt="بعد: تابلت أفقي 1024px" width="640"></a>
+    <p class="meta">عرض المحتوى 768px، العنوان سطر واحد</p>
+  </figure></div>
+      </div>
+      <div class="pair">
+        <h3>لابتوب 1280px والمساعد مفتوح</h3>
+        <div class="grid"><figure class="shot">
+    <figcaption><span class="tag before">قبل</span><span class="state bad">نص أصغر من 14px ×31</span></figcaption>
+    <a href="baseline/shots/inventory-1280-rtl-assistant-open.jpg" target="_blank" rel="noopener"><img loading="lazy" src="baseline/shots/inventory-1280-rtl-assistant-open.jpg" alt="قبل: لابتوب 1280px والمساعد مفتوح" width="640"></a>
+    <p class="meta">عرض المحتوى 584px، العنوان 2 أسطر</p>
+  </figure><figure class="shot">
+    <figcaption><span class="tag after">بعد</span><span class="state ok">لا ملاحظات</span></figcaption>
+    <a href="after/shots/inventory-1280-rtl-assistant-open.jpg" target="_blank" rel="noopener"><img loading="lazy" src="after/shots/inventory-1280-rtl-assistant-open.jpg" alt="بعد: لابتوب 1280px والمساعد مفتوح" width="640"></a>
+    <p class="meta">عرض المحتوى 1024px، العنوان سطر واحد</p>
+  </figure></div>
+      </div>
+      <div class="pair">
+        <h3>شاشة 1920px</h3>
+        <div class="grid"><figure class="shot">
+    <figcaption><span class="tag before">قبل</span><span class="state bad">نص أصغر من 14px ×41</span></figcaption>
+    <a href="baseline/shots/inventory-1920-rtl-page.jpg" target="_blank" rel="noopener"><img loading="lazy" src="baseline/shots/inventory-1920-rtl-page.jpg" alt="قبل: شاشة 1920px" width="640"></a>
+    <p class="meta">عرض المحتوى 1664px، العنوان سطر واحد</p>
+  </figure><figure class="shot">
+    <figcaption><span class="tag after">بعد</span><span class="state ok">لا ملاحظات</span></figcaption>
+    <a href="after/shots/inventory-1920-rtl-page.jpg" target="_blank" rel="noopener"><img loading="lazy" src="after/shots/inventory-1920-rtl-page.jpg" alt="بعد: شاشة 1920px" width="640"></a>
+    <p class="meta">عرض المحتوى 1664px، العنوان سطر واحد</p>
+  </figure></div>
+      </div>
+  </section>
+  <section class="screen" id="reports">
+    <h2>التقارير</h2>
+    
+      <div class="pair">
+        <h3>جوال 360px</h3>
+        <div class="grid"><figure class="shot">
+    <figcaption><span class="tag before">قبل</span><span class="state bad">نص أصغر من 14px ×17، هدف لمس أصغر من 44px ×5</span></figcaption>
+    <a href="baseline/shots/reports-360-rtl-page.jpg" target="_blank" rel="noopener"><img loading="lazy" src="baseline/shots/reports-360-rtl-page.jpg" alt="قبل: جوال 360px" width="360"></a>
+    <p class="meta">عرض المحتوى 360px، العنوان سطر واحد</p>
+  </figure><figure class="shot">
+    <figcaption><span class="tag after">بعد</span><span class="state ok">لا ملاحظات</span></figcaption>
+    <a href="after/shots/reports-360-rtl-page.jpg" target="_blank" rel="noopener"><img loading="lazy" src="after/shots/reports-360-rtl-page.jpg" alt="بعد: جوال 360px" width="360"></a>
+    <p class="meta">عرض المحتوى 360px، العنوان سطر واحد</p>
+  </figure></div>
+      </div>
+      <div class="pair">
+        <h3>تابلت أفقي 1024px</h3>
+        <div class="grid"><figure class="shot">
+    <figcaption><span class="tag before">قبل</span><span class="state bad">عنصر يخرج من مكانه أو يُقص ×4، نص أصغر من 14px ×4، هدف لمس أصغر من 44px ×1</span></figcaption>
+    <a href="baseline/shots/reports-1024-rtl-page.jpg" target="_blank" rel="noopener"><img loading="lazy" src="baseline/shots/reports-1024-rtl-page.jpg" alt="قبل: تابلت أفقي 1024px" width="640"></a>
+    <p class="meta">عرض المحتوى 768px، العنوان سطر واحد</p>
+  </figure><figure class="shot">
+    <figcaption><span class="tag after">بعد</span><span class="state ok">لا ملاحظات</span></figcaption>
+    <a href="after/shots/reports-1024-rtl-page.jpg" target="_blank" rel="noopener"><img loading="lazy" src="after/shots/reports-1024-rtl-page.jpg" alt="بعد: تابلت أفقي 1024px" width="640"></a>
+    <p class="meta">عرض المحتوى 768px، العنوان 2 أسطر</p>
+  </figure></div>
+      </div>
+      <div class="pair">
+        <h3>لابتوب 1280px والمساعد مفتوح</h3>
+        <div class="grid"><figure class="shot">
+    <figcaption><span class="tag before">قبل</span><span class="state bad">عنصر يخرج من مكانه أو يُقص ×2، نص أصغر من 14px ×4</span></figcaption>
+    <a href="baseline/shots/reports-1280-rtl-assistant-open.jpg" target="_blank" rel="noopener"><img loading="lazy" src="baseline/shots/reports-1280-rtl-assistant-open.jpg" alt="قبل: لابتوب 1280px والمساعد مفتوح" width="640"></a>
+    <p class="meta">عرض المحتوى 584px، العنوان 2 أسطر</p>
+  </figure><figure class="shot">
+    <figcaption><span class="tag after">بعد</span><span class="state ok">لا ملاحظات</span></figcaption>
+    <a href="after/shots/reports-1280-rtl-assistant-open.jpg" target="_blank" rel="noopener"><img loading="lazy" src="after/shots/reports-1280-rtl-assistant-open.jpg" alt="بعد: لابتوب 1280px والمساعد مفتوح" width="640"></a>
+    <p class="meta">عرض المحتوى 1024px، العنوان سطر واحد</p>
+  </figure></div>
+      </div>
+      <div class="pair">
+        <h3>شاشة 1920px</h3>
+        <div class="grid"><figure class="shot">
+    <figcaption><span class="tag before">قبل</span><span class="state bad">نص أصغر من 14px ×8</span></figcaption>
+    <a href="baseline/shots/reports-1920-rtl-page.jpg" target="_blank" rel="noopener"><img loading="lazy" src="baseline/shots/reports-1920-rtl-page.jpg" alt="قبل: شاشة 1920px" width="640"></a>
+    <p class="meta">عرض المحتوى 1664px، العنوان سطر واحد</p>
+  </figure><figure class="shot">
+    <figcaption><span class="tag after">بعد</span><span class="state ok">لا ملاحظات</span></figcaption>
+    <a href="after/shots/reports-1920-rtl-page.jpg" target="_blank" rel="noopener"><img loading="lazy" src="after/shots/reports-1920-rtl-page.jpg" alt="بعد: شاشة 1920px" width="640"></a>
+    <p class="meta">عرض المحتوى 1664px، العنوان سطر واحد</p>
+  </figure></div>
+      </div>
+  </section>
+  <section class="screen" id="settings">
+    <h2>الإعدادات</h2>
+    
+      <div class="pair">
+        <h3>جوال 360px</h3>
+        <div class="grid"><figure class="shot">
+    <figcaption><span class="tag before">قبل</span><span class="state bad">نص أصغر من 14px ×23، هدف لمس أصغر من 44px ×4</span></figcaption>
+    <a href="baseline/shots/settings-360-rtl-page.jpg" target="_blank" rel="noopener"><img loading="lazy" src="baseline/shots/settings-360-rtl-page.jpg" alt="قبل: جوال 360px" width="360"></a>
+    <p class="meta">عرض المحتوى 360px، العنوان سطر واحد</p>
+  </figure><figure class="shot">
+    <figcaption><span class="tag after">بعد</span><span class="state ok">لا ملاحظات</span></figcaption>
+    <a href="after/shots/settings-360-rtl-page.jpg" target="_blank" rel="noopener"><img loading="lazy" src="after/shots/settings-360-rtl-page.jpg" alt="بعد: جوال 360px" width="360"></a>
+    <p class="meta">عرض المحتوى 360px، العنوان سطر واحد</p>
+  </figure></div>
+      </div>
+      <div class="pair">
+        <h3>تابلت أفقي 1024px</h3>
+        <div class="grid"><figure class="shot">
+    <figcaption><span class="tag before">قبل</span><span class="state bad">نص أصغر من 14px ×39، هدف لمس أصغر من 44px ×20</span></figcaption>
+    <a href="baseline/shots/settings-1024-rtl-page.jpg" target="_blank" rel="noopener"><img loading="lazy" src="baseline/shots/settings-1024-rtl-page.jpg" alt="قبل: تابلت أفقي 1024px" width="640"></a>
+    <p class="meta">عرض المحتوى 768px، العنوان سطر واحد</p>
+  </figure><figure class="shot">
+    <figcaption><span class="tag after">بعد</span><span class="state ok">لا ملاحظات</span></figcaption>
+    <a href="after/shots/settings-1024-rtl-page.jpg" target="_blank" rel="noopener"><img loading="lazy" src="after/shots/settings-1024-rtl-page.jpg" alt="بعد: تابلت أفقي 1024px" width="640"></a>
+    <p class="meta">عرض المحتوى 768px، العنوان سطر واحد</p>
+  </figure></div>
+      </div>
+      <div class="pair">
+        <h3>لابتوب 1280px والمساعد مفتوح</h3>
+        <div class="grid"><figure class="shot">
+    <figcaption><span class="tag before">قبل</span><span class="state bad">نص أصغر من 14px ×40</span></figcaption>
+    <a href="baseline/shots/settings-1280-rtl-assistant-open.jpg" target="_blank" rel="noopener"><img loading="lazy" src="baseline/shots/settings-1280-rtl-assistant-open.jpg" alt="قبل: لابتوب 1280px والمساعد مفتوح" width="640"></a>
+    <p class="meta">عرض المحتوى 584px، العنوان سطر واحد</p>
+  </figure><figure class="shot">
+    <figcaption><span class="tag after">بعد</span><span class="state ok">لا ملاحظات</span></figcaption>
+    <a href="after/shots/settings-1280-rtl-assistant-open.jpg" target="_blank" rel="noopener"><img loading="lazy" src="after/shots/settings-1280-rtl-assistant-open.jpg" alt="بعد: لابتوب 1280px والمساعد مفتوح" width="640"></a>
+    <p class="meta">عرض المحتوى 1024px، العنوان سطر واحد</p>
+  </figure></div>
+      </div>
+      <div class="pair">
+        <h3>شاشة 1920px</h3>
+        <div class="grid"><figure class="shot">
+    <figcaption><span class="tag before">قبل</span><span class="state bad">نص أصغر من 14px ×44</span></figcaption>
+    <a href="baseline/shots/settings-1920-rtl-page.jpg" target="_blank" rel="noopener"><img loading="lazy" src="baseline/shots/settings-1920-rtl-page.jpg" alt="قبل: شاشة 1920px" width="640"></a>
+    <p class="meta">عرض المحتوى 1664px، العنوان سطر واحد</p>
+  </figure><figure class="shot">
+    <figcaption><span class="tag after">بعد</span><span class="state ok">لا ملاحظات</span></figcaption>
+    <a href="after/shots/settings-1920-rtl-page.jpg" target="_blank" rel="noopener"><img loading="lazy" src="after/shots/settings-1920-rtl-page.jpg" alt="بعد: شاشة 1920px" width="640"></a>
+    <p class="meta">عرض المحتوى 1664px، العنوان سطر واحد</p>
+  </figure></div>
+      </div>
+  </section>
+</main>
+</body>
+</html>
