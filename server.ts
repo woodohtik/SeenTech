@@ -649,7 +649,7 @@ app.get("/api/public/measurements/:token", asyncHandler(async (req, res) => {
 
   const { data: customerData } = await supabaseAdmin
     .from('customers')
-    .select('name, measurements, measurements_token_expires_at, tenant:tenants(name, logo_url, measurement_unit)')
+    .select('name, measurements, measurements_token_expires_at, tenant:tenants(name, logo_url, measurement_unit, status, trashed_at, subscription_status, subscription_end_date, trial_ends_at)')
     .eq('measurements_token', token)
     .maybeSingle();
 
@@ -665,6 +665,12 @@ app.get("/api/public/measurements/:token", asyncHandler(async (req, res) => {
   }
 
   const tenantData = (customerData as any).tenant;
+  // P6 (PLATFORM-17): a link into a shop that is deactivated, in the trash or
+  // locked no longer opens -- the same rule the signed-in routes follow.
+  const { tenantAccessBlock } = await import('./src/server/tenantAccess.ts');
+  if (tenantAccessBlock(tenantData)) {
+    return res.status(410).json({ error: 'Link unavailable' });
+  }
 
   res.json({
     customer_name: customerData.name,
@@ -695,13 +701,20 @@ app.post("/api/public/measurements/:token", asyncHandler(async (req, res) => {
 
   const { data: customerData } = await supabaseAdmin
     .from('customers')
-    .select('id')
+    .select('id, tenant:tenants(status, trashed_at, subscription_status, subscription_end_date, trial_ends_at)')
     .eq('measurements_token', token)
     .maybeSingle();
 
   if (!customerData) {
     await recordFailure();
     return res.status(404).json({ error: 'Customer not found' });
+  }
+  // P6 (PLATFORM-17): nothing is written into a shop that is closed.
+  {
+    const { tenantAccessBlock } = await import('./src/server/tenantAccess.ts');
+    if (tenantAccessBlock((customerData as any).tenant)) {
+      return res.status(410).json({ error: 'Link unavailable' });
+    }
   }
 
   // P4 (OPERATIONS-16 / SECURITY-10): refused after expiry; the previous
