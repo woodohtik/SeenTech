@@ -5,6 +5,7 @@ import {defineConfig} from 'vite';
 import {VitePWA} from 'vite-plugin-pwa';
 import {visualizer} from 'rollup-plugin-visualizer';
 import {i18nCorePlugin} from './scripts/vite-i18n-core';
+import {buildIdPlugin} from './scripts/vite-build-id';
 
 export default defineConfig(({mode}) => {
   return {
@@ -12,6 +13,8 @@ export default defineConfig(({mode}) => {
       react(),
       tailwindcss(),
       i18nCorePlugin(__dirname),
+      // __BUILD_ID__ and dist/version.json (seen-update-delivery-fix-task.md phase 1).
+      buildIdPlugin(__dirname),
       // Bundle composition report (seen-offline-coverage-and-performance-
       // task.md Phase 6) -- opt-in via `ANALYZE=true npm run build` rather
       // than every build, since it's a diagnostic tool, not something a
@@ -30,11 +33,10 @@ export default defineConfig(({mode}) => {
       // one, matching Firebase's own documented setup and avoiding coupling
       // push delivery to this SW's own update/precache lifecycle.
       VitePWA({
-        // seen-readiness-fixes-task.md P3.4 (RELIABILITY-08): 'autoUpdate'
-        // reloaded the page the moment a new deploy activated -- a cart in
-        // progress was lost. The owner's rule (seen-pwa-update-detection-task.md):
-        // an update applies only when the user taps it (src/lib/pwaUpdate.ts,
-        // onNeedRefresh -> applyPendingUpdate).
+        // 'prompt': a new worker waits, and the app decides when it takes over
+        // (src/lib/updateManager.ts, seen-update-delivery-fix-task.md phase 3):
+        // at once on a safe screen, after the sale or the save otherwise --
+        // never mid-sale (P3.4, RELIABILITY-08), never only on a tap.
         registerType: 'prompt',
         includeAssets: ['favicon.svg'],
         manifest: {
@@ -85,9 +87,10 @@ export default defineConfig(({mode}) => {
             '**/assets/xlsx-*.js',
             '**/assets/pdfGenerator-*.js',
             '**/assets/ScannerModal-*.js',
-            '**/assets/CartesianChart-*.js',
-            '**/assets/AreaChart-*.js',
-            '**/assets/BarChart-*.js',
+            // The dashboard's revenue chart (CartesianChart, with AreaChart and
+            // BarChart) is precached again: it is the first screen, and a
+            // missing chart file there started the 23 Nov reload loop
+            // (seen-update-delivery-fix-task.md 0.5.4).
             '**/assets/PieChart-*.js',
             '**/assets/index.es-*.js',
             '**/assets/purify.es-*.js',
@@ -105,11 +108,44 @@ export default defineConfig(({mode}) => {
             {
               urlPattern: ({ url }) =>
                 url.origin === self.location.origin &&
-                /\/assets\/(html2pdf|html2canvas|xlsx|pdfGenerator|ScannerModal|CartesianChart|AreaChart|BarChart|PieChart|index\.es|purify\.es|vendor-firebase|en|ur|Settings|InventoryManager)[-.][^/]*\.js$/.test(url.pathname),
+                /\/assets\/(html2pdf|html2canvas|xlsx|pdfGenerator|ScannerModal|PieChart|index\.es|purify\.es|vendor-firebase|en|ur|Settings|InventoryManager)[-.][^/]*\.js$/.test(url.pathname),
               handler: 'CacheFirst',
               options: {
-                cacheName: 'seen-on-demand-chunks',
+                // v2: the old cache may hold an HTML page stored as a code
+                // file (a missing file used to come back as index.html);
+                // public/sw-extra.js deletes it. Only a real JavaScript 200
+                // is kept now.
+                cacheName: 'seen-on-demand-chunks-v2',
                 expiration: { maxEntries: 60, maxAgeSeconds: 60 * 60 * 24 * 60 },
+                cacheableResponse: { statuses: [200] },
+                plugins: [{
+                  cacheWillUpdate: async ({ response }) =>
+                    response && response.status === 200 && /javascript/i.test(response.headers.get('content-type') || '')
+                      ? response
+                      : null,
+                }],
+              },
+            },
+            {
+              // Pages come from the network first (phase 4.2): a normal reload
+              // while online gets the newest build. Offline, or after 3
+              // seconds without an answer, the precached index.html -- the
+              // build this worker carries, so its code files are all here.
+              // Not stored per URL: a page saved under an old build would
+              // point at code files that are gone.
+              urlPattern: ({ request, url }) =>
+                request.mode === 'navigate'
+                && url.origin === self.location.origin
+                && !/^\/(api\/|blog(\/|$)|sitemap\.xml$|robots\.txt$)/.test(url.pathname),
+              // NetworkFirst only because Workbox allows the 3-second timeout
+              // with it; the plugin below stores no page, so after the
+              // timeout the answer is the precached index.html.
+              handler: 'NetworkFirst',
+              options: {
+                cacheName: 'seen-pages-unused',
+                networkTimeoutSeconds: 3,
+                plugins: [{ cacheWillUpdate: async () => null }],
+                precacheFallback: { fallbackURL: 'index.html' },
               },
             },
           ],
@@ -119,10 +155,19 @@ export default defineConfig(({mode}) => {
           // limit, which fails the build entirely rather than just
           // skipping the oversized file. Raised, not disabled.
           maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
-          // P3.4 (RELIABILITY-08): no skipWaiting/clientsClaim. A new service
-          // worker waits until the user taps "update" (pwaUpdate.ts); until
-          // then the open tab keeps the worker -- and the precache -- of the
-          // build it is running, so its own lazy pages still load offline.
+          // Old precaches from earlier Workbox versions go on activation.
+          cleanupOutdatedCaches: true,
+          // Pages are routed above (network first); no cache-first
+          // navigation fallback any more.
+          navigateFallback: null,
+          // public/sw-extra.js: drops the old on-demand cache and, for the
+          // rescue release, lets this worker take over by itself (phase 5).
+          importScripts: ['/sw-extra.js'],
+          // No skipWaiting/clientsClaim here: a new worker waits until the app
+          // finds the screen safe (updateManager.ts); until then the open tab
+          // keeps the worker -- and the precache -- of the build it runs, so
+          // its own lazy pages still load offline. (The one-time rescue in
+          // public/sw-extra.js is the exception.)
           // globIgnores above only keeps /blog/** out of the precache
           // manifest -- it does NOT stop the SW's navigation-fallback
           // routing from intercepting a navigation to /blog for a visitor

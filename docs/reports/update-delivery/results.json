@@ -1,0 +1,17 @@
+[
+  {
+    "scenario": "1 no-loop (A -> B, opening Settings)",
+    "ok": true,
+    "detail": "1 reload(s); page now on B"
+  },
+  {
+    "scenario": "2 guard (Settings file missing for good)",
+    "ok": true,
+    "detail": "1 automatic reload(s) in 40s; \"نحدّث النظام\" shown: true"
+  },
+  {
+    "scenario": "3 rescue (pre-22-Nov device -> this fix)",
+    "ok": true,
+    "detail": "1 reload(s); page now on A"
+  }
+]

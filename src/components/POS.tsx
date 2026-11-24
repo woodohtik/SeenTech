@@ -1,4 +1,5 @@
 import { ThermalInvoice, StandardInvoice, InvoiceData } from "./printing/InvoiceReceipt";
+import { useUnsavedWork } from '../lib/unsavedWork';
 import { contentReached } from '../lib/shellLayout';
 import { AutoGrid } from './ui/AutoGrid';
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
@@ -158,6 +159,8 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
   const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [cart, setCart] = useState<OrderItem[]>([]);
+  // A cart in progress holds off an update until the sale is done (seen-update-delivery-fix-task.md 3.1).
+  useUnsavedWork('pos-cart', cart.length > 0);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [customerUnpaidBalance, setCustomerUnpaidBalance] = useState<number>(0);

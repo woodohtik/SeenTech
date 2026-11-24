@@ -3,6 +3,7 @@ import { AlertCircle, RefreshCcw, Home, Terminal } from 'lucide-react';
 import { logError } from '../lib/logger';
 import i18n from 'i18next';
 import { dirOf } from '../lib/direction';
+import { claimAutoRecovery, hardRecover, isChunkLoadError, recoverFromStaleBuild } from '../lib/chunkRecovery';
 
 interface ErrorBoundaryProps {
   children?: React.ReactNode;
@@ -25,6 +26,8 @@ interface ErrorBoundaryState {
   isLazyLoadError: boolean;
   /** P3.4 (RELIABILITY-09): the page's code is not on this device and there is no network. */
   isOfflineChunkError: boolean;
+  /** The automatic try already ran in the last minute: one button, no more reloads. */
+  isStaleBuildError: boolean;
 }
 
 export default class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
@@ -35,6 +38,7 @@ export default class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBo
     eventId: null,
     isLazyLoadError: false,
     isOfflineChunkError: false,
+    isStaleBuildError: false,
   };
 
   static getDerivedStateFromError(error: Error) {
@@ -72,39 +76,28 @@ export default class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBo
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     console.warn('React ErrorBoundary caught an error:', error, errorInfo);
     
-    // Check if it's a dynamic import loading error
-    const isLazyLoadError = error && (
-      error.message?.includes('Failed to fetch dynamically imported module') ||
-      error.message?.includes('dynamically imported module') ||
-      error.name === 'ChunkLoadError'
-    );
-    
-    if (isLazyLoadError) {
-      // A stale build reference (e.g. this tab was open across a new
-      // deployment, so a lazy chunk's hashed filename no longer exists) --
-      // one reload against the live deployment resolves it. Log it so a
-      // spike is visible rather than invisible, and show a calm "updating"
-      // message instead of the full scary error card for the brief window
-      // before the reload actually takes effect.
-      // P3.4 (RELIABILITY-09): offline the code can't be fetched, and a reload
-      // would only fail again -- an endless reload loop. Reload only when
-      // online, and at most once a minute per page.
+    // A code file of this page could not be loaded: this tab runs an older
+    // build whose files are gone (seen-update-delivery-fix-task.md 0.5).
+    if (isChunkLoadError(error)) {
+      // Offline the code can't be fetched, and a reload would only fail again.
       const offline = typeof navigator !== 'undefined' && navigator.onLine === false;
-      const guardKey = `seen_chunk_reload:${window.location.pathname}`;
-      let recentlyReloaded = false;
-      try {
-        recentlyReloaded = Date.now() - Number(sessionStorage.getItem(guardKey) || 0) < 60_000;
-      } catch { /* storage unavailable */ }
-      if (offline || recentlyReloaded) {
+      if (offline) {
         logError(error, { errorInfo, source: 'ErrorBoundary:lazy-load-offline', offline });
         this.setState({ isOfflineChunkError: true });
         return;
       }
-      try { sessionStorage.setItem(guardKey, String(Date.now())); } catch { /* storage unavailable */ }
-      console.log('Detected lazy load error, auto-refreshing page...');
-      logError(error, { errorInfo, source: 'ErrorBoundary:lazy-load-reload' });
-      this.setState({ isLazyLoadError: true });
-      window.location.reload();
+      // One automatic try per minute for the whole app (not per page: the
+      // loop in the 23 Nov video moved between pages). It lets a new service
+      // worker take over before reloading, so the reload can land on the new
+      // build instead of the same old one.
+      if (claimAutoRecovery()) {
+        logError(error, { errorInfo, source: 'ErrorBoundary:lazy-load-reload' });
+        this.setState({ isLazyLoadError: true });
+        void recoverFromStaleBuild();
+        return;
+      }
+      logError(error, { errorInfo, source: 'ErrorBoundary:lazy-load-stale' });
+      this.setState({ isStaleBuildError: true });
       return;
     }
 
@@ -133,7 +126,24 @@ export default class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBo
   };
 
   render() {
-    const { hasError, error, eventId, isLazyLoadError, isOfflineChunkError } = this.state;
+    const { hasError, error, eventId, isLazyLoadError, isOfflineChunkError, isStaleBuildError } = this.state;
+
+    if (isStaleBuildError) {
+      // Calm and still: no spinner, no automatic reload. The one button clears
+      // the service worker and the caches and loads from the network.
+      return (
+        <div className={this.props.variant === 'inline'
+          ? 'bg-surface border border-border rounded-2xl p-5 flex flex-col items-center gap-3 text-content'
+          : 'min-h-screen bg-surface-muted flex flex-col items-center justify-center gap-4 p-4 text-content'} dir={dirOf()} role="alert">
+          <p className="font-bold text-base">{i18n.t('errors.updating_system_title')}</p>
+          <p className="text-sm text-content-muted text-center max-w-xs">{i18n.t('errors.updating_system_body')}</p>
+          <button type="button" onClick={() => { void hardRecover(); }}
+            className="min-h-12 px-6 rounded-[8px] bg-brand text-white font-semibold text-base">
+            {i18n.t('errors.update_button')}
+          </button>
+        </div>
+      );
+    }
 
     if (isOfflineChunkError) {
       return (

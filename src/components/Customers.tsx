@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { useUnsavedWork } from '../lib/unsavedWork';
 import { useDebouncedValue } from '../hooks/useDebouncedValue';
 import { useMeasurementUnit } from '../hooks/useMeasurementUnit';
 import { useFabricEstimateSettings } from '../hooks/useFabricEstimateSettings';
@@ -128,6 +129,8 @@ export default function Customers({ tenantId }: CustomersProps) {
   const [isBulkDeleteModalOpen, setIsBulkDeleteModalOpen] = useState(false);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
+  // The customer window (with its measurements) holds off an update while open (update-delivery task 3.1).
+  useUnsavedWork('customer-form', isModalOpen);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);

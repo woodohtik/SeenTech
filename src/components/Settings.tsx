@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import BuildStamp from './BuildStamp';
 import { FormGrid } from './ui/FormGrid';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSearchParams } from 'react-router-dom';
@@ -1245,8 +1246,7 @@ export default function Settings({ tenantId }: SettingsProps) {
         </main>
       </div>
       
-      <div className="mt-12 opacity-30">
-      </div>
+      <BuildStamp className="mt-12 text-center" />
 
       <AnimatePresence>
         {saveSuccess && (

@@ -5,6 +5,7 @@ import { requestPersistentStorage } from './persistentStorage';
 import { onConnectivityChange, checkConnectivityNow } from './connectivity';
 import { getActorStaffId, OFFLINE_ACTOR_HEADER } from '../actingSession';
 import { logError } from '../logger';
+import { registerUnsavedWork } from '../unsavedWork';
 
 /**
  * The outbox queue (seen-offline-sync-architecture-task.md Phase 3).
@@ -302,6 +303,9 @@ let draining = false;
 /** P3.4 / RELIABILITY-15: fired on window after each drain, so a re-fetch lands after the queue's writes. */
 export const OUTBOX_DRAINED_EVENT = 'seen-outbox-drained';
 export const isOutboxDraining = () => draining;
+// A sale being sent is work a reload could cut in half: no update applies
+// meanwhile (seen-update-delivery-fix-task.md 3.1). The drained event settles it.
+registerUnsavedWork('offline-outbox-send', isOutboxDraining);
 
 /**
  * Drains everything currently queued, oldest first. Safe to call

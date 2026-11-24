@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef, lazy, Suspense } from 'react';
+import BuildStamp from './BuildStamp';
 import { endActingSession } from '../lib/actingSession';
 import { PRIVACY_VERSION, TERMS_VERSION } from '../legal/legalVersions';
 import { formatSaudiPhone, validateSaudiPhone } from '../utils/phoneUtils';
@@ -1006,6 +1007,7 @@ export default function Login() {
             )}
         </div>
       </div>
+      <BuildStamp className="absolute bottom-2 inset-x-0 text-center pointer-events-none" />
     </div>
   );
 }

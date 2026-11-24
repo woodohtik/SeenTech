@@ -1,4 +1,6 @@
 import { registerSW } from 'virtual:pwa-register';
+import { applyUpdateNow, reportUpdate } from './updateManager';
+import { CURRENT_BUILD, fetchRemoteVersion, isNewerBuild } from './appVersion';
 
 /**
  * Proper service-worker lifecycle management -- previously the app relied
@@ -14,18 +16,17 @@ import { registerSW } from 'virtual:pwa-register';
  * longer matched the currently-referenced (content-hashed) chunk names for
  * routes not yet visited in that session.
  *
- * Deliberately does NOT auto-reload when an update is found: this is a POS
- * handling live payments with no draft-cart persistence, so forcing a
- * reload could discard a cashier's in-progress, not-yet-submitted sale.
- * Instead: check for updates hourly (covers a long-running tab) and surface
- * a dismissible prompt the user applies on their own schedule.
+ * A waiting worker is reported to updateManager.ts
+ * (seen-update-delivery-fix-task.md phase 3), which applies it by itself on
+ * a safe screen and only after the sale or the save otherwise -- never
+ * mid-sale, and no longer only on a tap. /version.json (appVersion.ts)
+ * reports a new build too, without waiting on the worker.
  */
 
 type Listener = () => void;
 
 const listeners = new Set<Listener>();
 let updateAvailable = false;
-let applyUpdate: ((reload?: boolean) => Promise<void>) | null = null;
 let initialized = false;
 
 const UPDATE_CHECK_INTERVAL_MS = 60 * 60 * 1000; // hourly -- frequent enough for a long shift, not so frequent it matters for cost/battery
@@ -48,7 +49,7 @@ export function initPwaUpdates(): void {
 }
 
 function registerNow(): void {
-  applyUpdate = registerSW({
+  registerSW({
     immediate: true,
     onRegisteredSW(_swUrl, registration) {
       if (!registration) return;
@@ -86,9 +87,32 @@ function registerNow(): void {
       window.addEventListener('focus', checkForUpdate);
       window.addEventListener('online', checkForUpdate);
     },
+    // A new worker is waiting. If the live build is newer than this page,
+    // the update manager applies it when safe. If this page already IS the
+    // live build (it was loaded from the network under the old worker), the
+    // new worker just takes over -- no reload.
     onNeedRefresh() {
       updateAvailable = true;
       listeners.forEach(listener => listener());
+      void (async () => {
+        const remote = await fetchRemoteVersion();
+        if (isNewerBuild(remote)) {
+          reportUpdate(remote!);
+        } else if (remote?.build === CURRENT_BUILD) {
+          const registration = await navigator.serviceWorker?.getRegistration();
+          registration?.waiting?.postMessage({ type: 'SKIP_WAITING' });
+        } else {
+          reportUpdate({ build: 'waiting-worker' });
+        }
+      })();
+    },
+    // A new worker took control (the library's default is to reload). Only
+    // a page older than the live build needs a reload, via the manager.
+    onNeedReload() {
+      void (async () => {
+        const remote = await fetchRemoteVersion();
+        if (isNewerBuild(remote)) reportUpdate(remote!);
+      })();
     },
   });
 }
@@ -97,9 +121,9 @@ export function isUpdateAvailable(): boolean {
   return updateAvailable;
 }
 
-/** Call from a user-initiated action only (a button click) -- reloads the page once the new service worker takes control. */
+/** Applies a pending update now (the "update now" button, the landing page). */
 export function applyPendingUpdate(): void {
-  void applyUpdate?.(true);
+  void applyUpdateNow();
 }
 
 /** Returns an unsubscribe function. */

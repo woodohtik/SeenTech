@@ -17,6 +17,7 @@
  */
 
 import PublicLanguageSwitch from './PublicLanguageSwitch';
+import { useUnsavedWork } from '../../lib/unsavedWork';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { XCircle } from 'lucide-react';
@@ -70,6 +71,9 @@ export default function CustomerMeasurementsForm({ token }: { token: string }) {
   const [measurements, setMeasurements] = useState<Measurements>({});
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  // Changes typed but not sent hold off an update (seen-update-delivery-fix-task.md 3.1).
+  const [touched, setTouched] = useState(false);
+  useUnsavedWork('public-measurements', touched && !saved);
   const [saveError, setSaveError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -172,6 +176,7 @@ export default function CustomerMeasurementsForm({ token }: { token: string }) {
                 onChange={(field, value) => {
                   setMeasurements((m) => ({ ...m, [field]: value }));
                   setSaved(false);
+                  setTouched(true);
                 }}
               />
               <ThobeMeasurementSelector
@@ -179,6 +184,7 @@ export default function CustomerMeasurementsForm({ token }: { token: string }) {
                 onChange={(next) => {
                   setMeasurements(next);
                   setSaved(false);
+                  setTouched(true);
                 }}
                 measurementUnit={measurementUnit}
                 // The customer's own phone: the advanced section starts closed

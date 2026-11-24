@@ -725,7 +725,8 @@
     "from": "From",
     "to": "To",
     "type": "Type",
-    "copied": "Copied"
+    "copied": "Copied",
+    "build_number": "Build"
   },
   "compliance": {
     "check_legal_name": "Legal Name of the Business",
@@ -1188,7 +1189,10 @@
     "zatca_submission_failed": "Couldn't submit the invoice to ZATCA. Try again, or contact support if this keeps happening.",
     "page_offline": "This page is not available offline on this device. It will work once the connection is back.",
     "back_to_pos": "Back to the point of sale",
-    "write_failed": "The change wasn't saved. Try again; if it keeps happening, contact support."
+    "write_failed": "The change wasn't saved. Try again; if it keeps happening, contact support.",
+    "updating_system_title": "Updating the system",
+    "updating_system_body": "A new version of Seen is ready. Press “Update” to load it. Unsent sales stay saved on this device.",
+    "update_button": "Update"
   },
   "inventory": {
     "add_failed": "Failed to add product",
@@ -5727,7 +5731,12 @@
   "pwa": {
     "update_available": "A new update is available",
     "update_available_reason": "Tap to apply it now — it won't apply automatically so no sale in progress is lost.",
-    "update_now": "Update now"
+    "update_now": "Update now",
+    "update_ready_after_task": "Update ready — it applies once this is done",
+    "update_applying": "Updating…",
+    "update_required_title": "Update required",
+    "update_required_body": "This copy of Seen no longer works. Update to continue. Unsent sales stay saved on this device.",
+    "update_stuck": "The update could not apply by itself. Press “Update”."
   },
   "offline": {
     "conflicts_badge": "{{count}} stock conflicts",

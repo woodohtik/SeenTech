@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useUnsavedWork } from '../lib/unsavedWork';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { useTranslation } from 'react-i18next';
@@ -412,6 +413,8 @@ function TailoringOrderFormBody({
 }: TailoringOrderFormProps) {
   const { t, i18n } = useTranslation();
   const isRtl = isRtlLang(i18n.language);
+  // The open order form holds off an update until it is saved or closed (update-delivery task 3.1).
+  useUnsavedWork('tailoring-order-form', true);
   const { error: toastError, success: toastSuccess, warning: toastWarning } = useToast();
   const { confirm } = useConfirm();
   const { currentStaff } = useStaff();
