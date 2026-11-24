@@ -114,7 +114,9 @@ describe('createArticle', () => {
     );
     expect(res.statusCode).toBe(200);
     expect(createSpy).toHaveBeenCalledWith(expect.stringContaining('.md'), expect.any(String), expect.any(String));
-    expect(hookSpy).toHaveBeenCalled();
+    // seen-vercel-build-usage-task.md: the commit itself starts the one Vercel
+    // build; calling the deploy hook too built the same commit twice.
+    expect(hookSpy).not.toHaveBeenCalled();
   });
 
   test('createArticle returns 409 with the existing title when the derived slug is already taken', async () => {
@@ -290,7 +292,7 @@ describe('getArticle / updateArticle / deleteArticle', () => {
   test('updateArticle fetches the current sha first, then updates with it', async () => {
     vi.spyOn(blogGitHub, 'getBlogFile').mockResolvedValue({ path: 'content/blog/x.md', sha: 'current-sha', content: '' });
     const updateSpy = vi.spyOn(blogGitHub, 'updateBlogFile').mockResolvedValue(undefined);
-    vi.spyOn(blogDeployHook, 'triggerBlogRebuild').mockResolvedValue(undefined);
+    const hookSpy = vi.spyOn(blogDeployHook, 'triggerBlogRebuild').mockResolvedValue(undefined);
     const res = mockRes();
     await updateArticle(
       { params: { slug: 'x' }, body: { title: 'عنوان', metaDescription: 'وصف', cluster: 'orders', publishDate: '2026-11-04T10:00:00Z', related: [], body: 'نص' } } as any,
@@ -298,6 +300,7 @@ describe('getArticle / updateArticle / deleteArticle', () => {
     );
     expect(updateSpy).toHaveBeenCalledWith('x.md', expect.any(String), 'current-sha', expect.any(String));
     expect(res.statusCode).toBe(200);
+    expect(hookSpy).not.toHaveBeenCalled();
   });
 
   // Regression: same plain-Error-must-map-to-502 guarantee as createArticle's,
@@ -317,11 +320,12 @@ describe('getArticle / updateArticle / deleteArticle', () => {
   test('deleteArticle fetches the current sha first, then deletes with it', async () => {
     vi.spyOn(blogGitHub, 'getBlogFile').mockResolvedValue({ path: 'content/blog/x.md', sha: 'current-sha', content: '' });
     const deleteSpy = vi.spyOn(blogGitHub, 'deleteBlogFile').mockResolvedValue(undefined);
-    vi.spyOn(blogDeployHook, 'triggerBlogRebuild').mockResolvedValue(undefined);
+    const hookSpy = vi.spyOn(blogDeployHook, 'triggerBlogRebuild').mockResolvedValue(undefined);
     const res = mockRes();
     await deleteArticle({ params: { slug: 'x' } } as any, res);
     expect(deleteSpy).toHaveBeenCalledWith('x.md', 'current-sha', expect.any(String));
     expect(res.statusCode).toBe(200);
+    expect(hookSpy).not.toHaveBeenCalled();
   });
 
   // I3 (security): Express decodes %2F inside a route param, so a request to

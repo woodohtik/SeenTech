@@ -4,11 +4,15 @@
  * Every handler validates the request body with `validateFrontmatter`'s own
  * rules BEFORE ever touching GitHub, so a 400 never triggers a wasted (or
  * dangerous) write. Writes always go: validate -> read-before-write (for
- * optimistic concurrency on update/delete) -> write -> best-effort
- * `triggerBlogRebuild()` -> respond. `triggerBlogRebuild()` is only ever
- * called after a GitHub write actually succeeds.
+ * optimistic concurrency on update/delete) -> write -> respond.
  *
- * `blogGitHub` and `blogDeployHook` are imported as namespaces (not named
+ * No deploy hook after a save (seen-vercel-build-usage-task.md): the commit
+ * on BLOG_GITHUB_BRANCH (main or staging) already starts exactly one Vercel
+ * build through the Git integration. Calling the hook as well built the same
+ * commit twice. The hook stays for one job only: a scheduled article whose
+ * date has come, which the /api/cron/blog-rebuild-sweep route publishes.
+ *
+ * `blogGitHub` is imported as a namespace (not named
  * imports) so tests can `vi.spyOn(blogGitHub, 'getBlogFile')` etc. -- named
  * ESM bindings are live but read-only and `vi.spyOn` can't intercept them.
  */
@@ -19,7 +23,6 @@ import { renderArticlePage } from '../../scripts/blog/templates/articlePage.ts';
 import { getCategory } from '../../scripts/blog/categories.ts';
 import { slugify } from '../utils/slugify.ts';
 import * as blogGitHub from './blogGitHub.ts';
-import * as blogDeployHook from './blogDeployHook.ts';
 // Self-import: calls from inside this module to `thisModule.fetchAllArticles()`
 // (instead of the bare identifier) go through this module's own namespace
 // object, which is what lets a test's `vi.spyOn(blogAdmin, 'fetchAllArticles')`
@@ -243,7 +246,6 @@ export async function createArticle(req: any, res: any): Promise<void> {
     return;
   }
 
-  await blogDeployHook.triggerBlogRebuild();
   res.status(200).json({ slug });
 }
 
@@ -292,7 +294,6 @@ export async function updateArticle(req: any, res: any): Promise<void> {
     return;
   }
 
-  await blogDeployHook.triggerBlogRebuild();
   res.status(200).json({ slug });
 }
 
@@ -325,7 +326,6 @@ export async function deleteArticle(req: any, res: any): Promise<void> {
     return;
   }
 
-  await blogDeployHook.triggerBlogRebuild();
   res.status(200).json({});
 }
 
