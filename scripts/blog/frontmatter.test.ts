@@ -13,7 +13,7 @@ test('loads slug from filename and computes canonical url', () => {
   writeArticle(dir, 'how-to.md', 'title: "عنوان"\nmeta_description: "وصف"\ncluster: orders\npublish_date: "2026-11-03"\nrelated: []', 'نص المقالة.');
   const [article] = loadArticles(dir);
   expect(article.slug).toBe('how-to');
-  expect(article.canonicalUrl).toBe('https://seentech.io/blog/how-to');
+  expect(article.canonicalUrl).toBe('https://www.seentech.io/blog/how-to');
   rmSync(dir, { recursive: true });
 });
 

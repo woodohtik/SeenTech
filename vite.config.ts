@@ -38,7 +38,8 @@ export default defineConfig(({mode}) => {
         // at once on a safe screen, after the sale or the save otherwise --
         // never mid-sale (P3.4, RELIABILITY-08), never only on a tap.
         registerType: 'prompt',
-        includeAssets: ['favicon.svg'],
+        // seen-search-appearance-task.md: the new logo's icons.
+        includeAssets: ['favicon.ico', 'favicon.svg', 'favicon-96x96.png', 'apple-touch-icon.png'],
         manifest: {
           name: 'سِين — إدارة محلات التفصيل',
           short_name: 'سِين',
@@ -48,8 +49,13 @@ export default defineConfig(({mode}) => {
           start_url: '/',
           display: 'standalone',
           background_color: '#F4F6F9',
-          theme_color: '#1F3A5F',
+          theme_color: '#0E2A42',
+          // PNGs for installing on Android and the desktop (an SVG alone is not
+          // enough there), a maskable one with a safe margin, the SVG last.
           icons: [
+            { src: '/icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
+            { src: '/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
+            { src: '/icon-maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
             { src: '/Logo.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any' },
           ],
         },

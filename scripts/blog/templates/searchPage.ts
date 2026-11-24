@@ -1,4 +1,4 @@
-import { STYLE_BLOCK, FONTS_PRECONNECT, renderSiteHeader, renderSiteFooter, renderStickyMobileCta, BLOG_CLIENT_SCRIPT_TAG, getSiteUrl } from './shared';
+import { STYLE_BLOCK, FONTS_PRECONNECT, renderSiteHeader, renderSiteFooter, renderStickyMobileCta, BLOG_CLIENT_SCRIPT_TAG, getSiteUrl, ICON_LINKS } from './shared';
 
 // Static shell; the client-side filter (re-implementing filterSearchIndex's
 // same lowercase-substring rule from scripts/blog/search.ts against the
@@ -12,6 +12,7 @@ export function renderSearchPage(): string {
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+${ICON_LINKS}
 <title>البحث | مدونة سين</title>
 <meta name="robots" content="noindex">
 ${FONTS_PRECONNECT}

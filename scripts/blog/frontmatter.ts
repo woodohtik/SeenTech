@@ -2,6 +2,7 @@ import { readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import matter from 'gray-matter';
 import { getCategory } from './categories';
+import { SITE_ORIGIN } from './siteOrigin';
 
 export interface ArticleFrontmatter {
   title: string;
@@ -94,7 +95,7 @@ export function loadArticles(contentDir: string, now: Date = new Date()): Loaded
       frontmatter,
       rawBody,
       readTimeMinutes,
-      canonicalUrl: `https://seentech.io/blog/${slug}`,
+      canonicalUrl: `${SITE_ORIGIN}/blog/${slug}`,
     };
   });
 

@@ -12,6 +12,7 @@ import { buildSitemapXml, buildRobotsTxt, type SitemapUrl } from './blog/sitemap
 import { buildAnalyticsInitScript } from './blog/analytics';
 import { isProductionBuild } from './blog/templates/shared';
 import { CATEGORIES } from './blog/categories';
+import { SITE_ORIGIN } from './blog/siteOrigin';
 
 // This project is "type": "module" -- __dirname doesn't exist under ESM
 // (same class of bug as the entry-point check below: a CommonJS global
@@ -73,7 +74,9 @@ export async function buildBlog(contentDir: string, outDir: string): Promise<voi
   }
 
   const urls: SitemapUrl[] = [
-    { url: 'https://seentech.io/blog/', lastmod: latestPublishDate(articles) },
+    // The home page (the app's own pages -- login, dashboard -- stay out).
+    { url: `${SITE_ORIGIN}/`, lastmod: latestPublishDate(articles) },
+    { url: `${SITE_ORIGIN}/blog/`, lastmod: latestPublishDate(articles) },
     ...articles.map(a => ({ url: a.canonicalUrl, lastmod: a.frontmatter.publishDate })),
     // A category with no articles yet renders a "coming soon" page --
     // still built and reachable, but thin/duplicate content that
@@ -82,12 +85,12 @@ export async function buildBlog(contentDir: string, outDir: string): Promise<voi
       .map(c => ({ category: c, articlesInCategory: articles.filter(a => a.frontmatter.cluster === c.slug) }))
       .filter(({ articlesInCategory }) => articlesInCategory.length > 0)
       .map(({ category, articlesInCategory }) => ({
-        url: `https://seentech.io/blog/category/${category.slug}`,
+        url: `${SITE_ORIGIN}/blog/category/${category.slug}`,
         lastmod: latestPublishDate(articlesInCategory),
       })),
   ];
   writeFileSync(path.join(outDir, 'sitemap.xml'), buildSitemapXml(urls));
-  writeFileSync(path.join(outDir, 'robots.txt'), buildRobotsTxt('https://seentech.io/sitemap.xml', isProductionBuild()));
+  writeFileSync(path.join(outDir, 'robots.txt'), buildRobotsTxt(`${SITE_ORIGIN}/sitemap.xml`, isProductionBuild()));
 }
 
 // Project is "type": "module" -- require.main/module aren't available

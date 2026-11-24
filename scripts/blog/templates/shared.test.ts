@@ -23,7 +23,7 @@ afterEach(() => {
 // why SEO-facing URLs (canonical, JSON-LD, sitemap) do the opposite.
 test('getSiteUrl defaults to the production domain when BLOG_SITE_URL is unset', () => {
   delete process.env.BLOG_SITE_URL;
-  expect(getSiteUrl()).toBe('https://seentech.io');
+  expect(getSiteUrl()).toBe('https://www.seentech.io');
 });
 
 test('getSiteUrl follows BLOG_SITE_URL on a non-production build', () => {
@@ -35,7 +35,7 @@ test('getSiteUrl follows BLOG_SITE_URL on a non-production build', () => {
 test('getSiteUrl ignores BLOG_SITE_URL and stays on the production domain for a production build', () => {
   process.env.VERCEL_ENV = 'production';
   process.env.BLOG_SITE_URL = 'https://staging.seentech.io';
-  expect(getSiteUrl()).toBe('https://seentech.io');
+  expect(getSiteUrl()).toBe('https://www.seentech.io');
 });
 
 test('style block is non-empty css with no style tags', () => {
@@ -68,7 +68,7 @@ test('site header logo and nav links follow BLOG_SITE_URL, not a hardcoded produ
   const html = renderSiteHeader();
   expect(html).toContain('href="https://staging.seentech.io/"');
   expect(html).toContain('href="https://staging.seentech.io/blog/"');
-  expect(html).not.toContain('href="https://seentech.io/"');
+  expect(html).not.toContain('href="https://www.seentech.io/"');
 });
 
 test('footer renders without throwing', () => {

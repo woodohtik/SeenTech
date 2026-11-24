@@ -1,7 +1,7 @@
 import { test, expect } from 'vitest';
 import { buildSearchIndex, filterSearchIndex } from './search';
 
-const article = { slug: 'how-to', canonicalUrl: 'https://seentech.io/blog/how-to', readTimeMinutes: 3,
+const article = { slug: 'how-to', canonicalUrl: 'https://www.seentech.io/blog/how-to', readTimeMinutes: 3,
   frontmatter: { title: 'كيف تتابع الطلبات؟', metaDescription: 'دليل عملي للمتابعة', cluster: 'orders', publishDate: '2026-11-03', related: [] },
   rawBody: '' } as any;
 

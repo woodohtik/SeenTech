@@ -29,6 +29,7 @@ import * as blogGitHub from './blogGitHub.ts';
 // intercept it -- a bare in-module call would bind directly to the local
 // function declaration and bypass any spy on the exports object.
 import * as thisModule from './blogAdmin.ts';
+import { SITE_ORIGIN } from '../../scripts/blog/siteOrigin.ts';
 
 const WORDS_PER_MINUTE = 180;
 const MIN_READ_TIME_MINUTES = 2;
@@ -147,7 +148,7 @@ export async function fetchAllArticles(): Promise<LoadedArticle[]> {
           frontmatter,
           rawBody,
           readTimeMinutes,
-          canonicalUrl: `https://seentech.io/blog/${slug}`,
+          canonicalUrl: `${SITE_ORIGIN}/blog/${slug}`,
         };
       } catch (err) {
         console.warn(`[blog] skipping ${file.name}: failed to parse`, err);
@@ -363,7 +364,7 @@ export async function previewArticle(req: any, res: any): Promise<void> {
     frontmatter: { title, metaDescription, cluster, publishDate, related },
     rawBody: body,
     readTimeMinutes,
-    canonicalUrl: 'https://seentech.io/blog/preview',
+    canonicalUrl: `${SITE_ORIGIN}/blog/preview`,
   };
 
   const parsed = await parseArticleSections(body);

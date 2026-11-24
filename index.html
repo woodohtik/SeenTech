@@ -12,10 +12,27 @@
          injected only when the language is Urdu or English
          (src/lib/direction.ts ensureLanguageFonts). -->
     <link rel="preload" href="/fonts/IBMPlexSansArabic-Regular.woff2" as="font" type="font/woff2" crossorigin />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <link rel="apple-touch-icon" href="/Logo.svg" />
-    <meta name="theme-color" content="#1F3A5F" />
-    <title>نظام سين | Seen System</title>
+    <!-- seen-search-appearance-task.md: /favicon.ico first (where Bing and older
+         browsers look), the SVG for modern browsers, a 96px PNG for Google, the
+         touch icon for iOS. ?v=2 gets past icons browsers kept from the old logo. -->
+    <link rel="icon" href="/favicon.ico?v=2" sizes="48x48" />
+    <link rel="icon" href="/favicon.svg?v=2" type="image/svg+xml" />
+    <link rel="icon" href="/favicon-96x96.png?v=2" type="image/png" sizes="96x96" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=2" />
+    <meta name="theme-color" content="#0E2A42" />
+    <title>سين | نظام إدارة محلات تفصيل الثياب</title>
+    <!-- One description for every search engine, read before any JavaScript
+         runs (Bing mostly does not run it). -->
+    <meta name="description" content="سين نظام لإدارة محلات تفصيل الثياب: طلبات التفصيل والمقاسات ونقطة البيع والفواتير الإلكترونية المربوطة مع زاتكا." />
+    <link rel="canonical" href="https://www.seentech.io/" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="سين" />
+    <meta property="og:title" content="سين | نظام إدارة محلات تفصيل الثياب" />
+    <meta property="og:description" content="سين نظام لإدارة محلات تفصيل الثياب: طلبات التفصيل والمقاسات ونقطة البيع والفواتير الإلكترونية المربوطة مع زاتكا." />
+    <meta property="og:url" content="https://www.seentech.io/" />
+    <meta property="og:image" content="https://www.seentech.io/icon-512.png" />
+    <meta property="og:locale" content="ar_SA" />
+    <meta name="twitter:card" content="summary" />
     <!-- The splash inside #root below: painted from the first bytes of the
          page, replaced by React's first render. Plain CSS, no web font. -->
     <style>
@@ -28,6 +45,7 @@
       @media (prefers-reduced-motion:reduce){#seen-splash .bar i{animation:none;width:100%;opacity:.4}}
       html.dark #seen-splash{background:#0F172A}
       html.dark #seen-splash .name{color:#F8FAFC}
+      .seen-static-desc{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
     </style>
     <script>
       // next-themes keeps the choice under "theme"; match the splash to it.
@@ -35,7 +53,7 @@
     </script>
   </head>
   <body class="min-h-screen overflow-x-hidden antialiased flex flex-col w-full">
-    <div id="root"><div id="seen-splash" role="status" aria-label="جاري تحميل نظام سين"><div class="mark"><svg width="40" height="40" viewBox="0 0 40 40" aria-hidden="true"><path d="M8 25c4 5 10 6 15 3 4-2 6-6 5-10-1-3-4-5-7-4-3 1-4 4-3 7 1 4 6 6 10 4 3-1 5-4 6-7" fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="name">سِين</div><div class="bar"><i></i></div></div></div>
+    <div id="root"><div id="seen-splash" role="status" aria-label="جاري تحميل نظام سين"><div class="mark"><svg width="40" height="40" viewBox="0 0 40 40" aria-hidden="true"><path d="M8 25c4 5 10 6 15 3 4-2 6-6 5-10-1-3-4-5-7-4-3 1-4 4-3 7 1 4 6 6 10 4 3-1 5-4 6-7" fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="name">سِين</div><div class="bar"><i></i></div></div><p class="seen-static-desc"><strong>سين</strong> سين نظام لإدارة محلات تفصيل الثياب: طلبات التفصيل والمقاسات ونقطة البيع والفواتير الإلكترونية المربوطة مع زاتكا.</p></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

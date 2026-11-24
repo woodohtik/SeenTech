@@ -14,7 +14,7 @@ afterEach(() => {
   else process.env.BLOG_SITE_URL = originalBlogSiteUrl;
 });
 
-const article = { slug: 'how-to', canonicalUrl: 'https://seentech.io/blog/how-to', readTimeMinutes: 3,
+const article = { slug: 'how-to', canonicalUrl: 'https://www.seentech.io/blog/how-to', readTimeMinutes: 3,
   frontmatter: { title: 'كيف تتابع الطلبات؟', metaDescription: 'وصف', cluster: 'orders', publishDate: '2026-11-03', related: [] },
   rawBody: '' } as any;
 
@@ -126,5 +126,5 @@ test('chips nav and search form follow BLOG_SITE_URL, not a hardcoded production
   expect(html).toContain('href="https://staging.seentech.io/"');
   expect(html).toContain('href="https://staging.seentech.io/blog/category/orders"');
   expect(html).toContain('action="https://staging.seentech.io/blog/search"');
-  expect(html).not.toContain('href="https://seentech.io/blog/category/orders"');
+  expect(html).not.toContain('href="https://www.seentech.io/blog/category/orders"');
 });

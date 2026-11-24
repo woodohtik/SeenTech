@@ -1,4 +1,5 @@
 import { blogConfig } from '../../../content/blog.config';
+import { SITE_ORIGIN } from '../siteOrigin';
 
 // Content is trusted (git-committed, not user-submitted at runtime), so
 // this is a correctness fix, not an XSS one: an ASCII quote or `&` in a
@@ -293,9 +294,20 @@ export function renderRobotsMetaTag(): string {
 // above are what keep those non-production builds out of search results,
 // so a fixed canonical target there doesn't cost anything.
 export function getSiteUrl(): string {
-  if (isProductionBuild()) return 'https://seentech.io';
-  return process.env.BLOG_SITE_URL || 'https://seentech.io';
+  if (isProductionBuild()) return SITE_ORIGIN;
+  return process.env.BLOG_SITE_URL || SITE_ORIGIN;
 }
+
+/**
+ * The site's icons, the same lines as index.html (seen-search-appearance-
+ * task.md): /favicon.ico first (where Bing and older browsers look), the SVG
+ * for modern browsers, a 96px PNG for Google, the touch icon for iOS.
+ */
+export const ICON_LINKS = `<link rel="icon" href="/favicon.ico?v=2" sizes="48x48">
+<link rel="icon" href="/favicon.svg?v=2" type="image/svg+xml">
+<link rel="icon" href="/favicon-96x96.png?v=2" type="image/png" sizes="96x96">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png?v=2">
+<meta name="theme-color" content="#0E2A42">`;
 
 // Verbatim from seen-blog-reference/02_المقالة_من_الداخل.html lines 371-393,
 // aria-label and CTA anchor text/href replaced with blogConfig. Only used by

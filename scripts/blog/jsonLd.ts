@@ -1,5 +1,6 @@
 import type { LoadedArticle } from './frontmatter';
 import type { FaqItem } from './parseArticleSections';
+import { SITE_ORIGIN } from './siteOrigin';
 
 export function buildArticleJsonLd(article: LoadedArticle): object {
   return {
@@ -11,16 +12,16 @@ export function buildArticleJsonLd(article: LoadedArticle): object {
     datePublished: article.frontmatter.publishDate,
     dateModified: article.frontmatter.publishDate,
     inLanguage: 'ar-SA',
-    image: `https://seentech.io/blog/og/${article.slug}.png`,
+    image: `${SITE_ORIGIN}/blog/og/${article.slug}.png`,
     author: {
       '@type': 'Organization',
       name: 'سين',
-      url: 'https://seentech.io',
+      url: SITE_ORIGIN,
     },
     publisher: {
       '@type': 'Organization',
       name: 'سين',
-      url: 'https://seentech.io',
+      url: SITE_ORIGIN,
     },
   };
 }

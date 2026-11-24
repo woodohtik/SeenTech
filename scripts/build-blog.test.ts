@@ -47,9 +47,9 @@ test('sitemap gives the index and the article a lastmod from the article\'s publ
   await buildBlog(contentDir, outDir);
 
   const sitemapXml = readFileSync(path.join(outDir, 'sitemap.xml'), 'utf8');
-  expect(sitemapXml).toContain('<url><loc>https://seentech.io/blog/sample-article</loc><lastmod>2026-11-03</lastmod></url>');
-  expect(sitemapXml).toContain('<url><loc>https://seentech.io/blog/</loc><lastmod>2026-11-03</lastmod></url>');
-  expect(sitemapXml).toContain('<url><loc>https://seentech.io/blog/category/orders</loc><lastmod>2026-11-03</lastmod></url>');
+  expect(sitemapXml).toContain('<url><loc>https://www.seentech.io/blog/sample-article</loc><lastmod>2026-11-03</lastmod></url>');
+  expect(sitemapXml).toContain('<url><loc>https://www.seentech.io/blog/</loc><lastmod>2026-11-03</lastmod></url>');
+  expect(sitemapXml).toContain('<url><loc>https://www.seentech.io/blog/category/orders</loc><lastmod>2026-11-03</lastmod></url>');
 });
 
 // A category with no articles renders a "coming soon" page (thin content)

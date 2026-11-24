@@ -1,6 +1,7 @@
 import { blogConfig } from '../../../content/blog.config';
 import { CATEGORIES, getCategory, type CategoryDef } from '../categories';
 import type { LoadedArticle } from '../frontmatter';
+import { SITE_ORIGIN } from '../siteOrigin';
 import {
   STYLE_BLOCK,
   FONTS_PRECONNECT,
@@ -13,6 +14,7 @@ import {
   renderRobotsMetaTag,
   getSiteUrl,
   escapeHtml,
+  ICON_LINKS,
 } from './shared';
 
 const ARABIC_MONTHS = [
@@ -78,6 +80,7 @@ function renderHead(title: string, description: string, canonical: string): stri
   return `<head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+${ICON_LINKS}
 <title>${escapeHtml(title)}</title>
 <meta name="description" content="${escapeHtml(description)}">
 <link rel="canonical" href="${canonical}">
@@ -155,7 +158,7 @@ ${interviewBand}
 </section>`;
 
   return renderPageShell(
-    renderHead('مدونة سين | دليل صاحب محل التفصيل', 'مقالات عملية لصاحب محل التفصيل: الطلبات والمقاسات والموسم واختيار البرنامج، مبنية على مقابلات مع محلات في الرياض.', 'https://seentech.io/blog/'),
+    renderHead('مدونة سين | دليل صاحب محل التفصيل', 'مقالات عملية لصاحب محل التفصيل: الطلبات والمقاسات والموسم واختيار البرنامج، مبنية على مقابلات مع محلات في الرياض.', `${SITE_ORIGIN}/blog/`),
     mainContent,
     'index'
   );
@@ -178,7 +181,7 @@ ${renderChipsNav(category.slug)}
 </section>`;
 
   return renderPageShell(
-    renderHead(`${category.label} | مدونة سين`, `مقالات عن ${category.label} في مدونة سين.`, `https://seentech.io/blog/category/${category.slug}`),
+    renderHead(`${category.label} | مدونة سين`, `مقالات عن ${category.label} في مدونة سين.`, `${SITE_ORIGIN}/blog/category/${category.slug}`),
     mainContent,
     'category'
   );

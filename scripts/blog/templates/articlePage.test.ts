@@ -11,7 +11,7 @@ afterEach(() => {
 });
 
 const baseArticle = {
-  slug: 'how-to', canonicalUrl: 'https://seentech.io/blog/how-to', readTimeMinutes: 3,
+  slug: 'how-to', canonicalUrl: 'https://www.seentech.io/blog/how-to', readTimeMinutes: 3,
   frontmatter: { title: 'كيف تتابع الطلبات؟', metaDescription: 'وصف قصير', cluster: 'orders', publishDate: '2026-11-03', related: ['other'] },
   rawBody: '',
 } as any;
@@ -21,13 +21,13 @@ const parsed = { summaryHtml: '<p>ملخص.</p>', sections: [{ id: 's1', heading
 test('page title and canonical come from frontmatter/article', () => {
   const html = renderArticlePage(baseArticle, parsed, [baseArticle, otherArticle]);
   expect(html).toContain('<title>كيف تتابع الطلبات؟');
-  expect(html).toContain('rel="canonical" href="https://seentech.io/blog/how-to"');
+  expect(html).toContain('rel="canonical" href="https://www.seentech.io/blog/how-to"');
 });
 
 test('inline "وين تدخل منصة سين؟" box keeps the unchanged button, not the config cta', () => {
   const html = renderArticlePage(baseArticle, parsed, [baseArticle, otherArticle]);
   expect(html).toContain('نوريك إياه في محلك');
-  expect(html).toContain('https://seentech.io/#book');
+  expect(html).toContain('https://www.seentech.io/#book');
 });
 
 test('related cards resolve from frontmatter.related against the full article list', () => {
@@ -140,7 +140,7 @@ test('article pages carry og:type=article, article:published_time, and a full Tw
   expect(html).toContain('<meta name="twitter:card" content="summary_large_image">');
   expect(html).toContain('<meta name="twitter:title" content="كيف تتابع الطلبات؟">');
   expect(html).toContain('<meta name="twitter:description" content="وصف قصير">');
-  expect(html).toContain('<meta name="twitter:image" content="https://seentech.io/blog/og/how-to.png">');
+  expect(html).toContain('<meta name="twitter:image" content="https://www.seentech.io/blog/og/how-to.png">');
 });
 
 test('breadcrumb nav follows BLOG_SITE_URL, not a hardcoded production domain', () => {
@@ -149,5 +149,5 @@ test('breadcrumb nav follows BLOG_SITE_URL, not a hardcoded production domain', 
   const html = renderArticlePage(baseArticle, parsed, [baseArticle]);
   expect(html).toContain('href="https://staging.seentech.io/blog/"');
   expect(html).toContain('href="https://staging.seentech.io/blog/category/orders"');
-  expect(html).not.toContain('href="https://seentech.io/blog/"');
+  expect(html).not.toContain('href="https://www.seentech.io/blog/"');
 });

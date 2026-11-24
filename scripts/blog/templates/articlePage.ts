@@ -2,6 +2,7 @@ import { getCategory } from '../categories';
 import type { LoadedArticle } from '../frontmatter';
 import type { ParsedArticle } from '../parseArticleSections';
 import { buildArticleJsonLd, buildFaqJsonLd } from '../jsonLd';
+import { SITE_ORIGIN } from '../siteOrigin';
 import {
   STYLE_BLOCK,
   FONTS_PRECONNECT,
@@ -15,6 +16,7 @@ import {
   renderRobotsMetaTag,
   getSiteUrl,
   escapeHtml,
+  ICON_LINKS,
 } from './shared';
 
 const ARABIC_MONTHS = [
@@ -115,7 +117,7 @@ export function renderArticlePage(article: LoadedArticle, parsed: ParsedArticle,
   // The "نوريك إياه في محلك" button is fixed verbatim -- never driven by
   // blogConfig, per the task's explicit exception.
   const whereSeenFitsBox = parsed.whereSeenFitsHtml
-    ? `<aside class="inline-cta" aria-label="وين تدخل منصة سين"><div><h2>وين تدخل منصة سين؟</h2>${parsed.whereSeenFitsHtml}</div><a class="btn btn-cta" href="https://seentech.io/#book" data-track="cta_inline">نوريك إياه في محلك</a></aside>`
+    ? `<aside class="inline-cta" aria-label="وين تدخل منصة سين"><div><h2>وين تدخل منصة سين؟</h2>${parsed.whereSeenFitsHtml}</div><a class="btn btn-cta" href="${SITE_ORIGIN}/#book" data-track="cta_inline">نوريك إياه في محلك</a></aside>`
     : '';
 
   const aboutBox = parsed.aboutSeenHtml
@@ -146,19 +148,20 @@ export function renderArticlePage(article: LoadedArticle, parsed: ParsedArticle,
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+${ICON_LINKS}
 <title>${pageTitle}</title>
 <meta name="description" content="${metaDescription}">
 <link rel="canonical" href="${article.canonicalUrl}">
 <meta property="og:type" content="article">
 <meta property="og:title" content="${pageTitle}">
 <meta property="og:description" content="${metaDescription}">
-<meta property="og:image" content="https://seentech.io/blog/og/${article.slug}.png">
+<meta property="og:image" content="${SITE_ORIGIN}/blog/og/${article.slug}.png">
 <meta property="og:locale" content="ar_SA">
 <meta property="article:published_time" content="${article.frontmatter.publishDate}">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="${title}">
 <meta name="twitter:description" content="${metaDescription}">
-<meta name="twitter:image" content="https://seentech.io/blog/og/${article.slug}.png">
+<meta name="twitter:image" content="${SITE_ORIGIN}/blog/og/${article.slug}.png">
 ${renderRobotsMetaTag()}
 ${FONTS_PRECONNECT}
 <style>${STYLE_BLOCK}</style>
