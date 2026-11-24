@@ -81,6 +81,8 @@ const FRACTIONS = build([
 // Two-word fraction phrase.
 const FRACTION_PHRASES = build([
   ['ثلاثة أرباع', 0.75, 'fraction'],
+  // Said without the ة as often as with it ("عشرين وثلاث أرباع").
+  ['ثلاث أرباع', 0.75, 'fraction'],
 ]);
 
 // Two-word teens (11-19), e.g. "أحد عشر". Keys are the normalized pair.

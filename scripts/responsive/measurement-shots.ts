@@ -10,7 +10,7 @@
  * results.json: per shot, the visible fields and the largest empty gap
  * between two neighbouring fields in a column (no holes around the figure).
  */
-import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium, type Page } from 'playwright';
@@ -22,8 +22,11 @@ const arg = (name: string, fallback: string) => { const i = process.argv.indexOf
 const LABEL = arg('label', 'after');
 const PORT = Number(arg('port', '5196'));
 const BASE = `http://127.0.0.1:${PORT}`;
-const OUT = path.join(ROOT, 'docs/responsive/measurements', LABEL);
-const WIDTHS = [360, 768, 1280];
+// --dir picks the folder under docs/responsive (measurements-v2 for the second task).
+const OUT = path.join(ROOT, 'docs/responsive', arg('dir', 'measurements'), LABEL);
+// --receipt-only: just the receipt shot, added to an existing set.
+const RECEIPT_ONLY = process.argv.includes('--receipt-only');
+const WIDTHS = RECEIPT_ONLY ? [1280] : [360, 768, 1280];
 
 type Place = { key: string; path: string; open?: (page: Page) => Promise<void> };
 const PLACES: Place[] = [
@@ -71,10 +74,13 @@ async function main() {
     const server = await preview({ root: ROOT, logLevel: 'error', build: { outDir: dist }, preview: { port: PORT, strictPort: true, host: '127.0.0.1' } });
     stop = () => new Promise((resolve) => server.httpServer.close(() => resolve()));
   }
-  rmSync(OUT, { recursive: true, force: true });
+  if (!RECEIPT_ONLY) rmSync(OUT, { recursive: true, force: true });
   mkdirSync(OUT, { recursive: true });
   const browser = await chromium.launch();
-  const results: Record<string, unknown>[] = [];
+  const resultsFile = path.join(OUT, 'results.json');
+  const results: Record<string, unknown>[] = RECEIPT_ONLY && existsSync(resultsFile)
+    ? (JSON.parse(readFileSync(resultsFile, 'utf8')) as Record<string, unknown>[]).filter((r) => r.place !== 'receipt')
+    : [];
   try {
     for (const width of WIDTHS) {
       const context = await browser.newContext({
@@ -89,17 +95,18 @@ async function main() {
         body: JSON.stringify({ customer_name: 'عميل تجريبي', shop_name: 'مشغل الأناقة للخياطة', shop_logo_url: null, measurement_unit: 'cm', measurements: {} }),
       }));
       const page = await context.newPage();
-      for (const place of PLACES) {
+      for (const place of RECEIPT_ONLY ? [] : PLACES) {
         await page.goto(`${BASE}${place.path}`, { waitUntil: 'domcontentloaded', timeout: 180_000 });
         await page.waitForSelector('main, input[id^="thobe-part-"]', { timeout: 60_000 });
         await page.waitForTimeout(2500);
         if (place.open) await place.open(page);
         const first = page.locator('#thobe-part-length').first();
         await first.waitFor({ timeout: 20_000 });
-        const selector = first.locator('xpath=ancestor::div[contains(@class,"shadow-xl")][1]');
+        const tagged = page.locator('[data-measurement-selector]').first();
+        const selector = (await tagged.count()) > 0 ? tagged : first.locator('xpath=ancestor::div[contains(@class,"shadow-xl")][1]');
         await selector.scrollIntoViewIfNeeded();
         await page.waitForTimeout(400);
-        const button = selector.getByRole('button', { name: /مقاسات متقدمة|المقاسات المتقدمة/ });
+        const button = selector.getByRole('button', { name: /مقاسات متقدمة|المقاسات المتقدمة|إخفاء المتقدمة/ });
         const hasButton = (await button.count()) > 0;
         for (const state of hasButton ? ['closed', 'open'] : ['all']) {
           if (state === 'open') { await button.click(); await page.waitForTimeout(400); }
@@ -108,7 +115,41 @@ async function main() {
           results.push({ place: place.key, width, state, ...(await measure(page)) });
           process.stdout.write('.');
         }
+        // A field in focus, with its fraction buttons (the section still open).
+        const chest = page.locator('#thobe-part-chest').first();
+        await chest.click();
+        await chest.fill('');
+        await chest.pressSequentially('52.5');
+        await page.waitForTimeout(300);
+        await selector.screenshot({ path: path.join(OUT, `${place.key}-${width}-focus.jpg`), type: 'jpeg', quality: 70 });
+        results.push({ place: place.key, width, state: 'focus', ...(await measure(page)) });
+        await chest.fill('');
+        await page.keyboard.press('Tab');
+        await page.waitForTimeout(200);
         if (hasButton) { await button.click(); await page.waitForTimeout(200); }
+      }
+      // The printed receipt with measurements (acceptance 7): the invoice
+      // layout's live preview, its sample values to the quarter.
+      if (width === 1280) {
+        try {
+          await page.goto(`${BASE}/settings?tab=invoice`, { waitUntil: 'domcontentloaded', timeout: 180_000 });
+          const toggle = page.locator('label').filter({ hasText: 'تفاصيل الخياطة المخصصة' }).first();
+          await toggle.waitFor({ timeout: 60_000 });
+          const box = toggle.locator('input[type="checkbox"]');
+          if ((await box.count()) > 0 && !(await box.isChecked())) await toggle.click();
+          // Beside the options on a wide screen; behind its own tab otherwise.
+          const previewTab = page.getByRole('button', { name: /المعاينة المباشرة/ });
+          if (await previewTab.isVisible().catch(() => false)) await previewTab.click();
+          const preview = page.getByText('محاكاة حية للفاتورة المطبوعة').first();
+          await preview.waitFor({ timeout: 30_000 });
+          await page.waitForTimeout(600);
+          const paper = preview.locator('xpath=ancestor::div[2]');
+          await paper.screenshot({ path: path.join(OUT, 'receipt-1280.jpg'), type: 'jpeg', quality: 75 });
+          results.push({ place: 'receipt', width, state: 'measurements' });
+        } catch (err) {
+          console.warn(`receipt shot skipped: ${(err as Error).message.split(String.fromCharCode(10))[0]}`);
+          await page.screenshot({ path: path.join(ROOT, '.responsive-out', 'receipt-debug.png'), fullPage: true }).catch(() => {});
+        }
       }
       await context.close();
     }
@@ -116,9 +157,9 @@ async function main() {
     await browser.close();
     await stop();
   }
-  writeFileSync(path.join(OUT, 'results.json'), JSON.stringify(results, null, 1));
+  writeFileSync(resultsFile, JSON.stringify(results, null, 1));
   console.log(`\n${results.length} shots in ${path.relative(ROOT, OUT)}`);
-  for (const r of results) console.log(`  ${r.place} ${r.width} ${r.state}: ${r.visible} fields, largest gap ${r.maxGapPx}px`);
+  for (const r of results) console.log(`  ${r.place} ${r.width} ${r.state}${r.visible !== undefined ? `: ${r.visible} fields, largest gap ${r.maxGapPx}px` : ''}`);
 }
 
 main().catch((err) => { console.error(err); process.exit(1); });

@@ -22,6 +22,7 @@ import Branding from './Branding';
 import { ThermalInvoice, StandardInvoice, InvoiceData, InvoiceLayoutSettingsType } from './printing/InvoiceReceipt';
 
 import { isRtlLang } from '../lib/direction';
+import { measurementText } from '../utils/measurementUnits';
 import { useToast } from '../contexts/ToastContext';
 
 interface InvoiceLayoutSettingsProps {
@@ -277,11 +278,12 @@ export default function InvoiceLayoutSettings({ tenantId }: InvoiceLayoutSetting
         name: t('settings_page.invoice.preview_item_name'),
         quantity: 1,
         unitPrice: 350.00,
+        // Sample values, shown the way a real receipt prints them: to the quarter.
         measurements: [
-          { label: t('measurements.length'), value: 145 },
-          { label: t('measurements.chest'), value: 52 },
-          { label: t('measurements.shoulder'), value: 46 },
-          { label: t('measurements.sleeve'), value: 62 },
+          { label: t('measurements.part_label.length'), value: measurementText(145.25, 'cm', t('measurements.unit_cm')) },
+          { label: t('measurements.part_label.chest'), value: measurementText(52.5, 'cm', t('measurements.unit_cm')) },
+          { label: t('measurements.part_label.shoulder'), value: measurementText(46, 'cm', t('measurements.unit_cm')) },
+          { label: t('measurements.part_label.sleeve'), value: measurementText(62.75, 'cm', t('measurements.unit_cm')) },
         ]
       }
     ],

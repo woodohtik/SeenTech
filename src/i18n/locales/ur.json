@@ -1907,8 +1907,8 @@
     "your_referrals": "آپ کی ریفرلز ({{n}})"
   },
   "measurements": {
-    "advanced_show": "اضافی پیمائشیں ({{count}})",
-    "advanced_hide": "اضافی پیمائشیں چھپائیں",
+    "advanced_show": "اضافی پیمائشیں",
+    "advanced_hide": "اضافی چھپائیں",
     "advanced_filled": "{{count}} درج",
     "bottomWidth": "نچلی چوڑائی",
     "chest": "سینے کی چوڑائی",
@@ -1925,7 +1925,7 @@
     "flag_invalid_value": "«{{field}}» کی قیمت غیر درست ہے ({{value}})۔",
     "flag_out_of_range": "«{{field}}» = {{value}} {{unitLabel}} معمول کی حد ({{min}}–{{max}}) سے باہر ہے۔ اندراج کی تصدیق کریں۔",
     "flag_sleeve_ge_length": "آستین کی لمبائی ≥ ثوب کی لمبائی — غالباً اندراج کی غلطی ہے۔",
-    "handWidth": "کلائی کی چوڑائی",
+    "handWidth": "ہاتھ کی چوڑائی",
     "hips": "کولہے",
     "instructions_mode": "ہدایات موڈ",
     "length": "لمبائی",
@@ -1944,7 +1944,7 @@
       "sleeve": "کندھے کی ہڈی سے کلائی تک، سادہ آستین کے لیے۔",
       "waist": "کمر پر گھیر۔",
       "sleeveCuff": "کندھے کی ہڈی سے آستین کے آخر تک، کف والے ثوب کے لیے۔",
-      "sleeveTopWidth": "بازو کے اوپری حصے پر بغل کے قریب آستین کا گھیر۔",
+      "sleeveTopWidth": "بغل کے پاس، بازو کے اوپر آستین کا گھیر۔",
       "sleeveHem": "سادہ آستین کے آخر کی تہہ کی مقدار۔",
       "cuffWidth": "کف کی چوڑائی جب وہ سیدھا رکھا ہو۔",
       "bottomHem": "ثوب کے نچلے حصے کی تہہ کی مقدار۔",
@@ -1954,7 +1954,7 @@
       "bottomWidth": "نچلی چوڑائی",
       "chest": "سینے کی چوڑائی",
       "cuffLength": "کف کی لمبائی",
-      "handWidth": "کلائی کی چوڑائی",
+      "handWidth": "ہاتھ کی چوڑائی",
       "hips": "کولہے",
       "length": "لمبائی",
       "midSleeveWidth": "آستین کا درمیان",
@@ -1963,7 +1963,7 @@
       "sleeve": "آستین کی لمبائی (سادہ)",
       "waist": "کمر کی چوڑائی",
       "sleeveCuff": "آستین کی لمبائی (کف والی)",
-      "sleeveTopWidth": "آستین کی اوپری چوڑائی",
+      "sleeveTopWidth": "بغل",
       "sleeveHem": "آستین کی تُرپائی (سادہ)",
       "cuffWidth": "کف کی چوڑائی",
       "bottomHem": "نچلی تُرپائی",
@@ -1990,7 +1990,11 @@
     "fabric_estimate_line": "اس ثوب میں ≈ {{meters}} میٹر ({{yards}} گز) کپڑا لگے گا",
     "fabric_estimate_missing": "کپڑے کے حساب کے لیے لمبائی اور آستین کی لمبائی درج کریں",
     "voice_wizard_skip": "چھوڑیں",
-    "older_values": "پہلے سے محفوظ قدریں"
+    "older_values": "پہلے سے محفوظ قدریں",
+    "fraction_quarter": "اور چوتھائی",
+    "fraction_half": "اور آدھا",
+    "fraction_three_quarters": "اور تین چوتھائی",
+    "rounded_to": "{{value}} تک گول کیا گیا"
   },
   "onboarding": {
     "categories": {

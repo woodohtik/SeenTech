@@ -9,7 +9,7 @@ import { useSpeechRecognition } from '../hooks/useSpeechRecognition';
 import { parseArabicNumber } from '../utils/parseArabicNumber';
 import { ThobePart, getNextMeasurementStep, measurementWizardOrder } from '../utils/measurementWizardSteps';
 import { measurementLabelKey } from '../constants/measurementFields';
-import { MeasurementUnit, displayUnitToCm, cmToDisplayUnit } from '../utils/measurementUnits';
+import { MeasurementUnit, displayUnitToCm, cmToDisplayUnit, formatMeasurement, spokenMeasurement, unitLabelKey } from '../utils/measurementUnits';
 import { FractionPicker } from './ui/FractionPicker';
 
 // Global Constraint: TTS/recognition for the voice wizard stay Arabic
@@ -22,7 +22,7 @@ export interface VoiceMeasurementWizardProps {
   onChange: (values: Measurements) => void;
   onClose: () => void;
   measurementUnit: MeasurementUnit;
-  /** Read the eight advanced measurements too: true when their section is open on screen. */
+  /** Read the seven advanced measurements too: true when their section is open on screen. */
   includeAdvanced?: boolean;
 }
 
@@ -299,7 +299,12 @@ export default function VoiceMeasurementWizard({ values, onChange, onClose, meas
             onClick={handleTapResult}
             className="w-full py-3 rounded-xl bg-[var(--seen-success-bg)] text-success font-bold hover:bg-success/20 transition-colors"
           >
-            ✓ {t(measurementLabelKey(lastResult.part))}: {lastResult.value}
+            <span aria-hidden="true">✓ {t(measurementLabelKey(lastResult.part))}: <bdi dir="ltr">{formatMeasurement(displayUnitToCm(lastResult.value, measurementUnit), measurementUnit)}</bdi> {t(unitLabelKey(measurementUnit))}</span>
+            <span className="sr-only">
+              {t(measurementLabelKey(lastResult.part))} {spokenMeasurement(displayUnitToCm(lastResult.value, measurementUnit), measurementUnit, {
+                quarter: t('measurements.fraction_quarter'), half: t('measurements.fraction_half'), threeQuarters: t('measurements.fraction_three_quarters'),
+              })} {t(unitLabelKey(measurementUnit))}
+            </span>
           </button>
         )}
 

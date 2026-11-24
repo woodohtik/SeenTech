@@ -50,3 +50,14 @@ test.each([
 ])('parses the spoken fraction in %s as %d', (input, expected) => {
   expect(parseArabicNumber(input)).toBe(expected);
 });
+
+// seen-measurements-basic-advanced-task.md 6: spoken fractions become quarters.
+test.each([
+  ['عشرين ونص', 20.5],
+  ['عشرين وربع', 20.25],
+  ['عشرين وثلاثة أرباع', 20.75],
+  ['عشرين وثلاث أرباع', 20.75],
+  ['عشرين و ثلاث ارباع', 20.75],
+])('spoken quarter: %s is %s', (text, value) => {
+  expect(parseArabicNumber(text)).toBe(value);
+});

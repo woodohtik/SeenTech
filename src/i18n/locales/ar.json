@@ -1907,8 +1907,8 @@
     "your_referrals": "إحالاتك ({{n}})"
   },
   "measurements": {
-    "advanced_show": "مقاسات متقدمة ({{count}})",
-    "advanced_hide": "إخفاء المقاسات المتقدمة",
+    "advanced_show": "مقاسات متقدمة",
+    "advanced_hide": "إخفاء المتقدمة",
     "advanced_filled": "{{count}} مُدخلة",
     "bottomWidth": "وسع أسفل",
     "chest": "وسع الصدر",
@@ -1925,7 +1925,7 @@
     "flag_invalid_value": "قيمة «{{field}}» غير صالحة ({{value}}).",
     "flag_out_of_range": "«{{field}}» = {{value}} {{unitLabel}} خارج النطاق المعتاد ({{min}}–{{max}}). تأكّد من الإدخال.",
     "flag_sleeve_ge_length": "طول الكم ≥ طول الثوب — غالباً خطأ إدخال.",
-    "handWidth": "وسع المعصم",
+    "handWidth": "وسع اليد",
     "hips": "الأرداف",
     "instructions_mode": "وضع التعليمات",
     "length": "الطول",
@@ -1944,7 +1944,7 @@
       "sleeve": "من عظمة الكتف حتى المعصم لثوب بكم سادة.",
       "waist": "محيط الوسط عند الخصر.",
       "sleeveCuff": "من عظمة الكتف حتى نهاية الكم لثوب بكبك.",
-      "sleeveTopWidth": "محيط الكم عند أعلى الذراع قرب الإبط.",
+      "sleeveTopWidth": "محيط الكم عند المفصل: أعلى الذراع قرب الإبط.",
       "sleeveHem": "مقدار ثنية نهاية الكم السادة.",
       "cuffWidth": "عرض الكبك وهو مسطّح.",
       "bottomHem": "مقدار ثنية أسفل الثوب.",
@@ -1954,7 +1954,7 @@
       "bottomWidth": "وسع أسفل",
       "chest": "وسع الصدر",
       "cuffLength": "طول الكبك",
-      "handWidth": "وسع المعصم",
+      "handWidth": "وسع اليد",
       "hips": "الأرداف",
       "length": "الطول",
       "midSleeveWidth": "وسط الكم",
@@ -1963,7 +1963,7 @@
       "sleeve": "طول الكم سادة",
       "waist": "وسع الوسط",
       "sleeveCuff": "طول الكم كبك",
-      "sleeveTopWidth": "وسع الكم أعلى",
+      "sleeveTopWidth": "المفصل",
       "sleeveHem": "كفة الكم سادة",
       "cuffWidth": "عرض الكبك",
       "bottomHem": "كفة أسفل",
@@ -1990,7 +1990,11 @@
     "fabric_estimate_line": "يأخذ الثوب ≈ {{meters}} متر ({{yards}} ياردة)",
     "fabric_estimate_missing": "أدخل الطول وطول الكم لحساب القماش",
     "voice_wizard_skip": "تخطي",
-    "older_values": "قيم محفوظة سابقاً"
+    "older_values": "قيم محفوظة سابقاً",
+    "fraction_quarter": "وربع",
+    "fraction_half": "ونص",
+    "fraction_three_quarters": "وثلاثة أرباع",
+    "rounded_to": "قُرّبت إلى {{value}}"
   },
   "onboarding": {
     "categories": {

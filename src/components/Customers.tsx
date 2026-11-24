@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useDebouncedValue } from '../hooks/useDebouncedValue';
 import { useMeasurementUnit } from '../hooks/useMeasurementUnit';
 import { useFabricEstimateSettings } from '../hooks/useFabricEstimateSettings';
-import { cmToDisplayUnit, unitLabelKey, type MeasurementUnit } from '../utils/measurementUnits';
+import { formatMeasurement, unitLabelKey, type MeasurementUnit } from '../utils/measurementUnits';
 import { MEASUREMENT_KEYS, measurementLabelKey, measurementRows, measurementSetFor } from '../constants/measurementFields';
 import { useVerticalConfig } from '../hooks/useVerticalConfig';
 import { useVerticalTerms } from '../hooks/useVerticalTerms';
@@ -610,7 +610,7 @@ export default function Customers({ tenantId }: CustomersProps) {
 
     try {
       const formatMeasurementCell = (value: unknown): string =>
-        typeof value === 'number' ? `${cmToDisplayUnit(value, measurementUnit)} ${t(unitLabelKey(measurementUnit))}` : '-';
+        typeof value === 'number' && value > 0 ? `${formatMeasurement(value, measurementUnit)} ${t(unitLabelKey(measurementUnit))}` : '-';
 
       const exportData = listToExport.map((c, index) => {
         const balance = customerBalances[c.id] || 0;
@@ -2154,7 +2154,7 @@ const CustomerDetailsModal = ({
               {measurementRows(customer.measurements, true).map((row) => ({
                 label: t(row.labelKey), value: row.value, icon: <Ruler size={14} />, color: 'bg-brand/10 text-brand',
               })).map((m) => {
-                const displayValue = typeof m.value === 'number' ? cmToDisplayUnit(m.value, measurementUnit) : m.value;
+                const displayValue = typeof m.value === 'number' ? formatMeasurement(m.value, measurementUnit) : m.value;
                 return (
                   <div key={m.label} className="bg-surface p-3 main-640:p-4 rounded-xl main-640:rounded-2xl border border-border hover:border-brand/20 transition-all group shadow-sm">
                     <div className="flex items-center gap-1.5 main-640:gap-2 mb-1.5 main-640:mb-2">
@@ -2164,7 +2164,7 @@ const CustomerDetailsModal = ({
                       <p className="text-sm text-content-muted font-black uppercase">{m.label}</p>
                     </div>
                     <p className="text-base main-640:text-xl font-black text-content">
-                      {displayValue || '-'}
+                      <bdi dir="ltr" className="tabular-nums">{displayValue || '-'}</bdi>
                       <span className="text-sm text-content-muted mr-1 font-bold">{t(unitLabelKey(measurementUnit))}</span>
                     </p>
                   </div>

@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { fuzzyIncludes } from '../utils/fuzzySearch';
 import { useDebouncedValue } from '../hooks/useDebouncedValue';
 import { useMeasurementUnit } from '../hooks/useMeasurementUnit';
-import { cmToDisplayUnit, unitLabelKey } from '../utils/measurementUnits';
+import { formatMeasurement, unitLabelKey } from '../utils/measurementUnits';
 import { measurementRows, measurementSetFor } from '../constants/measurementFields';
 import { orderItemRowToLine, cuttingFabricLines, isFabricDeductionDue, type CuttingFabricLine } from '../utils/tailoringOrder';
 import CuttingFabricDialog from './CuttingFabricDialog';
@@ -1776,11 +1776,11 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                 <div className="bg-brand/5 p-6 rounded-3xl border border-brand/10">
                   <div className="grid grid-cols-3 gap-4">
                     {measurementRows(orderMeasurements(order)).map((row) => ({ label: t(row.labelKey), value: row.value })).map((m, i) => {
-                      const displayValue = typeof m.value === 'number' ? cmToDisplayUnit(m.value, measurementUnit) : m.value;
+                      const displayValue = typeof m.value === 'number' ? formatMeasurement(m.value, measurementUnit) : m.value;
                       return (
                         <div key={i} className="text-center">
                           <span className="block text-sm text-content-muted font-bold mb-1">{m.label}</span>
-                          <span className="text-lg font-black text-brand">{displayValue} <span className="text-sm text-content-muted font-bold">{t(unitLabelKey(measurementUnit))}</span></span>
+                          <span className="text-lg font-black text-brand"><bdi dir="ltr" className="tabular-nums">{displayValue}</bdi> <span className="text-sm text-content-muted font-bold">{t(unitLabelKey(measurementUnit))}</span></span>
                         </div>
                       );
                     })}

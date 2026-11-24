@@ -16,6 +16,8 @@ interface FractionPickerProps {
   className?: string;
   /** Set to -1 to keep the buttons out of the Tab order (mouse/touch only). */
   buttonTabIndex?: number;
+  /** Replaces the default 32px size (the measurement cards use 44px targets). */
+  buttonClassName?: string;
 }
 
 /**
@@ -25,7 +27,7 @@ interface FractionPickerProps {
  * the current value -- the whole part typed into the number field is left
  * untouched.
  */
-export function FractionPicker({ value, onSelect, className, buttonTabIndex }: FractionPickerProps) {
+export function FractionPicker({ value, onSelect, className, buttonTabIndex, buttonClassName }: FractionPickerProps) {
   const safeValue = value || 0;
   const whole = Math.floor(safeValue);
   const currentFraction = Math.round((safeValue - whole) * 4) / 4;
@@ -43,6 +45,7 @@ export function FractionPicker({ value, onSelect, className, buttonTabIndex }: F
             onClick={() => onSelect(whole + fraction.value)}
             className={cn(
               'w-8 h-8 rounded-lg text-sm font-bold transition-all cursor-pointer border',
+              buttonClassName,
               isActive
                 ? 'bg-brand text-white border-brand shadow-sm'
                 : 'bg-surface-muted text-content-muted border-border hover:border-brand/40 hover:text-brand'

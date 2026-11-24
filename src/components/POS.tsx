@@ -82,7 +82,7 @@ import VariantPickerModal from './ui/VariantPickerModal';
 
 import { isRtlLang } from '../lib/direction';
 import { useMeasurementUnit } from '../hooks/useMeasurementUnit';
-import { cmToDisplayUnit, unitLabelKey, type MeasurementUnit } from '../utils/measurementUnits';
+import { measurementText, unitLabelKey, type MeasurementUnit } from '../utils/measurementUnits';
 import { measurementRows, measurementSetFor } from '../constants/measurementFields';
 import { isLengthItem } from '../utils/itemUnits';
 import { isOrdersModuleOn } from '../services/verticalService';
@@ -106,7 +106,7 @@ function buildInvoiceMeasurements(
   if (item.type !== 'custom' || !customer?.measurements) return undefined;
   const list = measurementRows(customer.measurements).map((row) => ({
     label: t(row.labelKey),
-    value: `${cmToDisplayUnit(row.value, measurementUnit)} ${t(unitLabelKey(measurementUnit))}`,
+    value: measurementText(row.value, measurementUnit, t(unitLabelKey(measurementUnit))),
   }));
   return list.length > 0 ? list : undefined;
 }

@@ -47,23 +47,24 @@ describe('legacy_status of every stage', () => {
 });
 
 describe("men's measurement set", () => {
-  test('the thobe set is unchanged (snapshot)', () => {
+  test('the thobe set is the founder list of sixteen, 24 Nov 2026 (snapshot)', () => {
     expect(MEASUREMENT_SETS.thobe.map((f: { key: string }) => f.key)).toMatchInlineSnapshot(`
       [
         "length",
         "shoulder",
-        "sleeveCuff",
         "sleeve",
-        "sleeveTopWidth",
+        "chest",
+        "neck",
         "handWidth",
-        "sleeveHem",
+        "midSleeveWidth",
         "cuffLength",
+        "sleeveTopWidth",
+        "sleeveCuff",
+        "sleeveHem",
         "cuffWidth",
         "waist",
-        "chest",
         "bottomHem",
         "bottomWidth",
-        "neck",
         "neckFold",
       ]
     `);

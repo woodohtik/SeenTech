@@ -1907,8 +1907,8 @@
     "your_referrals": "Your referrals ({{n}})"
   },
   "measurements": {
-    "advanced_show": "Advanced measurements ({{count}})",
-    "advanced_hide": "Hide advanced measurements",
+    "advanced_show": "Advanced measurements",
+    "advanced_hide": "Hide advanced",
     "advanced_filled": "{{count}} filled",
     "bottomWidth": "Bottom width",
     "chest": "Chest width",
@@ -1925,7 +1925,7 @@
     "flag_invalid_value": "«{{field}}» value is invalid ({{value}}).",
     "flag_out_of_range": "«{{field}}» = {{value}} {{unitLabel}} is outside the usual range ({{min}}–{{max}}). Check the entry.",
     "flag_sleeve_ge_length": "Sleeve length ≥ thobe length — likely a data entry error.",
-    "handWidth": "Wrist width",
+    "handWidth": "Hand width",
     "hips": "Hips",
     "instructions_mode": "Instructions Mode",
     "length": "Length",
@@ -1944,7 +1944,7 @@
       "sleeve": "From the shoulder bone to the wrist, for a plain sleeve.",
       "waist": "Circumference at the waist.",
       "sleeveCuff": "From the shoulder bone to the sleeve end, for a cuffed thobe.",
-      "sleeveTopWidth": "Sleeve circumference at the upper arm, near the armpit.",
+      "sleeveTopWidth": "Around the sleeve at the armhole: the top of the arm, near the armpit.",
       "sleeveHem": "Depth of the fold at the end of a plain sleeve.",
       "cuffWidth": "Width of the cuff laid flat.",
       "bottomHem": "Depth of the fold at the bottom of the thobe.",
@@ -1954,7 +1954,7 @@
       "bottomWidth": "Bottom width",
       "chest": "Chest width",
       "cuffLength": "Cuff length",
-      "handWidth": "Wrist width",
+      "handWidth": "Hand width",
       "hips": "Hips",
       "length": "Length",
       "midSleeveWidth": "Mid-sleeve width",
@@ -1963,7 +1963,7 @@
       "sleeve": "Sleeve length (plain)",
       "waist": "Waist width",
       "sleeveCuff": "Sleeve length (cuffed)",
-      "sleeveTopWidth": "Upper sleeve width",
+      "sleeveTopWidth": "Armhole",
       "sleeveHem": "Sleeve hem (plain)",
       "cuffWidth": "Cuff width",
       "bottomHem": "Bottom hem",
@@ -1990,7 +1990,11 @@
     "fabric_estimate_line": "This thobe takes ≈ {{meters}} m ({{yards}} yd)",
     "fabric_estimate_missing": "Enter the length and a sleeve length to estimate the fabric",
     "voice_wizard_skip": "Skip",
-    "older_values": "Previously saved values"
+    "older_values": "Previously saved values",
+    "fraction_quarter": "and a quarter",
+    "fraction_half": "and a half",
+    "fraction_three_quarters": "and three quarters",
+    "rounded_to": "Rounded to {{value}}"
   },
   "onboarding": {
     "categories": {

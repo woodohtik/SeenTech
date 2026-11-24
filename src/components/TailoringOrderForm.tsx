@@ -31,7 +31,7 @@ import { localizedLabel, localizedOptions } from '../utils/verticalLabels';
 import { createTailoringOrder } from '../services/tailoringOrderService';
 import { formatItemStock, type ContentUnit } from '../utils/fabricUomConverter';
 import { formatSaudiPhone } from '../utils/phoneUtils';
-import { cmToDisplayUnit, unitLabelKey } from '../utils/measurementUnits';
+import { formatMeasurement, unitLabelKey } from '../utils/measurementUnits';
 import { measurementRows, measurementSetFor } from '../constants/measurementFields';
 import { estimateFabricMeters, fabricInputFromMeasurements } from '../utils/fabricEstimate';
 import {
@@ -939,10 +939,10 @@ function TailoringOrderFormBody({
                   <div className="grid grid-cols-3 main-640:grid-cols-5 gap-2">
                     {measurementRows(selectedCustomer.measurements, true).map((row) => (
                       <div key={row.key} className="bg-surface p-2 rounded-xl border border-brand/10 text-center">
-                        <p className="text-sm text-content-muted font-bold truncate">{t(row.labelKey)}</p>
+                        <p className="text-sm leading-5 text-content-muted font-bold break-words">{t(row.labelKey)}</p>
                         <p className="text-sm font-black text-brand">
                           {row.value
-                            ? <>{cmToDisplayUnit(row.value, measurementUnit)} <span className="text-sm text-content-muted font-bold">{t(unitLabelKey(measurementUnit))}</span></>
+                            ? <><bdi dir="ltr" className="tabular-nums">{formatMeasurement(row.value, measurementUnit)}</bdi> <span className="text-sm text-content-muted font-bold">{t(unitLabelKey(measurementUnit))}</span></>
                             : '-'}
                         </p>
                       </div>

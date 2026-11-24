@@ -6,8 +6,8 @@ export type ThobePart = MeasurementKey;
 export const MEASUREMENT_WIZARD_ORDER: readonly ThobePart[] = MEASUREMENT_KEYS;
 
 /**
- * The fields the voice wizard reads (task file question 3): the seven basic
- * ones, and all fifteen when the advanced section is open -- the wizard fills
+ * The fields the voice wizard reads (task file question 4): the nine basic
+ * ones, and all sixteen when the advanced section is open -- the wizard fills
  * what is on screen.
  */
 export function measurementWizardOrder(includeAdvanced: boolean): readonly ThobePart[] {
