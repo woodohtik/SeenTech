@@ -1,4 +1,5 @@
 import express from "express";
+import { createHash } from 'node:crypto';
 import path from "path";
 import fs from "fs";
 import crypto from "crypto";
@@ -617,6 +618,16 @@ app.post("/api/public/order-tracking/:token/subscribe", asyncHandler(async (req,
     return res.status(404).json({ error: 'Order not found' });
   }
 
+  // S-32 (audit 2026-11-22): a handful of devices per order, not an
+  // unlimited fan-out -- each status change sends one notification per row.
+  const MAX_DEVICES_PER_ORDER = 5;
+  const { data: subs } = await supabaseAdmin.from('order_push_subscriptions')
+    .select('fcm_token').eq('tracking_token', token).limit(MAX_DEVICES_PER_ORDER + 1);
+  const alreadySubscribed = (subs || []).some((row: any) => row.fcm_token === fcmToken);
+  if (!alreadySubscribed && (subs || []).length >= MAX_DEVICES_PER_ORDER) {
+    return res.status(429).json({ error: 'تم الاشتراك في تحديثات هذا الطلب من أجهزة كثيرة' });
+  }
+
   const { error } = await supabaseAdmin.from('order_push_subscriptions').upsert(
     { tracking_token: token, fcm_token: fcmToken, updated_at: new Date().toISOString() },
     { onConflict: 'tracking_token,fcm_token' }
@@ -634,6 +645,13 @@ app.post("/api/public/order-tracking/:token/subscribe", asyncHandler(async (req,
 // للتخمين (customers.measurements_token)، supabaseAdmin مع اختيار حقول
 // صريح، ونفس محدِّد المعدّل المشترك. التفاصيل الكاملة في
 // docs/superpowers/specs/2026-11-08-customer-measurements-public-form-design.md.
+// S-33 (audit 2026-11-22): the customers row keeps a digest of the link,
+// not the link -- the same digest as public.measurements_token_digest().
+function measurementsTokenDigest(token: string): string {
+  const hex = createHash('sha256').update(token.toLowerCase()).digest('hex').slice(0, 32);
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20, 32)}`;
+}
+
 app.get("/api/public/measurements/:token", asyncHandler(async (req, res) => {
   const { token } = req.params;
   const { supabaseAdmin } = await import("./src/server/supabase-admin.ts");
@@ -650,7 +668,7 @@ app.get("/api/public/measurements/:token", asyncHandler(async (req, res) => {
   const { data: customerData } = await supabaseAdmin
     .from('customers')
     .select('name, measurements, measurements_token_expires_at, tenant:tenants(name, logo_url, measurement_unit, status, trashed_at, subscription_status, subscription_end_date, trial_ends_at)')
-    .eq('measurements_token', token)
+    .eq('measurements_token', measurementsTokenDigest(token))
     .maybeSingle();
 
   if (!customerData) {
@@ -702,7 +720,7 @@ app.post("/api/public/measurements/:token", asyncHandler(async (req, res) => {
   const { data: customerData } = await supabaseAdmin
     .from('customers')
     .select('id, tenant:tenants(status, trashed_at, subscription_status, subscription_end_date, trial_ends_at)')
-    .eq('measurements_token', token)
+    .eq('measurements_token', measurementsTokenDigest(token))
     .maybeSingle();
 
   if (!customerData) {
@@ -1508,6 +1526,13 @@ app.post("/api/tenant/settings", authenticate, requirePermission('settings.edit'
     // that column either). Scoped to just this field rather than pulling in
     // the whole client-facing schema, which depends on the i18n t() helper
     // for its messages.
+    // Security audit 2026-11-22 S-09: the tax switch is a real boolean.
+    // "false" (a string) used to read as true in the permission check and
+    // as false where the tax is applied -- turning the tax off without
+    // settings.tax. Anything that is not a boolean is refused.
+    if (data.taxSettings?.enabled !== undefined && typeof data.taxSettings.enabled !== 'boolean') {
+      return res.status(400).json({ error: 'قيمة تفعيل الضريبة غير صالحة' });
+    }
     if (data.taxSettings?.vatRate !== undefined) {
       const vatRate = Number(data.taxSettings.vatRate);
       if (!Number.isFinite(vatRate) || vatRate < 0 || vatRate > 100) {
@@ -1752,12 +1777,19 @@ async function streamAssistantReply(
 // seen-ai-assistant-redesign-task.md 2-4: the signed-in person's own past
 // conversations (30 days). Never anyone else's: every query is filtered by
 // their uid and shop inside assistantHistory.ts.
+// S-36 (audit 2026-11-22): whose assistant history this is. On a shared
+// device, after a PIN switch, it is the employee who unlocked it -- not the
+// device's account, which every employee on that device shares.
+function assistantHistoryOwner(req: any): { tenantId: string; userId: string } {
+  return { tenantId: req.user.tenantId, userId: req.user.deviceStaffId ? req.user.staffId : req.user.uid };
+}
+
 app.get("/api/assistant/conversations", authenticate, async (req: any, res) => {
   try {
     if (!req.user?.tenantId || !req.user?.uid) return res.status(401).json({ error: 'Unauthorized' });
     const { supabaseAdmin } = await import("./src/server/supabase-admin.ts");
     const { listConversations } = await import("./src/server/assistantHistory.ts");
-    res.json({ conversations: await listConversations(supabaseAdmin, { tenantId: req.user.tenantId, userId: req.user.uid }) });
+    res.json({ conversations: await listConversations(supabaseAdmin, assistantHistoryOwner(req)) });
   } catch (err: any) {
     internalError(res, "Error in GET /api/assistant/conversations:", err);
   }
@@ -1769,7 +1801,7 @@ app.get("/api/assistant/conversations/:id", authenticate, async (req: any, res) 
     const { supabaseAdmin } = await import("./src/server/supabase-admin.ts");
     const { isConversationId, readConversation } = await import("./src/server/assistantHistory.ts");
     if (!isConversationId(req.params.id)) return res.status(404).json({ error: 'not_found' });
-    const conversation = await readConversation(supabaseAdmin, { tenantId: req.user.tenantId, userId: req.user.uid }, req.params.id);
+    const conversation = await readConversation(supabaseAdmin, assistantHistoryOwner(req), req.params.id);
     if (!conversation) return res.status(404).json({ error: 'not_found' });
     res.json(conversation);
   } catch (err: any) {
@@ -1783,7 +1815,7 @@ app.delete("/api/assistant/conversations/:id", authenticate, async (req: any, re
     const { supabaseAdmin } = await import("./src/server/supabase-admin.ts");
     const { isConversationId, deleteConversation } = await import("./src/server/assistantHistory.ts");
     if (!isConversationId(req.params.id)) return res.status(404).json({ error: 'not_found' });
-    const deleted = await deleteConversation(supabaseAdmin, { tenantId: req.user.tenantId, userId: req.user.uid }, req.params.id);
+    const deleted = await deleteConversation(supabaseAdmin, assistantHistoryOwner(req), req.params.id);
     if (!deleted) return res.status(404).json({ error: 'not_found' });
     res.json({ ok: true });
   } catch (err: any) {
@@ -2352,7 +2384,7 @@ app.post("/api/chat", authenticate, async (req: any, res) => {
     let historyId: string | null = null;
     if (history.isConversationId(conversationId) && lastQuestion && req.user?.uid) {
       try {
-        const owned = await history.storeQuestion(supabaseAdmin, { tenantId, userId: req.user.uid }, conversationId, lastQuestion);
+        const owned = await history.storeQuestion(supabaseAdmin, assistantHistoryOwner(req), conversationId, lastQuestion);
         if (owned) historyId = conversationId;
         else logger.warn({ tenantId }, '[assistant-history] conversation id belongs to someone else; not stored');
       } catch (historyErr) {

@@ -132,3 +132,12 @@ test('a publishDate in a different timezone offset is compared by real instant, 
   expect(articles).toHaveLength(1);
   rmSync(dir, { recursive: true });
 });
+
+// Security audit 2026-11-22 S-07: front matter is YAML only; `---js` is not run.
+test('refuses code front matter instead of running it', () => {
+  const g = globalThis as Record<string, unknown>;
+  delete g.__frontmatterRan;
+  const raw = '---js\n{ title: (globalThis.__frontmatterRan = true, "x") }\n---\nbody';
+  expect(() => parseArticleFrontmatter('evil.md', raw)).toThrow();
+  expect(g.__frontmatterRan).toBeUndefined();
+});

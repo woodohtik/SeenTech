@@ -32,6 +32,9 @@ function countWords(text: string): number {
 // build with a clear, file-named error.
 const PUBLISH_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}(:\d{2})?(\.\d+)?(Z|[+-]\d{2}:\d{2})?)?$/;
 
+const refuseCode = () => { throw new Error('front matter must be YAML; code front matter is not accepted'); };
+const NO_CODE_ENGINES = { js: refuseCode, javascript: refuseCode, coffee: refuseCode, coffeescript: refuseCode };
+
 export function validateFrontmatter(filename: string, data: Record<string, unknown>): void {
   if (typeof data.title !== 'string' || !data.title.trim()) {
     throw new Error(`${filename}: missing or empty "title" in frontmatter`);
@@ -52,7 +55,10 @@ export function validateFrontmatter(filename: string, data: Record<string, unkno
 }
 
 export function parseArticleFrontmatter(filename: string, raw: string): { frontmatter: ArticleFrontmatter; rawBody: string } {
-  const { data, content } = matter(raw);
+  // Security audit 2026-11-22 S-07: gray-matter runs `---js` front matter
+  // as code by default. Front matter here is YAML only; any other engine
+  // is refused rather than executed.
+  const { data, content } = matter(raw, { engines: NO_CODE_ENGINES });
 
   const cluster = data.cluster as string;
   if (!getCategory(cluster)) {

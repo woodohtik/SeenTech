@@ -408,7 +408,8 @@ export function registerPrintRelay(app: Express): void {
         // (tenant_id فارغ) ورمز اقترانها انتهت صلاحيته كانت تبقى عالقة
         // بلا رمز صالح إلى الأبد -- /pair يرفض كل رمز منتهٍ، ولا شيء هنا
         // كان يُصدر رمزاً جديداً. جدّد الرمز فقط في هذه الحالة.
-        const pairCodeExpired = !!existing.pair_code_expires_at && new Date(existing.pair_code_expires_at).getTime() <= Date.now();
+        // S-22 (audit 2026-11-22): a code with no expiry (from before expiries existed) counts as expired.
+        const pairCodeExpired = !existing.pair_code_expires_at || new Date(existing.pair_code_expires_at).getTime() <= Date.now();
         const needsNewPairCode = !existing.tenant_id && pairCodeExpired;
         const newPairCode = needsNewPairCode ? randomPairCode() : existing.pair_code;
         const newPairCodeExpiresAt = needsNewPairCode ? new Date(Date.now() + 10 * 60 * 1000).toISOString() : existing.pair_code_expires_at;
@@ -666,7 +667,8 @@ export function registerPrintRelay(app: Express): void {
       // -- same error, same failed-attempt counting, so an attacker can't
       // tell "wrong code" apart from "right code, too late" and use that
       // to narrow a guessing search.
-      const expired = !!station?.pair_code_expires_at && new Date(station.pair_code_expires_at).getTime() <= nowMs();
+      // S-22 (audit 2026-11-22): a code with no expiry pairs nothing.
+      const expired = !station?.pair_code_expires_at || new Date(station.pair_code_expires_at).getTime() <= nowMs();
 
       if (!station || expired) {
         // increment_print_pair_attempt (RPC ذرّية) بدل upsert قراءة-ثم-كتابة

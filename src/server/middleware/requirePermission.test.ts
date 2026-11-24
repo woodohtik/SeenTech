@@ -76,3 +76,13 @@ describe('taxFingerprint (what counts as changing the tax settings)', () => {
     expect(taxFingerprint({ ...stored, tax_settings: { ...stored.tax_settings, tailoringTaxType: 'inclusive' } })).not.toBe(base);
   });
 });
+
+// Security audit 2026-11-22 S-09: the string "false" is a change to the tax switch, not "still on".
+import { taxFingerprint as taxFingerprintS09 } from './requirePermission';
+import { test as testS09, expect as expectS09 } from 'vitest';
+testS09('a string "false" for the tax switch counts as a change', () => {
+  const current = { is_tax_enabled: true, vat_number: '300000000000003', default_tax_rate: 15, tax_settings: { enabled: true } };
+  const sneaky = { is_tax_enabled: true, vat_number: '300000000000003', default_tax_rate: 15, tax_settings: { enabled: 'false' } };
+  expectS09(taxFingerprintS09(sneaky)).not.toBe(taxFingerprintS09(current));
+  expectS09(taxFingerprintS09({ ...current })).toBe(taxFingerprintS09(current));
+});

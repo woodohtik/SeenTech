@@ -69,7 +69,8 @@ export function taxFingerprint(row: TaxRow): string {
     vat,
     enabled,
     rate,
-    tsEnabled: ts.enabled === undefined ? enabled : Boolean(ts.enabled),
+    // S-09: only a real true is "on" -- a string "false" must not count as a change-free true.
+    tsEnabled: ts.enabled === undefined ? enabled : ts.enabled === true,
     tsTrn: ts.trn === undefined ? vat : String(ts.trn ?? '').trim(),
     tsRate: ts.vatRate === undefined || ts.vatRate === null || ts.vatRate === '' ? rate : Number(ts.vatRate),
     legalName: String(ts.legalName ?? '').trim(),

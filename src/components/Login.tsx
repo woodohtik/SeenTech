@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef, lazy, Suspense } from 'react';
+import { endActingSession } from '../lib/actingSession';
 import { PRIVACY_VERSION, TERMS_VERSION } from '../legal/legalVersions';
 import { formatSaudiPhone, validateSaudiPhone } from '../utils/phoneUtils';
 import { supabase } from '../lib/supabase/client';
@@ -928,6 +929,8 @@ export default function Login() {
                       localStorage.removeItem('is_registering');
                       setGoogleUser(null);
                       try {
+                        // S-35 (audit 2026-11-22): the PIN session ends with the sign-in, on the server too.
+                        await endActingSession();
                         await supabase.auth.signOut();
                       } catch (e) {
                         console.error(e);

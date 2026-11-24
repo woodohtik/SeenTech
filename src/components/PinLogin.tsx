@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { endActingSession } from '../lib/actingSession';
 import { motion, AnimatePresence } from 'motion/react';
 import { Shield, Delete, User, Users, Lock, AlertCircle, LogOut, Loader2, Mail, Eye, EyeOff, KeyRound, ArrowRight } from 'lucide-react';
 import { supabase } from '../lib/supabase/client';
@@ -178,6 +179,8 @@ export default function PinLogin({ tenantId, currentUserStaff, onLogin }: PinLog
     try {
       localStorage.clear();
       sessionStorage.clear();
+      // S-35 (audit 2026-11-22): the PIN session ends with the sign-in, on the server too.
+      await endActingSession();
       await supabase.auth.signOut();
     } catch (err) {
       console.error("Error signing out from PIN screen:", err);

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { endActingSession } from '../lib/actingSession';
 import { SkipLink } from './ui/SkipLink';
 import { useMeasuredSteps } from '../hooks/useShellLayout';
 import { motion, AnimatePresence } from 'motion/react';
@@ -232,6 +233,8 @@ export default function SaaSLayout({ children, userRole }: SaaSLayoutProps) {
     try {
       localStorage.clear();
       sessionStorage.clear();
+      // S-35 (audit 2026-11-22): the PIN session ends with the sign-in, on the server too.
+      await endActingSession();
       await supabase.auth.signOut();
     } catch (e) {
       console.error(e);

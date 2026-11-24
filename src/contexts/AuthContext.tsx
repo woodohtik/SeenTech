@@ -8,6 +8,7 @@ import React, {
     useState,
     type ReactNode,
 } from 'react';
+import { endActingSession } from '../lib/actingSession';
 import { ASSISTANT_EXPANDED_KEY, SIDEBAR_CHOICE_PREFIX } from '../lib/shellLayout';
 import type { Session, User as SupabaseUser } from '@supabase/supabase-js';
 
@@ -730,6 +731,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (!conflictUser) return;
         setLoading(true);
         try {
+            // S-35 (audit 2026-11-22): the PIN session ends with the sign-in, on the server too.
+            await endActingSession();
             await supabase.auth.signOut();
             setConflictUser(null);
             localStorage.removeItem('setup_complete');
@@ -783,6 +786,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             localStorage.clear();
             for (const [k, v] of keep) if (v !== null) localStorage.setItem(k, v);
             sessionStorage.clear();
+            // S-35 (audit 2026-11-22): the PIN session ends with the sign-in, on the server too.
+            await endActingSession();
             await supabase.auth.signOut();
         } catch (e) {
             console.error(e);
