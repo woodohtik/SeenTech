@@ -794,6 +794,16 @@ const ORDER_STATUS_LABELS_AR: Record<string, string> = {
 // Orders.tsx وDashboardToday.tsx (src/utils/orderNotify.ts). لا يعدّل حالة
 // الطلب ولا يتوقف عليه أي منطق آخر؛ فشله لا يجب أن يُبطئ أو يُفشل تحديث
 // الحالة نفسه (المُستدعي يستخدم fire-and-forget مع try/catch منفصل).
+// Security audit 2026-11-22 V-13: links sent in notifications are built on
+// Seen's own address, never on whatever Host header the request carried.
+// Our own hosts (seentech.io and its subdomains, local development) are
+// kept so staging links point at staging; anything else gets seentech.io.
+function publicOrigin(req: any): string {
+  const host = String(req.get('host') || '').toLowerCase();
+  const ours = host === 'seentech.io' || host.endsWith('.seentech.io') || /^(localhost|127\.0\.0\.1)(:\d+)?$/.test(host);
+  return ours ? `${host.startsWith('localhost') || host.startsWith('127.') ? 'http' : 'https'}://${host}` : 'https://seentech.io';
+}
+
 app.post("/api/orders/:id/notify-status", authenticate, asyncHandler(async (req: any, res) => {
   const tenantId = req.user?.tenantId;
   const { id } = req.params;
@@ -842,7 +852,7 @@ app.post("/api/orders/:id/notify-status", authenticate, asyncHandler(async (req:
   }
   const title = `طلبك رقم ${orderData.order_number}`;
   const body = `الحالة الآن: ${stageName || ORDER_STATUS_LABELS_AR[statusKey] || statusKey}`;
-  const link = `${req.protocol}://${req.get('host')}/track/${orderData.tracking_token}`;
+  const link = `${publicOrigin(req)}/track/${orderData.tracking_token}`;
 
   const sent = await sendPushAndPruneDeadTokens(adminMessaging, subs, { title, body }, link, (deadTokens) =>
     supabaseAdmin.from('order_push_subscriptions').delete().eq('tracking_token', orderData.tracking_token).in('fcm_token', deadTokens)
@@ -936,7 +946,7 @@ app.post("/api/orders/:id/notify-new-order", authenticate, asyncHandler(async (r
 
   const title = 'طلب مبيعات جديد';
   const body = `${orderData.customer_name || 'عميل'} — #${orderData.order_number} — ${Number(orderData.total_amount || 0).toFixed(2)} ر.س`;
-  const link = `${req.protocol}://${req.get('host')}/orders?highlight=${id}`;
+  const link = `${publicOrigin(req)}/orders?highlight=${id}`;
 
   const sent = await sendPushAndPruneDeadTokens(adminMessaging, subs, { title, body }, link, (deadTokens) =>
     supabaseAdmin.from('staff_push_subscriptions').delete().in('fcm_token', deadTokens)
