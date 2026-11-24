@@ -47,7 +47,7 @@ test('sticky mobile cta uses "ابدأ الآن" and the seentech.io link, not t
   const html = renderStickyMobileCta();
   expect(html).toContain('ابدأ الآن');
   expect(html).not.toContain('احجز زيارة');
-  expect(html).toMatch(/href="https:\/\/seentech\.io"/);
+  expect(html).toMatch(/href="https:\/\/www\.seentech\.io"/);
   expect(html).not.toContain('#book');
 });
 

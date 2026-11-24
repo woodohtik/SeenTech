@@ -14,7 +14,7 @@ export const blogConfig = {
   snapchatPixelId: '',
   metaPixelId: '',
   ctaLabel: 'ابدأ الآن',
-  ctaUrl: 'https://seentech.io',
+  ctaUrl: 'https://www.seentech.io',
   startHereSlugs: [] as string[],
   interviewStat: { stat: '', description: '', source: '' } as InterviewStat,
 };

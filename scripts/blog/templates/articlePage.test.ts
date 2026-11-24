@@ -151,3 +151,14 @@ test('breadcrumb nav follows BLOG_SITE_URL, not a hardcoded production domain', 
   expect(html).toContain('href="https://staging.seentech.io/blog/category/orders"');
   expect(html).not.toContain('href="https://www.seentech.io/blog/"');
 });
+
+// seen-search-appearance-task.md: the new logo's icons in every blog head, canonical on www.
+test('the article head carries the icon lines and a www canonical', () => {
+  const html = renderArticlePage(baseArticle, parsed, [baseArticle]);
+  for (const icon of ['/favicon.ico?v=2', '/favicon.svg?v=2', '/favicon-96x96.png?v=2', '/apple-touch-icon.png?v=2']) {
+    expect(html).toContain(icon);
+  }
+  expect(html).toContain('<meta name="theme-color" content="#0E2A42">');
+  // Every link and address on the page is www; no bare seentech.io left.
+  expect(html).not.toMatch(/https:\/\/seentech\.io/);
+});
