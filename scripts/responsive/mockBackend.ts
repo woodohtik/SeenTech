@@ -53,14 +53,16 @@ const staff = {
 const NAMES = ['أبو عبدالله', 'محمد العتيبي', 'سعد القحطاني', 'فهد الدوسري', 'خالد الحربي', 'عبدالرحمن الشهري', 'ناصر المطيري', 'تركي الغامدي'];
 const customers = NAMES.map((name, i) => ({
   id: id(100 + i), tenant_id: TENANT, name, phone: `05${String(10000000 + i * 1111111).slice(0, 8)}`, email: null, notes: null,
-  measurements: { length: 58 + i, shoulder: 18, chest: 22 }, balance: i % 3 === 0 ? 150 : 0, created_at: daysAgo(40 - i), updated_at: daysAgo(i),
+  measurements: i === 0
+    ? { length: 58.75, shoulder: 18.5, chest: 22, neck: 15.25, fieldNotes: { length: 'قصّره نص سانتي عن المقاس', shoulder: 'الكتف اليمين نازل شوي' } }
+    : { length: 58 + i, shoulder: 18, chest: 22 }, balance: i % 3 === 0 ? 150 : 0, created_at: daysAgo(40 - i), updated_at: daysAgo(i),
 }));
 const STATUSES = ['measurements_taken', 'cutting', 'sewing', 'ready', 'delivered', 'measurements_taken', 'sewing', 'ready'];
 const orders = NAMES.map((name, i) => ({
   id: id(200 + i), tenant_id: TENANT, branch_id: BRANCH, customer_id: id(100 + i), customer_name: name, customer_phone: customers[i].phone,
   order_number: 1040 + i, status: STATUSES[i], status_key: STATUSES[i], total_amount: 345 + i * 115, paid_amount: i % 2 ? 345 + i * 115 : 100,
   credited_amount: 0, remaining_amount: i % 2 ? 0 : 245 + i * 115, tax_amount: 45 + i * 15, tax_rate: 0.15, discount_amount: 0,
-  order_date: daysAgo(i), delivery_date: daysAgo(i - 5), notes: null, items: [], history: [], is_test: false, created_by: STAFF,
+  order_date: daysAgo(i), delivery_date: daysAgo(i - 5), notes: null, items: [], history: [], is_test: false, created_by: STAFF, kind: 'tailoring',
   tracking_token: id(300 + i), assigned_tailor_id: null, payment_method: 'cash', created_at: daysAgo(i), updated_at: daysAgo(i),
 }));
 const ITEMS = ['قماش ياباني أبيض', 'قماش كوري سكري', 'أزرار صدف', 'كبك فضي', 'قماش إنجليزي رمادي', 'ياقات جاهزة'];

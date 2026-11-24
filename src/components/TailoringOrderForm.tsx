@@ -948,6 +948,7 @@ function TailoringOrderFormBody({
                             ? <><bdi dir="ltr" className="tabular-nums">{formatMeasurement(row.value, measurementUnit)}</bdi> <span className="text-sm text-content-muted font-bold">{t(unitLabelKey(measurementUnit))}</span></>
                             : '-'}
                         </p>
+                        {row.note && <p className="mt-0.5 text-sm text-content-muted break-words">{row.note}</p>}
                       </div>
                     ))}
                   </div>

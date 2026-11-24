@@ -28,6 +28,8 @@ export interface Measurements {
   cuffWidth?: number;
   bottomHem?: number;
   neckFold?: number;
+  /** A note per measurement, staff only (constants/measurementFields.ts FieldNotes). */
+  fieldNotes?: Partial<Record<string, string>>;
   // Visual/Sector specific fields
   collarType?: string; // الياقة
   cuffType?: string;   // الكبك

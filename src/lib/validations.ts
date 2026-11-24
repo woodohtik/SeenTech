@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { MEASUREMENT_FIELDS, LEGACY_MEASUREMENT_FIELDS, type MeasurementKey, type LegacyMeasurementKey } from '../constants/measurementFields';
+import { MEASUREMENT_FIELDS, LEGACY_MEASUREMENT_FIELDS, FIELD_NOTE_MAX, validateFieldNotes, type MeasurementKey, type LegacyMeasurementKey } from '../constants/measurementFields';
 import i18n from '../i18n/config';
 import { formatSaudiPhone } from '../utils/phoneUtils';
 
@@ -40,6 +40,18 @@ export const customerSchema = z.object({
     // constants/measurementFields.ts. zod strips unknown keys, so a key
     // missing here is erased from the customer on the next save (CM-01 below).
     ...numericMeasurementShape,
+    // A note per measurement (seen-measurements-basic-advanced-task.md 2).
+    fieldNotes: z.unknown().optional().transform((raw, ctx) => {
+      const notes = validateFieldNotes(raw);
+      if (!notes.ok) {
+        ctx.addIssue({
+          code: 'custom',
+          message: notes.error === 'too_long' ? t('measurements.field_note_too_long', { max: FIELD_NOTE_MAX }) : t('measurements.field_note_invalid'),
+        });
+        return z.NEVER;
+      }
+      return notes.value;
+    }),
     collarType: z.string().optional(),
     cuffType: z.string().optional(),
     pocketType: z.string().optional(),

@@ -26,7 +26,10 @@ const BASE = `http://127.0.0.1:${PORT}`;
 const OUT = path.join(ROOT, 'docs/responsive', arg('dir', 'measurements'), LABEL);
 // --receipt-only: just the receipt shot, added to an existing set.
 const RECEIPT_ONLY = process.argv.includes('--receipt-only');
-const WIDTHS = RECEIPT_ONLY ? [1280] : [360, 768, 1280];
+// --extras-only: just the 1280 extras (assistant open, work card, receipt), added to an existing set.
+const EXTRAS_ONLY = process.argv.includes('--extras-only');
+const PARTIAL = RECEIPT_ONLY || EXTRAS_ONLY;
+const WIDTHS = PARTIAL ? [1280] : [360, 768, 1280];
 
 type Place = { key: string; path: string; open?: (page: Page) => Promise<void> };
 const PLACES: Place[] = [
@@ -60,6 +63,21 @@ async function measure(page: Page) {
   });
 }
 
+/**
+ * From 1280 the whole selector fits: an element shot. Narrower it sits in a
+ * scrolling window, where an element shot comes out mostly empty: the screen
+ * instead, with `focus` scrolled to the middle of it.
+ */
+async function shoot(page: Page, selector: import('playwright').Locator, width: number, file: string, focus: import('playwright').Locator) {
+  if (width >= 1280) {
+    await selector.screenshot({ path: file, type: 'jpeg', quality: 70 });
+    return;
+  }
+  await focus.evaluate((el) => el.scrollIntoView({ block: 'center' })).catch(() => {});
+  await page.waitForTimeout(250);
+  await page.screenshot({ path: file, type: 'jpeg', quality: 70 });
+}
+
 async function main() {
   process.env.VITE_SUPABASE_URL = MOCK_SUPABASE_URL;
   process.env.VITE_SUPABASE_ANON_KEY = MOCK_ANON_KEY;
@@ -74,12 +92,12 @@ async function main() {
     const server = await preview({ root: ROOT, logLevel: 'error', build: { outDir: dist }, preview: { port: PORT, strictPort: true, host: '127.0.0.1' } });
     stop = () => new Promise((resolve) => server.httpServer.close(() => resolve()));
   }
-  if (!RECEIPT_ONLY) rmSync(OUT, { recursive: true, force: true });
+  if (!PARTIAL) rmSync(OUT, { recursive: true, force: true });
   mkdirSync(OUT, { recursive: true });
   const browser = await chromium.launch();
   const resultsFile = path.join(OUT, 'results.json');
-  const results: Record<string, unknown>[] = RECEIPT_ONLY && existsSync(resultsFile)
-    ? (JSON.parse(readFileSync(resultsFile, 'utf8')) as Record<string, unknown>[]).filter((r) => r.place !== 'receipt')
+  const results: Record<string, unknown>[] = PARTIAL && existsSync(resultsFile)
+    ? (JSON.parse(readFileSync(resultsFile, 'utf8')) as Record<string, unknown>[]).filter((r) => !(r.place === 'receipt' || r.place === 'workcard' || r.state === 'assistant'))
     : [];
   try {
     for (const width of WIDTHS) {
@@ -95,7 +113,7 @@ async function main() {
         body: JSON.stringify({ customer_name: 'عميل تجريبي', shop_name: 'مشغل الأناقة للخياطة', shop_logo_url: null, measurement_unit: 'cm', measurements: {} }),
       }));
       const page = await context.newPage();
-      for (const place of RECEIPT_ONLY ? [] : PLACES) {
+      for (const place of PARTIAL ? [] : PLACES) {
         await page.goto(`${BASE}${place.path}`, { waitUntil: 'domcontentloaded', timeout: 180_000 });
         await page.waitForSelector('main, input[id^="thobe-part-"]', { timeout: 60_000 });
         await page.waitForTimeout(2500);
@@ -111,9 +129,19 @@ async function main() {
         for (const state of hasButton ? ['closed', 'open'] : ['all']) {
           if (state === 'open') { await button.click(); await page.waitForTimeout(400); }
           const name = `${place.key}-${width}-${state}`;
-          await selector.screenshot({ path: path.join(OUT, `${name}.jpg`), type: 'jpeg', quality: 70 });
+          await shoot(page, selector, width, path.join(OUT, `${name}.jpg`),
+            page.locator(state === 'open' ? '#thobe-field-sleeveCuff' : '#thobe-field-length').first());
           results.push({ place: place.key, width, state, ...(await measure(page)) });
           process.stdout.write('.');
+        }
+        // A note with text on the shoulder (staff screens only).
+        const note = page.locator('#thobe-note-shoulder').first();
+        if ((await note.count()) > 0) {
+          await note.fill('الكتف اليمين نازل شوي');
+          await page.waitForTimeout(200);
+          await shoot(page, selector, width, path.join(OUT, `${place.key}-${width}-note.jpg`), page.locator('#thobe-field-shoulder').first());
+          results.push({ place: place.key, width, state: 'note', ...(await measure(page)) });
+          await note.fill('');
         }
         // A field in focus, with its fraction buttons (the section still open).
         const chest = page.locator('#thobe-part-chest').first();
@@ -121,12 +149,55 @@ async function main() {
         await chest.fill('');
         await chest.pressSequentially('52.5');
         await page.waitForTimeout(300);
-        await selector.screenshot({ path: path.join(OUT, `${place.key}-${width}-focus.jpg`), type: 'jpeg', quality: 70 });
+        await shoot(page, selector, width, path.join(OUT, `${place.key}-${width}-focus.jpg`), page.locator('#thobe-field-chest').first());
         results.push({ place: place.key, width, state: 'focus', ...(await measure(page)) });
         await chest.fill('');
         await page.keyboard.press('Tab');
         await page.waitForTimeout(200);
         if (hasButton) { await button.click(); await page.waitForTimeout(200); }
+      }
+      // 1280 with the assistant open, then the form opened beside it.
+      if (width === 1280 && !RECEIPT_ONLY) {
+        for (const place of PLACES.filter((p) => p.open)) {
+          try {
+            await page.goto(`${BASE}${place.path}`, { waitUntil: 'domcontentloaded', timeout: 180_000 });
+            await page.waitForSelector('main', { timeout: 60_000 });
+            await page.waitForTimeout(2500);
+            await page.locator('#tour-ai-fab').click({ timeout: 5000 });
+            await page.waitForTimeout(600);
+            await place.open!(page);
+            const first = page.locator('#thobe-part-length').first();
+            await first.waitFor({ timeout: 20_000 });
+            await first.scrollIntoViewIfNeeded();
+            await page.waitForTimeout(400);
+            await page.screenshot({ path: path.join(OUT, `${place.key}-${width}-assistant.jpg`), type: 'jpeg', quality: 70 });
+            results.push({ place: place.key, width, state: 'assistant', ...(await measure(page)) });
+          } catch (err) {
+            console.warn(`assistant shot skipped (${place.key}): ${(err as Error).message.split(String.fromCharCode(10))[0]}`);
+            await page.screenshot({ path: path.join(ROOT, '.responsive-out', `debug-assistant-${place.key}.png`) }).catch(() => {});
+          }
+        }
+        // The work card printed for the tailor: measurements and notes.
+        try {
+          await page.goto(`${BASE}/orders`, { waitUntil: 'domcontentloaded', timeout: 180_000 });
+          await page.waitForSelector('main', { timeout: 60_000 });
+          await page.waitForTimeout(2500);
+          // The first order (أبو عبدالله, with notes): its details button.
+          await page.locator('button[title="التفاصيل"]:visible').first().click({ timeout: 10_000 });
+          const cardEl = page.locator('#order-work-card-print-area').first();
+          await cardEl.waitFor({ state: 'attached', timeout: 15_000 });
+          await cardEl.evaluate((el) => {
+            const wrapper = el.parentElement as HTMLElement;
+            wrapper.className = '';
+            Object.assign(wrapper.style, { position: 'fixed', top: '0', left: '0', zIndex: '9999', background: '#fff', width: '302px', border: '1px solid #ccc' });
+          });
+          await page.waitForTimeout(300);
+          await cardEl.screenshot({ path: path.join(OUT, 'workcard-80mm.jpg'), type: 'jpeg', quality: 80 });
+          results.push({ place: 'workcard', width, state: 'printed' });
+        } catch (err) {
+          console.warn(`work card shot skipped: ${(err as Error).message.split(String.fromCharCode(10))[0]}`);
+          await page.screenshot({ path: path.join(ROOT, '.responsive-out', 'debug-workcard.png') }).catch(() => {});
+        }
       }
       // The printed receipt with measurements (acceptance 7): the invoice
       // layout's live preview, its sample values to the quarter.

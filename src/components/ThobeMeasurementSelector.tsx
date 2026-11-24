@@ -12,9 +12,14 @@ import { FractionPicker } from './ui/FractionPicker';
 import { useDirection } from '../lib/direction';
 import {
   ADVANCED_MEASUREMENT_KEYS,
+  BASIC_MEASUREMENT_KEYS,
+  FIELD_NOTE_MAX,
   MEASUREMENT_FIELDS,
   countAdvancedValues,
+  fieldNoteOf,
   fieldsDownTheFigure,
+  hasAdvancedValues,
+  measurementRows,
   measurementHintKey,
   measurementLabelKey,
   type MeasurementKey,
@@ -42,6 +47,11 @@ interface ThobeMeasurementSelectorProps {
   onShowAdvancedChange?: (show: boolean) => void;
   /** Remember the open/closed choice on this device. Off on the customer's own link. */
   rememberAdvanced?: boolean;
+  /**
+   * A note field beside each measurement (staff only). Off on the customer's
+   * own link: it neither shows nor sends the tailor's notes.
+   */
+  showNotes?: boolean;
 }
 
 /** This device's last choice for the advanced section. */
@@ -59,8 +69,11 @@ type ThobePart = MeasurementKey;
 // on the right, the sleeve and cuff on the left. DOM order is the body side
 // down, then the sleeve side down, so Tab follows what the eye sees.
 const FIELD_OF = Object.fromEntries(MEASUREMENT_FIELDS.map((f) => [f.key, f])) as Record<ThobePart, (typeof MEASUREMENT_FIELDS)[number]>;
-const DOM_ORDER: ThobePart[] = [...fieldsDownTheFigure('right', true), ...fieldsDownTheFigure('left', true)];
-const FIRST_ADVANCED = DOM_ORDER.find((key) => FIELD_OF[key].tier === 'advanced')!;
+// DOM, Tab and Enter follow the founder's list order (task file question 4);
+// only the wide layout places each card beside its part of the drawing.
+const LIST_ORDER: ThobePart[] = MEASUREMENT_FIELDS.map((f) => f.key);
+const BASIC_COUNT = BASIC_MEASUREMENT_KEYS.length;
+const FIRST_ADVANCED = ADVANCED_MEASUREMENT_KEYS[0];
 
 // Each shown field's row in its column, counting only the fields on screen,
 // so a column closes up when the advanced ones are hidden.
@@ -98,14 +111,11 @@ const ZONE_LABEL_AT: Record<MeasurementZone, { x: number; y: number }> = {
 
 export default function ThobeMeasurementSelector({
   values, onChange, readOnly = false, measurementUnit, fabricEstimate,
-  showAdvanced: showAdvancedProp, onShowAdvancedChange, rememberAdvanced = true,
+  showAdvanced: showAdvancedProp, onShowAdvancedChange, rememberAdvanced = true, showNotes = true,
 }: ThobeMeasurementSelectorProps) {
   const { t } = useTranslation();
   const { isRtl } = useDirection();
   const highlightColor = "#0F6E96";
-  // Grid column 1 is the visual right in RTL and the visual left in LTR.
-  const sideColumn = (side: 'right' | 'left') =>
-    (side === 'right') === isRtl ? 'md:col-start-1' : 'md:col-start-3';
   const estimatedMeters = fabricEstimate && !readOnly
     ? estimateFabricMeters(
         fabricInputFromMeasurements(values, fabricEstimate.fabricWidthCm),
@@ -117,6 +127,10 @@ export default function ThobeMeasurementSelector({
   const [activeHint, setActiveHint] = useState<ThobePart | null>(null);
   const [wizardOpen, setWizardOpen] = useState(false);
   const inputRefs = useRef<Record<string, HTMLInputElement | null>>({});
+  const noteRefs = useRef<Record<string, HTMLInputElement | null>>({});
+  const advancedButtonRef = useRef<HTMLButtonElement | null>(null);
+  // Which input of the active card has focus: the fraction strip is for the value only.
+  const [activeTarget, setActiveTarget] = useState<'value' | 'note'>('value');
   const activeZone = activePart ? ZONE_OF[activePart] : null;
   // What the person is typing in the focused field, as typed ("20 3/4"); the
   // stored value follows every readable keystroke. dirty: typed in, so on
@@ -143,7 +157,7 @@ export default function ThobeMeasurementSelector({
   const advancedFilled = countAdvancedValues(values);
   const [rememberedOpen] = useState(() => (rememberAdvanced ? readShowAdvanced() : false));
   const [ownChoice, setOwnChoice] = useState<boolean | null>(null);
-  const showAdvanced = showAdvancedProp ?? ownChoice ?? (advancedFilled > 0 || rememberedOpen);
+  const showAdvanced = showAdvancedProp ?? ownChoice ?? (hasAdvancedValues(values) || rememberedOpen);
   const { row: fieldRow, rows } = useMemo(() => fieldRows(showAdvanced), [showAdvanced]);
   const [focusAfterOpen, setFocusAfterOpen] = useState<ThobePart | null>(null);
   const setShowAdvanced = (show: boolean, focus?: ThobePart) => {
@@ -161,6 +175,7 @@ export default function ThobeMeasurementSelector({
     setFocusAfterOpen(null);
   }, [focusAfterOpen, showAdvanced]);
   const isShown = (key: ThobePart) => showAdvanced || !ADVANCED.has(key);
+  const readOnlyNotes = readOnly ? measurementRows(values).filter((row) => row.note) : [];
 
   // A zone shared by two fields (the two sleeve lengths, the two neck widths)
   // sends focus to whichever of them is still empty.
@@ -200,6 +215,7 @@ export default function ThobeMeasurementSelector({
 
   const handleFocus = (part: ThobePart) => {
     setActivePart(part);
+    setActiveTarget('value');
     setRoundedNote(null);
     setDraft({ part, text: formatMeasurement(storedOf(part), measurementUnit), dirty: false });
   };
@@ -224,6 +240,41 @@ export default function ThobeMeasurementSelector({
     }
     setDraft((d) => (d?.part === part ? null : d));
   };
+  // A note per measurement: one line, at most 80 characters, trimmed on
+  // leaving the field; an empty note is removed.
+  const setNote = (part: ThobePart, text: string) => {
+    if (readOnly) return;
+    const notes: Record<string, string> = { ...((values as { fieldNotes?: Record<string, string> }).fieldNotes || {}) };
+    if ((notes[part] || '') === text) return;
+    if (text) notes[part] = text.slice(0, FIELD_NOTE_MAX); else delete notes[part];
+    onChange({ ...values, fieldNotes: Object.keys(notes).length ? notes : undefined } as Measurements);
+  };
+
+  // Enter moves to the next measurement's value in list order (Shift+Enter
+  // to the previous), never submits the form. After the last basic one:
+  // the first advanced one when open, otherwise the advanced button.
+  const navOrder = LIST_ORDER.filter((key) => isShown(key));
+  const handleEnter = (e: React.KeyboardEvent<HTMLInputElement>, part: ThobePart) => {
+    if (e.key !== 'Enter' || e.nativeEvent.isComposing) return;
+    e.preventDefault();
+    e.stopPropagation();
+    const index = navOrder.indexOf(part);
+    const target = e.shiftKey ? navOrder[index - 1] : navOrder[index + 1];
+    if (!target) {
+      if (!e.shiftKey) advancedButtonRef.current?.focus();
+      return;
+    }
+    if (!e.shiftKey && !showAdvanced && FIELD_OF[target]?.tier === 'advanced') {
+      advancedButtonRef.current?.focus();
+      return;
+    }
+    const next = inputRefs.current[target];
+    if (!next) return;
+    next.focus();
+    next.select();
+    next.scrollIntoView?.({ block: 'nearest' });
+  };
+
   const pickFraction = (part: ThobePart, displayValue: number) => {
     storeValue(part, displayValue);
     setDraft({ part, text: formatMeasurement(displayUnitToCm(displayValue, measurementUnit), measurementUnit), dirty: false });
@@ -232,7 +283,7 @@ export default function ThobeMeasurementSelector({
 
   return (
     <div data-measurement-selector className={cn(
-      "bg-surface rounded-2xl border border-border w-full",
+      "@container bg-surface rounded-2xl border border-border w-full",
       readOnly ? "flex flex-col items-center p-4 sm:p-8 max-w-md mx-auto" : "p-3 sm:p-5"
     )}>
       {!readOnly && (
@@ -268,26 +319,27 @@ export default function ThobeMeasurementSelector({
       )}
 
       <div
-        // From 768px: [body] [thobe] [sleeve], the field columns a steady
-        // 150-190px and the drawing the rest (at least 220px), so neither
-        // squeezes. One row per field of the longer side, counting the shown
-        // fields only; the advanced button takes the row under the drawing.
-        // Under 768px: the drawing on top, the two sides in two columns
-        // under it, then the button.
-        style={{ '--rows': rows, '--button-row': rows + 2, '--button-row-md': rows + 1 } as React.CSSProperties}
+        // By the selector's own width (a container query), not the window's:
+        // with the assistant open on a 14" laptop it falls back to one column.
+        // From 720px: [body] [thobe] [sleeve], the field columns 240-300px
+        // (a value and a note side by side) and the drawing the rest (at
+        // least 200px). One row per field of the longer side, shown fields
+        // only; the advanced button takes the row under the drawing.
+        // Narrower: the drawing on top, then one column in list order.
+        style={{ '--rows': rows, '--button-row': rows + 1 } as React.CSSProperties}
         className={cn(
-          !readOnly && "grid grid-cols-2 gap-x-2 gap-y-2 grid-rows-[auto_repeat(var(--rows),auto)_auto] md:grid-cols-[minmax(150px,190px)_minmax(220px,1fr)_minmax(150px,190px)] md:grid-rows-[repeat(var(--rows),auto)_auto] md:gap-x-4 md:items-center",
+          !readOnly && "grid grid-cols-1 gap-2 @min-[720px]:grid-cols-[minmax(240px,300px)_minmax(200px,1fr)_minmax(240px,300px)] @min-[720px]:grid-rows-[repeat(var(--rows),auto)_auto] @min-[720px]:gap-x-4 @min-[720px]:items-center",
           readOnly && "w-full"
         )}
       >
       {/* Interactive SVG Section */}
       <div className={cn(
         "relative w-full mx-auto flex flex-col items-center select-none touch-none",
-        readOnly ? "max-w-[400px]" : "col-span-2 row-start-1 md:col-span-1 md:col-start-2 md:row-start-1 md:row-span-[var(--rows)] md:h-full md:min-h-0 md:[contain:size]"
+        readOnly ? "max-w-[400px]" : "@min-[720px]:col-start-2 @min-[720px]:row-start-1 @min-[720px]:row-span-[var(--rows)] @min-[720px]:h-full @min-[720px]:min-h-0 @min-[720px]:[contain:size]"
       )}>
         <svg
           viewBox="0 0 400 800"
-          className={cn("w-auto max-w-full h-auto", readOnly ? "max-h-[70vh]" : "max-h-[28vh] md:max-h-none md:min-h-0 md:flex-1")}
+          className={cn("w-auto max-w-full h-auto", readOnly ? "max-h-[70vh]" : "max-h-[28vh] @min-[720px]:max-h-none @min-[720px]:min-h-0 @min-[720px]:flex-1")}
         >
           <defs>
             <linearGradient id="thobeGradient" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -514,39 +566,44 @@ export default function ThobeMeasurementSelector({
         </div>
       </div>
 
-      {/* The fields, beside what they measure (body side down, then sleeve side down) */}
-      {!readOnly && DOM_ORDER.map((part) => {
+      {/* The fields in list order: Tab and Enter follow the founder's order,
+          wherever a card sits beside the drawing. The advanced button comes
+          right after the basic ones (on a phone it shows there, too). */}
+      {!readOnly && LIST_ORDER.map((part, listIndex) => {
         const { side, tier } = FIELD_OF[part];
         const isActive = activePart === part;
+        const valueFocused = isActive && activeTarget === 'value';
         const stored = storedOf(part);
+        const note = fieldNoteOf(values, part);
         const hintOpen = isInstructionMode && activeHint === part;
         const hidden = !isShown(part);
         const label = t(measurementLabelKey(part));
         const shownText = draft?.part === part ? draft.text : formatMeasurement(stored, measurementUnit);
-        // From 768px each card's text leans toward the drawing: the body side
-        // (right of it) to the left, the sleeve side to the right.
-        const leansLeft = side === 'right';
-        const inward = leansLeft === isRtl ? 'md:justify-end' : 'md:justify-start';
-        const column = (side === 'right') === isRtl ? 'col-start-1 md:col-start-1' : 'col-start-2 md:col-start-3';
+        // Wide: the value sits on the card's side nearest the drawing, the
+        // note on the outer side. Body cards (right of the drawing) have the
+        // drawing to their left.
+        const valueOnPhysicalLeft = side === 'right';
+        const valueFirst = valueOnPhysicalLeft !== isRtl;
+        const column = (side === 'right') === isRtl ? '@min-[720px]:col-start-1' : '@min-[720px]:col-start-3';
         const typedValue = draft?.part === part ? parseMeasurementInput(draft.text) : null;
-        return (
+        const isLast = part === navOrder[navOrder.length - 1];
+        const card = (
           <div
             key={part}
             id={`thobe-field-${part}`}
             // Hidden, not removed: the button's aria-controls points at it, and the value stays in the form.
             hidden={hidden}
             onBlur={(e) => {
-              // Keep the field active while focus moves to its own fraction buttons.
+              // Keep the field active while focus moves inside the card (value, note, fraction buttons).
               if (!e.currentTarget.contains(e.relatedTarget as Node | null)) {
                 handleLeave(part);
                 setActivePart(null);
               }
             }}
-            onClick={() => inputRefs.current[part]?.focus()}
-            style={{ '--field-row': (fieldRow[part] ?? 1) + 1, '--field-row-md': fieldRow[part] ?? 1 } as React.CSSProperties}
+            style={{ '--field-row': fieldRow[part] ?? 1 } as React.CSSProperties}
             className={cn(
-              "relative flex h-16 cursor-text flex-col justify-center gap-0.5 rounded-[8px] border bg-surface px-3 transition-colors",
-              "row-start-[var(--field-row)] md:row-start-[var(--field-row-md)]",
+              "relative flex flex-col justify-center gap-1 rounded-[8px] border bg-surface px-3 py-2 transition-colors",
+              "@min-[720px]:h-16 @min-[720px]:py-0 @min-[720px]:row-start-[var(--field-row)]",
               tier === 'advanced' && "motion-safe:animate-[seen-enter-fade_200ms_cubic-bezier(.2,.8,.2,1)]",
               isActive
                 ? "z-10 border-brand shadow-[0_0_0_2px_#FFFFFF,0_0_0_4px_var(--seen-blue-600)]"
@@ -554,7 +611,7 @@ export default function ThobeMeasurementSelector({
               column
             )}
           >
-            <div className={cn("flex min-w-0 items-center gap-1.5", inward)}>
+            <div className="flex min-w-0 items-center gap-1.5">
               {stored > 0 && <span aria-hidden="true" className="size-1.5 shrink-0 rounded-full bg-brand" />}
               <label
                 htmlFor={`thobe-part-${part}`}
@@ -577,33 +634,64 @@ export default function ThobeMeasurementSelector({
               )}
             </div>
 
-            <div className={cn("flex min-w-0 items-baseline gap-1", inward)}>
-              <input
-                id={`thobe-part-${part}`}
-                ref={(el) => { inputRefs.current[part] = el; }}
-                // Text, not number: the value reads "20 ¾", and a person may type
-                // "20 3/4", "20¾", "٢٠٫٧٥" or "20,5" (measurementUnits.parseMeasurementInput).
-                // Range checks stay in the zod schema and on the server.
-                type="text"
-                inputMode="decimal"
-                dir="ltr"
-                autoComplete="off"
-                value={shownText}
-                aria-description={stored > 0 && !isActive ? `${spokenMeasurement(stored, measurementUnit, fractionWords)} ${t(unitLabelKey(measurementUnit))}` : undefined}
-                onChange={(e) => handleType(part, e.target.value)}
-                onFocus={() => handleFocus(part)}
-                placeholder="—"
-                // Sized to its text, so the value and its unit sit together on the leaning side.
-                style={{ width: `${Math.max(2, shownText.length + 1)}ch` }}
-                className={cn(
-                  "h-6 min-h-0 min-w-0 max-w-full border-0 bg-transparent p-0 focus-visible:shadow-none font-heading text-lg font-bold leading-6 text-content tabular-nums",
-                  "placeholder:text-content-muted/50 focus:outline-none focus:ring-0"
-                )}
-              />
-              <span className="shrink-0 text-sm text-content-muted">{t(unitLabelKey(measurementUnit))}</span>
+            <div className="flex min-w-0 flex-col gap-1 @min-[720px]:flex-row @min-[720px]:items-baseline @min-[720px]:gap-2">
+              <div
+                className={cn("flex w-[88px] shrink-0 items-baseline gap-1", valueFirst ? "@min-[720px]:order-1" : "@min-[720px]:order-2")}
+                onClick={() => inputRefs.current[part]?.focus()}
+              >
+                <input
+                  id={`thobe-part-${part}`}
+                  ref={(el) => { inputRefs.current[part] = el; }}
+                  // Text, not number: the value reads "20 ¾", and a person may type
+                  // "20 3/4", "20¾", "٢٠٫٧٥" or "20,5" (measurementUnits.parseMeasurementInput).
+                  // Range checks stay in the zod schema and on the server.
+                  type="text"
+                  inputMode="decimal"
+                  enterKeyHint={isLast && !showNotes ? 'done' : 'next'}
+                  dir="ltr"
+                  autoComplete="off"
+                  value={shownText}
+                  aria-description={stored > 0 && !valueFocused ? `${spokenMeasurement(stored, measurementUnit, fractionWords)} ${t(unitLabelKey(measurementUnit))}` : undefined}
+                  onChange={(e) => handleType(part, e.target.value)}
+                  onFocus={() => handleFocus(part)}
+                  onKeyDown={(e) => handleEnter(e, part)}
+                  placeholder="—"
+                  className={cn(
+                    "h-6 min-h-0 w-full min-w-0 border-0 bg-transparent p-0 font-heading text-lg font-bold leading-6 text-content tabular-nums",
+                    "placeholder:text-content-muted/50 focus:outline-none focus:ring-0 focus-visible:shadow-none"
+                  )}
+                />
+                <span className="shrink-0 text-sm text-content-muted">{t(unitLabelKey(measurementUnit))}</span>
+              </div>
+              {showNotes && (
+                <input
+                  id={`thobe-note-${part}`}
+                  ref={(el) => { noteRefs.current[part] = el; }}
+                  type="text"
+                  enterKeyHint={isLast ? 'done' : 'next'}
+                  dir="auto"
+                  autoComplete="off"
+                  maxLength={FIELD_NOTE_MAX}
+                  value={note}
+                  // The whole note on hover; one line, cut with dots, inside the card.
+                  title={note || undefined}
+                  placeholder={t('measurements.field_note_placeholder')}
+                  aria-label={t('measurements.field_note_label', { name: label })}
+                  onChange={(e) => setNote(part, e.target.value)}
+                  onFocus={() => { setActivePart(part); setActiveTarget('note'); }}
+                  onBlur={(e) => setNote(part, e.target.value.trim())}
+                  onKeyDown={(e) => handleEnter(e, part)}
+                  className={cn(
+                    "h-7 min-h-0 w-full min-w-0 truncate rounded-none border-0 border-b border-border bg-transparent px-0.5 text-base font-normal text-content",
+                    "placeholder:text-content-muted/70 focus:border-brand focus:outline-none focus:ring-0 focus-visible:shadow-none",
+                    "@min-[720px]:flex-1",
+                    valueFirst ? "@min-[720px]:order-2" : "@min-[720px]:order-1"
+                  )}
+                />
+              )}
             </div>
 
-            {(isActive || hintOpen || roundedNote?.part === part) && (
+            {(valueFocused || hintOpen || roundedNote?.part === part) && (
               // Floats under the card, so the other fields never shift. It grows
               // toward the drawing (or the other column): right-anchored on the
               // body side, left-anchored on the sleeve side.
@@ -618,7 +706,7 @@ export default function ThobeMeasurementSelector({
                     {t(measurementHintKey(part))}
                   </p>
                 )}
-                {isActive && (
+                {valueFocused && (
                   <FractionPicker
                     value={typedValue ?? (stored ? cmToDisplayUnit(stored, measurementUnit) : 0)}
                     onSelect={(newValue) => pickFraction(part, newValue)}
@@ -636,30 +724,45 @@ export default function ThobeMeasurementSelector({
             )}
           </div>
         );
+        // The advanced button right after the last basic field.
+        if (listIndex !== BASIC_COUNT - 1) return card;
+        return (
+          <React.Fragment key={part}>
+            {card}
+            <div className="flex justify-center @min-[720px]:col-start-2 @min-[720px]:row-start-[var(--button-row)] @min-[720px]:pt-1">
+              <button
+                type="button"
+                ref={advancedButtonRef}
+                aria-expanded={showAdvanced}
+                aria-controls={ADVANCED_MEASUREMENT_KEYS.map((key) => `thobe-field-${key}`).join(' ')}
+                onClick={() => setShowAdvanced(!showAdvanced, showAdvanced ? undefined : FIRST_ADVANCED)}
+                className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-[8px] border border-[var(--seen-neutral-500)] bg-surface px-4 font-sans text-base font-semibold text-content hover:bg-surface-muted @min-[720px]:w-auto"
+              >
+                <span>{showAdvanced ? t('measurements.advanced_hide') : t('measurements.advanced_show')}</span>
+                {advancedFilled > 0 ? (
+                  <span className="rounded-full bg-[#DAF1FF] px-2 text-sm font-medium leading-6 text-brand">{t('measurements.advanced_filled', { count: advancedFilled })}</span>
+                ) : (
+                  <span className="rounded-full bg-surface-muted px-2 text-sm font-medium leading-6 text-content-muted tabular-nums">{ADVANCED_MEASUREMENT_KEYS.length}</span>
+                )}
+                <ChevronDown size={18} aria-hidden="true" className={cn('shrink-0 transition-transform duration-200 motion-reduce:transition-none', showAdvanced && 'rotate-180')} />
+              </button>
+            </div>
+          </React.Fragment>
+        );
       })}
-
-      {!readOnly && (
-        // Under the drawing from 768px; after the fields on a phone. A
-        // secondary button: the one primary button on the screen is saving.
-        <div className="col-span-2 row-start-[var(--button-row)] flex justify-center md:col-span-1 md:col-start-2 md:row-start-[var(--button-row-md)] md:pt-1">
-          <button
-            type="button"
-            aria-expanded={showAdvanced}
-            aria-controls={ADVANCED_MEASUREMENT_KEYS.map((key) => `thobe-field-${key}`).join(' ')}
-            onClick={() => setShowAdvanced(!showAdvanced, showAdvanced ? undefined : FIRST_ADVANCED)}
-            className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-[8px] border border-[var(--seen-neutral-500)] bg-surface px-4 font-sans text-base font-semibold text-content hover:bg-surface-muted md:w-auto"
-          >
-            <span>{showAdvanced ? t('measurements.advanced_hide') : t('measurements.advanced_show')}</span>
-            {advancedFilled > 0 ? (
-              <span className="rounded-full bg-[#DAF1FF] px-2 text-sm font-medium leading-6 text-brand">{t('measurements.advanced_filled', { count: advancedFilled })}</span>
-            ) : (
-              <span className="rounded-full bg-surface-muted px-2 text-sm font-medium leading-6 text-content-muted tabular-nums">{ADVANCED_MEASUREMENT_KEYS.length}</span>
-            )}
-            <ChevronDown size={18} aria-hidden="true" className={cn('shrink-0 transition-transform duration-200 motion-reduce:transition-none', showAdvanced && 'rotate-180')} />
-          </button>
-        </div>
-      )}
       </div>
+
+      {readOnly && readOnlyNotes.length > 0 && (
+        // Read-only: the drawing shows the values; the notes are listed under it.
+        <ul className="mt-4 w-full space-y-1 text-sm">
+          {readOnlyNotes.map((row) => (
+            <li key={row.key} className="flex gap-2">
+              <span className="shrink-0 font-medium text-content">{t(row.labelKey)}:</span>
+              <span className="min-w-0 break-words text-content-muted">{row.note}</span>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }

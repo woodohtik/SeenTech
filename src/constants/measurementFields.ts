@@ -1,5 +1,5 @@
 /**
- * The shop's approved measurement list (founder decision, 24 Nov 2026,
+ * The shop's approved measurement list (founder decision, 24 Nov 2026, last version,
  * seen-measurements-basic-advanced-task.md): sixteen measurements, the nine
  * basic ones first in the founder's order, then the seven advanced ones. This
  * is the one place the list lives; the type, both validators, the selector,
@@ -20,13 +20,13 @@ export type MeasurementKey =
   | 'handWidth'
   | 'midSleeveWidth'
   | 'cuffLength'
-  | 'sleeveTopWidth'
+  | 'bottomWidth'
   | 'sleeveCuff'
+  | 'sleeveTopWidth'
   | 'sleeveHem'
   | 'cuffWidth'
   | 'waist'
   | 'bottomHem'
-  | 'bottomWidth'
   | 'neckFold';
 
 /** Kept so stored values survive and still show, but no longer entered. */
@@ -80,14 +80,14 @@ export const MEASUREMENT_FIELDS: readonly MeasurementField[] = [
   { key: 'handWidth', side: 'left', zone: 'wrist', maxCm: 100, tier: 'basic', figureY: 430 },
   { key: 'midSleeveWidth', side: 'left', zone: 'midSleeve', maxCm: 100, tier: 'basic', figureY: 340 },
   { key: 'cuffLength', side: 'left', zone: 'cuff', maxCm: 100, tier: 'basic', figureY: 470 },
-  { key: 'sleeveTopWidth', side: 'left', zone: 'sleeveTop', maxCm: 100, tier: 'basic', figureY: 240 },
+  { key: 'bottomWidth', side: 'right', zone: 'bottomWidth', maxCm: 200, tier: 'basic', figureY: 700 },
   // The seven advanced ones.
   { key: 'sleeveCuff', side: 'left', zone: 'sleeve', maxCm: 150, tier: 'advanced', figureY: 365 },
+  { key: 'sleeveTopWidth', side: 'left', zone: 'sleeveTop', maxCm: 100, tier: 'advanced', figureY: 240 },
   { key: 'sleeveHem', side: 'left', zone: 'cuff', maxCm: 50, tier: 'advanced', figureY: 445 },
   { key: 'cuffWidth', side: 'left', zone: 'cuffWidth', maxCm: 50, tier: 'advanced', figureY: 500 },
   { key: 'waist', side: 'right', zone: 'waist', maxCm: 200, tier: 'advanced', figureY: 380 },
   { key: 'bottomHem', side: 'right', zone: 'bottomHem', maxCm: 50, tier: 'advanced', figureY: 752 },
-  { key: 'bottomWidth', side: 'right', zone: 'bottomWidth', maxCm: 200, tier: 'advanced', figureY: 700 },
   { key: 'neckFold', side: 'right', zone: 'neck', maxCm: 100, tier: 'advanced', figureY: 92 },
 ];
 
@@ -116,8 +116,15 @@ export function countAdvancedValues(measurements: unknown): number {
   }).length;
 }
 
-/** Whether any advanced measurement carries a value: then the section opens on its own, so stored data is never out of sight. */
-export const hasAdvancedValues = (measurements: unknown): boolean => countAdvancedValues(measurements) > 0;
+/**
+ * Whether any advanced measurement carries a value or a note: then the
+ * section opens on its own, so stored data is never out of sight.
+ */
+export const hasAdvancedValues = (measurements: unknown): boolean => {
+  if (countAdvancedValues(measurements) > 0) return true;
+  const notes = (measurements as { fieldNotes?: Record<string, unknown> } | null)?.fieldNotes;
+  return !!notes && ADVANCED_MEASUREMENT_KEYS.some((key) => typeof notes[key] === 'string' && notes[key] !== '');
+};
 
 /**
  * Measurement sets by activity (seen-verticals-readiness-task.md Phase 4):
@@ -161,6 +168,8 @@ export interface MeasurementRow {
   labelKey: string;
   /** Stored value in cm. */
   value: number;
+  /** The tailor's note on this measurement ('' when none). Staff only. */
+  note: string;
 }
 
 /**
@@ -175,9 +184,47 @@ export function measurementRows(measurements: unknown, includeEmpty = false): Me
     const raw = Number(source[key]);
     const value = Number.isFinite(raw) && raw > 0 ? raw : 0;
     const isLegacy = (LEGACY_MEASUREMENT_KEYS as readonly string[]).includes(key);
-    if (value > 0 || (includeEmpty && !isLegacy)) {
-      rows.push({ key, labelKey: measurementLabelKey(key), value });
+    const note = fieldNoteOf(source, key);
+    if (value > 0 || note || (includeEmpty && !isLegacy)) {
+      rows.push({ key, labelKey: measurementLabelKey(key), value, note });
     }
   }
   return rows;
+}
+
+/**
+ * A note per measurement (seen-measurements-basic-advanced-task.md, section 2):
+ * `measurements.fieldNotes`, a one-line text per key, staff only. Stored in
+ * the same JSON as the values; no table change.
+ */
+export const FIELD_NOTE_MAX = 80;
+export type FieldNotes = Partial<Record<MeasurementKey | LegacyMeasurementKey, string>>;
+
+/**
+ * The one check for fieldNotes, used by the form schema and the server: keys
+ * from the measurement list only, text values, trimmed, at most 80
+ * characters; empty notes are dropped (undefined when none are left).
+ */
+export function validateFieldNotes(input: unknown):
+  | { ok: true; value: FieldNotes | undefined }
+  | { ok: false; error: 'not_an_object' | 'unknown_key' | 'not_text' | 'too_long'; key?: string } {
+  if (input === undefined || input === null) return { ok: true, value: undefined };
+  if (typeof input !== 'object' || Array.isArray(input)) return { ok: false, error: 'not_an_object' };
+  const allowed = new Set<string>(ALL_NUMERIC_MEASUREMENT_KEYS);
+  const value: FieldNotes = {};
+  for (const [key, raw] of Object.entries(input as Record<string, unknown>)) {
+    if (!allowed.has(key)) return { ok: false, error: 'unknown_key', key };
+    if (typeof raw !== 'string') return { ok: false, error: 'not_text', key };
+    const text = raw.trim();
+    if (text.length > FIELD_NOTE_MAX) return { ok: false, error: 'too_long', key };
+    if (text) value[key as MeasurementKey] = text;
+  }
+  return { ok: true, value: Object.keys(value).length ? value : undefined };
+}
+
+/** The note of one measurement, or '' when none. */
+export function fieldNoteOf(measurements: unknown, key: MeasurementKey | LegacyMeasurementKey): string {
+  const notes = (measurements as { fieldNotes?: Record<string, unknown> } | null | undefined)?.fieldNotes;
+  const note = notes?.[key];
+  return typeof note === 'string' ? note : '';
 }

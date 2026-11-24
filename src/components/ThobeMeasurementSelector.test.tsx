@@ -6,7 +6,7 @@ import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import ar from '../i18n/locales/ar.json';
 import type { Measurements } from '../types';
-import { ADVANCED_MEASUREMENT_KEYS, MEASUREMENT_KEYS, fieldsDownTheFigure } from '../constants/measurementFields';
+import { ADVANCED_MEASUREMENT_KEYS, BASIC_MEASUREMENT_KEYS, MEASUREMENT_KEYS, fieldsDownTheFigure } from '../constants/measurementFields';
 import type { MeasurementUnit } from '../utils/measurementUnits';
 
 vi.mock('./Branding', () => ({ default: () => null }));
@@ -43,14 +43,15 @@ const input = (key: string) => document.getElementById(`thobe-part-${key}`) as H
 const card = (key: string) => document.getElementById(`thobe-field-${key}`) as HTMLElement;
 const advancedButton = () => screen.getByRole('button', { name: /مقاسات متقدمة|إخفاء المتقدمة/ });
 
-const BASIC_DOWN = [...fieldsDownTheFigure('right', false), ...fieldsDownTheFigure('left', false)];
-const ALL_DOWN = [...fieldsDownTheFigure('right', true), ...fieldsDownTheFigure('left', true)];
+// DOM (= Tab) order is the list order (task file question 4).
+const BASIC_DOWN = [...BASIC_MEASUREMENT_KEYS];
+const ALL_DOWN = [...MEASUREMENT_KEYS];
 
 describe('ThobeMeasurementSelector: basic and advanced', () => {
-  it('shows the nine basic measurements, body side then sleeve side, each down the thobe, and one button', () => {
+  it('shows the nine basic measurements in list order, and one button', () => {
     render(<Harness />);
     expect(shownInputs()).toEqual(BASIC_DOWN);
-    expect(BASIC_DOWN).toEqual(['neck', 'shoulder', 'chest', 'length', 'sleeveTopWidth', 'midSleeveWidth', 'sleeve', 'handWidth', 'cuffLength']);
+    expect(BASIC_DOWN).toEqual(['length', 'shoulder', 'sleeve', 'chest', 'neck', 'handWidth', 'midSleeveWidth', 'cuffLength', 'bottomWidth']);
     expect(screen.getAllByRole('button', { name: /مقاسات متقدمة/ })).toHaveLength(1);
     expect(advancedButton().textContent).toContain('7');
     expect(advancedButton().getAttribute('aria-expanded')).toBe('false');
@@ -63,8 +64,8 @@ describe('ThobeMeasurementSelector: basic and advanced', () => {
     expect(shownInputs()).toHaveLength(16);
     expect(advancedButton().getAttribute('aria-expanded')).toBe('true');
     expect(advancedButton().textContent).toContain('إخفاء المتقدمة');
-    // Focus goes to the first advanced field in Tab order: the fold-over neck, beside the neck.
-    expect(document.activeElement?.id).toBe('thobe-part-neckFold');
+    // Focus goes to the first advanced field in list order.
+    expect(document.activeElement?.id).toBe('thobe-part-sleeveCuff');
     fireEvent.click(advancedButton());
     expect(shownInputs()).toEqual(BASIC_DOWN);
     expect(advancedButton().getAttribute('aria-expanded')).toBe('false');
@@ -72,9 +73,10 @@ describe('ThobeMeasurementSelector: basic and advanced', () => {
 
   it('gives each side consecutive rows of the shown fields only: no holes', () => {
     render(<Harness />);
-    const rowOf = (key: string) => Number(card(key).style.getPropertyValue('--field-row-md'));
-    expect(fieldsDownTheFigure('right', false).map(rowOf)).toEqual([1, 2, 3, 4]);
-    expect(fieldsDownTheFigure('left', false).map(rowOf)).toEqual([1, 2, 3, 4, 5]);
+    const rowOf = (key: string) => Number(card(key).style.getPropertyValue('--field-row'));
+    // Five basic on the body side, four on the sleeve side.
+    expect(fieldsDownTheFigure('right', false).map(rowOf)).toEqual([1, 2, 3, 4, 5]);
+    expect(fieldsDownTheFigure('left', false).map(rowOf)).toEqual([1, 2, 3, 4]);
     fireEvent.click(advancedButton());
     expect(fieldsDownTheFigure('right', true).map(rowOf)).toEqual([1, 2, 3, 4, 5, 6, 7, 8]);
     expect(fieldsDownTheFigure('left', true).map(rowOf)).toEqual([1, 2, 3, 4, 5, 6, 7, 8]);
@@ -236,10 +238,112 @@ describe('ThobeMeasurementSelector: fractions', () => {
     for (const key of MEASUREMENT_KEYS) expect(card(key).querySelector('label')!.className).not.toContain('truncate');
   });
 
-  it('uses the new names: المفصل and وسع اليد', () => {
+  it('uses the new names: المفصل, وسع اليد, وسع أسفل', () => {
     render(<Harness />);
     expect(card('sleeveTopWidth').querySelector('label')!.textContent).toBe('المفصل');
+    expect(card('bottomWidth').querySelector('label')!.textContent).toBe('وسع أسفل');
     expect(card('handWidth').querySelector('label')!.textContent).toBe('وسع اليد');
     expect(document.body.textContent).not.toContain('وسع الكم أعلى');
+  });
+});
+
+describe('ThobeMeasurementSelector: a note per measurement', () => {
+  const noteOf = (key: string) => document.getElementById(`thobe-note-${key}`) as HTMLInputElement | null;
+
+  it('every measurement has a note field beside it, named for screen readers, one line of 80 at most', () => {
+    render(<Harness />);
+    fireEvent.click(advancedButton());
+    for (const key of MEASUREMENT_KEYS) expect(noteOf(key)).not.toBeNull();
+    expect(noteOf('shoulder')!.getAttribute('aria-label')).toBe('ملاحظة على الكتف');
+    expect(noteOf('shoulder')!.maxLength).toBe(80);
+    expect(noteOf('shoulder')!.placeholder).toBe('ملاحظة');
+  });
+
+  it('a note is saved with the measurements, trimmed on leaving, and removed when emptied', () => {
+    const seen: Measurements[] = [];
+    render(<Harness onValues={(v) => seen.push(v)} />);
+    fireEvent.change(noteOf('shoulder')!, { target: { value: ' كتف مايل ' } });
+    fireEvent.blur(noteOf('shoulder')!);
+    expect((seen[seen.length - 1] as { fieldNotes?: Record<string, string> }).fieldNotes).toEqual({ shoulder: 'كتف مايل' });
+    fireEvent.change(noteOf('shoulder')!, { target: { value: '' } });
+    expect((seen[seen.length - 1] as { fieldNotes?: Record<string, string> }).fieldNotes).toBeUndefined();
+  });
+
+  it('a stored note on an advanced measurement opens the section', () => {
+    render(<Harness initial={{ fieldNotes: { waist: 'واسع' } } as Measurements} />);
+    expect(advancedButton().getAttribute('aria-expanded')).toBe('true');
+    expect(noteOf('waist')!.value).toBe('واسع');
+  });
+
+  it('the fraction strip is for the value only, not the note', () => {
+    render(<Harness />);
+    fireEvent.focus(input('chest'));
+    expect(card('chest').querySelectorAll('button[aria-pressed]')).toHaveLength(4);
+    fireEvent.blur(input('chest'));
+    fireEvent.focus(noteOf('chest')!);
+    expect(card('chest').querySelectorAll('button[aria-pressed]')).toHaveLength(0);
+  });
+
+  it('the customer link (showNotes off) has no note fields', () => {
+    render(<ThobeMeasurementSelector values={{ fieldNotes: { length: 'x' } } as Measurements} onChange={() => {}} measurementUnit="cm" showNotes={false} />);
+    expect(document.querySelectorAll('input[id^="thobe-note-"]')).toHaveLength(0);
+  });
+});
+
+describe('ThobeMeasurementSelector: Enter moves to the next measurement', () => {
+  const enter = (el: Element, shiftKey = false) => fireEvent.keyDown(el, { key: 'Enter', shiftKey });
+
+  it('nine Enters with values fill the nine in list order -- across the two sides -- and never submit the form', () => {
+    const onSubmit = vi.fn((e: React.FormEvent) => e.preventDefault());
+    const seen: Measurements[] = [];
+    render(<form onSubmit={onSubmit}><Harness onValues={(v) => seen.push(v)} /></form>);
+    const order = [...BASIC_MEASUREMENT_KEYS];
+    input(order[0]).focus();
+    order.forEach((key, i) => {
+      expect(document.activeElement?.id).toBe(`thobe-part-${key}`);
+      fireEvent.focus(input(key));
+      fireEvent.change(input(key), { target: { value: String(40 + i) } });
+      enter(input(key));
+    });
+    expect(onSubmit).not.toHaveBeenCalled();
+    const last = seen[seen.length - 1] as unknown as Record<string, number>;
+    order.forEach((key, i) => expect(last[key]).toBe(40 + i));
+    // After the last basic one (bottom width), the closed advanced button.
+    expect(document.activeElement).toBe(advancedButton());
+  });
+
+  it('from length to shoulder, and from shoulder to the sleeve on the other side', () => {
+    render(<Harness />);
+    input('length').focus();
+    enter(input('length'));
+    expect(document.activeElement?.id).toBe('thobe-part-shoulder');
+    enter(input('shoulder'));
+    expect(document.activeElement?.id).toBe('thobe-part-sleeve');
+  });
+
+  it('Shift+Enter goes back; Enter in a note goes to the next value', () => {
+    render(<Harness />);
+    input('chest').focus();
+    enter(input('chest'), true);
+    expect(document.activeElement?.id).toBe('thobe-part-sleeve');
+    const note = document.getElementById('thobe-note-sleeve')!;
+    note.focus();
+    enter(note);
+    expect(document.activeElement?.id).toBe('thobe-part-chest');
+  });
+
+  it('with the section open, the last basic one leads to the first advanced one', () => {
+    render(<Harness />);
+    fireEvent.click(advancedButton());
+    input('bottomWidth').focus();
+    enter(input('bottomWidth'));
+    expect(document.activeElement?.id).toBe(`thobe-part-${ADVANCED_MEASUREMENT_KEYS[0]}`);
+  });
+
+  it('the phone keyboard says next, and done on the last field', () => {
+    render(<Harness />);
+    expect(input('length').getAttribute('enterkeyhint')).toBe('next');
+    expect(input('length').getAttribute('inputmode')).toBe('decimal');
+    expect(document.getElementById('thobe-note-bottomWidth')!.getAttribute('enterkeyhint')).toBe('done');
   });
 });

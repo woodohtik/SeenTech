@@ -637,6 +637,9 @@ export default function Customers({ tenantId }: CustomersProps) {
             t('customers.export_col_measurement', { label: t(measurementLabelKey(key)) }),
             formatMeasurementCell(c.measurements?.[key]),
           ])),
+          // The tailor's notes on the measurements, in one column.
+          [t('measurements.notes_title')]: measurementRows(c.measurements).filter((row) => row.note)
+            .map((row) => `${t(row.labelKey)}: ${row.note}`).join('؛ ') || '-',
           [t('common.notes')]: c.notes || '-',
           [t('saas.tenants.registration_date')]: c.createdAt ? new Date(c.createdAt).toLocaleDateString(localeOf(i18n.language)) : '-'
         };
@@ -2155,7 +2158,7 @@ const CustomerDetailsModal = ({
           <DetailSection title={t('customers.current_measurements')} icon={Ruler}>
             <div className="grid grid-cols-2 main-720:grid-cols-4 gap-3 main-640:gap-4">
               {measurementRows(customer.measurements, true).map((row) => ({
-                label: t(row.labelKey), value: row.value, icon: <Ruler size={14} />, color: 'bg-brand/10 text-brand',
+                label: t(row.labelKey), value: row.value, note: row.note, icon: <Ruler size={14} />, color: 'bg-brand/10 text-brand',
               })).map((m) => {
                 const displayValue = typeof m.value === 'number' ? formatMeasurement(m.value, measurementUnit) : m.value;
                 return (
@@ -2170,6 +2173,7 @@ const CustomerDetailsModal = ({
                       <bdi dir="ltr" className="tabular-nums">{displayValue || '-'}</bdi>
                       <span className="text-sm text-content-muted mr-1 font-bold">{t(unitLabelKey(measurementUnit))}</span>
                     </p>
+                    {m.note && <p className="mt-1 text-sm text-content-muted break-words">{m.note}</p>}
                   </div>
                 );
               })}

@@ -695,9 +695,18 @@ app.get("/api/public/measurements/:token", asyncHandler(async (req, res) => {
     shop_name: tenantData?.name || '',
     shop_logo_url: tenantData?.logo_url || null,
     measurement_unit: isValidMeasurementUnit(tenantData?.measurement_unit) ? tenantData.measurement_unit : 'inch',
-    measurements: customerData.measurements || {},
+    // The tailor's notes (fieldNotes) are for the staff only: never sent to
+    // the customer's link (seen-measurements-basic-advanced-task.md q. 6).
+    measurements: publicMeasurementsView(customerData.measurements),
   });
 }));
+
+/** A customer's stored measurements as their own link may see them: without the staff notes. */
+function publicMeasurementsView(measurements: unknown): Record<string, unknown> {
+  if (!measurements || typeof measurements !== 'object' || Array.isArray(measurements)) return {};
+  const { fieldNotes: _notes, ...rest } = measurements as Record<string, unknown>;
+  return rest;
+}
 
 app.post("/api/public/measurements/:token", asyncHandler(async (req, res) => {
   const { token } = req.params;
@@ -716,6 +725,9 @@ app.post("/api/public/measurements/:token", asyncHandler(async (req, res) => {
   if (result.ok === false) {
     return res.status(400).json({ error: result.error });
   }
+  // The customer's link never writes notes; the save function keeps the
+  // tailor's notes already stored (save_public_measurements).
+  delete (result.value as { fieldNotes?: unknown }).fieldNotes;
 
   const { data: customerData } = await supabaseAdmin
     .from('customers')

@@ -105,7 +105,8 @@ function buildInvoiceMeasurements(
   measurementUnit: MeasurementUnit
 ): { label: string; value: string | number }[] | undefined {
   if (item.type !== 'custom' || !customer?.measurements) return undefined;
-  const list = measurementRows(customer.measurements).map((row) => ({
+  // The customer's receipt: values only, never the tailor's notes.
+  const list = measurementRows(customer.measurements).filter((row) => row.value > 0).map((row) => ({
     label: t(row.labelKey),
     value: measurementText(row.value, measurementUnit, t(unitLabelKey(measurementUnit))),
   }));

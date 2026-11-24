@@ -1998,7 +1998,13 @@
     "fraction_quarter": "وربع",
     "fraction_half": "ونص",
     "fraction_three_quarters": "وثلاثة أرباع",
-    "rounded_to": "قُرّبت إلى {{value}}"
+    "rounded_to": "قُرّبت إلى {{value}}",
+    "field_note_placeholder": "ملاحظة",
+    "field_note_label": "ملاحظة على {{name}}",
+    "notes_title": "ملاحظات المقاسات",
+    "field_note_too_long": "الملاحظة أطول من {{max}} حرفاً. اختصرها.",
+    "field_note_invalid": "ملاحظات المقاسات غير صحيحة.",
+    "title": "المقاسات"
   },
   "onboarding": {
     "categories": {

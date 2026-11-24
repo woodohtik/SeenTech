@@ -1,7 +1,7 @@
 import { test, expect } from 'vitest';
 import { getNextMeasurementStep, MEASUREMENT_WIZARD_ORDER, measurementWizardOrder } from './measurementWizardSteps';
 
-const BASIC = ['length', 'shoulder', 'sleeve', 'chest', 'neck', 'handWidth', 'midSleeveWidth', 'cuffLength', 'sleeveTopWidth'];
+const BASIC = ['length', 'shoulder', 'sleeve', 'chest', 'neck', 'handWidth', 'midSleeveWidth', 'cuffLength', 'bottomWidth'];
 
 test('starts at the first field', () => {
   expect(getNextMeasurementStep(-1)).toBe('length');
@@ -9,7 +9,7 @@ test('starts at the first field', () => {
 
 test('walks the sixteen approved measurements in the founder\'s order', () => {
   expect(MEASUREMENT_WIZARD_ORDER).toEqual([
-    ...BASIC, 'sleeveCuff', 'sleeveHem', 'cuffWidth', 'waist', 'bottomHem', 'bottomWidth', 'neckFold',
+    ...BASIC, 'sleeveCuff', 'sleeveTopWidth', 'sleeveHem', 'cuffWidth', 'waist', 'bottomHem', 'neckFold',
   ]);
   expect(getNextMeasurementStep(0)).toBe('shoulder');
   expect(getNextMeasurementStep(14)).toBe('neckFold');

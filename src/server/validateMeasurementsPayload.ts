@@ -1,5 +1,5 @@
 import type { Measurements } from '../types';
-import { ALL_NUMERIC_MEASUREMENT_KEYS } from '../constants/measurementFields';
+import { ALL_NUMERIC_MEASUREMENT_KEYS, validateFieldNotes } from '../constants/measurementFields';
 
 // The one measurement list. An unknown key rejects the whole payload below, so
 // this must never fall behind what the form sends.
@@ -24,6 +24,8 @@ const ALLOWED_TOP_LEVEL_KEYS = new Set<string>([
   'thobeMeasurements',
   'closureType',
   'closureVisibility',
+  // A note per measurement (staff only; the public link never sends it).
+  'fieldNotes',
 ]);
 
 const MAX_MEASUREMENT_CM = 300;
@@ -114,6 +116,12 @@ export function validateMeasurementsPayload(input: unknown): ValidateMeasurement
     }
     value.thobeMeasurements = thobeValue;
   }
+
+  const notes = validateFieldNotes(input.fieldNotes);
+  if (!notes.ok) {
+    return { ok: false, error: `invalid fieldNotes${notes.key ? `.${notes.key}` : ''}: ${notes.error}` };
+  }
+  if (notes.value) value.fieldNotes = notes.value;
 
   return { ok: true, value: value as Measurements };
 }

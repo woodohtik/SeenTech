@@ -2,9 +2,10 @@
  * A work card for the workshop (seen-verticals-readiness-task.md Phase 3):
  * what to make for one order -- each line with its quantity, its fabric when
  * the vertical uses fabric, and every spec the customer asked for in the
- * shop's own fields. Printed from the order details for verticals other than
- * men's tailoring (whose specs live in their own columns and print with the
- * invoice as before).
+ * shop's own fields. Printed from the order details. For men's tailoring
+ * (seen-measurements-basic-advanced-task.md, question 6) it carries the body
+ * measurements and the tailor's note on each -- the customer's receipt never
+ * does.
  *
  * Rendered inside a hidden wrapper; printManager prints a copy of the element
  * with this id, so the copy is not hidden.
@@ -31,14 +32,18 @@ export interface WorkCardOrder {
   }>;
 }
 
+/** One body measurement on the card: its name, its value as printed (to the quarter), and the tailor's note. */
+export interface WorkCardMeasurement { key: string; label: string; value: string; note: string }
+
 export default function OrderWorkCard({
-  order, shopName, fields, stages, showFabric,
+  order, shopName, fields, stages, showFabric, measurements = [],
 }: {
   order: WorkCardOrder;
   shopName: string;
   fields: ReadonlyArray<FieldSchema>;
   stages: ReadonlyArray<WorkflowStage>;
   showFabric: boolean;
+  measurements?: ReadonlyArray<WorkCardMeasurement>;
 }) {
   const { t, i18n } = useTranslation();
   const lang = i18n.language;
@@ -71,6 +76,19 @@ export default function OrderWorkCard({
           </div>
         );
       })}
+      {measurements.length > 0 && (
+        <div style={{ borderTop: '1px solid #cbd5e1', marginTop: 6, paddingTop: 4 }}>
+          <div style={{ fontWeight: 900, marginBottom: 2 }}>{t('measurements.title', 'المقاسات')}</div>
+          {measurements.map((m) => (
+            // A long note wraps under its line; it never widens the card.
+            <div key={m.key} style={{ display: 'flex', flexWrap: 'wrap', columnGap: 4, overflowWrap: 'anywhere' }}>
+              <b>{m.label}:</b>
+              <span style={{ fontVariantNumeric: 'tabular-nums' }}>{m.value}</span>
+              {m.note && <span style={{ flexBasis: '100%', color: '#334155', paddingInlineStart: 8 }}>{m.note}</span>}
+            </div>
+          ))}
+        </div>
+      )}
       {order.notes && (
         <div style={{ borderTop: '1px dashed #94a3b8', marginTop: 6, paddingTop: 4 }}>
           <b>{t('orders.work_card_notes', 'ملاحظات')}:</b> {order.notes}

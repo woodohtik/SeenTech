@@ -1998,7 +1998,13 @@
     "fraction_quarter": "اور چوتھائی",
     "fraction_half": "اور آدھا",
     "fraction_three_quarters": "اور تین چوتھائی",
-    "rounded_to": "{{value}} تک گول کیا گیا"
+    "rounded_to": "{{value}} تک گول کیا گیا",
+    "field_note_placeholder": "نوٹ",
+    "field_note_label": "{{name}} پر نوٹ",
+    "notes_title": "پیمائش کے نوٹس",
+    "field_note_too_long": "نوٹ {{max}} حروف سے لمبا ہے۔ اسے مختصر کریں۔",
+    "field_note_invalid": "پیمائش کے نوٹس درست نہیں۔",
+    "title": "پیمائشیں"
   },
   "onboarding": {
     "categories": {

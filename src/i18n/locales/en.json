@@ -1998,7 +1998,13 @@
     "fraction_quarter": "and a quarter",
     "fraction_half": "and a half",
     "fraction_three_quarters": "and three quarters",
-    "rounded_to": "Rounded to {{value}}"
+    "rounded_to": "Rounded to {{value}}",
+    "field_note_placeholder": "Note",
+    "field_note_label": "Note on {{name}}",
+    "notes_title": "Measurement notes",
+    "field_note_too_long": "A note is longer than {{max}} characters. Shorten it.",
+    "field_note_invalid": "The measurement notes are not valid.",
+    "title": "Measurements"
   },
   "onboarding": {
     "categories": {

@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { fuzzyIncludes } from '../utils/fuzzySearch';
 import { useDebouncedValue } from '../hooks/useDebouncedValue';
 import { useMeasurementUnit } from '../hooks/useMeasurementUnit';
-import { formatMeasurement, unitLabelKey } from '../utils/measurementUnits';
+import { formatMeasurement, measurementText, unitLabelKey } from '../utils/measurementUnits';
 import { measurementRows, measurementSetFor } from '../constants/measurementFields';
 import { orderItemRowToLine, cuttingFabricLines, isFabricDeductionDue, type CuttingFabricLine } from '../utils/tailoringOrder';
 import CuttingFabricDialog from './CuttingFabricDialog';
@@ -68,7 +68,7 @@ import PageSkeleton from "./PageSkeleton";
 import Header from './Header';
 import TailoringOrderForm from './TailoringOrderForm';
 import OrderItemAttributes from './orders/OrderItemAttributes';
-import OrderWorkCard, { WORK_CARD_ELEMENT_ID } from './orders/OrderWorkCard';
+import OrderWorkCard, { WORK_CARD_ELEMENT_ID, type WorkCardMeasurement } from './orders/OrderWorkCard';
 import { useVerticalTerms } from '../hooks/useVerticalTerms';
 import { motion, AnimatePresence } from 'motion/react';
 import { usePermissions } from '../hooks/usePermissions';
@@ -360,6 +360,18 @@ export default function Orders({ tenantId }: { tenantId: string }) {
       (m: any) => m && typeof m === 'object' && Object.keys(m).length > 0
     );
     return snapshot || customers.find(c => c.id === order.customerId)?.measurements;
+  };
+  // The body measurements on the tailor's work card, with each note
+  // (seen-measurements-basic-advanced-task.md, question 6).
+  const workCardMeasurements = (order: Order): WorkCardMeasurement[] => {
+    if (measurementSetFor(capabilities.body_measurements).length === 0) return [];
+    const unitLabel = t(unitLabelKey(measurementUnit));
+    return measurementRows(orderMeasurements(order)).map((row) => ({
+      key: row.key,
+      label: t(row.labelKey),
+      value: row.value > 0 ? measurementText(row.value, measurementUnit, unitLabel) : '-',
+      note: row.note,
+    }));
   };
 
   const handleOpenModal = useCallback((customCustId?: string) => {
@@ -1775,12 +1787,13 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                 </h3>
                 <div className="bg-brand/5 p-6 rounded-3xl border border-brand/10">
                   <div className="grid grid-cols-3 gap-4">
-                    {measurementRows(orderMeasurements(order)).map((row) => ({ label: t(row.labelKey), value: row.value })).map((m, i) => {
+                    {measurementRows(orderMeasurements(order)).map((row) => ({ label: t(row.labelKey), value: row.value, note: row.note })).map((m, i) => {
                       const displayValue = typeof m.value === 'number' ? formatMeasurement(m.value, measurementUnit) : m.value;
                       return (
                         <div key={i} className="text-center">
                           <span className="block text-sm text-content-muted font-bold mb-1">{m.label}</span>
-                          <span className="text-lg font-black text-brand"><bdi dir="ltr" className="tabular-nums">{displayValue}</bdi> <span className="text-sm text-content-muted font-bold">{t(unitLabelKey(measurementUnit))}</span></span>
+                          <span className="text-lg font-black text-brand"><bdi dir="ltr" className="tabular-nums">{displayValue || '-'}</bdi> <span className="text-sm text-content-muted font-bold">{t(unitLabelKey(measurementUnit))}</span></span>
+                          {m.note && <span className="block mt-0.5 text-sm text-content-muted break-words">{m.note}</span>}
                         </div>
                       );
                     })}
@@ -1844,9 +1857,10 @@ export default function Orders({ tenantId }: { tenantId: string }) {
           </div>
 
           {/* The workshop's work card (Phase 3 of seen-verticals-readiness-task.md):
-              rendered hidden, printed as a copy. Only for a vertical with its
-              own line specs; men's tailoring keeps its current buttons. */}
-          {!isLegacyVertical && (
+              rendered hidden, printed as a copy. For a vertical with its own
+              line specs, and for a men's tailoring order with measurements
+              (they and the tailor's notes go to the workshop on it). */}
+          {(!isLegacyVertical || ((order as any).kind === 'tailoring' && workCardMeasurements(order).length > 0)) && (
             <div className="hidden" aria-hidden="true">
               <OrderWorkCard
                 order={order as any}
@@ -1854,6 +1868,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                 fields={orderItemFields}
                 stages={workflowStages}
                 showFabric={capabilities.fabric_consumption}
+                measurements={workCardMeasurements(order)}
               />
             </div>
           )}
@@ -1868,7 +1883,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                 <span>{t('orders.edit_order')}</span>
               </button>
             )}
-            {!isLegacyVertical && (
+            {(!isLegacyVertical || ((order as any).kind === 'tailoring' && workCardMeasurements(order).length > 0)) && (
               <button
                 onClick={() => void printWorkCard(order)}
                 className="col-span-2 min-h-12 flex items-center justify-center gap-2 bg-surface text-content rounded-xl font-bold border border-border hover:bg-surface-muted transition-all text-sm"

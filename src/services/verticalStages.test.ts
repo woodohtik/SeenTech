@@ -58,13 +58,13 @@ describe("men's measurement set", () => {
         "handWidth",
         "midSleeveWidth",
         "cuffLength",
-        "sleeveTopWidth",
+        "bottomWidth",
         "sleeveCuff",
+        "sleeveTopWidth",
         "sleeveHem",
         "cuffWidth",
         "waist",
         "bottomHem",
-        "bottomWidth",
         "neckFold",
       ]
     `);

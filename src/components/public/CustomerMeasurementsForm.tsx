@@ -190,6 +190,8 @@ export default function CustomerMeasurementsForm({ token }: { token: string }) {
                 // The customer's own phone: the advanced section starts closed
                 // unless a value is stored there; no choice is remembered.
                 rememberAdvanced={false}
+                // The tailor's notes are staff only: no note fields here.
+                showNotes={false}
               />
             </div>
 

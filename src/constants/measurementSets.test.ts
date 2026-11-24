@@ -15,13 +15,13 @@ describe('measurement sets', () => {
       ['handWidth', 'left', 'wrist', 100, 'basic'],
       ['midSleeveWidth', 'left', 'midSleeve', 100, 'basic'],
       ['cuffLength', 'left', 'cuff', 100, 'basic'],
-      ['sleeveTopWidth', 'left', 'sleeveTop', 100, 'basic'],
+      ['bottomWidth', 'right', 'bottomWidth', 200, 'basic'],
       ['sleeveCuff', 'left', 'sleeve', 150, 'advanced'],
+      ['sleeveTopWidth', 'left', 'sleeveTop', 100, 'advanced'],
       ['sleeveHem', 'left', 'cuff', 50, 'advanced'],
       ['cuffWidth', 'left', 'cuffWidth', 50, 'advanced'],
       ['waist', 'right', 'waist', 200, 'advanced'],
       ['bottomHem', 'right', 'bottomHem', 50, 'advanced'],
-      ['bottomWidth', 'right', 'bottomWidth', 200, 'advanced'],
       ['neckFold', 'right', 'neck', 100, 'advanced'],
     ]);
   });

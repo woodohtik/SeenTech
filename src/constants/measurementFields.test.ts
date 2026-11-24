@@ -8,6 +8,7 @@ import {
   LEGACY_MEASUREMENT_KEYS,
   countAdvancedValues,
   fieldsDownTheFigure,
+  validateFieldNotes,
   hasAdvancedValues,
   measurementRows,
 } from './measurementFields';
@@ -16,8 +17,8 @@ import { validateMeasurementsPayload } from '../server/validateMeasurementsPaylo
 
 const allSixteen = Object.fromEntries(MEASUREMENT_KEYS.map((key, i) => [key, 10 + i]));
 
-const BASIC = ['length', 'shoulder', 'sleeve', 'chest', 'neck', 'handWidth', 'midSleeveWidth', 'cuffLength', 'sleeveTopWidth'];
-const ADVANCED = ['sleeveCuff', 'sleeveHem', 'cuffWidth', 'waist', 'bottomHem', 'bottomWidth', 'neckFold'];
+const BASIC = ['length', 'shoulder', 'sleeve', 'chest', 'neck', 'handWidth', 'midSleeveWidth', 'cuffLength', 'bottomWidth'];
+const ADVANCED = ['sleeveCuff', 'sleeveTopWidth', 'sleeveHem', 'cuffWidth', 'waist', 'bottomHem', 'neckFold'];
 
 // seen-measurements-basic-advanced-task.md (founder decision, 24 Nov 2026), acceptance 1.
 describe('the approved measurement list', () => {
@@ -48,9 +49,10 @@ describe('the approved measurement list', () => {
   });
 
   it('orders each side down the thobe (task file question 5)', () => {
+    // Five basic on the body side, four on the sleeve side.
+    expect(fieldsDownTheFigure('right', false)).toEqual(['neck', 'shoulder', 'chest', 'length', 'bottomWidth']);
+    expect(fieldsDownTheFigure('left', false)).toEqual(['midSleeveWidth', 'sleeve', 'handWidth', 'cuffLength']);
     expect(fieldsDownTheFigure('right', true)).toEqual(['neck', 'neckFold', 'shoulder', 'chest', 'waist', 'length', 'bottomWidth', 'bottomHem']);
-    expect(fieldsDownTheFigure('right', false)).toEqual(['neck', 'shoulder', 'chest', 'length']);
-    expect(fieldsDownTheFigure('left', false)).toEqual(['sleeveTopWidth', 'midSleeveWidth', 'sleeve', 'handWidth', 'cuffLength']);
     expect(fieldsDownTheFigure('left', true)).toEqual(['sleeveTopWidth', 'midSleeveWidth', 'sleeve', 'sleeveCuff', 'handWidth', 'sleeveHem', 'cuffLength', 'cuffWidth']);
   });
 });
@@ -59,7 +61,7 @@ describe('measurementRows', () => {
   it('lists only filled values by default, in list order, retired ones last', () => {
     const rows = measurementRows({ neck: 40, midSleeveWidth: 14, hips: 100, length: 145, waist: 0, collarType: 'classic' });
     expect(rows.map((r) => r.key)).toEqual(['length', 'neck', 'midSleeveWidth', 'hips']);
-    expect(rows[0]).toEqual({ key: 'length', labelKey: 'measurements.part_label.length', value: 145 });
+    expect(rows[0]).toEqual({ key: 'length', labelKey: 'measurements.part_label.length', value: 145, note: '' });
   });
 
   it('with includeEmpty keeps all sixteen, and a retired key only when it has a value', () => {
@@ -93,6 +95,42 @@ describe('advanced values', () => {
     expect(hasAdvancedValues({ waist: 90 })).toBe(true);
     expect(hasAdvancedValues({ length: 145, chest: 110, waist: 0, midSleeveWidth: 14 })).toBe(false);
     expect(hasAdvancedValues(null)).toBe(false);
+    // A note on an advanced measurement opens it too; a note on a basic one does not.
+    expect(hasAdvancedValues({ fieldNotes: { waist: 'واسع شوي' } })).toBe(true);
+    expect(hasAdvancedValues({ fieldNotes: { length: 'قصير' } })).toBe(false);
     expect(countAdvancedValues({ waist: 90, neckFold: 41, bottomHem: 5, length: 145 })).toBe(3);
+  });
+});
+
+// seen-measurements-basic-advanced-task.md, section 2 and acceptance 3.
+describe('a note per measurement', () => {
+  it('measurementRows carries the note, and lists a measurement that has only a note', () => {
+    const rows = measurementRows({ length: 145, fieldNotes: { length: 'قصّره نص', shoulder: 'كتف مايل' } });
+    expect(rows.map((r) => [r.key, r.note])).toEqual([['length', 'قصّره نص'], ['shoulder', 'كتف مايل']]);
+  });
+
+  it('validateFieldNotes: list keys only, text only, trimmed, 80 characters at most, empty dropped', () => {
+    expect(validateFieldNotes(undefined)).toEqual({ ok: true, value: undefined });
+    expect(validateFieldNotes({ shoulder: '  كتف مايل  ', neck: '   ' })).toEqual({ ok: true, value: { shoulder: 'كتف مايل' } });
+    expect(validateFieldNotes({ neck: '' })).toEqual({ ok: true, value: undefined });
+    expect(validateFieldNotes({ shoulder: 'x'.repeat(80) }).ok).toBe(true);
+    expect(validateFieldNotes({ shoulder: 'x'.repeat(81) })).toMatchObject({ ok: false, error: 'too_long', key: 'shoulder' });
+    expect(validateFieldNotes({ collar: 'x' })).toMatchObject({ ok: false, error: 'unknown_key' });
+    expect(validateFieldNotes({ shoulder: 3 })).toMatchObject({ ok: false, error: 'not_text' });
+    expect(validateFieldNotes(['x'])).toMatchObject({ ok: false, error: 'not_an_object' });
+  });
+
+  it('customerSchema keeps the notes through a save, and refuses one of 81 characters', () => {
+    const ok = customerSchema.parse({ name: 'عميل تجربة', phone: '0500000000', measurements: { length: 145, fieldNotes: { length: 'قصّره نص' } } });
+    expect(ok.measurements).toMatchObject({ length: 145, fieldNotes: { length: 'قصّره نص' } });
+    const tooLong = customerSchema.safeParse({ name: 'عميل تجربة', phone: '0500000000', measurements: { fieldNotes: { length: 'x'.repeat(81) } } });
+    expect(tooLong.success).toBe(false);
+  });
+
+  it('the server validator accepts notes and refuses bad ones', () => {
+    expect(validateMeasurementsPayload({ length: 145, fieldNotes: { length: 'قصّره نص' } })).toEqual({ ok: true, value: { length: 145, fieldNotes: { length: 'قصّره نص' } } });
+    expect(validateMeasurementsPayload({ fieldNotes: { collar: 'x' } }).ok).toBe(false);
+    expect(validateMeasurementsPayload({ fieldNotes: { length: 5 } }).ok).toBe(false);
+    expect(validateMeasurementsPayload({ fieldNotes: { length: 'x'.repeat(81) } }).ok).toBe(false);
   });
 });
