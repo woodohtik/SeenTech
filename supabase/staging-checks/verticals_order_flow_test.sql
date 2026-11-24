@@ -120,7 +120,7 @@ BEGIN
         SELECT count(*) FILTER (WHERE public.order_phase(vk, x.status_key, x.status::text) = 'ready'),
                count(*) FILTER (WHERE public.order_phase(vk, x.status_key, x.status::text) NOT IN ('ready', 'delivered', 'cancelled'))
           INTO v_manual_ready, v_manual_prog
-          FROM public.orders x WHERE x.tenant_id = o.tenant_id;
+          FROM public.orders x WHERE x.tenant_id = o.tenant_id AND NOT coalesce(x.is_test, false);  -- the dashboard leaves test orders out
         IF (v_dash->'totals'->>'ready')::int <> v_manual_ready OR (v_dash->'totals'->>'in_progress')::int <> v_manual_prog THEN
           RAISE EXCEPTION 'FAIL %/%: dashboard ready/in-progress %/% vs counted %/%', vk, st.stage_key,
             v_dash->'totals'->>'ready', v_dash->'totals'->>'in_progress', v_manual_ready, v_manual_prog;
