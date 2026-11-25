@@ -1,3 +1,5 @@
+import { SIGNUP_URL } from '../scripts/blog/siteOrigin';
+
 export interface InterviewStat {
   stat: string;
   description: string;
@@ -14,7 +16,8 @@ export const blogConfig = {
   snapchatPixelId: '',
   metaPixelId: '',
   ctaLabel: 'ابدأ الآن',
-  ctaUrl: 'https://www.seentech.io',
+  // The sign-up screen (seen-blog-cta-to-signup-task.md), not the landing page.
+  ctaUrl: SIGNUP_URL,
   startHereSlugs: [] as string[],
   interviewStat: { stat: '', description: '', source: '' } as InterviewStat,
 };

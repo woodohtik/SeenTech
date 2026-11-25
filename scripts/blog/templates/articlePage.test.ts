@@ -24,10 +24,11 @@ test('page title and canonical come from frontmatter/article', () => {
   expect(html).toContain('rel="canonical" href="https://www.seentech.io/blog/how-to"');
 });
 
-test('inline "وين تدخل منصة سين؟" box keeps the unchanged button, not the config cta', () => {
+test('inline "وين تدخل منصة سين؟" box keeps its wording and opens the sign-up screen', () => {
   const html = renderArticlePage(baseArticle, parsed, [baseArticle, otherArticle]);
   expect(html).toContain('نوريك إياه في محلك');
-  expect(html).toContain('https://www.seentech.io/#book');
+  expect(html).toMatch(/href="https:\/\/www\.seentech\.io\/login\?view=register" data-track="cta_inline"/);
+  expect(html).not.toContain('#book');
 });
 
 test('related cards resolve from frontmatter.related against the full article list', () => {

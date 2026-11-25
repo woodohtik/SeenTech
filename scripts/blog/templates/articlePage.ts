@@ -2,7 +2,7 @@ import { getCategory } from '../categories';
 import type { LoadedArticle } from '../frontmatter';
 import type { ParsedArticle } from '../parseArticleSections';
 import { buildArticleJsonLd, buildFaqJsonLd } from '../jsonLd';
-import { SITE_ORIGIN } from '../siteOrigin';
+import { SIGNUP_URL, SITE_ORIGIN } from '../siteOrigin';
 import {
   STYLE_BLOCK,
   FONTS_PRECONNECT,
@@ -114,10 +114,11 @@ export function renderArticlePage(article: LoadedArticle, parsed: ParsedArticle,
 
   const sectionsHtml = parsed.sections.map(renderSection).join('\n');
 
-  // The "نوريك إياه في محلك" button is fixed verbatim -- never driven by
-  // blogConfig, per the task's explicit exception.
+  // The "نوريك إياه في محلك" button keeps its own wording (not blogConfig's
+  // label) and opens the sign-up screen (seen-blog-cta-to-signup-task.md;
+  // the landing page has no #book section).
   const whereSeenFitsBox = parsed.whereSeenFitsHtml
-    ? `<aside class="inline-cta" aria-label="وين تدخل منصة سين"><div><h2>وين تدخل منصة سين؟</h2>${parsed.whereSeenFitsHtml}</div><a class="btn btn-cta" href="${SITE_ORIGIN}/#book" data-track="cta_inline">نوريك إياه في محلك</a></aside>`
+    ? `<aside class="inline-cta" aria-label="وين تدخل منصة سين"><div><h2>وين تدخل منصة سين؟</h2>${parsed.whereSeenFitsHtml}</div><a class="btn btn-cta" href="${SIGNUP_URL}" data-track="cta_inline">نوريك إياه في محلك</a></aside>`
     : '';
 
   const aboutBox = parsed.aboutSeenHtml

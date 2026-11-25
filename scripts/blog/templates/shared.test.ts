@@ -43,11 +43,11 @@ test('style block is non-empty css with no style tags', () => {
   expect(STYLE_BLOCK).not.toMatch(/<\/?style>/);
 });
 
-test('sticky mobile cta uses "ابدأ الآن" and the seentech.io link, not the old copy', () => {
+test('sticky mobile cta uses "ابدأ الآن" and opens the sign-up screen', () => {
   const html = renderStickyMobileCta();
   expect(html).toContain('ابدأ الآن');
   expect(html).not.toContain('احجز زيارة');
-  expect(html).toMatch(/href="https:\/\/www\.seentech\.io"/);
+  expect(html).toMatch(/href="https:\/\/www\.seentech\.io\/login\?view=register"/);
   expect(html).not.toContain('#book');
 });
 
