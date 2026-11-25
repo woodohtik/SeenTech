@@ -8,6 +8,10 @@ import { signIn } from './helpers';
 test('the owner opens a shift, sells a ready-made item for cash, and the invoice is issued', async ({ page }) => {
   await signIn(page, 'owner');
   await page.goto('/sales');
+  // The POS tab, then its POS sub-tab (the page may open on the sales record).
+  const posTabs = page.getByRole('button', { name: 'نقطة البيع (POS)' });
+  await posTabs.first().click();
+  await posTabs.last().click();
 
   // No shift yet: the shift opener comes first.
   await page.getByRole('button', { name: 'تأكيد وفتح الوردية' }).click();
