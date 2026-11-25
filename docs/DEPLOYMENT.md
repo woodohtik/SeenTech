@@ -8,13 +8,13 @@
 
 ## 1) الويب — Vercel (الهدف الرئيسي)
 
-**البنية:** تطبيق React (Vite) + خادم Express (`server.ts`) يُبنى كملف واحد (`dist/server.cjs`) ويُنشر كـVercel Serverless Function عبر `api/index.js`. التوجيه في `vercel.json`: كل طلب لـ`/api/*` يذهب لـ`api/index.js`، وكل ما عداه يُخدَم كملف ثابت (`index.html` + SPA fallback).
+**البنية:** تطبيق React (Vite) + خادم Express (`server.ts`) يُبنى كملف واحد (`server-build/server.cjs`، خارج `dist/` العام) ويُنشر كـVercel Serverless Function عبر `api/index.js`. التوجيه في `vercel.json`: كل طلب لـ`/api/*` يذهب لـ`api/index.js`، وكل ما عداه يُخدَم كملف ثابت (`index.html` + SPA fallback).
 
 **النشر:** تلقائي عبر تكامل Vercel-GitHub — أي push لفرع `staging` أو `main` يُنشر تلقائياً على الرابط المطابق. لا توجد خطوة نشر يدوية أو ضمن CI (`.github/workflows/ci.yml` يفحص وbnي فقط، لا ينشر).
 
 **البناء محلياً (للتحقق قبل الدفع):**
 ```bash
-npm run build            # يبني dist/ + dist/server.cjs
+npm run build            # يبني dist/ + server-build/server.cjs
 npm run build:customer   # يبني dist-customer/ (تطبيق العملاء، مُستخدَم لاحقاً في capacitor-customer/)
 ```
 

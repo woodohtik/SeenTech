@@ -2217,6 +2217,17 @@ app.post("/api/super-admin/assistant-settings/providers/:providerKey/test", auth
 // غيّرها للتو)، وليس من القاعدة، حتى يرى السوبر أدمن أثر تعديلاته فوراً قبل
 // الحفظ. إن لم يُرسل حقل apiKey (المستخدم لم يكتب مفتاحاً جديداً في بطاقة
 // هذا المزوّد)، يقع رجوعاً على المفتاح المحفوظ فعلياً لهذا المزوّد.
+// seen-sentry-setup-task.md 8: the super admin's test error from the server
+// (with the browser's, from Settings). Reports whether Sentry is set here and
+// the event's id once it has been sent.
+app.post("/api/super-admin/sentry-test", authenticate, authorize(['super_admin']), async (req: any, res) => {
+  const eventId = await captureServerException(new Error('Sentry test error (server)'), {
+    context: 'sentry-test',
+    tenantId: req.user?.tenantId,
+  });
+  res.json({ ok: true, enabled: Boolean(process.env.SENTRY_DSN), eventId: eventId ?? null });
+});
+
 app.post("/api/super-admin/assistant-settings/test", authenticate, authorize(['super_admin']), async (req: any, res) => {
   try {
     const { aiProvider, modelName, apiKey, systemPrompt, temperature, maxTokens, message } = req.body || {};

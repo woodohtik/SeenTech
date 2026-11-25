@@ -4191,7 +4191,9 @@
       "no_question": "(کوئی سوال محفوظ نہیں)",
       "load_error": "درجہ بندیاں لوڈ نہیں ہو سکیں۔"
     },
-    "system_database": "ڈیٹابیس"
+    "system_database": "ڈیٹابیس",
+    "sentry_test_button": "Sentry کو آزمائشی خرابی بھیجیں",
+    "sentry_test_sent": "آزمائشی خرابی بھیج دی گئی۔ براؤزر: {{browser}} — سرور: {{server}}"
   },
   "sales": {
     "active_shift": "فعال شفٹ",

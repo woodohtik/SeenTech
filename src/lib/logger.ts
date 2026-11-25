@@ -1,19 +1,42 @@
 import * as Sentry from '@sentry/react';
+import { DENIED_URLS, IGNORED_ERRORS, STALE_BUILD_ERROR, scrubBreadcrumb, scrubEvent } from './sentryScrub';
+
+// Set by scripts/vite-build-id.ts (the main app's build); absent in the customer app's.
+declare const __SENTRY_RELEASE__: string | undefined;
+declare const __SENTRY_ENVIRONMENT__: string | undefined;
 
 /**
  * Sentry activates only once VITE_SENTRY_DSN is actually set (Vercel env
- * var / local .env) -- no DSN means Sentry.init() is simply never called,
- * so this stays a safe no-op until the user creates a Sentry project and
- * sets the var (seen-master-backlog-and-structure.md P3: Sentry not
- * installed). Call this once from main.tsx before rendering.
+ * var / local .env) -- no DSN means Sentry.init() is simply never called.
+ * Call this once from main.tsx (and main-customer.tsx) before rendering.
+ *
+ * seen-sentry-setup-task.md:
+ *  - release (the commit) and environment (production / staging), so an
+ *    error says which build and which site it came from;
+ *  - PDPL (section 7): technical data only -- every event and breadcrumb
+ *    goes through sentryScrub.ts; no default PII, no IP, no Session Replay,
+ *    no User Feedback, no Sentry Logs;
+ *  - tracing 5% in production (question 4), all of it elsewhere; errors 100%;
+ *  - noise (ResizeObserver, extensions, aborted requests) left out.
  */
-export const initLogger = () => {
+export const initLogger = (app: 'web' | 'customer' = 'web') => {
   const dsn = import.meta.env.VITE_SENTRY_DSN;
   if (!dsn || !import.meta.env.PROD) return;
+  const environment = typeof __SENTRY_ENVIRONMENT__ !== 'undefined' && __SENTRY_ENVIRONMENT__ ? __SENTRY_ENVIRONMENT__ : 'production';
   Sentry.init({
     dsn,
+    release: typeof __SENTRY_RELEASE__ !== 'undefined' && __SENTRY_RELEASE__ ? __SENTRY_RELEASE__ : undefined,
+    environment,
     integrations: [Sentry.browserTracingIntegration()],
-    tracesSampleRate: 0.2,
+    tracesSampleRate: environment === 'production' ? 0.05 : 1.0,
+    sendDefaultPii: false,
+    enableLogs: false,
+    ignoreErrors: IGNORED_ERRORS,
+    denyUrls: DENIED_URLS,
+    beforeSend: (event) => scrubEvent(event),
+    beforeSendTransaction: (event) => scrubEvent(event),
+    beforeBreadcrumb: (crumb) => scrubBreadcrumb(crumb),
+    initialScope: { tags: { app } },
   });
 };
 
@@ -84,6 +107,16 @@ export const logError = (error: any, context?: any): string | undefined => {
         Object.keys(context).forEach(key => {
           scope.setExtra(key, context[key]);
         });
+        // seen-sentry-setup-task.md 6: the code the shop sees (NET-01, SAVE-02...)
+        // is a tag, so the support team finds the event by it.
+        if (typeof context.error_code === 'string') scope.setTag('user_code', context.error_code);
+        if (typeof context.auth_error_code === 'string') scope.setTag('user_code', context.auth_error_code);
+      }
+      // A code chunk missing after an update (ErrorBoundary recovers): a warning.
+      const text = error instanceof Error ? `${error.name}: ${error.message}` : String(errorMsg);
+      if (STALE_BUILD_ERROR.test(text)) {
+        scope.setLevel('warning');
+        scope.setTag('stale_build', 'true');
       }
       eventId = Sentry.captureException(error instanceof Error ? error : new Error(String(errorMsg)));
     });

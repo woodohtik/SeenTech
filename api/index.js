@@ -1,6 +1,7 @@
 // Vercel Function entry point. `npm run build` already bundles server.ts and
-// everything it imports into a single self-contained dist/server.cjs (via
-// esbuild --bundle) before Vercel processes /api -- importing that bundle
+// everything it imports into a single self-contained server-build/server.cjs
+// (scripts/build-server.ts; not dist/, which is the public site --
+// seen-sentry-setup-task.md) before Vercel processes /api -- importing that bundle
 // directly here, instead of server.ts's TypeScript source, sidesteps a real
 // failure mode already hit once: Vercel's own /api builder does per-file
 // transpilation rather than full dependency bundling, so an
@@ -11,7 +12,7 @@
 // This has to stay a plain ESM ".js" file (package.json has "type": "module",
 // and a ".cjs" file here isn't picked up as a Function entry point at all --
 // both were tried and confirmed broken before landing on this).
-import serverModule from "../dist/server.cjs";
+import serverModule from "../server-build/server.cjs";
 
 // esbuild's CJS interop wraps a TS `export default app` as
 // `{ __esModule: true, default: app }` -- unwrap it, since Vercel needs the

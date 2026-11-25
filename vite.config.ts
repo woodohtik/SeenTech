@@ -5,7 +5,15 @@ import {defineConfig} from 'vite';
 import {VitePWA} from 'vite-plugin-pwa';
 import {visualizer} from 'rollup-plugin-visualizer';
 import {i18nCorePlugin} from './scripts/vite-i18n-core';
-import {buildIdPlugin} from './scripts/vite-build-id';
+import {buildIdPlugin, buildIdentity, sentryRelease} from './scripts/vite-build-id';
+import {sentryVitePlugin} from '@sentry/vite-plugin';
+
+// seen-sentry-setup-task.md 2: with SENTRY_AUTH_TOKEN (Vercel builds) the
+// source maps are made "hidden" (no link from the code), uploaded to
+// Sentry's seen-web project under the same release as the code, and
+// deleted from dist/ -- nobody can read the original code from the site.
+// Without the key (local, a branch without it), no maps and no upload.
+const SENTRY_UPLOAD = Boolean(process.env.SENTRY_AUTH_TOKEN);
 
 export default defineConfig(({mode}) => {
   return {
@@ -198,11 +206,20 @@ export default defineConfig(({mode}) => {
           navigateFallbackDenylist: [/^\/blog(\/|$)/, /^\/sitemap\.xml$/, /^\/robots\.txt$/],
         },
       }),
+      SENTRY_UPLOAD && sentryVitePlugin({
+        org: process.env.SENTRY_ORG,
+        project: process.env.SENTRY_PROJECT || 'seen-web',
+        authToken: process.env.SENTRY_AUTH_TOKEN,
+        release: { name: sentryRelease(__dirname, buildIdentity(__dirname)), inject: false },
+        sourcemaps: { filesToDeleteAfterUpload: ['./dist/**/*.map'] },
+        telemetry: false,
+      }),
     ],
     // P6 (CODEHEALTH-13): console.log / console.debug calls are removed from
     // production bundles (warnings and errors stay, for Sentry and support).
     esbuild: mode === 'production' ? { pure: ['console.log', 'console.debug'], drop: ['debugger'] } : undefined,
     build: {
+      sourcemap: SENTRY_UPLOAD ? 'hidden' : false,
       outDir: 'dist',
       emptyOutDir: true,
       rollupOptions: {

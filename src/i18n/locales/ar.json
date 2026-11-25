@@ -4297,7 +4297,9 @@
     "plan_billing_period_year": "سنوي",
     "plan_billing_period_month": "شهري",
     "plan_field_billing_period_hint": "المدة التي يضيفها اعتماد دفعة واحدة لهذه الباقة",
-    "system_database": "قاعدة البيانات"
+    "system_database": "قاعدة البيانات",
+    "sentry_test_button": "إرسال خطأ تجريبي إلى Sentry",
+    "sentry_test_sent": "أُرسل الخطأ التجريبي. المتصفح: {{browser}} — الخادم: {{server}}"
   },
   "sales": {
     "active_shift": "وردية نشطة",

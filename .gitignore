@@ -1,5 +1,7 @@
 dist/
 dist-customer/
+# The server bundle (scripts/build-server.ts) -- never under dist/, the public site.
+server-build/
 .worktrees/
 .superpowers/
 node_modules/

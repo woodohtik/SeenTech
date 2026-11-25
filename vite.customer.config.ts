@@ -2,6 +2,8 @@ import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
 import {defineConfig, loadEnv} from 'vite';
+import {sentryVitePlugin} from '@sentry/vite-plugin';
+import {buildIdPlugin, buildIdentity, sentryRelease} from './scripts/vite-build-id';
 
 /**
  * Separate build for the customer Android app (io.seentech.customer,
@@ -24,8 +26,23 @@ export default defineConfig(({mode}) => {
   return {
   // P6 (CODEHEALTH-13): no console.log / console.debug in production bundles.
   esbuild: mode === 'production' ? { pure: ['console.log', 'console.debug'], drop: ['debugger'] } : undefined,
-  plugins: [react(), tailwindcss()],
+  plugins: [
+    react(),
+    tailwindcss(),
+    // seen-sentry-setup-task.md: the same release and environment as the main
+    // app, and (with SENTRY_AUTH_TOKEN) hidden maps uploaded then deleted.
+    buildIdPlugin(__dirname),
+    Boolean(process.env.SENTRY_AUTH_TOKEN) && sentryVitePlugin({
+      org: process.env.SENTRY_ORG,
+      project: process.env.SENTRY_PROJECT || 'seen-web',
+      authToken: process.env.SENTRY_AUTH_TOKEN,
+      release: { name: sentryRelease(__dirname, buildIdentity(__dirname)), inject: false },
+      sourcemaps: { filesToDeleteAfterUpload: ['./dist-customer/**/*.map'] },
+      telemetry: false,
+    }),
+  ],
   build: {
+    sourcemap: process.env.SENTRY_AUTH_TOKEN ? 'hidden' : false,
     outDir: 'dist-customer',
     emptyOutDir: true,
     rollupOptions: {

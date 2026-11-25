@@ -37,6 +37,21 @@ export function buildIdentity(root: string, now: Date = new Date()): BuildIdenti
   };
 }
 
+/**
+ * seen-sentry-setup-task.md 1: one release name for the browser, the server
+ * and the uploaded source maps -- the commit (VERCEL_GIT_COMMIT_SHA), or the
+ * build id off Vercel.
+ */
+export function sentryRelease(root: string, identity: BuildIdentity = buildIdentity(root)): string {
+  return process.env.VERCEL_GIT_COMMIT_SHA || `seen@${identity.build}`;
+}
+
+/** production, staging (a Vercel preview = the staging branch) or development. */
+export function sentryEnvironmentAtBuild(): string {
+  const v = process.env.VERCEL_ENV;
+  return v === 'production' ? 'production' : v === 'preview' ? 'staging' : 'development';
+}
+
 export function buildIdPlugin(root: string): Plugin {
   const identity = buildIdentity(root);
   return {
@@ -46,6 +61,8 @@ export function buildIdPlugin(root: string): Plugin {
         define: {
           __BUILD_ID__: JSON.stringify(identity.build),
           __BUILT_AT__: JSON.stringify(identity.builtAt),
+          __SENTRY_RELEASE__: JSON.stringify(sentryRelease(root, identity)),
+          __SENTRY_ENVIRONMENT__: JSON.stringify(sentryEnvironmentAtBuild()),
         },
       };
     },

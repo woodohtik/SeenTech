@@ -4202,7 +4202,9 @@
       "no_question": "(no question kept)",
       "load_error": "Could not load the ratings."
     },
-    "system_database": "Database"
+    "system_database": "Database",
+    "sentry_test_button": "Send a test error to Sentry",
+    "sentry_test_sent": "Test error sent. Browser: {{browser}} — server: {{server}}"
   },
   "sales": {
     "active_shift": "Active Shift",

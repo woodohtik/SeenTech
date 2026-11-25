@@ -7,7 +7,7 @@ import { initLogger } from './lib/logger';
 import './index-customer.css';
 import { ready as i18nReady } from './i18n/config-customer';
 
-initLogger();
+initLogger('customer');
 
 // Resolves on the same tick (config-customer.ts loads its resources
 // eagerly) -- awaited for symmetry with main.tsx and in case that ever

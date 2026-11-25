@@ -30,6 +30,7 @@ import { getBankTransferSettings, DEFAULT_BANK_TRANSFER_SETTINGS } from '../serv
 
 import { isRtlLang } from '../lib/direction';
 import { useToast } from '../contexts/ToastContext';
+import { logError } from '../lib/logger';
 
 export default function SaaSSystemSettings() {
   const { t, i18n } = useTranslation();
@@ -39,6 +40,7 @@ export default function SaaSSystemSettings() {
   const [tenants, setTenants] = useState<Tenant[]>([]);
   const [selectedTenantId, setSelectedTenantId] = useState<string>('');
   const [isDeleting, setIsDeleting] = useState(false);
+  const [sentryTestBusy, setSentryTestBusy] = useState(false);
   const [brandingSettings, setBrandingSettings] = useState({
     websiteUrl: '',
     companyName: 'Seen'
@@ -307,6 +309,32 @@ export default function SaaSSystemSettings() {
     }
   };
 
+  // seen-sentry-setup-task.md 8: one test error from the browser and one from
+  // the server, to see them arrive in Sentry (original file and line, the
+  // environment, the release, the shop's id; no token in the link).
+  const sendSentryTest = async () => {
+    if (dbUser?.role !== 'super_admin') {
+      toastError(t('saas.unauthorized_action'));
+      return;
+    }
+    setSentryTestBusy(true);
+    try {
+      const browserEvent = logError(new Error('Sentry test error (browser)'), { source: 'sentry-test' });
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch('/api/super-admin/sentry-test', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${session?.access_token || ''}` },
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) throw Object.assign(new Error('sentry test route failed'), { status: res.status });
+      toastSuccess(t('saas.sentry_test_sent', { browser: browserEvent ?? '—', server: body?.eventId ?? '—' }));
+    } catch (error) {
+      toastError(error);
+    } finally {
+      setSentryTestBusy(false);
+    }
+  };
+
   const confirmDeleteTestData = async () => {
     if (dbUser?.role !== 'super_admin') {
       toastError(t('saas.unauthorized_action'));
@@ -387,6 +415,14 @@ export default function SaaSSystemSettings() {
               </div>
             ))}
           </div>
+          <button
+            type="button"
+            onClick={sendSentryTest}
+            disabled={sentryTestBusy}
+            className="mt-8 w-full min-h-11 rounded-xl border border-border text-sm font-bold text-content hover:bg-surface-muted disabled:opacity-50"
+          >
+            {sentryTestBusy ? t('common.saving') : t('saas.sentry_test_button')}
+          </button>
         </div>
 
         <div className="main-900:col-span-2 space-y-8">

@@ -64,7 +64,7 @@
 ```
 src/               تطبيق الموظفين (React) — المكوّنات، الخدمات، الأوفلاين
 server.ts          خادم Express (API + وسيط الطباعة + تكامل المساعد الذكي)
-api/index.js       نقطة دخول Vercel Function (تُحمّل dist/server.cjs المبني)
+api/index.js       نقطة دخول Vercel Function (تُحمّل server-build/server.cjs المبني)
 supabase/          ترحيلات قاعدة البيانات (migrations/) والملفات القديمة (legacy-setup/)
 android/           تطبيق الموظفين Capacitor (WebView حي على staging/production)
 capacitor-customer/ تطبيق العملاء Capacitor (حزمة مضمَّنة، متجر Google Play)

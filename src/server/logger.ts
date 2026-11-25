@@ -1,4 +1,5 @@
 import pino from 'pino';
+import { IGNORED_ERRORS, scrubBreadcrumb, scrubEvent, sentryEnvironment } from '../lib/sentryScrub';
 
 // seen-structured-logging-task.md: 44 console.*/server.ts+src/server/*.ts
 // call sites, no structured logging at all before this. Paths below are
@@ -65,10 +66,24 @@ export function initServerLogger(): void {
   if (!dsn) return;
   void loadSentry()
     .then((Sentry) => {
+      // seen-sentry-setup-task.md: the browser's release (the commit) and
+      // environment (production / staging); PDPL -- technical data only,
+      // every event through sentryScrub.ts, no default PII (no IP, no
+      // request body, cookies or headers), no Sentry Logs; tracing 5% in
+      // production (question 4).
+      const environment = sentryEnvironment(process.env.VERCEL_ENV, process.env.NODE_ENV);
       Sentry.init({
         dsn,
-        environment: process.env.VERCEL_ENV || process.env.NODE_ENV || 'development',
-        tracesSampleRate: 0.1,
+        release: process.env.VERCEL_GIT_COMMIT_SHA || undefined,
+        environment,
+        tracesSampleRate: environment === 'production' ? 0.05 : 1.0,
+        sendDefaultPii: false,
+        enableLogs: false,
+        ignoreErrors: IGNORED_ERRORS,
+        beforeSend: (event) => scrubEvent(event),
+        beforeSendTransaction: (event) => scrubEvent(event),
+        beforeBreadcrumb: (crumb) => scrubBreadcrumb(crumb),
+        initialScope: { tags: { app: 'server' } },
       });
     })
     .catch((err) => logger.error({ err }, '[sentry] failed to load'));
@@ -84,17 +99,38 @@ export function initServerLogger(): void {
 // 7 call sites to change.
 const TAG_KEYS = ['tenantId', 'orderId', 'invoiceId'] as const;
 
-export function captureServerException(error: unknown, context?: Record<string, unknown>): void {
-  if (!process.env.SENTRY_DSN) return;
-  void loadSentry().then((Sentry) => Sentry.withScope((scope) => {
-    if (context) {
-      for (const [key, value] of Object.entries(context)) {
-        if ((TAG_KEYS as readonly string[]).includes(key) && value != null) {
-          scope.setTag(key, String(value));
+/**
+ * Sends an error to Sentry. seen-sentry-setup-task.md 4: a Vercel Function
+ * stops right after its reply, so a "fire and forget" send could be lost --
+ * the send and a short flush are handed to waitUntil, which keeps the
+ * Function alive for them after the reply. Resolves to the event id (or
+ * undefined), for the super admin's test route.
+ */
+export function captureServerException(error: unknown, context?: Record<string, unknown>): Promise<string | undefined> {
+  if (!process.env.SENTRY_DSN) return Promise.resolve(undefined);
+  const sending = loadSentry().then(async (Sentry) => {
+    let eventId: string | undefined;
+    Sentry.withScope((scope) => {
+      if (context) {
+        for (const [key, value] of Object.entries(context)) {
+          if ((TAG_KEYS as readonly string[]).includes(key) && value != null) {
+            scope.setTag(key, String(value));
+          }
+          scope.setExtra(key, value);
         }
-        scope.setExtra(key, value);
       }
-    }
-    Sentry.captureException(error instanceof Error ? error : new Error(String(error)));
-  })).catch(() => { /* reported to the log by the call site already */ });
+      eventId = Sentry.captureException(error instanceof Error ? error : new Error(String(error)));
+    });
+    await Sentry.flush(2000);
+    return eventId;
+  }).catch(() => undefined /* reported to the log by the call site already */);
+  keepAliveUntil(sending);
+  return sending;
+}
+
+/** Vercel's waitUntil when running there; elsewhere the promise simply runs on. */
+function keepAliveUntil(promise: Promise<unknown>): void {
+  void import('@vercel/functions')
+    .then(({ waitUntil }) => waitUntil(promise))
+    .catch(() => { /* not on Vercel (local / tests) */ });
 }
