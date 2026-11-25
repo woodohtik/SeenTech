@@ -77,9 +77,12 @@ app.use((req: any, res, next) => {
 // vars reach the browser bundle, it doesn't hide them from plain Node
 // process.env, so the server can derive the exact project host instead of
 // hardcoding it.
-const supabaseHost = (() => {
-  try { return new URL(process.env.VITE_SUPABASE_URL || '').host; } catch { return ''; }
+// The origins as they are (https/wss in production; http/ws for the local
+// database the golden-path tests run against -- seen-stability-guardrails-task.md).
+const supabaseOrigin = (() => {
+  try { return new URL(process.env.VITE_SUPABASE_URL || '').origin; } catch { return ''; }
 })();
+const supabaseSocketOrigin = supabaseOrigin.replace(/^http/, 'ws');
 const firebaseAuthDomain = process.env.VITE_FIREBASE_AUTH_DOMAIN || '';
 
 // crossOriginOpenerPolicy is explicitly relaxed to same-origin-allow-popups
@@ -105,13 +108,13 @@ app.use(helmet({
       fontSrc: ["'self'", 'https://fonts.gstatic.com'],
       imgSrc: [
         "'self'", 'data:', 'blob:',
-        ...(supabaseHost ? [`https://${supabaseHost}`] : []),
+        ...(supabaseOrigin ? [supabaseOrigin] : []),
         'https://*.tile.openstreetmap.org',
         'https://firebasestorage.googleapis.com',
       ],
       connectSrc: [
         "'self'",
-        ...(supabaseHost ? [`https://${supabaseHost}`, `wss://${supabaseHost}`] : []),
+        ...(supabaseOrigin ? [supabaseOrigin, supabaseSocketOrigin] : []),
         'https://accounts.google.com',
         'https://oauth2.googleapis.com',
         'https://identitytoolkit.googleapis.com',
