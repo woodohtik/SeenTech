@@ -19,7 +19,8 @@ import {
   Globe,
   Home,
   Terminal,
-  Shield
+  Shield,
+  RotateCcw
 } from 'lucide-react';
 // The brand panel's animated decoration (and with it the motion library)
 // loads after the form has drawn (seen-performance-first-open-login-task.md Phase 2.4).
@@ -31,7 +32,9 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import Branding from './Branding';
 import { IconInput } from './ui/IconInput';
 import { Button } from './ui/Button';
-import { getAuthErrorMessage } from '../utils/authErrorUtils';
+import { AuthKindError, classifyAuthError, describeAuthError } from '../utils/authErrorUtils';
+import { SUPPORT_EMAIL, SUPPORT_WHATSAPP } from '../constants/support';
+import { openWhatsApp } from '../utils/whatsapp';
 import { recordReferralOnSignup } from '../services/referralService';
 import { recordReferralOnPartnerSignup } from '../services/partnerReferralService';
 
@@ -49,7 +52,21 @@ export default function Login() {
   });
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setErrorText] = useState<string | null>(null);
+  // seen-login-error-messages-task.md: for the errors the person cannot fix
+  // by typing something else, the code and a way to try the same request again.
+  const [errorHelp, setErrorHelp] = useState<{ code: string; retry?: () => void } | null>(null);
+  const setError = useCallback((message: string | null) => {
+    setErrorText(message);
+    setErrorHelp(null);
+  }, []);
+  // One sentence in the customer's language -- never the error's own text,
+  // a link, or the names of the services behind the app.
+  const showAuthError = useCallback(async (err: unknown, retry?: () => void) => {
+    const friendly = await describeAuthError(err);
+    setErrorText(friendly.message);
+    setErrorHelp(friendly.needsHelp ? { code: friendly.code, retry } : null);
+  }, []);
   const [rememberMe, setRememberMe] = useState(false);
   const [isLangMenuOpen, setIsLangMenuOpen] = useState(false);
 
@@ -143,7 +160,7 @@ export default function Login() {
       });
 
       if (gUserError && (gUserError.message?.includes('row-level security') || gUserError.code === '42501')) {
-        throw new Error(t('login.errors.rls_permission_issue'));
+        throw new AuthKindError('account_setup');
       }
 
       const [tenantRes, requestRes, staffRes, saasRes] = await Promise.all([
@@ -184,11 +201,11 @@ export default function Login() {
     } catch (err: any) {
       localStorage.removeItem('is_registering');
       console.error('Google auth handling error:', err);
-      setError(getAuthErrorMessage(err));
+      await showAuthError(err);
     } finally {
       setLoading(false);
     }
-  }, [navigate, t]);
+  }, [navigate, showAuthError]);
 
   // Google Identity Services delivers a credential (ID token) directly to
   // this callback, without ever navigating away from the page -- unlike
@@ -214,10 +231,10 @@ export default function Login() {
     } catch (err: any) {
       localStorage.removeItem('is_registering');
       console.error('Google Sign-In error:', err);
-      setError(getAuthErrorMessage(err));
+      await showAuthError(err);
       setLoading(false);
     }
-  }, [handleGoogleAuthedUser]);
+  }, [handleGoogleAuthedUser, setError, showAuthError]);
 
   const googleButtonRef = useRef<HTMLDivElement>(null);
 
@@ -312,33 +329,36 @@ export default function Login() {
   ];
   const strengthColors = ['bg-danger', 'bg-warning', 'bg-brand', 'bg-success'];
 
-  const handleEmailLogin = async (e: React.FormEvent) => {
+  const contactSupport = (code: string) => {
+    const message = t('login.error_help.support_message', { code });
+    if (SUPPORT_WHATSAPP) {
+      openWhatsApp({ phone: SUPPORT_WHATSAPP, message, kind: 'internal' });
+      return;
+    }
+    const subject = t('login.error_help.support_subject', { code });
+    window.location.href = `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(message)}`;
+  };
+
+  const handleEmailLogin = (e: React.FormEvent) => {
     e.preventDefault();
+    void signIn();
+  };
+
+  const signIn = async () => {
     setLoading(true);
     setError(null);
     try {
       if (!loginId.includes('@')) {
         // P6: the server signs in with the phone and returns the session.
-        let res: Response;
-        try {
-          res = await fetch('/api/auth/sign-in-with-phone', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ phone: formatSaudiPhone(loginId), password }),
-          });
-        } catch (fetchErr: any) {
-          if (fetchErr instanceof TypeError) {
-            throw new Error(t('login.errors.db_unreachable', { url: import.meta.env.VITE_SUPABASE_URL || t('login.errors.no_url') }));
-          }
-          throw fetchErr;
-        }
+        const res = await fetch('/api/auth/sign-in-with-phone', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ phone: formatSaudiPhone(loginId), password }),
+        });
         const body = await res.json().catch(() => null);
-        if (res.status === 429) {
-          throw new Error(body?.error || t('login.errors.too_many_attempts', 'محاولات كثيرة جداً. انتظر دقيقة ثم أعد المحاولة.'));
-        }
-        if (!res.ok || !body?.session?.access_token) {
-          throw new Error(t('login.errors.phone_or_password_wrong'));
-        }
+        if (res.status === 429) throw new AuthKindError('rate_limited');
+        if (res.status >= 500) throw new AuthKindError('server');
+        if (!res.ok || !body?.session?.access_token) throw new AuthKindError('phone_or_password_wrong');
         const { error: sessionErr } = await supabase.auth.setSession(body.session);
         if (sessionErr) throw sessionErr;
       } else {
@@ -351,29 +371,21 @@ export default function Login() {
       } else {
         localStorage.removeItem('rememberedUser');
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
+      // The detail is for us (the console and the error log), never the password.
       console.error('Login Error:', err);
-      const isFetchError =
-        (err instanceof TypeError && (err.message?.includes('fetch') || err.message?.includes('Network'))) ||
-        err.message?.includes('Failed to fetch') ||
-        err.message?.includes('NetworkError');
-
-      const isJwtError = err.message?.includes('suitable key') || err.message?.includes('PGRST301') || err.message?.includes('Expected 3 parts in JWT');
-
-      if (isJwtError) {
-        setError(t('login.errors.jwt_link_missing'));
-      } else if (isFetchError) {
-        setError(t('login.errors.db_unreachable_adblocker', { url: import.meta.env.VITE_SUPABASE_URL || t('login.errors.no_url') }));
-      } else {
-        setError(getAuthErrorMessage(err));
-      }
+      await showAuthError(err, () => { void signIn(); });
     } finally {
       setLoading(false);
     }
   };
 
-  const handleRegister = async (e: React.FormEvent) => {
+  const handleRegister = (e: React.FormEvent) => {
     e.preventDefault();
+    void register();
+  };
+
+  const register = async () => {
     if (!validatePhone(regPhone)) {
       setError(t('login.errors.invalid_phone'));
       return;
@@ -395,20 +407,15 @@ export default function Login() {
 
     try {
       // Check if phone or email already exists in Supabase
-      let phoneSnap, emailSnap;
-      try {
-        const [ phoneRes, emailRes ] = await Promise.all([
-          supabase.from('tailor_requests').select('id').eq('phone', formattedPhone),
-          supabase.from('tailor_requests').select('id').eq('email', regEmail)
-        ]);
-        phoneSnap = phoneRes.data;
-        emailSnap = emailRes.data;
-      } catch (checkErr: any) {
-        if (checkErr instanceof TypeError && checkErr.message === 'Failed to fetch') {
-           throw new Error(t('login.errors.db_unreachable_network', { url: import.meta.env.VITE_SUPABASE_URL || t('login.errors.no_url') }));
-        }
-        throw checkErr;
-      }
+      const [phoneRes, emailRes] = await Promise.all([
+        supabase.from('tailor_requests').select('id').eq('phone', formattedPhone),
+        supabase.from('tailor_requests').select('id').eq('email', regEmail)
+      ]);
+      // No connection: say so now, before an account is half made.
+      const offline = [phoneRes.error, emailRes.error].find((e) => e && classifyAuthError(e).kind === 'network');
+      if (offline) throw offline;
+      const phoneSnap = phoneRes.data;
+      const emailSnap = emailRes.data;
 
       if (phoneSnap && phoneSnap.length > 0) {
         setError(t('login.errors.phone_exists'));
@@ -444,7 +451,7 @@ export default function Login() {
         }
         if (!signUpData.session || !signUpData.user) {
           localStorage.removeItem('is_registering');
-          throw new Error(t('login.errors.email_confirmation_required'));
+          throw new AuthKindError('email_confirmation_required');
         }
         user = signUpData.user;
       }
@@ -462,7 +469,7 @@ export default function Login() {
 
         if (userInsertError) {
           if (userInsertError.code === '23505' || userInsertError.message?.includes('users_email_key')) {
-            throw new Error(t('login.errors.email_exists'));
+            throw new AuthKindError('email_exists');
           }
           throw userInsertError;
         }
@@ -562,9 +569,6 @@ export default function Login() {
         // tenant-less Supabase Auth user — harmless (it just falls into the
         // "no staff/tenant/request found -> onboarding step 1" resolution
         // branch on next login) and can be swept up later by an admin task.
-        if (err instanceof TypeError && err.message === 'Failed to fetch') {
-           throw new Error(t('login.errors.db_unreachable_short', { url: import.meta.env.VITE_SUPABASE_URL || '' }));
-        }
         throw err;
       }
 
@@ -576,23 +580,7 @@ export default function Login() {
     } catch (err: any) {
       localStorage.removeItem('is_registering');
       console.error('Registration Error:', err);
-      if (err.code === '23505' || err.message?.includes('users_email_key')) {
-        setError(t('login.errors.email_exists'));
-      } else {
-        const isFetchError =
-          (err instanceof TypeError && (err.message.includes('fetch') || err.message.includes('Network'))) ||
-          err.message?.includes('Failed to fetch') ||
-          err.message?.includes('NetworkError');
-
-        const isJwtError = err.message?.includes('suitable key') || err.message?.includes('PGRST301') || err.message?.includes('Expected 3 parts in JWT');
-        if (isJwtError) {
-          setError(t('login.errors.jwt_link_missing'));
-        } else if (isFetchError) {
-          setError(t('login.errors.db_unreachable_adblocker', { url: import.meta.env.VITE_SUPABASE_URL || t('login.errors.no_url') }));
-        } else {
-          setError(getAuthErrorMessage(err));
-        }
-      }
+      await showAuthError(err, () => { void register(); });
     } finally {
       setLoading(false);
     }
@@ -708,10 +696,37 @@ export default function Login() {
               role="alert"
               aria-live="polite"
               style={{ ['--seen-rise' as string]: '-10px' }}
-              className="seen-enter-rise bg-[var(--seen-danger-bg)] border border-danger/20 text-danger p-4 rounded-2xl flex items-center gap-3 text-sm font-bold"
+              className="seen-enter-rise bg-[var(--seen-danger-bg)] border border-danger/20 text-danger p-4 rounded-2xl flex items-start gap-3 text-sm font-bold"
             >
-              <AlertCircle size={18} />
-              <span>{error}</span>
+              <AlertCircle size={18} className="shrink-0 mt-0.5" />
+              <div className="min-w-0 flex-1 space-y-3">
+                <p className="leading-relaxed">{error}</p>
+                {errorHelp && (
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+                    {errorHelp.retry && (
+                      <button
+                        type="button"
+                        onClick={errorHelp.retry}
+                        disabled={loading}
+                        className="inline-flex min-h-11 items-center gap-2 rounded-[8px] bg-danger px-4 text-white transition-opacity disabled:opacity-60"
+                      >
+                        <RotateCcw size={16} aria-hidden="true" />
+                        {t('login.error_help.retry')}
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => contactSupport(errorHelp.code)}
+                      className="min-h-11 underline underline-offset-4"
+                    >
+                      {t('login.error_help.contact_support')}
+                    </button>
+                    <span className="ms-auto text-sm font-medium text-content-muted">
+                      {t('login.error_help.code', { code: errorHelp.code })}
+                    </span>
+                  </div>
+                )}
+              </div>
             </div>
           )}
 
