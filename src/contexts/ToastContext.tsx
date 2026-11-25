@@ -89,9 +89,13 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     // P4 (OPERATIONS-13): a send refused because the shop turned WhatsApp off.
     const onWhatsAppOff = () => showToast('info', t('settings_page.whatsapp.disabled_notice'));
     window.addEventListener('seen-whatsapp-disabled', onWhatsAppOff);
+    // seen-whatsapp-templates-task.md: a number that cannot be a WhatsApp number.
+    const onBadPhone = () => showToast('error', t('whatsapp.invalid_phone'));
+    window.addEventListener('seen-whatsapp-invalid-phone', onBadPhone);
     return () => {
       window.removeEventListener(APP_WRITE_ERROR_EVENT, onWriteError);
       window.removeEventListener('seen-whatsapp-disabled', onWhatsAppOff);
+      window.removeEventListener('seen-whatsapp-invalid-phone', onBadPhone);
     };
   }, [showToast, t]);
 

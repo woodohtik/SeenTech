@@ -1,37 +1,63 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useSyncExternalStore } from 'react';
 import { useTranslation } from 'react-i18next';
 import { cn } from '../lib/utils';
-import { MessageSquare, Zap, CheckCircle2, RotateCcw, Send, Sparkles, Copy, Info } from 'lucide-react';
+import { MessageSquare, Zap, CheckCircle2, RotateCcw, Send, Sparkles, Info } from 'lucide-react';
 import { isRtlLang, localeOf } from '../lib/direction';
 import { useConfirm } from '../contexts/ConfirmContext';
 
-import { 
-  DEFAULT_WHATSAPP_TEMPLATE, 
-  WHATSAPP_VARIABLES, 
-  getWhatsAppTemplate, 
-  isWhatsAppEnabled, 
+import {
+  TEMPLATE_VARIABLES,
+  WHATSAPP_TEMPLATE_KINDS,
+  WHATSAPP_TEMPLATE_MAX,
+  WHATSAPP_VARIABLES,
+  getDefaultWhatsAppTemplate,
+  getShopWhatsAppTemplate,
+  isShopWhatsAppLoaded,
+  isWhatsAppEnabled,
+  onShopWhatsAppChange,
+  openWhatsApp,
   saveShopWhatsAppSettings,
-  buildWhatsAppMessage, 
-  sendWhatsAppMessage 
+  unknownWhatsAppVariables,
+  whatsappMessage,
+  type WhatsAppTemplateKind,
 } from '../utils/whatsapp';
 
+/**
+ * The shop's WhatsApp messages (seen-whatsapp-templates-task.md): four
+ * templates, one per message, with the variables each may use and a live
+ * preview. Seen prepares the message and opens WhatsApp; the person presses
+ * send. Nothing is editable until the shop's own settings have arrived, so a
+ * default is never saved over the shop's template by mistake.
+ */
 export default function WhatsAppSettings() {
   const { t, i18n } = useTranslation();
   const { confirm } = useConfirm();
   const isRtl = isRtlLang(i18n.language);
+  const loaded = useSyncExternalStore(onShopWhatsAppChange, isShopWhatsAppLoaded, isShopWhatsAppLoaded);
   const [enabled, setEnabled] = useState<boolean>(true);
-  const [template, setTemplate] = useState<string>(DEFAULT_WHATSAPP_TEMPLATE);
+  const [kind, setKind] = useState<WhatsAppTemplateKind>('order_received');
+  const [drafts, setDrafts] = useState<Record<WhatsAppTemplateKind, string>>(() => Object.fromEntries(
+    WHATSAPP_TEMPLATE_KINDS.map((k) => [k, getShopWhatsAppTemplate(k) || getDefaultWhatsAppTemplate(k)]),
+  ) as Record<WhatsAppTemplateKind, string>);
   const [savedSuccess, setSavedSuccess] = useState<boolean>(false);
+  const [saving, setSaving] = useState<boolean>(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [testPhone, setTestPhone] = useState<string>('');
   const [showTestModal, setShowTestModal] = useState<boolean>(false);
+  const template = drafts[kind];
+  const setTemplate = (next: string | ((prev: string) => string)) =>
+    setDrafts((d) => ({ ...d, [kind]: typeof next === 'function' ? next(d[kind]) : next }));
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
+  // Once the shop's settings arrive (or change), the form takes them.
   useEffect(() => {
+    if (!loaded) return;
     setEnabled(isWhatsAppEnabled());
-    setTemplate(getWhatsAppTemplate());
-  }, []);
+    setDrafts(Object.fromEntries(
+      WHATSAPP_TEMPLATE_KINDS.map((k) => [k, getShopWhatsAppTemplate(k) || getDefaultWhatsAppTemplate(k)]),
+    ) as Record<WhatsAppTemplateKind, string>);
+  }, [loaded, i18n.language]);
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -51,22 +77,43 @@ export default function WhatsAppSettings() {
     }
   };
 
+  const unknownVars = unknownWhatsAppVariables(template, kind);
   const handleSave = async () => {
+    if (!loaded || saving) return;
+    if (!template.trim()) {
+      showToast(t('settings_page.whatsapp.template_empty'));
+      return;
+    }
+    if (unknownVars.length > 0) {
+      // A misspelt variable would be dropped from every message: say which.
+      showToast(t('settings_page.whatsapp.unknown_variables', { vars: unknownVars.join(' ') }));
+      return;
+    }
+    setSaving(true);
     try {
-      await saveShopWhatsAppSettings({ template });
+      await saveShopWhatsAppSettings({ templates: { [kind]: template } });
       setSavedSuccess(true);
       showToast(t('settings_page.whatsapp.saved_toast'));
       setTimeout(() => setSavedSuccess(false), 3000);
     } catch {
       showToast(t('settings_page.whatsapp.save_failed'));
+    } finally {
+      setSaving(false);
     }
   };
 
+  // Back to the default in the interface language; a failed save says so.
   const handleReset = async () => {
+    if (!loaded) return;
     if (await confirm(t('settings_page.whatsapp.reset_confirm'))) {
-      setTemplate(DEFAULT_WHATSAPP_TEMPLATE);
-      await saveShopWhatsAppSettings({ template: DEFAULT_WHATSAPP_TEMPLATE }).catch(() => {});
-      showToast(t('settings_page.whatsapp.reset_toast'));
+      const fallback = getDefaultWhatsAppTemplate(kind);
+      try {
+        await saveShopWhatsAppSettings({ templates: { [kind]: fallback } });
+        setTemplate(fallback);
+        showToast(t('settings_page.whatsapp.reset_toast'));
+      } catch {
+        showToast(t('settings_page.whatsapp.save_failed'));
+      }
     }
   };
 
@@ -88,8 +135,8 @@ export default function WhatsAppSettings() {
     const after = template.substring(end);
 
     // إضافة مسافة خفيفة إذا لزم الأمر
-    const spaceBefore = before.length > 0 && !before.endsWith(' ') ? ' ' : '';
-    const spaceAfter = after.length > 0 && !after.startsWith(' ') ? ' ' : '';
+    const spaceBefore = before.length > 0 && !before.endsWith(' ') && !before.endsWith('\n') ? ' ' : '';
+    const spaceAfter = after.length > 0 && !after.startsWith(' ') && !after.startsWith('\n') ? ' ' : '';
 
     const newText = `${before}${spaceBefore}${tag}${spaceAfter}${after}`;
     setTemplate(newText);
@@ -104,24 +151,29 @@ export default function WhatsAppSettings() {
     showToast(t('settings_page.whatsapp.variable_inserted_toast') + ' ' + tag);
   };
 
-  // معاينة الرسالة الحية
-  const sampleMessage = buildWhatsAppMessage(template, {
+  // The live preview: the real links' shape (https://www.seentech.io/track/...).
+  const sampleMessage = whatsappMessage(kind, {
     customerName: t('settings_page.whatsapp.sample_customer_name'),
-    orderId: '10482',
-    totalAmount: '250',
+    orderNumber: '1042',
+    invoiceNumber: 'INV-2026-00042',
+    total: 287.5,
     customerPhone: '0501234567',
-    invoiceUrl: 'https://seen-pos.app/order/10482',
+    trackingToken: '7f3a9c2e',
+    measurementsToken: '4b81d0aa',
     storeName: t('settings_page.whatsapp.sample_store_name'),
-  });
+    origin: 'https://www.seentech.io',
+  }, template);
 
   const handleSendTest = () => {
     if (!testPhone.trim()) {
       showToast(t('settings_page.whatsapp.enter_phone_test'));
       return;
     }
-    sendWhatsAppMessage(testPhone, sampleMessage);
-    setShowTestModal(false);
+    // The same path every message takes: the number in international form.
+    if (openWhatsApp({ phone: testPhone, message: sampleMessage, kind: 'internal' })) setShowTestModal(false);
   };
+
+  const allowedVariables = WHATSAPP_VARIABLES.filter((v) => TEMPLATE_VARIABLES[kind].includes(v.tag));
 
   return (
     <div className={cn("bg-surface p-5 main-640:p-8 main-720:p-10 rounded-2xl border border-border shadow-xl shadow-brand/5 space-y-6 main-720:space-y-10 w-full relative", isRtl ? "text-right" : "text-left")} dir={isRtl ? "rtl" : "ltr"}>
@@ -141,9 +193,7 @@ export default function WhatsAppSettings() {
         <div className="flex-1">
           <div className="flex flex-col main-640:flex-row main-640:items-center justify-between gap-2">
             <h3 className="text-2xl font-black text-content">{t('settings_page.whatsapp.title')}</h3>
-            <span className="text-sm font-black text-success bg-[var(--seen-success-bg)] px-3 py-1 rounded-full self-center main-640:self-auto">
-              {t('settings_page.whatsapp.status_tag')}
-            </span>
+
           </div>
           <p className="text-sm text-content-muted font-medium mt-1">
             {t('settings_page.whatsapp.description')}
@@ -181,6 +231,26 @@ export default function WhatsAppSettings() {
           </div>
         </div>
 
+        {/* The four messages (question 1) */}
+        <div role="tablist" aria-label={t('settings_page.whatsapp.templates_label')} className="flex flex-wrap gap-2">
+          {WHATSAPP_TEMPLATE_KINDS.map((k) => (
+            <button
+              key={k}
+              type="button"
+              role="tab"
+              aria-selected={kind === k}
+              onClick={() => setKind(k)}
+              className={cn(
+                "min-h-11 rounded-[8px] border px-4 text-sm font-bold transition-colors",
+                kind === k ? "border-brand bg-brand text-white" : "border-border bg-surface text-content hover:bg-surface-muted"
+              )}
+            >
+              {t(`settings_page.whatsapp.kind_${k}`)}
+            </button>
+          ))}
+        </div>
+        <p className="text-sm text-content-muted">{t(`settings_page.whatsapp.kind_${kind}_where`)}</p>
+
         {/* Variables selector section */}
         <div className="space-y-3 bg-surface-muted/50 p-5 rounded-2xl border border-border">
           <div className="flex flex-wrap items-center justify-between gap-2">
@@ -195,7 +265,7 @@ export default function WhatsAppSettings() {
           </div>
 
           <div className="grid grid-cols-2 main-640:grid-cols-3 main-720:grid-cols-6 gap-2">
-            {WHATSAPP_VARIABLES.map(item => (
+            {allowedVariables.map(item => (
               <button
                 key={item.tag}
                 type="button"
@@ -221,7 +291,7 @@ export default function WhatsAppSettings() {
               {t('settings_page.whatsapp.template_label')}
             </label>
             <div className="flex items-center gap-2 text-sm font-bold text-content-muted">
-              <span>{t('settings_page.whatsapp.chars_count')} {template.length}</span>
+              <span className={template.length > WHATSAPP_TEMPLATE_MAX ? 'text-danger' : undefined}>{t('settings_page.whatsapp.chars_count')} {template.length} / {WHATSAPP_TEMPLATE_MAX}</span>
             </div>
           </div>
 
@@ -229,13 +299,25 @@ export default function WhatsAppSettings() {
             <textarea
               ref={textareaRef}
               value={template}
+              disabled={!loaded}
+              maxLength={WHATSAPP_TEMPLATE_MAX}
+              aria-invalid={unknownVars.length > 0 || undefined}
               onChange={(e) => setTemplate(e.target.value)}
               placeholder={t('settings_page.whatsapp.textarea_placeholder')}
-              rows={5}
+              rows={6}
               className="w-full bg-surface-muted border-2 border-border focus:border-success focus:bg-surface rounded-2xl p-5 font-medium transition-all outline-none resize-none text-sm main-640:text-base leading-relaxed text-content shadow-inner"
             />
           </div>
         </div>
+
+        {!loaded && (
+          <p role="status" className="text-sm font-bold text-content-muted">{t('settings_page.whatsapp.loading_shop')}</p>
+        )}
+        {unknownVars.length > 0 && (
+          <p role="alert" className="text-sm font-bold text-danger">
+            {t('settings_page.whatsapp.unknown_variables', { vars: unknownVars.join(' ') })}
+          </p>
+        )}
 
         {/* Live Preview Box */}
         <div className="space-y-3">
@@ -270,6 +352,7 @@ export default function WhatsAppSettings() {
             <button
               type="button"
               onClick={handleReset}
+              disabled={!loaded}
               className="flex items-center justify-center gap-2 px-4 py-3 bg-surface-muted hover:bg-surface-muted dark:hover:bg-surface-muted text-content-muted hover:text-content rounded-xl text-sm font-black transition-all w-full main-640:w-auto"
             >
               <RotateCcw size={16} />
@@ -289,6 +372,7 @@ export default function WhatsAppSettings() {
           <button
             type="button"
             onClick={handleSave}
+            disabled={!loaded || saving}
             className="flex items-center justify-center gap-2 px-8 py-3.5 bg-success hover:bg-success/90 text-white rounded-xl text-sm font-black transition-all shadow-lg shadow-success/20 active:scale-95 w-full main-640:w-auto"
           >
             <CheckCircle2 size={18} />

@@ -12,7 +12,7 @@ import StandardTaxInvoice from './TaxInvoice';
 import SimplifiedTaxInvoice from './SimplifiedTaxInvoice';
 import { downloadInvoicePDF, shareOrDownloadInvoicePDF } from '../../utils/pdfGenerator';
 import { useToast } from '../../contexts/ToastContext';
-import { buildWhatsAppMessage, getWhatsAppTemplate, sendWhatsAppMessage } from '../../utils/whatsapp';
+import { openWhatsApp, whatsappMessage } from '../../utils/whatsapp';
 import { isRtlLang } from '../../lib/direction';
 import { taxRatePercent } from '../../shared/taxRate';
 
@@ -129,11 +129,11 @@ export function TaxInvoiceDocument({ order, tenant, onClose }: TaxInvoiceModalPr
   // Uses /track/:token (the real, working, no-auth public tracking page)
   // -- /order/:id is not a route at all (confirmed in App.tsx: any
   // unmatched path redirects to "/").
-  const buildTaxInvoiceWhatsAppText = () => buildWhatsAppMessage(getWhatsAppTemplate(), {
+  const buildTaxInvoiceWhatsAppText = () => whatsappMessage('invoice', {
     customerName: order.customerName,
-    orderId: String(order.invoiceNumber || order.id),
-    totalAmount: totalIncVat.toFixed(2),
-    invoiceUrl: order.trackingToken ? `${window.location.origin}/track/${order.trackingToken}` : undefined,
+    invoiceNumber: String(order.invoiceNumber || order.id),
+    total: totalIncVat,
+    trackingToken: order.trackingToken,
     storeName: tenant.name,
   });
 
@@ -146,7 +146,7 @@ export function TaxInvoiceDocument({ order, tenant, onClose }: TaxInvoiceModalPr
   // actual PDF file is a separate, explicit, optional action now
   // (handleAttachInvoicePdf below).
   const handleShareWhatsApp = () => {
-    sendWhatsAppMessage('', buildTaxInvoiceWhatsAppText());
+    openWhatsApp({ message: buildTaxInvoiceWhatsAppText(), kind: 'customer' });
   };
 
   // The optional "attach as PDF too" step split out of handleShareWhatsApp

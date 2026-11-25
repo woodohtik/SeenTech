@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 // seen-readiness-fixes-task.md P4 (OPERATIONS-13): the shop's WhatsApp
 // settings, not one browser's, decide what is sent.
 vi.mock('i18next', () => ({ default: { t: (k: string) => k } }));
-import { getWhatsAppTemplate, isWhatsAppEnabled, sendWhatsAppMessage, setShopWhatsAppSettings, WHATSAPP_DISABLED_EVENT } from './whatsapp';
+import { getWhatsAppTemplate, isWhatsAppEnabled, openWhatsApp, setShopWhatsAppSettings, WHATSAPP_DISABLED_EVENT } from './whatsapp';
 
 afterEach(() => { setShopWhatsAppSettings(null); localStorage.clear(); vi.restoreAllMocks(); });
 
@@ -22,7 +22,7 @@ describe('the shop WhatsApp settings', () => {
     const open = vi.spyOn(window, 'open').mockImplementation(() => null);
     const notice = vi.fn();
     window.addEventListener(WHATSAPP_DISABLED_EVENT, notice);
-    sendWhatsAppMessage('0500000000', 'hi');
+    openWhatsApp({ phone: '0500000000', message: 'hi', kind: 'customer' });
     expect(open).not.toHaveBeenCalled();
     expect(notice).toHaveBeenCalledTimes(1);
     window.removeEventListener(WHATSAPP_DISABLED_EVENT, notice);
@@ -30,7 +30,7 @@ describe('the shop WhatsApp settings', () => {
 
   it('on (or never set): WhatsApp opens with the message', () => {
     const open = vi.spyOn(window, 'open').mockImplementation(() => null);
-    sendWhatsAppMessage('0500000000', 'hi');
-    expect(open).toHaveBeenCalledWith(expect.stringContaining('wa.me/0500000000?text=hi'), '_blank');
+    openWhatsApp({ phone: '0500000000', message: 'hi', kind: 'customer' });
+    expect(open).toHaveBeenCalledWith(expect.stringContaining('wa.me/966500000000?text=hi'), '_blank');
   });
 });

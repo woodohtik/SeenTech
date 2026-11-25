@@ -10,6 +10,7 @@
  */
 
 import { useEffect, useState } from 'react';
+import { openWhatsApp } from '../../utils/whatsapp';
 import {
   ensurePartnerReferralCode, partnerReferralLink, getPartnerWallet, listPartnerReferrals,
   listMyPartnerWithdrawals, requestPartnerWithdrawal, getPartnerReferralProgramSettings,
@@ -169,7 +170,7 @@ export default function PartnerReferrals() {
   }
   function shareWhatsApp() {
     const msg = t('partner_referral.whatsapp_share_text', { link });
-    window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
+    openWhatsApp({ message: msg, kind: 'marketing' });
   }
 
   const minWithdrawal = programSettings.minWithdrawal;

@@ -80,8 +80,7 @@ import { isSpeechRecognitionSupported } from '../hooks/useSpeechRecognition';
 import ThobeMeasurementSelector from './ThobeMeasurementSelector';
 import VisualMeasurements from './VisualMeasurements';
 import { useStaff } from '../contexts/StaffContext';
-import { useBranding } from '../contexts/BrandingContext';
-import { sendWhatsAppMessage } from '../utils/whatsapp';
+import { openWhatsApp, whatsappMessage } from '../utils/whatsapp';
 import { usePermissions } from '../hooks/usePermissions';
 import { useToast } from '../contexts/ToastContext';
 import { useConfirm } from '../contexts/ConfirmContext';
@@ -492,7 +491,6 @@ export default function Customers({ tenantId }: CustomersProps) {
     setIsModalOpen(true);
   };
 
-  const { settings: branding } = useBranding();
 
   // Sends the public /measurements/:token link (server-issued, unguessable --
   // see docs/superpowers/specs/2026-11-08-customer-measurements-public-form-design.md)
@@ -507,13 +505,9 @@ export default function Customers({ tenantId }: CustomersProps) {
       handleError(linkError as any, t('customers.measurements_link_failed'));
       return;
     }
-    const url = `${window.location.origin}/measurements/${link.token}`;
-    const message = t('customers.measurement_link_message', {
-      customerName: customer.name,
-      url,
-      storeName: branding.companyName || t('pos.store_default'),
-    });
-    sendWhatsAppMessage(customer.phone, message);
+    // The shop's "measurements link" template (seen-whatsapp-templates-task.md).
+    const message = whatsappMessage('measurements_link', { customerName: customer.name, measurementsToken: link.token });
+    openWhatsApp({ phone: customer.phone, message, kind: 'customer' });
   };
 
   const openDetails = (customer: Customer) => {

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { openWhatsApp } from '../utils/whatsapp';
 import { formatSaudiPhone } from '../utils/phoneUtils';
 import { FileText, Download, Printer, ShoppingBag, DollarSign, RotateCcw, CreditCard, Calculator, ArrowRightLeft, MessageCircle, ArrowLeft, Package } from 'lucide-react';
 import { cn } from '../lib/utils';
@@ -120,9 +121,7 @@ export default function ZReport({ data, onClose }: ZReportProps) {
     message += `${t('z_report.whatsapp_pdf_attached', 'يرجى الاطلاع على ملف التقرير المرفق بصيغة PDF.')}\n\n`;
     message += `${t('z_report.thank_you', 'وشكراً جزيلاً لكم.')}`;
 
-    const encodedText = encodeURIComponent(message);
-    const whatsappUrl = `https://api.whatsapp.com/send?phone=${phone}&text=${encodedText}`;
-    window.open(whatsappUrl, '_blank');
+    openWhatsApp({ phone, message, kind: 'internal' });
     setWhatsappModalOpen(false);
   };
 

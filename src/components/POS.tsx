@@ -71,7 +71,7 @@ import { generateZatcaQR } from '../lib/zatca';
 import TailoringOrderForm from './TailoringOrderForm';
 import Branding from './Branding';
 import { downloadInvoicePDF, shareOrDownloadInvoicePDF } from '../utils/pdfGenerator';
-import { buildWhatsAppMessage, getWhatsAppTemplate } from '../utils/whatsapp';
+import { openWhatsApp, whatsappMessage } from '../utils/whatsapp';
 import { useBranding } from '../contexts/BrandingContext';
 import { useRealtimeSync } from '../hooks/useRealtimeSync';
 import { useRouter, useRefreshCounter } from '../hooks/useRouter';
@@ -2000,17 +2000,17 @@ const invoiceData: InvoiceData | null = completedOrder ? {
   // server (create_pos_sale's return value) -- absent for a queued-offline
   // sale, in which case the link is simply omitted rather than built from
   // a dead route.
-  const buildInvoiceMessage = (phone?: string) => buildWhatsAppMessage(getWhatsAppTemplate(), {
+  const buildInvoiceMessage = (phone?: string) => whatsappMessage('invoice', {
     customerName: completedOrder?.customerName,
-    orderId: completedOrder?.invoiceNumber,
-    totalAmount: completedOrder?.total,
+    invoiceNumber: completedOrder?.invoiceNumber,
+    total: completedOrder?.total,
     customerPhone: phone,
-    invoiceUrl: completedOrder?.trackingToken ? `${window.location.origin}/track/${completedOrder.trackingToken}` : undefined,
-    storeName: brandingSettings?.storeName || t('pos.store_default'),
+    trackingToken: completedOrder?.trackingToken,
   });
 
   const proceedToWhatsApp = (phone: string) => {
-    window.open(`https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(buildInvoiceMessage(phone))}`, '_blank');
+    // The shop's switch and the number's international form apply here too.
+    openWhatsApp({ phone, message: buildInvoiceMessage(phone), kind: 'customer' });
     setWhatsappModalOpen(false);
   };
 

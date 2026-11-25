@@ -13,7 +13,7 @@ import { PriceDisplay } from './PriceDisplay';
 import { FileText, Eye, X, Download, Package, Scissors, User, Calendar, CreditCard, ShoppingBag, Clock, Printer, Share2, AlertTriangle, Paperclip } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { downloadInvoicePDF, shareOrDownloadInvoicePDF } from '../utils/pdfGenerator';
-import { buildWhatsAppMessage, getWhatsAppTemplate } from '../utils/whatsapp';
+import { openWhatsApp, whatsappMessage } from '../utils/whatsapp';
 import SimplifiedTaxInvoice from './printing/SimplifiedTaxInvoice';
 import TaxInvoice from './printing/TaxInvoice';
 import DateTimeDisplay from './DateTimeDisplay';
@@ -114,13 +114,13 @@ export default function SalesRecord({ tenantId, shiftId, filterStatus }: { tenan
   // -- /order/:id is not a route at all (confirmed in App.tsx: any
   // unmatched path redirects to "/"), despite being the pattern
   // Orders.tsx's own reference implementation had been using too.
-  const buildWhatsAppInvoiceText = (order: Order, phone?: string) => buildWhatsAppMessage(getWhatsAppTemplate(), {
+  const buildWhatsAppInvoiceText = (order: Order, phone?: string) => whatsappMessage('invoice', {
     customerName: order.customerName,
-    orderId: String(order.invoiceNumber || order.orderNumber || order.id.slice(-6).toUpperCase()),
-    totalAmount: order.totalAmount,
+    invoiceNumber: order.invoiceNumber,
+    orderNumber: order.orderNumber || order.id.slice(-6).toUpperCase(),
+    total: order.totalAmount,
     customerPhone: phone,
-    invoiceUrl: order.trackingToken ? `${window.location.origin}/track/${order.trackingToken}` : undefined,
-    storeName: tenantInfo?.name,
+    trackingToken: order.trackingToken,
   });
 
   // seen-whatsapp-instant-send-task.md: used to await
@@ -156,7 +156,7 @@ export default function SalesRecord({ tenantId, shiftId, filterStatus }: { tenan
   const proceedToWhatsApp = (phone: string) => {
     if (!selectedOrder) return;
     const text = buildWhatsAppInvoiceText(selectedOrder, phone);
-    window.open(`https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(text)}`, '_blank');
+    openWhatsApp({ phone, message: text, kind: 'customer' });
     setWhatsappModalOpen(false);
   };
 

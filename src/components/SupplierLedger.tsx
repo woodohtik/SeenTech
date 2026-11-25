@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { openWhatsApp } from '../utils/whatsapp';
 import { motion } from 'motion/react';
 import { 
   ArrowLeft, 
@@ -232,9 +233,7 @@ export default function SupplierLedger({
   };
 
   const proceedToWhatsApp = (phone: string) => {
-    const encodedText = encodeURIComponent(buildLedgerWhatsAppMessage());
-    const whatsappUrl = `https://api.whatsapp.com/send?phone=${phone}&text=${encodedText}`;
-    window.open(whatsappUrl, '_blank');
+    openWhatsApp({ phone, message: buildLedgerWhatsAppMessage(), kind: 'internal' });
     setWhatsappModalOpen(false);
   };
 

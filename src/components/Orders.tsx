@@ -78,7 +78,7 @@ import { useToast } from '../contexts/ToastContext';
 import { useConfirm } from '../contexts/ConfirmContext';
 import { useAuth } from '../contexts/AuthContext';
 import * as XLSX from 'xlsx';
-import { buildWhatsAppMessage, getWhatsAppTemplate, sendWhatsAppMessage } from '../utils/whatsapp';
+import { openWhatsApp, whatsappMessage } from '../utils/whatsapp';
 import { notifyOrderStatusChange } from '../utils/orderNotify';
 import WhatsAppPhoneModal from './ui/WhatsAppPhoneModal';
 import ScannerModal from './ScannerModal';
@@ -89,7 +89,6 @@ import { IconInput } from './ui/IconInput';
 import { VoiceMicButton } from './ui/VoiceMicButton';
 import { isSpeechRecognitionSupported } from '../hooks/useSpeechRecognition';
 import { useStaff } from '../contexts/StaffContext';
-import { useBranding } from '../contexts/BrandingContext';
 import { analytics, AnalyticsEvent } from '../services/analyticsService';
 import { useVerticalConfig } from '../hooks/useVerticalConfig';
 import type { WorkflowStage } from '../types/expansion';
@@ -212,7 +211,6 @@ export default function Orders({ tenantId }: { tenantId: string }) {
   const voiceSupported = isSpeechRecognitionSupported();
   const router = useRouter();
   const refreshCounter = useRefreshCounter();
-  const { settings: branding } = useBranding();
   const { error: toastError, success: toastSuccess, warning: toastWarning, handleError } = useToast();
   const { confirm } = useConfirm();
   const measurementUnit = useMeasurementUnit(tenantId);
@@ -1174,30 +1172,22 @@ export default function Orders({ tenantId }: { tenantId: string }) {
     return map;
   }, [unpaidOrders]);
 
-  const buildOrderWhatsAppMessage = (order: Order, phone: string) => {
-    const orderNum = (order.orderNumber?.toString() || order.id).slice(-6).toUpperCase();
-    // seen-whatsapp-instant-send-task.md follow-up: /order/:id was never a
-    // real route (confirmed in App.tsx -- any unmatched path redirects to
-    // "/"), so every invoice message built here sent a dead link despite
-    // this being the task's own cited "working" reference implementation.
-    // /track/:token is the real, no-auth public tracking page -- same one
-    // buildTrackingMessage/sendTrackingLink below already use correctly.
-    const invoiceUrl = order.trackingToken ? `${window.location.origin}/track/${order.trackingToken}` : undefined;
-
-    return buildWhatsAppMessage(getWhatsAppTemplate(), {
-      customerName: order.customerName,
-      orderId: `#${orderNum}`,
-      totalAmount: order.totalAmount,
-      customerPhone: phone,
-      invoiceUrl: invoiceUrl,
-      storeName: branding.companyName || t('pos.store_default'),
-    });
-  };
-
-  const buildTrackingMessage = (order: Order) => t('orders.tracking_link_message', {
+  // seen-whatsapp-templates-task.md: the shop's own templates, filled the one
+  // way (utils/whatsapp.ts whatsappMessage) -- the whole order number, the
+  // shop's official name, the /track/ link (no line left hanging without it).
+  const orderNumberOf = (order: Order) => String(order.orderNumber || order.id.slice(-6).toUpperCase());
+  const buildOrderWhatsAppMessage = (order: Order, phone: string) => whatsappMessage('order_received', {
     customerName: order.customerName,
-    storeName: branding.companyName || t('pos.store_default'),
-    url: `${window.location.origin}/track/${order.trackingToken}`,
+    orderNumber: orderNumberOf(order),
+    total: order.totalAmount,
+    customerPhone: phone,
+    trackingToken: order.trackingToken,
+  });
+
+  const buildTrackingMessage = (order: Order) => whatsappMessage('tracking_link', {
+    customerName: order.customerName,
+    orderNumber: orderNumberOf(order),
+    trackingToken: order.trackingToken,
   });
 
   const proceedToWhatsApp = (phone: string) => {
@@ -1205,7 +1195,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
     const message = whatsappModalMode === 'tracking'
       ? buildTrackingMessage(pendingWhatsAppOrder)
       : buildOrderWhatsAppMessage(pendingWhatsAppOrder, phone);
-    sendWhatsAppMessage(phone, message);
+    openWhatsApp({ phone, message, kind: 'customer' });
     setWhatsappModalOpen(false);
     setPendingWhatsAppOrder(null);
   };
@@ -1216,7 +1206,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
     // Known customer phone -> send straight to WhatsApp, no extra step.
     // Only prompt for a number when there's none on file.
     if (phone) {
-      sendWhatsAppMessage(phone, buildOrderWhatsAppMessage(order, phone));
+      openWhatsApp({ phone, message: buildOrderWhatsAppMessage(order, phone), kind: 'customer' });
       return;
     }
     setWhatsappModalMode('invoice');
@@ -1233,7 +1223,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
     const customer = customers.find(c => c.id === order.customerId);
     const phone = customer?.phone || order.customerPhone || '';
     if (phone) {
-      sendWhatsAppMessage(phone, buildTrackingMessage(order));
+      openWhatsApp({ phone, message: buildTrackingMessage(order), kind: 'customer' });
       return;
     }
     setWhatsappModalMode('tracking');

@@ -130,7 +130,7 @@ function LayoutShell({ children, role, tenantId, currentStaff, onLock, isLocked 
 
           if (data && !error) {
             // P4 (OPERATIONS-13): the shop's WhatsApp settings, for every send button.
-            setShopWhatsAppSettings(data.whatsapp_settings);
+            setShopWhatsAppSettings(data.whatsapp_settings, data.name || '');
             setTenantLogo(data.logo_url || null);
             setTenantName(data.name || t('common.tailor_system'));
             

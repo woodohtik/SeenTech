@@ -6,6 +6,7 @@
  */
 
 import { useEffect, useState } from 'react';
+import { openWhatsApp } from '../utils/whatsapp';
 import {
   ensureReferralCode, referralLink, getWallet, listReferrals, listMyWithdrawals,
   requestWithdrawal, getReferralProgramSettings, MIN_WITHDRAWAL, REWARD_PER_REFERRAL,
@@ -58,7 +59,7 @@ export default function Referral({ tenantId }: { tenantId: string }) {
   }
   function shareWhatsApp() {
     const msg = t('referral.whatsapp_share_text', { link });
-    window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
+    openWhatsApp({ message: msg, kind: 'marketing' });
   }
 
   const minWithdrawal = programSettings.minWithdrawal;
