@@ -68,6 +68,10 @@ export default defineConfig(({mode}) => {
           ],
         },
         workbox: {
+          // seen-sentry-setup-task.md: no .map on the site. The worker is
+          // written after the Sentry plugin has deleted the app's maps, so
+          // it must not make its own (it follows build.sourcemap otherwise).
+          sourcemap: false,
           // firebase-messaging-sw.js must never be swept into this SW's own
           // precache -- it's fetched/registered separately, and Workbox
           // would otherwise try to precache it as a navigable asset.
