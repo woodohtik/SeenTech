@@ -112,7 +112,7 @@ export function TaxInvoiceDocument({ order, tenant, onClose }: TaxInvoiceModalPr
       if (!res.ok) {
         // مع الطباعة الصامتة قد لا تُفتح نافذة طباعة، فلا بد من إشعار مرئي
         console.error('[TaxInvoiceModal] فشل الطباعة:', res.message);
-        toastError(t('printing.print_failed'), res.message);
+        toastError(res);
       }
     } catch (e) {
       console.error('[TaxInvoiceModal] خطأ الطباعة:', e);

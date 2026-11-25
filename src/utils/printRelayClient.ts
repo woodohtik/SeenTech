@@ -24,6 +24,7 @@
  */
 
 import i18n from 'i18next';
+import { PrintError } from './printError';
 import { supabase } from '../lib/supabase/client';
 
 /* ============================ الأنواع ============================ */
@@ -138,9 +139,13 @@ export function bytesToBase64(bytes: Uint8Array): string {
   return btoa(binary);
 }
 
-const networkError = (e: any): Error =>
-  new Error(
-    i18n.t('printing.relay.server_unreachable', { error: e?.message || i18n.t('printing.network_error') })
+const networkError = (e: any): Error => {
+  // The browser's own text is for the console, not the screen.
+  console.warn('[printRelay] network error:', e);
+  return networkErrorShown();
+};
+const networkErrorShown = (): Error =>
+  new PrintError(i18n.t('printing.relay.server_unreachable', { error: i18n.t('printing.network_error') })
   );
 
 /* ============================================================================
@@ -157,7 +162,7 @@ export async function pairWithStation(pairCode: string): Promise<RelayStation> {
     .replace(/[^0-9A-Z]/g, '');
 
   if (code.length < 4) {
-    throw new Error(i18n.t('printing.relay.enter_pair_code_6'));
+    throw new PrintError(i18n.t('printing.relay.enter_pair_code_6'));
   }
 
   // security audit 2026-10-25, fingerprint
@@ -176,7 +181,7 @@ export async function pairWithStation(pairCode: string): Promise<RelayStation> {
 
   const data = await readJson(res);
   if (!res.ok || !data?.ok) {
-    throw new Error(data?.error || i18n.t('printing.relay.pair_failed_check_code'));
+    throw new PrintError(i18n.t('printing.relay.pair_failed_check_code'));
   }
 
   setRelayBinding({
@@ -235,13 +240,12 @@ export async function getStationStatus(): Promise<RelayStation | null> {
   // 404 = السيرفر لا يعرف هذه المحطة (أُعيد تشغيله) → الاقتران المحفوظ باطل
   if (res.status === 404) {
     setRelayBinding(null);
-    throw new Error(
-      i18n.t('printing.relay.pairing_expired_restarted')
+    throw new PrintError(i18n.t('printing.relay.pairing_expired_restarted')
     );
   }
 
   if (!res.ok || !data?.ok) {
-    throw new Error(data?.error || i18n.t('settings_page.printer.station_status_failed'));
+    throw new PrintError(i18n.t('settings_page.printer.station_status_failed'));
   }
 
   // تحديث اسم الجهاز المحفوظ إن تغيّر
@@ -275,11 +279,10 @@ export async function submitJob(
 ): Promise<string> {
   const binding = getRelayBinding();
   if (!binding) {
-    throw new Error(
-      i18n.t('printing.relay.no_station_on_device')
+    throw new PrintError(i18n.t('printing.relay.no_station_on_device')
     );
   }
-  if (!data?.length) throw new Error(i18n.t('printing.relay.empty_print_data'));
+  if (!data?.length) throw new PrintError(i18n.t('printing.relay.empty_print_data'));
 
   const target = options.target || 'spooler';
 
@@ -308,13 +311,12 @@ export async function submitJob(
 
   if (res.status === 404) {
     setRelayBinding(null);
-    throw new Error(
-      i18n.t('printing.relay.pairing_expired')
+    throw new PrintError(i18n.t('printing.relay.pairing_expired')
     );
   }
 
   if (!res.ok || !payload?.ok) {
-    throw new Error(payload?.error || i18n.t('printing.relay.submit_job_failed'));
+    throw new PrintError(i18n.t('printing.relay.submit_job_failed'));
   }
 
   return String(payload.jobId);
@@ -323,7 +325,7 @@ export async function submitJob(
 /** قراءة حالة مهمة واحدة. */
 export async function getJobState(jobId: string): Promise<RelayJobState> {
   const binding = getRelayBinding();
-  if (!binding) throw new Error(i18n.t('printing.relay.no_station_paired'));
+  if (!binding) throw new PrintError(i18n.t('printing.relay.no_station_paired'));
 
   const url = `/api/print/job/${encodeURIComponent(jobId)}?clientToken=${encodeURIComponent(
     binding.clientToken
@@ -333,7 +335,7 @@ export async function getJobState(jobId: string): Promise<RelayJobState> {
   const data = await readJson(res);
 
   if (!res.ok || !data?.ok) {
-    throw new Error(data?.error || i18n.t('printing.relay.job_state_failed'));
+    throw new PrintError(i18n.t('printing.relay.job_state_failed'));
   }
   return data.job as RelayJobState;
 }
@@ -352,8 +354,7 @@ export async function waitForJob(jobId: string, timeoutMs = 25_000): Promise<voi
 
   for (;;) {
     if (Date.now() - startedAt > timeoutMs) {
-      throw new Error(
-        i18n.t('printing.relay.no_confirmation_timeout')
+      throw new PrintError(i18n.t('printing.relay.no_confirmation_timeout')
       );
     }
 
@@ -369,7 +370,7 @@ export async function waitForJob(jobId: string, timeoutMs = 25_000): Promise<voi
 
     if (state.status === 'done') return;
     if (state.status === 'failed') {
-      throw new Error(state.error || i18n.t('printing.relay.print_failed_in_agent'));
+      throw new PrintError(i18n.t('printing.relay.print_failed_in_agent'));
     }
   }
 }

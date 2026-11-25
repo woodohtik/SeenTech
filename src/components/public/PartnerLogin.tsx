@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 
 import { supabase } from '../../lib/supabase/client';
 import { ensurePartnerReferralCode, registerReferralPartner } from '../../services/partnerReferralService';
+import { getAuthErrorMessage } from '../../utils/authErrorUtils';
 
 type ViewMode = 'login' | 'register';
 
@@ -77,9 +78,10 @@ export default function PartnerLogin() {
       (window as any).refreshAuthData?.();
       navigate('/partner/referrals');
     } catch (err: any) {
+      // Never the error's own text (seen-friendly-errors-everywhere-task.md).
       setError(err?.message?.includes('Invalid login credentials')
         ? t('partner_login.errors.invalid_credentials')
-        : (err?.message || t('partner_login.errors.unknown')));
+        : getAuthErrorMessage(err));
     } finally {
       setLoading(false);
     }
@@ -124,7 +126,7 @@ export default function PartnerLogin() {
       navigate('/partner/referrals');
     } catch (err: any) {
       localStorage.removeItem('is_registering');
-      setError(err?.message || t('partner_login.errors.unknown'));
+      setError(getAuthErrorMessage(err));
     } finally {
       setLoading(false);
     }

@@ -69,6 +69,7 @@ import {
 import { localeOf } from '../lib/direction';
 import i18n from '../i18n/config';
 import { getPlanName as getPlanNameShared, getSubscriptionInfo as getSubscriptionInfoShared } from '../utils/tenantSubscription';
+import { ownMessageOr } from '../lib/userFacingError';
 
 export default function AdminTailors() {
   const { t } = useTranslation();
@@ -578,7 +579,7 @@ export default function AdminTailors() {
       console.error('Error permanently deleting tenant:', err);
       // P5 (PLATFORM-08): "export first" is the server's own words -- show them.
       const e = err as { code?: string; message?: string };
-      showToast(e?.code === '22023' && e.message ? e.message : t('saas.tenants.permanent_delete_failed', 'تعذّر الحذف النهائي'), 'error');
+      showToast(ownMessageOr(e, t('saas.tenants.permanent_delete_failed', 'تعذّر الحذف النهائي')), 'error');
     } finally {
       setDeletingTenantId(null);
     }

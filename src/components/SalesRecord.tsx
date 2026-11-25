@@ -97,7 +97,7 @@ export default function SalesRecord({ tenantId, shiftId, filterStatus }: { tenan
       if (!res.ok) {
         // مع الطباعة الصامتة قد لا تُفتح نافذة طباعة، فلا بد من إشعار مرئي
         console.error('[SalesRecord] فشل الطباعة:', res.message);
-        toastError(t('printing.print_failed'), res.message);
+        toastError(res);
       }
     } catch (e) {
       console.error('[SalesRecord] خطأ الطباعة:', e);

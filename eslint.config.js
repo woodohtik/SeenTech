@@ -10,6 +10,17 @@ import reactHooks from 'eslint-plugin-react-hooks';
 import reactRefresh from 'eslint-plugin-react-refresh';
 import tseslint from 'typescript-eslint';
 
+const SCREEN_CALLS = '/^(toastError|toastWarning|showError|setError)$/';
+const RAW_FIELDS = '/^(message|error|details)$/';
+const RAW_MESSAGE = 'An error\'s own text must not reach the screen: pass the error itself (toastError(err)) or use toUserError / explainOr / ownMessageOr (src/lib/userFacingError.ts).';
+/** seen-friendly-errors-everywhere-task.md: e.message (or e.message || fallback) handed to a screen call. */
+export const RAW_ERROR_TO_SCREEN = [
+  { selector: `CallExpression[callee.name=${SCREEN_CALLS}] > MemberExpression.arguments[property.name=${RAW_FIELDS}]`, message: RAW_MESSAGE },
+  { selector: `CallExpression[callee.name=${SCREEN_CALLS}] > LogicalExpression.arguments > MemberExpression.left[property.name=${RAW_FIELDS}]`, message: RAW_MESSAGE },
+  { selector: `CallExpression[callee.name=${SCREEN_CALLS}] > ChainExpression.arguments > MemberExpression[property.name=${RAW_FIELDS}]`, message: RAW_MESSAGE },
+  { selector: `CallExpression[callee.name=${SCREEN_CALLS}] > LogicalExpression.arguments > ChainExpression.left > MemberExpression[property.name=${RAW_FIELDS}]`, message: RAW_MESSAGE },
+];
+
 export default tseslint.config(
   {
     ignores: [
@@ -77,6 +88,16 @@ export default tseslint.config(
       // reach it -- both need the same option.
       'no-unused-expressions': 'off',
       '@typescript-eslint/no-unused-expressions': ['error', { allowTernary: true }],
+    },
+  },
+  {
+    // seen-friendly-errors-everywhere-task.md: an error's own text never
+    // reaches the screen. Pass the error itself (toastError(err)), or use
+    // toUserError / explainOr / ownMessageOr from src/lib/userFacingError.ts.
+    files: ['src/**/*.{ts,tsx}'],
+    ignores: ['**/*.test.{ts,tsx}', 'src/server/**', 'src/lib/userFacingError.ts', 'src/utils/authErrorUtils.ts'],
+    rules: {
+      'no-restricted-syntax': ['error', ...RAW_ERROR_TO_SCREEN],
     },
   },
 );

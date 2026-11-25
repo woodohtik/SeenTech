@@ -24,6 +24,7 @@ import { Copy, Handshake, Link2, LogOut, MessageCircleMore, Receipt, Users } fro
 import i18n from 'i18next';
 import { useDirection } from '../../lib/direction';
 import { useToast } from '../../contexts/ToastContext';
+import { ownMessageOr } from '../../lib/userFacingError';
 
 const STYLE = `
 .pr-page{--i:#0E2A42;--i2:#28445c;--i3:#15395A;--paper:#F3F5F7;--line:#E3E8EC;--gray:#5B6B79;--sky:#33C2F1;--cta:#0F6E96;--cta-h:#0B5A7B;--tint:#EAF3F8;--gold:#E8A33D;--gold-d:#9A6B1E;--gold-tint:#FBF2E3;--h:'Tajawal',system-ui,sans-serif;--b:'IBM Plex Sans Arabic',system-ui,sans-serif;
@@ -286,7 +287,7 @@ function WithdrawModal({ partnerId, balance, minWithdrawal, onClose, onDone }:
     if (amount <= minWithdrawal || amount > balance) { setErr(t('partner_referral.amount_range', { min: minWithdrawal, max: balance })); return; }
     setBusy(true);
     try { await requestPartnerWithdrawal(partnerId, amount, iban.replace(/\s/g, ''), name.trim()); onDone(); }
-    catch (e: any) { setErr(e?.message || t('partner_referral.submit_failed')); setBusy(false); }
+    catch (e: any) { setErr(ownMessageOr(e, t('partner_referral.submit_failed'))); setBusy(false); }
   }
 
   return (

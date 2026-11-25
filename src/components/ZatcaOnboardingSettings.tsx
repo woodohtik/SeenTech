@@ -17,6 +17,7 @@ import { supabase } from '../lib/supabase/client';
 import { useDirection } from '../lib/direction';
 import { useToast } from '../contexts/ToastContext';
 import { cn } from '../lib/utils';
+import { ownMessageOr } from '../lib/userFacingError';
 
 interface ZatcaOnboardingSettingsProps {
   tenantId: string;
@@ -123,7 +124,7 @@ export default function ZatcaOnboardingSettings({ tenantId }: ZatcaOnboardingSet
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        toastError(data.error || t('settings_page.zatca.csr_failed', 'تعذّر توليد CSR'));
+        toastError(ownMessageOr(data.error, t('settings_page.zatca.csr_failed', 'تعذّر توليد CSR')));
         return;
       }
       setCsrBase64(data.csrBase64);
@@ -167,7 +168,7 @@ export default function ZatcaOnboardingSettings({ tenantId }: ZatcaOnboardingSet
       const complianceData = await complianceRes.json().catch(() => ({}));
       if (!complianceRes.ok) {
         setSubSteps(prev => ({ ...prev, compliance: 'error' }));
-        setActivateError(complianceData.error || t('settings_page.zatca.compliance_failed', 'فشل طلب Compliance CSID'));
+        setActivateError(ownMessageOr(complianceData.error, t('settings_page.zatca.compliance_failed', 'فشل طلب Compliance CSID')));
         return;
       }
       setSubSteps(prev => ({ ...prev, compliance: 'done', tests: 'running' }));
@@ -179,7 +180,7 @@ export default function ZatcaOnboardingSettings({ tenantId }: ZatcaOnboardingSet
       const testsData = await testsRes.json().catch(() => ({}));
       if (!testsRes.ok || !testsData.ok) {
         setSubSteps(prev => ({ ...prev, tests: 'error' }));
-        setActivateError(testsData.error || t('settings_page.zatca.tests_failed', 'فشلت اختبارات الامتثال'));
+        setActivateError(ownMessageOr(testsData.error, t('settings_page.zatca.tests_failed', 'فشلت اختبارات الامتثال')));
         return;
       }
       setSubSteps(prev => ({ ...prev, tests: 'done', production: 'running' }));
@@ -191,7 +192,7 @@ export default function ZatcaOnboardingSettings({ tenantId }: ZatcaOnboardingSet
       const productionData = await productionRes.json().catch(() => ({}));
       if (!productionRes.ok) {
         setSubSteps(prev => ({ ...prev, production: 'error' }));
-        setActivateError(productionData.error || t('settings_page.zatca.production_failed', 'فشل طلب Production CSID'));
+        setActivateError(ownMessageOr(productionData.error, t('settings_page.zatca.production_failed', 'فشل طلب Production CSID')));
         return;
       }
       setSubSteps(prev => ({ ...prev, production: 'done' }));

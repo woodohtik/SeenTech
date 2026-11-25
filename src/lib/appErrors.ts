@@ -5,7 +5,9 @@
  * startup bundle for every user, though Firebase is only used for push
  * notifications. Nothing here touches Firebase.
  */
-import i18n from 'i18next';
+import { dbRefusalMessage, toUserError } from './userFacingError';
+
+export { dbRefusalMessage };
 
 export enum OperationType {
   CREATE = 'create',
@@ -88,63 +90,8 @@ const WRITE_OPERATIONS = new Set<OperationType>([OperationType.CREATE, Operation
 // Alias for backward compatibility while migrating
 export const handleError = handleFirestoreError;
 
-export const getFriendlyErrorMessage = (error: any): string => {
-  if (!error) return i18n.t('errors.unknown');
-  // P4: the server's own refusal (in Arabic, with its reason) says more than
-  // any generic message -- e.g. "لا يُحذف عميل له طلبات مفتوحة".
-  const refusal = dbRefusalMessage(error);
-  if (refusal) return refusal;
-
-  const errorMsg = typeof error === 'string' ? error : (error.error || error.message || '');
-  const code = error.code || '';
-
-  if (code === 'auth/user-not-found' || code === 'auth/wrong-password') return i18n.t('login.errors.invalid_credentials');
-  if (errorMsg.toLowerCase().includes('jwt expired') || errorMsg.includes('PGRST303') || errorMsg.toLowerCase().includes('token expired') || errorMsg.toLowerCase().includes('token_expired')) {
-    return i18n.t('errors.jwt_expired');
-  }
-  if (code === 'auth/permission-denied' || code === 'permission-denied' || errorMsg.toLowerCase().includes('permission-denied') || errorMsg.includes('insufficient permissions')) {
-    return i18n.t('errors.permission_denied_check_account');
-  }
-  if (errorMsg.toLowerCase().includes('offline') || errorMsg.toLowerCase().includes('network') || errorMsg.toLowerCase().includes('fetch')) {
-    return i18n.t('errors.server_connection_failed');
-  }
-  if (errorMsg.toLowerCase().includes('quota-exceeded')) {
-    return i18n.t('errors.daily_quota_exceeded');
-  }
-  // seen-error-messages-task.md: project-specific Postgres/Supabase errors
-  // that used to fall through to the raw technical string (if short enough)
-  // or a fully generic message -- these are common enough in this app
-  // (every RLS-protected table, every unique constraint) to deserve their
-  // own real Arabic message instead of either.
-  if (errorMsg.toLowerCase().includes('row-level security policy') || code === '42501') {
-    return i18n.t('errors.rls_denied');
-  }
-  if (errorMsg.toLowerCase().includes('duplicate key value violates unique constraint') || code === '23505') {
-    return i18n.t('errors.duplicate_entry');
-  }
-  if (errorMsg.toLowerCase().includes('zatca')) {
-    return i18n.t('errors.zatca_submission_failed');
-  }
-
-  // P4 (UX-05): a short message used to be shown as it came -- technical
-  // English from the database ("supplier not found", "already_processed: …")
-  // included. Only a message written for people (it has Arabic text: the
-  // server's deliberate refusals) is shown as is; anything else is the
-  // generic message in the interface's language (the original goes to the log).
-  if (errorMsg && errorMsg.length < 200 && /[\u0600-\u06FF]/.test(errorMsg)) return errorMsg;
-  return i18n.t('errors.system_generic');
-};
-
 /**
- * seen-readiness-fixes-task.md P1.3: the server refuses some actions on purpose
- * and says why in the shop's language ("open a shift before taking a
- * payment", "no payment on a cancelled order", "more than what is left").
- * Those messages are for the employee as they are; anything else is not.
+ * The one line a person sees for an error (seen-friendly-errors-everywhere-task.md):
+ * toUserError's title and action. Never the error's own text.
  */
-export function dbRefusalMessage(error: unknown): string | null {
-  const e = error as { code?: string; message?: string } | null;
-  if (!e || typeof e.message !== 'string') return null;
-  if (!['22023', '23514', '42501'].includes(String(e.code ?? ''))) return null;
-  if (e.message === 'forbidden' || !/[\u0600-\u06FF]/.test(e.message)) return null;
-  return e.message;
-}
+export const getFriendlyErrorMessage = (error: unknown): string => toUserError(error).message;

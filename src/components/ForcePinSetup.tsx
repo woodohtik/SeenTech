@@ -9,6 +9,7 @@ import { AuditLog } from '../types';
 import { logEmployeeAction } from '../services/employeeAuditService';
 import { useAuth } from '../contexts/AuthContext';
 import { useDirection } from '../lib/direction';
+import { explainOr } from '../lib/userFacingError';
 
 interface ForcePinSetupProps {
   tenantId: string;
@@ -190,7 +191,9 @@ export default function ForcePinSetup({ tenantId, onSuccess }: ForcePinSetupProp
       } else {
         errMessage = String(err);
       }
-      setError(t('staff.force_pin.error_with_message', { message: errMessage }));
+      // The detail stays in the log; the person gets one of our sentences.
+      console.warn('[ForcePinSetup]', errMessage);
+      setError(explainOr(err, t('errors.user.unknown.title')));
       setLoading(false);
     }
   };

@@ -519,7 +519,7 @@ export default function PurchaseOrders({
         title: t('procurement.po_number', 'رقم السند') + ': ' + (po.poNumber || (po as any).po_number || po.id),
       });
       if (!res.ok) {
-        toastError(t('printing.print_failed'), res.message);
+        toastError(res);
       }
     } catch (e) {
       console.error('[PurchaseOrders] print error:', e);

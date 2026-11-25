@@ -91,6 +91,7 @@ const RevenueChart = lazy(() => import('./dashboard/RevenueChart'));
 import { localeOf } from '../lib/direction';
 import i18n from '../i18n/config';
 import { SUPPORT_EMAIL } from '../constants/support';
+import { explainOr } from '../lib/userFacingError';
 
 interface DashboardProps {
   tenantId: string;
@@ -909,12 +910,12 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
         window.dispatchEvent(new CustomEvent('data_cleared'));
       } else {
         setToast({ 
-          message: t('dashboard.delete_test_data_error', { error: result.error || '' }), 
+          message: explainOr(result.error, t('dashboard.delete_test_data_error')), 
           type: 'error' 
         });
       }
     } catch (error) {
-      setToast({ message: t('dashboard.delete_test_data_error', { error: '' }), type: 'error' });
+      setToast({ message: t('dashboard.delete_test_data_error'), type: 'error' });
       handleFirestoreError(error as any, OperationType.DELETE, 'test_data');
     }
   };

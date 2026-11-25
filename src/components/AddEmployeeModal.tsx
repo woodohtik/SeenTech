@@ -17,6 +17,7 @@ import { isSpeechRecognitionSupported } from '../hooks/useSpeechRecognition';
 import { PasswordInput } from './ui/PasswordInput';
 import { SmartSelect } from './ui/SmartSelect';
 import { staffRoleForSave } from '../services/permissionService';
+import { UserFacingError } from '../lib/userFacingError';
 
 const phoneRegex = /^(\+?\d{1,3}[- ]?)?\d{10}$/;
 
@@ -131,7 +132,10 @@ export default function AddEmployeeModal({
         // password ever needed. The server now only ever returns 409 when
         // this account must not be touched at all, so there is no longer a
         // safe case to self-resolve a uid and proceed.
-        setErrorMsg(t('staff.email_belongs_to_another_account'));
+        // seen-friendly-errors-everywhere-task.md: the server's kind, in this screen's words.
+        setErrorMsg(createRes.status === 409
+          ? t('staff.email_belongs_to_another_account')
+          : getFriendlyErrorMessage(new UserFacingError(createResult?.kind === 'validation' ? 'validation' : createResult?.kind === 'rate_limited' ? 'rate_limited' : 'server')));
         setIsSubmitting(false);
         return;
       } else {

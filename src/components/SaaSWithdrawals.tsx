@@ -13,6 +13,7 @@ import { useTranslation } from 'react-i18next';
 import { isRtlLang } from '../lib/direction';
 import { useConfirm } from '../contexts/ConfirmContext';
 import { cn } from '../lib/utils';
+import { ownMessageOr } from '../lib/userFacingError';
 
 type WithdrawalRow = Withdrawal & { source: 'tenant' | 'partner' };
 
@@ -77,7 +78,7 @@ export default function SaaSWithdrawals() {
       }
       await load();
     } catch (e: any) {
-      showToast(e?.message || t('saas.failed'), 'error');
+      showToast(ownMessageOr(e, t('saas.failed')), 'error');
     } finally {
       setBusyId('');
     }

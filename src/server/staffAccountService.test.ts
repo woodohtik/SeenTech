@@ -60,7 +60,7 @@ test('SECURITY: an already-registered email always returns 409, never resets the
 
   const result = await createOrUpdateStaffAccount(supabaseAdmin, { email: 'existing@example.com', password: 'newpass123', ...REQUESTER });
 
-  expect(result).toEqual({ ok: false, status: 409, error: 'email_already_in_use' });
+  expect(result).toMatchObject({ ok: false, status: 409, error: 'email_already_in_use' });
   expect(updateUserById).not.toHaveBeenCalled();
   expect(usersUpsert).not.toHaveBeenCalled();
 });
@@ -72,7 +72,7 @@ test('SECURITY: 409 holds even when the caller is owner/admin and could otherwis
 
   const result = await createOrUpdateStaffAccount(supabaseAdmin, { email: 'owner@othershop.example', password: 'attackerpass', ...REQUESTER });
 
-  expect(result).toEqual({ ok: false, status: 409, error: 'email_already_in_use' });
+  expect(result).toMatchObject({ ok: false, status: 409, error: 'email_already_in_use' });
   expect(updateUserById).not.toHaveBeenCalled();
 });
 
@@ -82,7 +82,8 @@ test('passes through a non-"already registered" createUser error as a 400', asyn
 
   const result = await createOrUpdateStaffAccount(supabaseAdmin, { email: 'weak@example.com', password: 'abc', ...REQUESTER });
 
-  expect(result).toEqual({ ok: false, status: 400, error: 'Password should be at least 6 characters' });
+  // A reason word for the screen; Supabase's own text only in `detail` (for the log).
+  expect(result).toEqual({ ok: false, status: 400, error: 'weak_password', detail: 'Password should be at least 6 characters' });
 });
 
 test('surfaces a failed users upsert as a 400', async () => {
@@ -92,7 +93,7 @@ test('surfaces a failed users upsert as a 400', async () => {
 
   const result = await createOrUpdateStaffAccount(supabaseAdmin, { email: 'new2@example.com', password: 'secret123', ...REQUESTER });
 
-  expect(result).toEqual({ ok: false, status: 400, error: 'upsert failed' });
+  expect(result).toEqual({ ok: false, status: 400, error: 'account_failed', detail: 'upsert failed' });
 });
 
 test('resetStaffPassword updates the account password and returns ok', async () => {
@@ -111,5 +112,5 @@ test('resetStaffPassword surfaces an Admin API failure as a 400', async () => {
 
   const result = await resetStaffPassword(supabaseAdmin, 'missing-uid', 'brandnewpass');
 
-  expect(result).toEqual({ ok: false, status: 400, error: 'user not found' });
+  expect(result).toEqual({ ok: false, status: 400, error: 'account_failed', detail: 'user not found' });
 });

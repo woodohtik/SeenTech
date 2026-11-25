@@ -736,7 +736,7 @@ function TailoringOrderFormBody({
         paperSize: getConfiguredPaperSize('80mm'),
         title: `${tv('orders.receipt_title')} ${savedOrder.order.order_number || ''}`.trim(),
       });
-      if (!res.ok) toastError(t('printing.print_failed'), res.message);
+      if (!res.ok) toastError(res);
     } catch (e) {
       console.error('[TailoringOrderForm] print failed:', e);
       window.print();

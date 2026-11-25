@@ -294,7 +294,7 @@ export default function InvoiceReceipt({
       });
       if (!res.ok) {
         console.error('[InvoiceReceipt] فشل الطباعة:', res.message);
-        toastError(t('printing.print_failed_with_reason', { message: res.message }));
+        toastError(res);
       }
     } catch (e) {
       console.error('[InvoiceReceipt] خطأ الطباعة:', e);

@@ -60,6 +60,7 @@
  */
 
 import type { Express, Request, Response } from 'express';
+import { userErrorBody } from './userErrors';
 import crypto from 'crypto';
 import net from 'net';
 import { authenticate, AuthRequest } from './middleware/authMiddleware.ts';
@@ -1021,7 +1022,7 @@ export function registerPrintRelay(app: Express): void {
       res.json({ ok: true, bytes: buffer.length });
     } catch (err: any) {
       logger.error({ err }, '[print/raw]');
-      res.status(502).json({ ok: false, error: err?.message || 'فشل إرسال البيانات للطابعة.' });
+      res.status(502).json(userErrorBody(req, 'printer'));
     }
   });
 

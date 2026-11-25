@@ -3,6 +3,7 @@ import { endActingSession } from '../lib/actingSession';
 import { ShieldCheck, LogOut, Loader2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '../lib/supabase/client';
+import { ownMessageOr } from '../lib/userFacingError';
 
 interface TwoFactorChallengeProps {
   onVerified: () => void;
@@ -43,7 +44,7 @@ export default function TwoFactorChallenge({ onVerified }: TwoFactorChallengePro
       if (verifyError) throw verifyError;
       onVerified();
     } catch (e: any) {
-      setError(e?.message || t('saas.mfa_verify_failed', 'الرمز غير صحيح أو منتهي -- حاول مجدداً'));
+      setError(ownMessageOr(e, t('saas.mfa_verify_failed', 'الرمز غير صحيح أو منتهي -- حاول مجدداً')));
     } finally {
       setVerifying(false);
     }

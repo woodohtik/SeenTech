@@ -37,6 +37,7 @@
  */
 
 import i18n from 'i18next';
+import { PrintError, printCodeForTransport, shownPrintMessage, type PrintErrorCode } from './printError';
 import { getInvoiceLayout, paperSizeFromLayout } from '../lib/invoiceLayout';
 
 // مراجعة-الفريق-التقني-الكامل-2026-10-19.md (نتيجة أمنية حرجة): أي نص يُحقَن
@@ -91,9 +92,17 @@ export interface PrintResult {
   method: PrintMethod;
   /** رسالة مترجمة جاهزة للعرض للمستخدم */
   message: string;
-  /** تفاصيل الخطأ الفني إن وُجد */
+  /** تفاصيل الخطأ الفني إن وُجد (للسجل فقط، لا تُعرض) */
   error?: string;
+  /** seen-friendly-errors-everywhere-task.md: on a failure, the code for support. */
+  code?: PrintErrorCode;
+  /** On a failure: `message` is our own text, safe to show (toastError(result)). */
+  friendly?: true;
+  userErrorKind?: 'printer';
 }
+
+/** A failed print, as the screens show it: our text and a code. */
+const failed = (code: PrintErrorCode) => ({ ok: false as const, code, friendly: true as const, userErrorKind: 'printer' as const });
 
 /* ================================================================
    1) أدوات مساعدة عامة
@@ -991,21 +1000,23 @@ export const printElementViaRawDevice = async (
   } catch (e: any) {
     console.warn('[printManager] فشل تحويل الفاتورة إلى صورة للطباعة:', e);
     return {
-      ok: false,
+      ...failed('PRN-04'),
       method: 'none',
-      message: e?.message || i18n.t('printing.errors.prepare_direct_failed'),
+      message: shownPrintMessage(e, i18n.t('printing.errors.prepare_direct_failed')),
       error: String(e?.message || e),
     };
   }
 
   const { chain, relayPrinterName } = await buildTransportChain(cfg);
   const failures: string[] = [];
+  // The first failure, as the person sees it (the path they chose comes first).
+  let firstShown: { message: string; code: PrintErrorCode } | null = null;
 
   for (const transport of chain) {
     // انقضت مهلة المتصل → لا نبدأ مساراً جديداً (يمنع إيصالاً مكرراً)
     if (token?.aborted) {
       return {
-        ok: false,
+        ...failed('PRN-05'),
         method: 'none',
         message: i18n.t('printing.errors.silent_cancelled_timeout'),
         error: failures.join(' | ') || 'aborted',
@@ -1080,17 +1091,19 @@ export const printElementViaRawDevice = async (
     } catch (e: any) {
       const msg = e?.message || String(e);
       failures.push(`${transport}: ${msg}`);
+      firstShown ??= {
+        message: shownPrintMessage(e, i18n.t('printing.errors.direct_failed_opening_dialog')),
+        code: e instanceof PrintError && e.code !== 'PRN-00' ? e.code : printCodeForTransport(transport),
+      };
       console.warn(`[printManager] فشل المسار "${transport}":`, msg);
     }
   }
 
   // فشلت كل المسارات الصامتة → نُرجع أوضح رسالة (الأولى = مسار المستخدم المختار)
   return {
-    ok: false,
+    ...failed(firstShown?.code ?? printCodeForTransport(cfg.transport)),
     method: `raw-${cfg.transport}` as PrintMethod,
-    message:
-      failures[0]?.replace(/^[a-z]+:\s*/, '') ||
-      i18n.t('printing.errors.direct_failed_opening_dialog'),
+    message: firstShown?.message ?? i18n.t('printing.errors.direct_failed_opening_dialog'),
     error: failures.join(' | '),
   };
 };
@@ -1190,9 +1203,9 @@ const printViaIframe = async (html: string, layoutPx: number): Promise<PrintResu
     cleanup();
     console.warn('[printManager] فشل مسار الإطار المضمن:', e);
     return {
-      ok: false,
+      ...failed('PRN-06'),
       method: 'dialog-iframe',
-      message: e?.message || i18n.t('printing.errors.iframe_path_failed'),
+      message: shownPrintMessage(e, i18n.t('printing.errors.iframe_path_failed')),
       error: String(e?.message || e),
     };
   }
@@ -1209,7 +1222,7 @@ const printViaPopup = async (html: string, layoutPx: number): Promise<PrintResul
 
   if (!win) {
     return {
-      ok: false,
+      ...failed('PRN-03'),
       method: 'dialog-popup',
       message: i18n.t('printing.errors.popup_blocked'),
     };
@@ -1248,9 +1261,9 @@ const printViaPopup = async (html: string, layoutPx: number): Promise<PrintResul
   } catch (e: any) {
     autoClose();
     return {
-      ok: false,
+      ...failed('PRN-06'),
       method: 'dialog-popup',
-      message: e?.message || i18n.t('printing.errors.popup_path_failed'),
+      message: shownPrintMessage(e, i18n.t('printing.errors.popup_path_failed')),
       error: String(e?.message || e),
     };
   }
@@ -1285,9 +1298,9 @@ export const printHtmlContentDetailed = async (
     return { ok: true, method: 'dialog-window', message: i18n.t('printing.used_window_print_fallback') };
   } catch (e: any) {
     return {
-      ok: false,
+      ...failed('PRN-06'),
       method: 'none',
-      message: i18n.t('printing.errors.all_paths_failed', { details: viaIframe.message }),
+      message: i18n.t('printing.errors.all_paths_failed'),
       error: String(e?.message || e),
     };
   }
@@ -1360,7 +1373,7 @@ const attemptSilentPrint = async (
      */
     if (token.dispatched) {
       return {
-        ok: false,
+        ...failed('PRN-05'),
         method: res.method || 'none',
         message: i18n.t('printing.errors.sent_without_confirmation'),
         error: res.error,
@@ -1381,7 +1394,7 @@ const attemptSilentPrint = async (
     // نداء إرسال ما زال معلّقاً → قد ينجح بعد لحظات، فلا نطبع نسخة ثانية
     if (token.dispatched || token.inFlight > 0) {
       return {
-        ok: false,
+        ...failed('PRN-05'),
         method: 'none',
         message: i18n.t('printing.errors.timed_out_without_confirmation'),
         error: String(e?.message || e),
@@ -1419,7 +1432,7 @@ export const printElementDetailed = async (
       return { ok: true, method: 'dialog-window', message: i18n.t('printing.window_printed') };
     } catch (e: any) {
       return {
-        ok: false,
+        ...failed('PRN-04'),
         method: 'none',
         message: i18n.t('printing.errors.invoice_content_not_found', { elementId }),
         error: String(e?.message || e),

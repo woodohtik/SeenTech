@@ -1,4 +1,10 @@
-import { describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it } from 'vitest';
+import i18n from 'i18next';
+import ar from '../i18n/locales/ar.json';
+
+beforeAll(async () => {
+  await i18n.init({ lng: 'ar', resources: { ar: { translation: ar } }, interpolation: { escapeValue: false } });
+});
 
 // seen-readiness-fixes-task.md P1.3: the server's own reasons reach the employee.
 import { dbRefusalMessage } from './appErrors';
@@ -27,8 +33,7 @@ describe('getFriendlyErrorMessage (P4)', () => {
 describe('getFriendlyErrorMessage (P4, UX-05)', () => {
   it('never shows technical English from the database as it is', async () => {
     const { getFriendlyErrorMessage } = await import('./appErrors');
-    const generic = getFriendlyErrorMessage({ message: 'supplier not found' });
-    expect(generic).not.toBe('supplier not found');
-    expect(getFriendlyErrorMessage({ message: 'already_processed: request is already approved' })).toBe(generic);
+    expect(getFriendlyErrorMessage({ message: 'supplier not found' })).not.toContain('supplier');
+    expect(getFriendlyErrorMessage({ message: 'already_processed: request is already approved' })).not.toContain('already_processed');
   });
 });

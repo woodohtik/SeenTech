@@ -15,6 +15,7 @@ import type { Session, User as SupabaseUser } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase/client';
 import { setCurrentAuthSessionInfo } from '../lib/appErrors';
 import { setLoggerUserContext } from '../lib/logger';
+import { setShowTechnicalErrors } from '../lib/userFacingError';
 import { getDeviceSessionId } from '../utils/session';
 import { getIsOnline } from '../lib/offline/connectivity';
 import { cacheIdentitySnapshot, getCachedIdentitySnapshot } from '../lib/offline/identityCache';
@@ -143,6 +144,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // tenant) without touching that function's own logic.
     useEffect(() => {
         const uid = session?.user?.id;
+        // seen-friendly-errors-everywhere-task.md question 1: "technical
+        // details" under an error, for the platform team only.
+        setShowTechnicalErrors(Boolean(uid) && appState.userRole === 'super_admin');
         if (!uid || !appState.userRole) {
             setLoggerUserContext(null);
             return;

@@ -38,6 +38,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { SUPPORT_EMAIL } from '../constants/support';
 
 import { isRtlLang, localeOf } from '../lib/direction';
+import { explainOr } from '../lib/userFacingError';
 
 interface BillingSettingsProps {
   tenantId: string;
@@ -270,7 +271,7 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
       resetCouponState();
       await fetchRealBillingData();
     } catch (err: any) {
-      toastError(t('billing.request_submit_error', { error: getFriendlyErrorMessage(err) }));
+      toastError(explainOr(err, t('billing.request_submit_error')));
     } finally {
       setSubmitting(false);
     }

@@ -102,9 +102,10 @@ export default class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBo
     }
 
     try {
-      const eventId = new Date().getTime().toString();
+      // The Sentry event when Sentry is on (support finds it by this), the time otherwise.
+      const at = new Date().getTime().toString();
+      const eventId = logError(error, { errorInfo, source: 'ErrorBoundary', at }) ?? at;
       this.setState({ errorInfo, eventId });
-      logError(error, { errorInfo, source: 'ErrorBoundary', eventId });
     } catch(e) {
       console.warn('Failed to log error inside ErrorBoundary:', e);
     }
@@ -182,7 +183,6 @@ export default class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBo
     if (hasError) {
       let errorMessage = i18n.t('errors.unexpected');
       let isPermissionError = false;
-      let pathInfo = "";
 
       try {
         if (error?.message) {
@@ -196,7 +196,6 @@ export default class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBo
           )) {
             errorMessage = i18n.t('errors.insufficient_permissions');
             isPermissionError = true;
-            if (parsed.path) pathInfo = i18n.t('errors.path_info', { path: parsed.path });
           } else if (parsed.error && parsed.error.includes('offline')) {
             errorMessage = i18n.t('errors.offline');
           }
@@ -246,7 +245,6 @@ export default class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBo
             
             <p className="text-content-muted font-bold mb-8 leading-relaxed">
               {errorMessage}
-              {pathInfo && <span className="block text-sm mt-2 text-content-muted font-mono" dir="ltr">{pathInfo}</span>}
             </p>
 
             <div className="space-y-4">

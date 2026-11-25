@@ -35,6 +35,7 @@
  */
 
 import i18n from 'i18next';
+import { PrintError } from './printError';
 
 export interface AgentInfo {
   online: boolean;
@@ -204,7 +205,7 @@ export async function detectPrintAgent(): Promise<AgentInfo> {
     return {
       online: false,
       reason: 'bad-response',
-      error: data?.error || i18n.t('printing.agent.connect_failed'),
+      error: i18n.t('printing.agent.connect_failed'),
     };
   } catch (err: any) {
     clearTimeout(timeoutId);
@@ -244,7 +245,7 @@ export async function listAgentPrinters(): Promise<AgentPrinter[]> {
 
   const data = await res.json().catch(() => null);
   if (!res.ok || !data?.ok) {
-    throw new Error(data?.error || i18n.t('printing.agent.list_printers_failed'));
+    throw new PrintError(i18n.t('printing.agent.list_printers_failed'));
   }
   return data.printers || [];
 }
@@ -269,7 +270,7 @@ export async function testPrintViaAgent(printerName: string, text?: string): Pro
 
   const data = await res.json().catch(() => null);
   if (!res.ok || !data?.ok) {
-    throw new Error(data?.error || i18n.t('printing.agent.test_print_failed'));
+    throw new PrintError(i18n.t('printing.agent.test_print_failed'));
   }
 }
 
@@ -278,7 +279,7 @@ export async function sendRawToAgent(
   data: Uint8Array,
   docName: string = 'SEEN POS Receipt'
 ): Promise<void> {
-  if (!printerName) throw new Error(i18n.t('printing.agent.printer_name_missing'));
+  if (!printerName) throw new PrintError(i18n.t('printing.agent.printer_name_missing'));
 
   const res = await fetch(`${AGENT_BASE_URL}/print/raw`, {
     method: 'POST',
@@ -293,8 +294,7 @@ export async function sendRawToAgent(
 
   const dataRes = await res.json().catch(() => null);
   if (!res.ok || !dataRes?.ok) {
-    throw new Error(
-      dataRes?.error || i18n.t('printing.agent.send_invoice_failed', { printer: printerName })
+    throw new PrintError(i18n.t('printing.agent.send_invoice_failed', { printer: printerName })
     );
   }
 }

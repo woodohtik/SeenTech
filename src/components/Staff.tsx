@@ -51,6 +51,7 @@ import AdminTailorCommissions from './AdminTailorCommissions';
 
 import { isRtlLang, localeOf } from '../lib/direction';
 import { useConfirm } from '../contexts/ConfirmContext';
+import { explainOr } from '../lib/userFacingError';
 
 /** Permission `categoryKey` -> the stable slug used by the settings_page.* translation keys. */
 const getCategoryKey = (cat: string): string => {
@@ -681,7 +682,8 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
         }
       }
       
-      let friendlyMsg = errorString;
+      // Never the error's own text: empty unless one of the cases below names it.
+      let friendlyMsg = '';
       if (errorString.includes('duplicate key') || errorString.includes('unique constraint') || errorString.includes('already exists')) {
         if (errorString.includes('email')) {
           friendlyMsg = t('settings_page.staff.email_duplicate');
@@ -694,7 +696,7 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
         friendlyMsg = t('errors.insufficient_permissions');
       }
 
-      setToast({ message: t('settings_page.staff.save_failed', { message: friendlyMsg }), type: 'error' });
+      setToast({ message: friendlyMsg || explainOr(error, t('settings_page.staff.save_failed')), type: 'error' });
     }
   };
 
@@ -706,7 +708,7 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
       setToast({ message: t('settings_page.staff.delete_success'), type: 'success' });
     } catch (error: any) {
       console.error('Error deleting staff:', error);
-      setToast({ message: t('settings_page.staff.delete_failed', { message: getFriendlyErrorMessage(error) }), type: 'error' });
+      setToast({ message: explainOr(error, t('settings_page.staff.delete_failed')), type: 'error' });
     }
   };
 
@@ -720,7 +722,7 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
       setToast({ message: t('settings_page.staff.status_update_success'), type: 'success' });
     } catch (error: any) {
       console.error('Error toggling staff status:', error);
-      setToast({ message: t('settings_page.staff.status_update_failed', { message: getFriendlyErrorMessage(error) }), type: 'error' });
+      setToast({ message: explainOr(error, t('settings_page.staff.status_update_failed')), type: 'error' });
     }
   };
 
@@ -780,7 +782,7 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
       setPinDisableTarget(null);
     } catch (error: any) {
       console.error('Error disabling staff pin:', error);
-      setToast({ message: t('settings_page.staff.pin_update_failed', { message: getFriendlyErrorMessage(error) }), type: 'error' });
+      setToast({ message: explainOr(error, t('settings_page.staff.pin_update_failed')), type: 'error' });
     } finally {
       setPinDisableSubmitting(false);
     }

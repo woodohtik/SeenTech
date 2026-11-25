@@ -93,6 +93,7 @@ import LengthQuantityControl from './pos/LengthQuantityControl';
 import { useVerticalConfig } from '../hooks/useVerticalConfig';
 import { useTenantCategoryPicker } from '../hooks/useTenantCategoryPicker';
 import { LEGACY_INVENTORY_CATEGORY_SEED } from '../services/categoryService';
+import { ownMessageOr } from '../lib/userFacingError';
 
 // Body measurements live on the Customer record (not per order item), so a
 // custom-garment item's printed measurement table is the selected
@@ -686,7 +687,7 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
     try {
       const result = await issueTaxInvoiceForOrder(fallbackReceipt.orderId);
       if (!result.ok) {
-        toastError(t('tax_invoices.issue_failed'), result.error);
+        toastError(t('tax_invoices.issue_failed'), ownMessageOr(result.error, t('errors.user.unknown.action')));
         return;
       }
       const invoice = await fetchTaxInvoiceForOrder(tenantId, fallbackReceipt.orderId);
@@ -879,7 +880,7 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
                 // لا نكتفي بالـ console: مع الطباعة الصامتة قد لا تُفتح نافذة
                 // طباعة إطلاقاً، فيبقى الكاشير بلا ورق وبلا أي إشعار.
                 console.error('[POS] فشل الطباعة السريعة:', res.message);
-                toastError(t('printing.print_failed'), res.message);
+                toastError(res);
               }
             } catch (err) {
               console.error('[POS] خطأ الطباعة السريعة:', err);
@@ -1627,7 +1628,7 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
             });
             if (!res.ok) {
               console.error('Print failed in POS:', res.message);
-              toastError(t('printing.print_failed'), res.message);
+              toastError(res);
             }
           } catch (printErr) {
             console.error('Print error in POS:', printErr);
@@ -2441,7 +2442,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                                 : getConfiguredPaperSize('80mm'),
                             title: t('pos.receipt_print_title'),
                           });
-                          if (!res.ok) toastError(t('printing.print_failed'), res.message);
+                          if (!res.ok) toastError(res);
                         } catch (e) {
                           console.error('[POS] خطأ الطباعة:', e);
                           window.print();
@@ -2906,7 +2907,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                           paperSize: getConfiguredPaperSize('80mm'),
                           title: t('pos.payment_confirmation_title'),
                         });
-                        if (!res.ok) toastError(t('printing.print_failed'), res.message);
+                        if (!res.ok) toastError(res);
                       } catch (e) {
                         console.error('[POS] خطأ طباعة تأكيد الدفع:', e);
                         window.print();

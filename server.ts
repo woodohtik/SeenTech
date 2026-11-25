@@ -1,4 +1,5 @@
 import express from "express";
+import { authAdminErrorKind, userErrorBody } from './src/server/userErrors';
 import { createHash } from 'node:crypto';
 import path from "path";
 import fs from "fs";
@@ -344,7 +345,7 @@ function clientIp(req: express.Request): string {
 function internalError(res: express.Response, context: string, err: unknown): express.Response {
   logger.error({ err }, context);
   captureServerException(err, { context });
-  return res.status(500).json({ error: 'Internal Server Error' });
+  return res.status(500).json(userErrorBody(res.req, 'server'));
 }
 
 // مشترك بين GET (قراءة الحالة) وPOST (تسجيل اشتراك الإشعارات) على نفس
@@ -1154,7 +1155,10 @@ app.post("/api/staff/create-account", authenticate, requirePermission('staff.cre
       requesterRole: req.user.role,
     });
     if (result.ok === false) {
-      return res.status(result.status).json({ error: result.error });
+      // seen-friendly-errors-everywhere-task.md: a code and a plain sentence; the detail stays in the log.
+      logger.warn({ reason: result.error, detail: result.detail }, '[staff account]');
+      const { kind } = authAdminErrorKind(result.error === 'email_already_in_use' ? 'already registered' : result.error === 'weak_password' ? 'password' : result.error === 'invalid_email' ? 'email' : '');
+      return res.status(result.status).json(userErrorBody(req, kind, result.error));
     }
 
     res.json({ uid: result.uid, alreadyExisted: result.alreadyExisted });
@@ -1191,7 +1195,10 @@ app.post("/api/saas/reset-member-password", authenticate, authorize(['super_admi
     const { resetStaffPassword } = await import("./src/server/staffAccountService.ts");
     const result = await resetStaffPassword(supabaseAdmin, String(uid), String(password));
     if (result.ok === false) {
-      return res.status(result.status).json({ error: result.error });
+      // seen-friendly-errors-everywhere-task.md: a code and a plain sentence; the detail stays in the log.
+      logger.warn({ reason: result.error, detail: result.detail }, '[staff account]');
+      const { kind } = authAdminErrorKind(result.error === 'email_already_in_use' ? 'already registered' : result.error === 'weak_password' ? 'password' : result.error === 'invalid_email' ? 'email' : '');
+      return res.status(result.status).json(userErrorBody(req, kind, result.error));
     }
 
     // Same temp_passwords bookkeeping as account creation -- see
@@ -2281,7 +2288,8 @@ app.post("/api/super-admin/assistant-settings/test", authenticate, authorize(['s
   } catch (err: any) {
     logger.error({ err }, "Error in POST /api/super-admin/assistant-settings/test");
     if (!res.headersSent) {
-      res.status(500).json({ error: err.message || "Internal Server Error" });
+      // Super admin's provider test: the detail is the point of the test, so it goes in `details`.
+      res.status(500).json({ ...userErrorBody(req, 'server'), details: String(err?.message || '') });
     }
   }
 });
@@ -2482,7 +2490,7 @@ const reply = (status: number, body: any): ZatcaSendResult => ({ status, body })
 function internalFailure(context: string, err: unknown): ZatcaSendResult {
   logger.error({ err }, context);
   captureServerException(err, { context });
-  return { status: 500, body: { error: 'Internal Server Error' } };
+  return { status: 500, body: userErrorBody(null, 'server') };
 }
 /** ZATCA turned the document down (a 4xx other than 429); anything else is worth retrying. */
 function isZatcaRejection(err: any): boolean {
@@ -3204,7 +3212,7 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
   ((req as any).log || logger).error({ err }, `[globalErrorHandler] ${req.path}`);
   captureServerException(err, { path: req.path, method: req.method });
   if (res.headersSent) return next(err);
-  res.status(500).json({ error: 'حدث خطأ غير متوقع، حاول لاحقًا' });
+  res.status(500).json(userErrorBody(req, 'server'));
 });
 
 async function setupServer() {

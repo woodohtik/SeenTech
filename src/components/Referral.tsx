@@ -16,6 +16,7 @@ import { CurrencySymbol } from './CurrencySymbol';
 import i18n from 'i18next';
 import { useDirection } from '../lib/direction';
 import { useToast } from '../contexts/ToastContext';
+import { ownMessageOr } from '../lib/userFacingError';
 
 // INK/BRAND/CTA/CTA2/MINT/TINT are this feature's own deliberate "premium
 // wallet card" palette (distinct from the app's operational theme) and are
@@ -155,7 +156,7 @@ function WithdrawModal({ tenantId, balance, minWithdrawal, onClose, onDone }:
     if (amount <= minWithdrawal || amount > balance) { setErr(t('referral.amount_range', { min: minWithdrawal, max: balance })); return; }
     setBusy(true);
     try { await requestWithdrawal(tenantId, amount, iban.replace(/\s/g, ''), name.trim()); onDone(); }
-    catch (e: any) { setErr(e?.message || t('referral.submit_failed')); setBusy(false); }
+    catch (e: any) { setErr(ownMessageOr(e, t('referral.submit_failed'))); setBusy(false); }
   }
 
   return (

@@ -27,8 +27,8 @@ import {
   SubscriptionRequest 
 } from '../services/subscriptionRequestService';
 import { useDirection } from '../lib/direction';
-import { getFriendlyErrorMessage } from '../lib/appErrors';
 import { useConfirm } from '../contexts/ConfirmContext';
+import { explainOr } from '../lib/userFacingError';
 
 export default function SubscriptionRequestsAdminManager() {
   const { t, locale } = useDirection();
@@ -81,7 +81,7 @@ export default function SubscriptionRequestsAdminManager() {
       showToast(t('subscription.requests.approve_success', { plan: req.plan_name }));
       await loadRequests();
     } catch (err: any) {
-      showToast(t('subscription.requests.approve_error', { error: getFriendlyErrorMessage(err) }));
+      showToast(explainOr(err, t('subscription.requests.approve_error')));
     } finally {
       setProcessingId(null);
     }
@@ -97,7 +97,7 @@ export default function SubscriptionRequestsAdminManager() {
       setRejectionReason('');
       await loadRequests();
     } catch (err: any) {
-      showToast(t('subscription.requests.reject_error', { error: getFriendlyErrorMessage(err) }));
+      showToast(explainOr(err, t('subscription.requests.reject_error')));
     } finally {
       setProcessingId(null);
     }

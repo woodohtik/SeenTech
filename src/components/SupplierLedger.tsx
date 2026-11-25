@@ -213,7 +213,7 @@ export default function SupplierLedger({
       const { printHtmlContentDetailed } = await import('../utils/printManager');
       const res = await printHtmlContentDetailed(html, { paperSize: 'A5', title: tx.reference_number });
       if (!res.ok) {
-        toastError(t('printing.print_failed'), res.message);
+        toastError(res);
       }
     } catch (e) {
       console.error('[SupplierLedger] print transaction error:', e);

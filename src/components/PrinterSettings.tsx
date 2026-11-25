@@ -65,6 +65,7 @@ import {
 import {
   getPlatformPrintAdvice,
 } from '../utils/printAndroid';
+import { explainOr } from '../lib/userFacingError';
 
 export interface PrinterDevice {
   id: string;
@@ -580,7 +581,7 @@ export default function PrinterSettings() {
       setFeedback(
         probe.ok
           ? { kind: 'success', text: t('settings_page.printer.added_and_reachable', { name: newPrinter.name }) }
-          : { kind: 'error', text: t('settings_page.printer.added_but_unreachable', { message: probe.message }) }
+          : { kind: 'error', text: t('settings_page.printer.added_but_unreachable') }
       );
       return;
     }
@@ -656,7 +657,7 @@ export default function PrinterSettings() {
             kind: res.ok ? 'info' : 'error',
             text: res.ok
               ? t('settings_page.printer.a4_no_escpos')
-              : t('settings_page.printer.test_failed', { message: res.message }),
+              : (res.friendly ? res.message : t('settings_page.printer.test_failed')),
           });
           return;
         }
@@ -670,7 +671,6 @@ export default function PrinterSettings() {
 
         // (ب) فاتورة عربية كصورة نقطية للتحقق من التنسيق والخط
         let arabicOk = true;
-        let arabicError = '';
         try {
           const el = document.getElementById('print-area');
           if (!el) throw new Error(t('settings_page.printer.test_template_missing'));
@@ -682,7 +682,6 @@ export default function PrinterSettings() {
           });
         } catch (rasterErr: any) {
           arabicOk = false;
-          arabicError = rasterErr?.message || t('orders.unknown_error');
           console.warn('[PrinterSettings] فشل اختبار الفاتورة العربية عبر الوسيط:', rasterErr);
         }
 
@@ -690,7 +689,7 @@ export default function PrinterSettings() {
           kind: arabicOk ? 'success' : 'info',
           text: arabicOk
             ? t('settings_page.printer.silent_print_ok', { name })
-            : t('settings_page.printer.silent_print_partial', { error: arabicError }),
+            : t('settings_page.printer.silent_print_partial'),
         });
         return;
       }
@@ -716,7 +715,7 @@ export default function PrinterSettings() {
             kind: res.ok ? 'info' : 'error',
             text: res.ok
               ? t('settings_page.printer.a4_no_escpos')
-              : t('settings_page.printer.test_failed', { message: res.message }),
+              : (res.friendly ? res.message : t('settings_page.printer.test_failed')),
           });
           return;
         }
@@ -726,7 +725,6 @@ export default function PrinterSettings() {
 
         // (ب) فاتورة عربية كصورة نقطية للتحقق من التنسيق والخط
         let arabicOk = true;
-        let arabicError = '';
         try {
           const el = document.getElementById('print-area');
           if (!el) throw new Error(t('settings_page.printer.test_template_missing'));
@@ -734,7 +732,6 @@ export default function PrinterSettings() {
           await sendRawToAgent(name, canvasToEscPosRaster(canvas), 'SEEN POS Test Invoice');
         } catch (rasterErr: any) {
           arabicOk = false;
-          arabicError = rasterErr?.message || t('orders.unknown_error');
           console.warn('[PrinterSettings] فشل اختبار الفاتورة العربية عبر الوسيط:', rasterErr);
         }
 
@@ -742,7 +739,7 @@ export default function PrinterSettings() {
           kind: arabicOk ? 'success' : 'info',
           text: arabicOk
             ? t('settings_page.printer.silent_print_ok', { name })
-            : t('settings_page.printer.silent_print_partial', { error: arabicError }),
+            : t('settings_page.printer.silent_print_partial'),
         });
         return;
       }
@@ -773,7 +770,6 @@ export default function PrinterSettings() {
 
         // (ب) فاتورة عربية كصورة نقطية: يتحقق من التنسيق والخط العربي
         let arabicOk = true;
-        let arabicError = '';
         try {
           const el = document.getElementById('print-area');
           if (!el) throw new Error(t('settings_page.printer.test_template_missing'));
@@ -781,7 +777,6 @@ export default function PrinterSettings() {
           await sendRawToPrinter(printer.id, printer.type, canvasToEscPosRaster(canvas), conn);
         } catch (rasterErr: any) {
           arabicOk = false;
-          arabicError = rasterErr?.message || t('orders.unknown_error');
           console.warn('[PrinterSettings] فشل اختبار الفاتورة العربية:', rasterErr);
         }
 
@@ -789,7 +784,7 @@ export default function PrinterSettings() {
           kind: arabicOk ? 'success' : 'info',
           text: arabicOk
             ? t('settings_page.printer.two_receipts_sent', { name: printerDisplayName(printer) })
-            : t('settings_page.printer.arabic_receipt_failed', { error: arabicError }),
+            : t('settings_page.printer.arabic_receipt_failed'),
         });
         return;
       }
@@ -812,14 +807,14 @@ export default function PrinterSettings() {
       } else {
         setFeedback({
           kind: 'error',
-          text: t('settings_page.printer.test_failed', { message: res.message }),
+          text: (res.friendly ? res.message : t('settings_page.printer.test_failed')),
         });
       }
     } catch (e: any) {
       console.error('Test print failed:', e);
       setFeedback({
         kind: 'error',
-        text: t('settings_page.printer.test_failed', { message: e ? getFriendlyErrorMessage(e) : t('orders.unknown_error') }),
+        text: explainOr(e, t('settings_page.printer.test_failed')),
       });
     } finally {
       setBusyId(null);

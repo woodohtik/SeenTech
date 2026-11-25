@@ -27,6 +27,7 @@ import { getFriendlyErrorMessage } from '../lib/appErrors';
 import { useConfirm } from '../contexts/ConfirmContext';
 
 import { isRtlLang, localeOf } from '../lib/direction';
+import { UserFacingError } from '../lib/userFacingError';
 
 export default function SaaSTeamManagement() {
   const { t, i18n } = useTranslation();
@@ -180,7 +181,7 @@ export default function SaaSTeamManagement() {
           body: JSON.stringify({ email: formData.email.toLowerCase(), password: formData.password, name: formData.name })
         });
         const createResult = await createRes.json();
-        if (!createRes.ok) throw new Error(createResult.error || 'Failed to create team member account');
+        if (!createRes.ok) throw new UserFacingError(createRes.status === 409 ? 'duplicate_email' : (createResult?.kind ?? 'server'), createResult?.reason);
 
         const uid = createResult.uid;
 

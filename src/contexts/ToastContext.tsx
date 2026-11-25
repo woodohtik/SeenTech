@@ -1,15 +1,23 @@
 import React, { createContext, useContext, useState, useCallback, useEffect, lazy, Suspense, ReactNode } from 'react';
 import { ToastStaticStack, type Toast, type ToastType } from './ToastStack';
 import { whenIdle } from '../lib/whenIdle';
-import { APP_WRITE_ERROR_EVENT, getFriendlyErrorMessage, type FirestoreErrorInfo } from '../lib/appErrors';
+import { APP_WRITE_ERROR_EVENT, type FirestoreErrorInfo } from '../lib/appErrors';
+import { toUserError, type UserErrorContext } from '../lib/userFacingError';
 import { logError } from '../lib/logger';
 import { useTranslation } from 'react-i18next';
 import { useDirection } from '../lib/direction';
 
 interface ToastContextType {
-  showToast: (type: ToastType, message: string, description?: string) => void;
+  showToast: (type: ToastType, message: string, description?: string, extra?: { code?: string; details?: string }) => void;
   success: (message: string, description?: string) => void;
-  error: (message: string, description?: string) => void;
+  /**
+   * A text you wrote -- or the error itself (seen-friendly-errors-everywhere-task.md):
+   * error(err) shows its plain title, what to do and its code, and logs it.
+   * Never pass an error's .message here.
+   */
+  error: (messageOrError: unknown, description?: string) => void;
+  /** The error itself, as the person should see it. */
+  showError: (err: unknown, context?: UserErrorContext) => void;
   info: (message: string, description?: string) => void;
   warning: (message: string, description?: string) => void;
   handleError: (err: any, contextStr?: string) => void;
@@ -36,17 +44,26 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     setToasts((prev) => prev.filter((toast) => toast.id !== id));
   }, []);
 
-  const showToast = useCallback((type: ToastType, message: string, description?: string) => {
+  const showToast = useCallback((type: ToastType, message: string, description?: string, extra?: { code?: string; details?: string }) => {
     const id = Math.random().toString(36).substring(2, 9);
-    setToasts((prev) => [...prev, { id, type, message, description }]);
+    setToasts((prev) => [...prev, { id, type, message, description, ...extra }]);
     setStackMounted(true);
-    
-    // Auto remove after 5 seconds
-    setTimeout(() => removeToast(id), 5000);
+
+    // Auto remove after 5 seconds (an error with its details: long enough to read them)
+    setTimeout(() => removeToast(id), extra?.details ? 12000 : 5000);
   }, [removeToast]);
 
+  // seen-friendly-errors-everywhere-task.md: one way an error reaches the screen.
+  const showError = useCallback((err: unknown, context?: UserErrorContext) => {
+    const ue = toUserError(err, context);
+    showToast('error', ue.title, ue.action || undefined, { code: ue.kind === 'refusal' ? undefined : ue.code, details: ue.technical });
+  }, [showToast]);
+
   const success = (message: string, description?: string) => showToast('success', message, description);
-  const error = (message: string, description?: string) => showToast('error', message, description);
+  const error = (messageOrError: unknown, description?: string) => {
+    if (typeof messageOrError === 'string') showToast('error', messageOrError, description);
+    else showError(messageOrError);
+  };
   const info = (message: string, description?: string) => showToast('info', message, description);
   const warning = (message: string, description?: string) => showToast('warning', message, description);
 
@@ -56,34 +73,23 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       logError(err, { source: contextStr || 'handleError' });
       return;
     }
-    // Determine friendly message
-    let friendlyMessage = t('errors.unexpected');
-    let description = '';
-
-    try {
-      // Check if it's our stringified JSON error
-      if (err instanceof Error && err.message.startsWith('{')) {
-        const parsed = JSON.parse(err.message);
-        if (parsed.error && parsed.operationType) {
-          friendlyMessage = getFriendlyErrorMessage(parsed);
-          description = `${parsed.operationType.toUpperCase()} error at ${parsed.path || 'unknown path'}`;
-        }
-      } else {
-        friendlyMessage = getFriendlyErrorMessage(err);
-      }
-      
-      showToast('error', friendlyMessage, description || contextStr || t('errors.system_error'));
-      logError(err, { source: contextStr || 'handleError' });
-    } catch {
-      showToast('error', contextStr || t('common.error'), friendlyMessage);
+    // Never the table or the operation ("INSERT error at ..."): those are ours.
+    // The caller's text (what failed, already translated) is the title; our
+    // sentence for the error and its code go under it.
+    if (!contextStr) {
+      showError(err, { where: 'handleError' });
+      return;
     }
-  }, [showToast, t]);
+    const ue = toUserError(err, { where: contextStr });
+    showToast('error', contextStr, ue.message, { code: ue.kind === 'refusal' ? undefined : ue.code, details: ue.technical });
+  }, [showError, showToast]);
 
   // P4 (UX-01): every failed save, status change or delete is shown.
   useEffect(() => {
     const onWriteError = (e: Event) => {
       const info = (e as CustomEvent<FirestoreErrorInfo>).detail;
-      showToast('error', getFriendlyErrorMessage(info), t('errors.write_failed'));
+      const ue = toUserError(info, { where: `${info.operationType}:${info.path ?? ''}` });
+      showToast('error', t('errors.write_failed'), ue.message, { code: ue.kind === 'refusal' ? undefined : ue.code, details: ue.technical });
     };
     window.addEventListener(APP_WRITE_ERROR_EVENT, onWriteError);
     // P4 (OPERATIONS-13): a send refused because the shop turned WhatsApp off.
@@ -100,7 +106,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   }, [showToast, t]);
 
   return (
-    <ToastContext.Provider value={{ showToast, success, error, info, warning, handleError }}>
+    <ToastContext.Provider value={{ showToast, success, error, showError, info, warning, handleError }}>
       {children}
       {stackMounted && (
         <Suspense fallback={<ToastStaticStack toasts={toasts} onClose={removeToast} dir={dir} />}>

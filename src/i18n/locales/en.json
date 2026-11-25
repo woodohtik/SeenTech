@@ -331,7 +331,7 @@
     "pricing_title": "Choose the Right Plan for Your Store",
     "proof_required_alert": "Please attach a payment proof image or enter the reference/transfer number to complete the subscription request.",
     "request_sent_success": "Subscription request and payment proof sent successfully. The Seen team will approve and activate your plan shortly ✓",
-    "request_submit_error": "An error occurred while submitting the request: {{error}}",
+    "request_submit_error": "We could not send the request. Try again, and if it keeps happening, contact us.",
     "status": {
       "active": "Active",
       "suspended": "Suspended",
@@ -474,7 +474,6 @@
     "confirm_final_deletion": "Complete Final Deletion",
     "connected": "Connected & Stable",
     "copy": "Copy",
-    "copy_code": "Copy SQL Code",
     "currency_saudi_riyal": "SR",
     "current_subscriber": "Current Subscriber",
     "current_user": "Current User",
@@ -482,7 +481,6 @@
     "customers": "Customers",
     "dark_mode": "Dark Mode",
     "dashboard": "Dashboard",
-    "database": "Database",
     "date": "Date",
     "date_added": "Date Added",
     "day": "Day",
@@ -950,7 +948,6 @@
     "visual_round": "Round",
     "visual_square": "Square",
     "waist": "Waist",
-    "measurement_link_message": "Hello {{customerName}}, please fill in your measurements here: {{url}}\n- {{storeName}}",
     "send_measurements_link": "Send Measurements Link",
     "export_col_measurement": "{{label}} (cm)",
     "measurements_link_failed": "The measurements link could not be prepared",
@@ -1063,7 +1060,7 @@
     "delete_test_data": "Delete Test Data",
     "delete_test_data_confirm": "Are you sure you want to delete all test data?",
     "delete_test_data_desc": "This action cannot be undone and will clear all test-related records.",
-    "delete_test_data_error": "An error occurred while deleting data: {{error}}",
+    "delete_test_data_error": "We could not delete the data. Try again.",
     "delete_test_data_success": "Test data deleted successfully ({{count}} records)",
     "deleting_test_data": "Deleting test data...",
     "drill_down_title": "Detailed Data Analysis",
@@ -1158,12 +1155,11 @@
     "network": "Network connection problem. Check your internet connection and try again.",
     "no_permission": "You do not have permission to perform this action.",
     "offline": "You appear to be offline. Check your connection and try again.",
-    "path_info": "Path: {{path}}",
     "permission_denied_check_account": "You do not have permission to perform this action. Please check your account permissions.",
     "permission_error_title": "Permission Error",
     "reload_system": "Reload System",
     "rls_denied": "Couldn't complete this action — this data isn't available to your current account. Contact support if this keeps happening.",
-    "server_connection_failed": "Could not connect to the server. Check your internet connection and try again.",
+    "server_connection_failed": "We could not reach Seen. Check your internet, then try again.",
     "system_error": "System Error",
     "system_generic": "A system error occurred. Please try again later.",
     "unauthorized_action": "You do not have permission to perform this action.",
@@ -1175,8 +1171,92 @@
     "back_to_pos": "Back to the point of sale",
     "write_failed": "The change wasn't saved. Try again; if it keeps happening, contact support.",
     "updating_system_title": "Updating the system",
-    "updating_system_body": "A new version of Seen is ready. Press “Update” to load it. Unsent sales stay saved on this device.",
-    "update_button": "Update"
+    "updating_system_body": "A new version of Seen is ready. Press \"Update\" to load it. Unsent sales stay saved on this device.",
+    "update_button": "Update",
+    "user": {
+      "offline": {
+        "title": "Your device is not connected to the internet.",
+        "action": "Connect, then try again."
+      },
+      "blocked": {
+        "title": "We could not reach Seen from this network.",
+        "action": "Try another network (such as mobile data), or contact us."
+      },
+      "network": {
+        "title": "The internet connection is weak or keeps dropping.",
+        "action": "Check it, then try again."
+      },
+      "session_expired": {
+        "title": "Your sign-in has expired.",
+        "action": "Sign in again, then carry on."
+      },
+      "permission": {
+        "title": "You do not have permission for this.",
+        "action": "Ask the shop owner or a manager for it."
+      },
+      "duplicate": {
+        "title": "This is already registered.",
+        "action": "Check that you did not enter it twice."
+      },
+      "duplicate_phone": {
+        "title": "This phone number is already registered.",
+        "action": "Find it in the list instead of adding it again."
+      },
+      "duplicate_email": {
+        "title": "This email is already registered.",
+        "action": "Use another email, or find it in the list."
+      },
+      "linked": {
+        "title": "This cannot be deleted because other records use it.",
+        "action": "Delete or change those first."
+      },
+      "validation": {
+        "title": "A value is missing or not valid.",
+        "action": "Check the fields, then save again."
+      },
+      "not_found": {
+        "title": "We could not find this record.",
+        "action": "Refresh the page; it may have been deleted."
+      },
+      "rate_limited": {
+        "title": "Too many attempts in a short time.",
+        "action": "Wait a minute, then try again."
+      },
+      "too_large": {
+        "title": "The file is too large.",
+        "action": "Choose a smaller file, then try again."
+      },
+      "timeout": {
+        "title": "This took longer than usual.",
+        "action": "Try again in a moment."
+      },
+      "quota": {
+        "title": "You have reached today's limit.",
+        "action": "Try tomorrow, or contact us to raise it."
+      },
+      "printer": {
+        "title": "We could not print.",
+        "action": "Check that the printer is on and connected, then try again."
+      },
+      "zatca": {
+        "title": "We could not send the invoice to ZATCA.",
+        "action": "Try again, and if it keeps happening, contact us."
+      },
+      "server": {
+        "title": "Seen is down for a moment.",
+        "action": "Wait a little, then try again."
+      },
+      "refusal": {
+        "title": "This was not done.",
+        "action": ""
+      },
+      "unknown": {
+        "title": "Something unexpected went wrong.",
+        "action": "Try again, and if it keeps happening, contact us."
+      },
+      "code": "Code: {{code}}",
+      "technical_details": "Technical details"
+    }
   },
   "inventory": {
     "add_failed": "Failed to add product",
@@ -1294,7 +1374,6 @@
     "conversion_failed": "Conversion failed",
     "conversion_result_preview": "Expected result after conversion",
     "conversion_success": "Conversion recorded successfully and saved to the financial and stock ledger.",
-    "copied_to_clipboard": "SQL code copied to clipboard!",
     "correction": "Correction",
     "cost_price": "Cost Price",
     "cost_price_label": "Purchase Price (Cost)",
@@ -1408,8 +1487,6 @@
     "pocket_none": "No Pocket",
     "pocket_type": "Pocket Type",
     "pocket_visible": "Visible",
-    "postgres_subtitle": "Copy the code and run it in the PostgreSQL command line or the Supabase SQL Editor.",
-    "postgres_title": "Table Schema & PostgreSQL Integration",
     "preview_entries": "Preview Entries",
     "price_per_unit": "Selling Price",
     "product_image": "Product Image",
@@ -1504,7 +1581,6 @@
     "supported_formats": "Supported formats: JPG, PNG. Image will be compressed automatically for fast loading.",
     "tab_adjustment_history": "Stock Count History",
     "tab_new_adjustment": "New Stock Count",
-    "tab_sql_schema": "PostgreSQL Schema",
     "table_item_name": "Material / Item",
     "table_physical_qty": "Actual Qty (Counted)",
     "table_reason": "Reason",
@@ -1582,9 +1658,9 @@
     "approve_draft": "Approve the count",
     "draft_approved": "The count was approved; the differences were applied to the current stock",
     "draft_approve_failed": "The count could not be approved",
-    "schema_missing_save_blocked": "The document can't be saved because the tables are not enabled in your database. Please enable them first.",
+    "schema_missing_save_blocked": "Stock counts are not turned on for your shop yet, so the document cannot be saved. Contact us to turn them on.",
     "schema_missing_title": "Notice: stock counts and reconciliation need to be enabled",
-    "schema_missing_desc_merchant": "Stock counts and reconciliation need to be enabled by the admin or support team to connect to your database.",
+    "schema_missing_desc_merchant": "Stock counts and reconciliation need to be turned on by the Seen team. Contact us to turn them on for your shop.",
     "variants": {
       "stock_take_not_supported": "Products with variants are not supported on this screen yet -- adjust each variant's stock by hand from the inventory screen.",
       "badge_suffix": "variants",
@@ -1694,7 +1770,7 @@
     "use_current_location": "Use My Current Location"
   },
   "login": {
-    "account_check_failed_desc": "Something went wrong while verifying your account. It may be a temporary database connection issue. Try again.",
+    "account_check_failed_desc": "We could not check your account. Check your internet, then try again.",
     "account_check_failed_title": "Couldn't verify your account",
     "account_not_approved_desc": "Your account exists but isn't active right now. Try again, or contact support if this keeps happening.",
     "account_not_approved_title": "Your account isn't active",
@@ -2057,7 +2133,7 @@
       "logo_invalid_type": "Unsupported file format. Please upload a JPG, PNG, GIF, or WebP image only",
       "logo_size_error": "File size must be less than 2MB",
       "logo_upload_error": "Logo upload failed. Please try again.",
-      "rls_permission_error": "Database permissions issue (RLS). Please contact support to resolve this.",
+      "rls_permission_error": "We could not finish setting up your account. Contact us and we will sort it out.",
       "success": "Setup completed successfully!",
       "tenant_not_found": "No store linked to this account was found",
       "validation_failed": "Please verify your data: "
@@ -2247,7 +2323,6 @@
     "visual_measurement_selector": "Interactive Visual Measurement Selector",
     "whatsapp": "WhatsApp",
     "send_tracking_link": "Send Tracking Link",
-    "tracking_link_message": "Hi {{customerName}}, you can track your order status here: {{url}}\n- {{storeName}}",
     "tracking_whatsapp_modal_title": "Send Tracking Link via WhatsApp",
     "tracking_whatsapp_modal_desc": "Enter the customer's phone number to open WhatsApp with the order tracking link ready to send.",
     "quantity_pieces": "Quantity (pieces)",
@@ -2613,7 +2688,7 @@
         }
       }
     },
-    "load_failed_desc": "Could not load roles and permissions from the database.",
+    "load_failed_desc": "We could not load the roles and permissions. Refresh the page.",
     "load_failed_title": "Connection Error",
     "loading_matrix": "Loading the permissions matrix…",
     "no_description": "No description",
@@ -2683,7 +2758,7 @@
     "roles_list_super_admin": "Customizable Roles",
     "roles_list_tenant": "Available Store Roles",
     "save_changes_now": "Save Changes Now",
-    "save_failed_desc": "An error occurred while saving the permissions to the database.",
+    "save_failed_desc": "We could not save the permissions. Try again.",
     "save_failed_title": "Save Failed",
     "save_global_template": "Save Standard Template",
     "save_permissions_now": "Save Permissions Now",
@@ -2693,7 +2768,7 @@
     "saved_tenant_title": "Merchant Permissions Saved",
     "search_placeholder": "Search permission names and descriptions…",
     "select_role_hint": "Select a job role from the list to view and edit its permissions.",
-    "server_side_enforcement_notice": "Hardened protection: permissions are verified on the server (Server-Side Enforcement) and by database access rules (Supabase RLS Policy).",
+    "server_side_enforcement_notice": "Each employee's permissions are protected and cannot be bypassed.",
     "subtitle_super_admin": "Editing here changes the system default template. Merchants who have not customized their permissions are affected immediately, while merchants who have customized theirs keep their own settings.",
     "subtitle_tenant": "Enable or disable tabs, screens and operations for each job role in your store, and set which areas each employee can reach.",
     "suggested_custom_role_desc": "A customized copy of {{role}}",
@@ -2733,8 +2808,8 @@
     },
     "change_image": "Change Image",
     "checkout_and_pay": "Checkout & Pay",
-    "checkout_failed": "Checkout failed",
-    "checkout_failed_msg": "Failed to complete the order: {{error}}",
+    "checkout_failed": "The order was not completed.",
+    "checkout_failed_msg": "The order was not completed. Try again, and if it keeps happening, contact us.",
     "choose_payment_method": "Choose Payment Method",
     "close_and_new_order": "Close & Start New Order",
     "close_window": "Close Window",
@@ -2829,7 +2904,7 @@
     "remaining_balance": "Paid Amount",
     "save_customer": "Save Customer",
     "save_customer_and_start_order": "Save Customer & Start Order",
-    "save_customer_failed": "Failed to save the customer: {{error}}",
+    "save_customer_failed": "We could not save the customer. Try again.",
     "scan_barcode": "Scan Barcode",
     "scanner_error": "Could not start the camera. Please check your permissions.",
     "scanner_hint": "Point the camera at the barcode to scan automatically.",
@@ -2919,13 +2994,13 @@
       "env_unavailable": "Not available in this environment.",
       "list_printers_failed": "Failed to fetch the printer list from the print agent.",
       "local_network_access_warning": "Chrome may block the connection to the local agent because of its Local Network Access policy. If a \"local network access\" permission prompt appears, choose Allow. Pairing with the Seen relay needs no such permission at all.",
-      "mixed_content_blocked": "This browser (Firefox / Safari) blocks connections to 127.0.0.1 from an HTTPS page as Mixed Content. Pair with the Seen relay instead — it works in every browser.",
+      "mixed_content_blocked": "This browser (Firefox / Safari) does not allow printing through the old print program. Use \"Pair with the Seen relay\" — it works in every browser.",
       "printer_name_missing": "No printer name was specified for printing through the agent.",
       "send_invoice_failed": "Failed to send the invoice to printer \"{{printer}}\".",
       "test_print_failed": "Failed to send the test print through the agent.",
-      "timeout": "The connection to the local agent (127.0.0.1:9110) timed out. If the agent window is open, the browser is most likely blocking it — pair with the Seen relay instead.",
+      "timeout": "The print program did not answer. If its window is open, the browser is most likely blocking it — use \"Pair with the Seen relay\" instead.",
       "unavailable_on_mobile": "The local agent is not available on phones and tablets. Pair with the Seen relay on a Windows machine in the shop — it works from this device with nothing installed here.",
-      "unreachable": "Could not reach the local agent. One of two things is happening: the agent window is not open, or the browser blocked the connection to 127.0.0.1 (the Local Network Access policy in recent Chrome). The reliable fix: use \"Pair with the Seen relay\" — the agent connects out to the server, so it needs no browser permission and works on Android too."
+      "unreachable": "We could not reach the print program: either its window is not open, or the browser blocks it. The reliable fix: \"Pair with the Seen relay\" — it needs no browser permission and works on Android too."
     },
     "bluetooth_no_service": "No printing service was found on the Bluetooth device. Make sure the printer supports BLE — Bluetooth Classic printers do not appear in the browser; pair them through the operating system and use \"System Printer\".",
     "bluetooth_not_paired": "The Bluetooth printer is not paired. Pair it again with the \"Bluetooth Printer\" button (requires a user click).",
@@ -2934,7 +3009,7 @@
     "canvas_read_failed": "Could not read the image content for printing.",
     "document_title_invoice": "Invoice",
     "errors": {
-      "all_paths_failed": "All print paths failed. {{details}}",
+      "all_paths_failed": "We could not print in any way. Check that the printer is on and connected, then try again.",
       "direct_failed_opening_dialog": "Could not send directly to the printer. The print dialog will open instead.",
       "empty_invoice_content": "The invoice content is empty — there is nothing to print.",
       "empty_print_document": "The print document is empty — make sure the invoice is visible on screen before printing.",
@@ -2956,7 +3031,7 @@
     "invoice_share_text": "Invoice from {{tenant}}\\nInvoice No: {{number}}\\nTotal: {{total}}",
     "network_error": "network error",
     "network_ip_missing": "No IP address is set for the network printer. Edit the printer and enter an IP address.",
-    "network_send_failed": "Sending to printer {{host}}:{{port}} failed. Check that the printer is on, the IP address is correct, and the server is on the same network.",
+    "network_send_failed": "The print did not reach the printer {{host}}:{{port}}. Check that the printer is on, that its address is correct, and that it is on the same network as the print device.",
     "no_bulk_out_endpoint": "No output endpoint (bulk out) was found on this printer.",
     "paper_size": "Paper Size:",
     "pdf_generation_failed": "Could not create the PDF file (some colors may not be supported); the print dialog will open instead.",
@@ -2968,7 +3043,7 @@
     },
     "print_document": "Print Document",
     "print_failed": "Printing failed",
-    "print_failed_with_reason": "Printing failed: {{message}}",
+    "print_failed_with_reason": "We could not print. Check that the printer is on and connected, then try again.",
     "print_invoice": "Print Invoice",
     "print_receipt": "Print Receipt / Print",
     "printer_rejected_data": "The printer rejected the data ({{status}}).",
@@ -2983,15 +3058,15 @@
       "no_station_paired": "No print station is paired.",
       "pair_failed_check_code": "Pairing failed. Check the code and make sure the agent window is open.",
       "pairing_expired": "The pairing has expired. Pair again from printer settings using the code shown in the agent window.",
-      "pairing_expired_restarted": "The pairing has expired (the server or agent was restarted). Pair again using the new code shown in the agent window.",
+      "pairing_expired_restarted": "The pairing with the print program has ended. Pair again with the new code shown in its window.",
       "print_failed_in_agent": "Printing failed in the print agent.",
-      "server_unreachable": "Could not reach the system server ({{error}}). Make sure this device is connected to the internet.",
+      "server_unreachable": "We could not reach Seen to send the print. Check that this device is connected to the internet.",
       "submit_job_failed": "Failed to send the print job to the agent."
     },
     "relay_errors": {
       "agent_disconnected": "The print agent disconnected before confirming the print.",
       "agent_unspecified_failure": "Unspecified failure in the print agent.",
-      "direct_lan_disabled": "Direct network printing is disabled on this server.",
+      "direct_lan_disabled": "Printing directly over the network is not turned on.",
       "empty_print_data": "Print data is empty.",
       "ip_invalid": "Invalid IP address. Only local network addresses are allowed (e.g. 192.168.x.x).",
       "ip_invalid_short": "Invalid IP address.",
@@ -3023,12 +3098,12 @@
     "sent_via_relay": "Invoice sent to the printer through the Seen relay.",
     "serial_not_paired": "The serial port is not paired. Pair the printer again with the \"Serial / COM Port\" button.",
     "serial_not_writable": "The serial port does not accept writes.",
-    "serial_open_failed": "Could not open the serial port. {{error}} Make sure the printer is on and the port is not in use by another program.",
+    "serial_open_failed": "We could not open the connection to the printer. Check that it is on and that no other program is using it.",
     "serial_port_numbered": "Serial Port #{{number}}",
     "serial_printer": "Printer on Serial Port",
     "serial_printer_named": "Serial Printer {{id}}",
-    "server_relay_unreachable": "Could not reach the print relay on the server.",
-    "server_relay_unreachable_detail": "Could not reach the print relay on the server ({{error}}). Make sure the server is running and on the same local network as the printer.",
+    "server_relay_unreachable": "We could not reach the print program.",
+    "server_relay_unreachable_detail": "We could not reach the print program. Check that it is running and on the same network as the printer.",
     "silent_printing": "Silent Printing",
     "system_printer_no_raw": "A system printer prints through the print dialog and does not support sending raw ESC/POS commands.",
     "tax_invoice_receipt_title": "Tax Invoice Receipt",
@@ -3179,7 +3254,7 @@
     "po_confirmed_success": "Purchase order confirmed, quantities added to the warehouse, and supplier dues updated successfully.",
     "po_date": "Date",
     "po_detail_title": "Voucher Details",
-    "po_details_not_found": "Purchase order details were not found in the database.",
+    "po_details_not_found": "We could not find the purchase order details. Refresh the page.",
     "po_draft_created": "Voucher created as a draft",
     "po_item_name": "Product/Item Name",
     "po_movement_subtitle": "Track purchase invoices and returns with automatic stock synchronization.",
@@ -4123,7 +4198,8 @@
       "down": "Not useful",
       "no_question": "(no question kept)",
       "load_error": "Could not load the ratings."
-    }
+    },
+    "system_database": "Database"
   },
   "sales": {
     "active_shift": "Active Shift",
@@ -4244,7 +4320,7 @@
       "critical_desc": "Deleting test data will clear all records marked as 'test data'. This is very useful before Go-Live to reset order counters and clear fake customers.",
       "critical_zone": "Critical Zone",
       "delete_test_confirm": "Are you sure you want to delete all test data? This action cannot be undone.",
-      "delete_test_error": "An error occurred while deleting test data: {{error}}",
+      "delete_test_error": "We could not delete the test data. Try again.",
       "delete_test_failed": "An error occurred while deleting test data.",
       "delete_test_success": "Test data deleted successfully ({{records}} records)",
       "loading_logs": "Loading operation logs...",
@@ -4338,13 +4414,13 @@
     "printer": {
       "a4_no_escpos": "Plain paper (A4) does not accept thermal printer commands, so the print dialog was used instead. For silent printing, set the paper size to 80mm or 58mm.",
       "added_and_reachable": "\"{{name}}\" was added and connected successfully. Press \"Set as Default\" to start printing to it.",
-      "added_but_unreachable": "Added, but could not connect: {{message}}",
+      "added_but_unreachable": "Added, but we could not connect to the printer. Check that it is on and connected.",
       "added_to_list": "\"{{name}}\" added to the list.",
       "agent_connected": "Print agent connected ✓ — found {{count}} printers installed on the operating system.",
       "agent_not_running": "The print agent is not running.",
       "agent_not_running_here": "The print agent is not running on this device.",
       "agent_read_failed": "Could not read the printers from the agent.",
-      "arabic_receipt_failed": "The connection receipt was sent successfully, but the Arabic invoice failed ({{error}}). The printer connection is fine.",
+      "arabic_receipt_failed": "The connection receipt reached the printer, but the Arabic invoice did not. The connection is fine; try again.",
       "auto_print_desc": "Send the invoice to the printer as soon as an order is created",
       "auto_print_title": "Auto-Print on Sale Completion",
       "badge_default": "Default",
@@ -4392,7 +4468,7 @@
       "link_real_printer_hint": "Connection",
       "linked_for_silent_print": "\"{{name}}\" is linked for silent printing and set as the default printer. Press \"Test\" to confirm.",
       "network_missing_ip": "No IP address was entered for this printer. Delete it and add it again with the correct IP address (e.g. 192.168.1.199).",
-      "network_unreachable": "Could not reach the printer at {{ip}}:{{port}} — {{message}} Make sure the printer is switched on, that the server and the printer are on the same network, and that the raw printing port (9100) is enabled in the printer settings.",
+      "network_unreachable": "We could not reach the printer at {{ip}}:{{port}}. Check that it is on, and that it and the print device are on the same network.",
       "no_device_selected": "No device was selected in the browser window.",
       "no_device_selected_usb": "No device was selected. If the browser list is empty, try \"Expanded Search (All USB Devices)\" — many POS printers do not identify themselves as printers.",
       "no_direct_hardware_fallback": "You can continue printing via 'System Printer' — the browser print dialog will open for you to select your printer.",
@@ -4427,7 +4503,7 @@
       "set_default_success": "\"{{name}}\" set as the default printer.",
       "show_details": "Show Details",
       "silent_print_ok": "Silent print succeeded on \"{{name}}\" with no dialog — two receipts printed: a connection test and an Arabic invoice.",
-      "silent_print_partial": "The test receipt printed silently, but the Arabic invoice failed ({{error}}).",
+      "silent_print_partial": "The test receipt printed, but the Arabic invoice did not. Try again.",
       "station_printers_heading": "Cashier Device Printers",
       "station_status_failed": "Could not read the print station status.",
       "status_connected": "Connected",
@@ -4439,7 +4515,7 @@
       "system_printer_hint": "The standard print dialog will open for every receipt. For silent printing, connect the printer via USB or Bluetooth.",
       "system_printer_name": "Default System Printer (Print Dialog)",
       "test": "Test",
-      "test_failed": "Test failed: {{message}}",
+      "test_failed": "The test failed. Check that the printer is on and connected, then try again.",
       "test_print_doc_title": "Print Test - {{name}}",
       "test_print_title": "Thermal Invoice Print Test",
       "test_success": "Cashier receipt print test successful",
@@ -4448,7 +4524,7 @@
       "thank_you": "Thank you for using Seen POS",
       "title": "Invoice Printer Settings",
       "transport": {
-        "agent": "Legacy Local Agent (127.0.0.1)",
+        "agent": "The old print program on this device",
         "bluetooth": "Bluetooth",
         "network": "Direct LAN",
         "relay": "Silent Print (Seen Relay)",
@@ -4533,7 +4609,7 @@
       "confirm_disable_pin_confirm": "Disable PIN",
       "confirm_disable_pin_desc": "{{name}}'s login PIN will be disabled immediately -- they won't be able to sign in with it until a new one is activated.",
       "confirm_disable_pin_title": "Disable this employee's PIN?",
-      "delete_failed": "Failed to delete employee: {{message}}",
+      "delete_failed": "We could not delete the employee. Try again.",
       "delete_success": "Employee deleted successfully",
       "duplicate_data": "Some of this data is already registered to another employee.",
       "email_duplicate": "This email is already used by another employee.",
@@ -4986,9 +5062,9 @@
       "pin_needs_reactivation": "Needs reactivation",
       "pin_taken": "This PIN is already used by another employee -- choose a different one",
       "pin_unique_failed": "Couldn't generate a unique PIN, please try again",
-      "pin_update_failed": "Failed to update employee PIN: {{message}}",
+      "pin_update_failed": "We could not change the employee's PIN. Try again.",
       "pin_update_no_permission": "Nothing was saved -- you may not have permission to edit this employee.",
-      "save_failed": "Save failed: {{message}}",
+      "save_failed": "It was not saved. Try again.",
       "search_placeholder": "Search staff members...",
       "seed_default_roles": "Seed Default Roles",
       "seed_error": "An error occurred while adding roles",
@@ -4997,7 +5073,7 @@
       "seeding_roles": "Adding...",
       "status_active": "Active",
       "status_inactive": "Inactive",
-      "status_update_failed": "Failed to update employee status: {{message}}",
+      "status_update_failed": "We could not update the employee's status. Try again.",
       "status_update_success": "Employee status updated successfully",
       "subtitle": "Add employees and assign branches and job roles in the system.",
       "tab_activity": "Staff Activity",
@@ -5337,7 +5413,7 @@
     "requests": {
       "approve_activate": "Approve & Activate",
       "approve_confirm": "Are you sure you want to approve the subscription request and activate {{plan}} for the subscriber ({{tenant}})?",
-      "approve_error": "An error occurred while activating the plan: {{error}}",
+      "approve_error": "We could not activate the plan. Try again.",
       "approve_success": "Request approved and {{plan}} activated successfully ✓",
       "approved_count_label": "Approved Requests (Activated)",
       "confirm_reject": "Confirm Rejection",
@@ -5359,7 +5435,7 @@
       "reference_no": "Reference No.",
       "refresh_list": "Refresh List",
       "reject_confirm_text": "You are about to reject the subscription request for {{name}}. You may optionally write a rejection reason to explain it to the subscriber:",
-      "reject_error": "An error occurred while rejecting the request: {{error}}",
+      "reject_error": "We could not reject the request. Try again.",
       "reject_reason_placeholder": "For example: the attached image is unclear, or the bank transfer has not reached our account...",
       "reject_success": "Subscription request rejected successfully",
       "reject_title": "Reject Subscription Request",
@@ -5804,7 +5880,7 @@
   },
   "zatca_queue": {
     "title": "Sending to ZATCA",
-    "subtitle": "The last 50 invoices and credit notes the server sends on its own, retrying when ZATCA cannot be reached.",
+    "subtitle": "The last 50 invoices and credit notes Seen sends to ZATCA on its own, retrying when the connection fails.",
     "refresh": "Refresh",
     "load_failed": "The sending status could not be loaded",
     "empty": "No documents yet",

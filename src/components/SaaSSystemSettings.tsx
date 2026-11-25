@@ -369,7 +369,7 @@ export default function SaaSSystemSettings() {
           </h3>
           <div className="space-y-6">
             {[
-              { label: t('common.database'), status: t('common.connected'), health: '99.9%', icon: Database, color: 'text-success', bg: 'bg-success/10' },
+              { label: t('saas.system_database'), status: t('common.connected'), health: '99.9%', icon: Database, color: 'text-success', bg: 'bg-success/10' },
               { label: t('common.auth_services'), status: t('common.stable'), health: '100%', icon: ShieldCheck, color: 'text-brand', bg: 'bg-brand/10' },
               { label: t('common.cloud_storage'), status: t('common.warning'), health: '85%', icon: Server, color: 'text-warning', bg: 'bg-warning/10' }
             ].map((item) => (

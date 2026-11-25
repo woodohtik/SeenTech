@@ -87,7 +87,7 @@ export default function PaymentVoucherModal({
       });
 
       if (error) {
-        toastError(error.message);
+        toastError(error);
         return;
       }
 

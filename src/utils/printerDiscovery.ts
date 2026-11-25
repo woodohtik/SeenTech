@@ -18,6 +18,7 @@
  */
 
 import i18n from 'i18next';
+import { PrintError } from './printError';
 
 /* ============================ الأنواع ============================ */
 
@@ -264,7 +265,7 @@ export const listPairedPrinters = async (): Promise<DiscoveredPrinter[]> => {
 
 /** فتح نافذة اختيار أجهزة USB المعرّفة كفئة طابعة (classCode 7). */
 export const requestUsbPrinter = async (): Promise<DiscoveredPrinter> => {
-  if (!nav?.usb) throw new Error(i18n.t('printing.webusb_unsupported'));
+  if (!nav?.usb) throw new PrintError(i18n.t('printing.webusb_unsupported'));
 
   const device: USBDeviceLike = await nav.usb.requestDevice({ filters: [{ classCode: 7 }] });
   const id = usbId(device);
@@ -282,7 +283,7 @@ export const requestUsbPrinter = async (): Promise<DiscoveredPrinter> => {
 
 /** فتح نافذة اختيار أجهزة USB بدون تصفية — لطابعات POS التي تظهر كـ Vendor Specific. */
 export const requestAnyUsbDevice = async (): Promise<DiscoveredPrinter> => {
-  if (!nav?.usb) throw new Error(i18n.t('printing.webusb_unsupported'));
+  if (!nav?.usb) throw new PrintError(i18n.t('printing.webusb_unsupported'));
 
   const device: USBDeviceLike = await nav.usb.requestDevice({ filters: [] });
   const id = usbId(device);
@@ -300,7 +301,7 @@ export const requestAnyUsbDevice = async (): Promise<DiscoveredPrinter> => {
 
 /** فتح نافذة اختيار المنافذ التسلسلية (COM / RS-232 / USB-Serial). */
 export const requestSerialPrinter = async (): Promise<DiscoveredPrinter> => {
-  if (!nav?.serial) throw new Error(i18n.t('printing.web_serial_unsupported'));
+  if (!nav?.serial) throw new PrintError(i18n.t('printing.web_serial_unsupported'));
 
   const port: SerialPortLike = await nav.serial.requestPort();
   const info = port.getInfo();
@@ -344,7 +345,7 @@ const BT_PRINTER_SERVICES: (number | string)[] = [
 
 /** فتح نافذة اختيار أجهزة البلوتوث القريبة. */
 export const requestBluetoothPrinter = async (): Promise<DiscoveredPrinter> => {
-  if (!nav?.bluetooth) throw new Error(i18n.t('printing.web_bluetooth_unsupported'));
+  if (!nav?.bluetooth) throw new PrintError(i18n.t('printing.web_bluetooth_unsupported'));
 
   const device: BluetoothDeviceLike = await nav.bluetooth.requestDevice({
     acceptAllDevices: true,
@@ -375,7 +376,7 @@ const sendToUsb = async (id: string, data: Uint8Array): Promise<void> => {
     if (device) usbDeviceRegistry.set(id, device);
   }
 
-  if (!device) throw new Error(i18n.t('printing.usb_not_paired'));
+  if (!device) throw new PrintError(i18n.t('printing.usb_not_paired'));
 
   let claimed = -1;
 
@@ -416,7 +417,7 @@ const sendToUsb = async (id: string, data: Uint8Array): Promise<void> => {
       if (iface) break;
     }
 
-    if (!iface || !endpoint) throw new Error(i18n.t('printing.no_bulk_out_endpoint'));
+    if (!iface || !endpoint) throw new PrintError(i18n.t('printing.no_bulk_out_endpoint'));
 
     try {
       await device.claimInterface(iface.interfaceNumber);
@@ -443,7 +444,7 @@ const sendToUsb = async (id: string, data: Uint8Array): Promise<void> => {
     for (let i = 0; i < data.length; i += CHUNK) {
       const res = await device.transferOut(endpoint.endpointNumber, data.slice(i, i + CHUNK));
       if (res.status !== 'ok') {
-        const err: any = new Error(i18n.t('printing.printer_rejected_data', { status: res.status }));
+        const err: any = new PrintError(i18n.t('printing.printer_rejected_data', { status: res.status }));
         /*
          * فشل بعد قبول الدفعة الأولى: جزء من الفاتورة خرج على الورق بالفعل.
          * نُعلّم الخطأ حتى لا يُعاد الطبع تلقائياً فيخرج إيصال ثانٍ كامل
@@ -469,10 +470,10 @@ const sendToUsb = async (id: string, data: Uint8Array): Promise<void> => {
 
       // على الأندرويد لا يوجد usbprint.sys يحجز الجهاز، فسبب الفشل مختلف
       if (onAndroid) {
-        throw new Error(i18n.t('printing.usb_access_denied_android'));
+        throw new PrintError(i18n.t('printing.usb_access_denied_android'));
       }
 
-      throw new Error(i18n.t('printing.usb_access_denied_windows'));
+      throw new PrintError(i18n.t('printing.usb_access_denied_windows'));
     }
     throw err;
   } finally {
@@ -512,7 +513,7 @@ const sendToSerial = async (id: string, data: Uint8Array, preferredBaud?: number
     if (port) serialPortRegistry.set(id, port);
   }
 
-  if (!port) throw new Error(i18n.t('printing.serial_not_paired'));
+  if (!port) throw new PrintError(i18n.t('printing.serial_not_paired'));
 
   const known = serialBaudRegistry.get(id);
   const bauds = Array.from(
@@ -545,14 +546,13 @@ const sendToSerial = async (id: string, data: Uint8Array, preferredBaud?: number
   }
 
   if (!opened) {
-    throw new Error(
-      i18n.t('printing.serial_open_failed', { error: lastErr?.message || '' })
+    throw new PrintError(i18n.t('printing.serial_open_failed', { error: lastErr?.message || '' })
     );
   }
 
   serialBaudRegistry.set(id, usedBaud);
 
-  if (!port.writable) throw new Error(i18n.t('printing.serial_not_writable'));
+  if (!port.writable) throw new PrintError(i18n.t('printing.serial_not_writable'));
 
   const writer = port.writable.getWriter();
   try {
@@ -586,7 +586,7 @@ const sendToBluetooth = async (id: string, data: Uint8Array): Promise<void> => {
     }
   }
 
-  if (!device?.gatt) throw new Error(i18n.t('printing.bluetooth_not_paired'));
+  if (!device?.gatt) throw new PrintError(i18n.t('printing.bluetooth_not_paired'));
 
   const server = await device.gatt.connect();
 
@@ -618,7 +618,7 @@ const sendToBluetooth = async (id: string, data: Uint8Array): Promise<void> => {
     }
   }
 
-  if (!characteristic) throw new Error(i18n.t('printing.bluetooth_no_service'));
+  if (!characteristic) throw new PrintError(i18n.t('printing.bluetooth_no_service'));
 
   // BLE محدود بحزم صغيرة
   const CHUNK = 180;
@@ -654,7 +654,7 @@ const bytesToBase64 = (data: Uint8Array): string => {
  */
 const sendToNetwork = async (conn: ConnectionOptions, data: Uint8Array): Promise<void> => {
   const ip = (conn.ipAddress || '').trim();
-  if (!ip) throw new Error(i18n.t('printing.network_ip_missing'));
+  if (!ip) throw new PrintError(i18n.t('printing.network_ip_missing'));
 
   const port = Number(conn.port || 9100) || 9100;
   const dataBase64 = bytesToBase64(data);
@@ -676,9 +676,9 @@ const sendToNetwork = async (conn: ConnectionOptions, data: Uint8Array): Promise
         body: JSON.stringify({ host: ip, port, dataBase64 }),
       });
     } catch (e: any) {
-      const err: any = new Error(
-        i18n.t('printing.server_relay_unreachable_detail', {
-          error: e?.message || i18n.t('printing.network_error'),
+      console.warn('[printerDiscovery] print relay unreachable:', e);
+      const err: any = new PrintError(i18n.t('printing.server_relay_unreachable_detail', {
+          error: i18n.t('printing.network_error'),
         })
       );
       // نجحت نسخة على الأقل قبل هذا الفشل → لا يجوز إعادة الطبع تلقائياً
@@ -694,8 +694,7 @@ const sendToNetwork = async (conn: ConnectionOptions, data: Uint8Array): Promise
     }
 
     if (!res.ok || payload?.ok === false) {
-      const err: any = new Error(
-        payload?.error || i18n.t('printing.network_send_failed', { host: ip, port })
+      const err: any = new PrintError(i18n.t('printing.network_send_failed', { host: ip, port })
       );
       if (i > 0) err.dispatched = true;
       throw err;
@@ -752,7 +751,7 @@ export const sendRawToPrinter = async (
       // only a server installed in the shop can. Say what to do instead of
       // failing with a network error.
       if (!relay.isRelayPaired() && !isLocalServer()) {
-        throw new Error(i18n.t('printing.pair_agent_for_network'));
+        throw new PrintError(i18n.t('printing.pair_agent_for_network'));
       }
       return sendToNetwork(conn, data);
     }
@@ -775,7 +774,7 @@ export const sendRawToPrinter = async (
     }
 
     default:
-      throw new Error(i18n.t('printing.system_printer_no_raw'));
+      throw new PrintError(i18n.t('printing.system_printer_no_raw'));
   }
 };
 
@@ -819,11 +818,11 @@ export const canvasToEscPosRaster = (
   sliceHeight = 128
 ): Uint8Array => {
   const ctx = canvas.getContext('2d');
-  if (!ctx) throw new Error(i18n.t('printing.canvas_read_failed'));
+  if (!ctx) throw new PrintError(i18n.t('printing.canvas_read_failed'));
 
   const width = Math.floor(canvas.width / 8) * 8;
   const height = canvas.height;
-  if (width < 8 || height < 1) throw new Error(i18n.t('printing.invalid_invoice_dimensions'));
+  if (width < 8 || height < 1) throw new PrintError(i18n.t('printing.invalid_invoice_dimensions'));
 
   const bytesPerRow = width / 8;
   const img = ctx.getImageData(0, 0, width, height).data;

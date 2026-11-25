@@ -99,6 +99,7 @@ import { isRtlLang, localeOf } from '../lib/direction';
 // Moved to ./orderStatusConfig (seen-performance-first-open-login-task.md
 // Phase 4); re-exported so existing imports from './Orders' keep working.
 import { STATUS_CONFIG, getOrderStatusDisplay } from './orderStatusConfig';
+import { ownMessageOr } from '../lib/userFacingError';
 export { STATUS_CONFIG, getOrderStatusDisplay };
 export type { StatusVisual } from './orderStatusConfig';
 
@@ -1258,7 +1259,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
       });
       if (!res.ok) {
         console.error('[Orders] فشل الطباعة:', res.message);
-        toastError(t('printing.print_failed'), res.message);
+        toastError(res);
       }
     } catch (e) {
       console.error('[Orders] خطأ الطباعة:', e);
@@ -1274,7 +1275,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
         paperSize: getConfiguredPaperSize('80mm'),
         title: t('orders.work_card_title', 'بطاقة عمل') + ' ' + (order.orderNumber || order.id.slice(-6).toUpperCase()),
       });
-      if (!res.ok) toastError(t('printing.print_failed'), res.message);
+      if (!res.ok) toastError(res);
     } catch (e) {
       console.error('[Orders] work card print failed:', e);
       toastError(t('printing.print_failed'));
@@ -1320,7 +1321,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
       try {
         const result = await issueTaxInvoiceForOrder(order.id);
         if (!result.ok) {
-          toastError(t('tax_invoices.issue_failed', 'تعذّر إصدار الفاتورة'), result.error);
+          toastError(t('tax_invoices.issue_failed', 'تعذّر إصدار الفاتورة'), ownMessageOr(result.error, t('errors.user.unknown.action')));
           return;
         }
         const invoice = await fetchTaxInvoiceForOrder(tenantId, order.id);
@@ -1507,7 +1508,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                           paperSize: getConfiguredPaperSize('80mm'),
                           title: t('orders.order_details'),
                         });
-                        if (!res.ok) toastError(t('printing.print_failed'), res.message);
+                        if (!res.ok) toastError(res);
                       } catch (e) {
                         console.error('[Orders] خطأ الطباعة:', e);
                         window.print();

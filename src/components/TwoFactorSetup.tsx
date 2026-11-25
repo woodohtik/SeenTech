@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabase/client';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
 import { useConfirm } from '../contexts/ConfirmContext';
+import { ownMessageOr } from '../lib/userFacingError';
 
 /**
  * seen-admin-reengineering-task.md بند 7 -- SaaSLayout.tsx:264 كان فيه تعليق
@@ -54,7 +55,7 @@ export default function TwoFactorSetup() {
       if (error) throw error;
       setEnrolling({ id: data.id, qrCode: data.totp.qr_code, secret: data.totp.secret });
     } catch (e: any) {
-      toastError(e?.message || t('saas.mfa_enroll_failed', 'تعذّر بدء تفعيل التحقق الثنائي'));
+      toastError(ownMessageOr(e, t('saas.mfa_enroll_failed', 'تعذّر بدء تفعيل التحقق الثنائي')));
     } finally {
       setBusy(false);
     }
@@ -72,7 +73,7 @@ export default function TwoFactorSetup() {
       toastSuccess(t('saas.mfa_enabled_success', 'تم تفعيل التحقق الثنائي بنجاح'));
       await refreshFactors();
     } catch (e: any) {
-      toastError(e?.message || t('saas.mfa_verify_failed', 'الرمز غير صحيح أو منتهي -- حاول مجدداً'));
+      toastError(ownMessageOr(e, t('saas.mfa_verify_failed', 'الرمز غير صحيح أو منتهي -- حاول مجدداً')));
     } finally {
       setBusy(false);
     }
@@ -104,7 +105,7 @@ export default function TwoFactorSetup() {
       toastSuccess(t('saas.mfa_disabled_success', 'تم تعطيل التحقق الثنائي'));
       await refreshFactors();
     } catch (e: any) {
-      toastError(e?.message || t('saas.mfa_disable_failed', 'تعذّر تعطيل التحقق الثنائي'));
+      toastError(ownMessageOr(e, t('saas.mfa_disable_failed', 'تعذّر تعطيل التحقق الثنائي')));
     } finally {
       setBusy(false);
     }

@@ -1,6 +1,4 @@
-import i18n from 'i18next';
 import * as Sentry from '@sentry/react';
-import { OperationType } from './appErrors';
 
 /**
  * Sentry activates only once VITE_SENTRY_DSN is actually set (Vercel env
@@ -49,8 +47,9 @@ export const setLoggerUserContext = (user: {
   if (user.branchId) Sentry.setTag('branch_id', user.branchId);
 };
 
-export const logError = (error: any, context?: any) => {
-  if (!error) return;
+/** Logs an error; returns the Sentry event id when Sentry is on. */
+export const logError = (error: any, context?: any): string | undefined => {
+  if (!error) return undefined;
 
   console.warn('[Logger] RAW ERROR:', error);
   if (context) {
@@ -70,7 +69,7 @@ export const logError = (error: any, context?: any) => {
     } catch (e) {}
   }
   
-  if (errorMsg === '{}' || !errorMsg) return;
+  if (errorMsg === '{}' || !errorMsg) return undefined;
 
   let ctxStr = '';
   if (context) {
@@ -79,15 +78,18 @@ export const logError = (error: any, context?: any) => {
   console.warn('[Logger] Error:', errorMsg, ctxStr);
 
   if (import.meta.env.VITE_SENTRY_DSN && import.meta.env.PROD) {
+    let eventId: string | undefined;
     Sentry.withScope((scope) => {
       if (context) {
         Object.keys(context).forEach(key => {
           scope.setExtra(key, context[key]);
         });
       }
-      Sentry.captureException(error instanceof Error ? error : new Error(String(errorMsg)));
+      eventId = Sentry.captureException(error instanceof Error ? error : new Error(String(errorMsg)));
     });
+    return eventId;
   }
+  return undefined;
 };
 
 export const logMessage = (message: string, level: 'info' | 'warn' | 'error' | 'debug' = 'info') => {
@@ -96,12 +98,4 @@ export const logMessage = (message: string, level: 'info' | 'warn' | 'error' | '
   if (import.meta.env.VITE_SENTRY_DSN && import.meta.env.PROD) {
     Sentry.captureMessage(message, level === 'warn' ? 'warning' : level);
   }
-};
-
-export const getFriendlyErrorMessage = (error: any): string => {
-  if (!error) return i18n.t('errors.unknown');
-  const code = error.code || '';
-  if (code === 'auth/user-not-found' || code === 'auth/wrong-password') return i18n.t('login.errors.invalid_credentials');
-  if (code === 'auth/permission-denied' || code === 'permission-denied') return i18n.t('errors.no_permission');
-  return i18n.t('errors.generic_retry');
 };

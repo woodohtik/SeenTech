@@ -18,6 +18,10 @@ export interface Toast {
   type: ToastType;
   message: string;
   description?: string;
+  /** An error's code for support (seen-friendly-errors-everywhere-task.md). */
+  code?: string;
+  /** The error's own text: only for the platform team (super admin). */
+  details?: string;
 }
 
 export interface ToastStackProps {
@@ -61,6 +65,15 @@ export function ToastCard({ toast, onClose }: { toast: Toast; onClose: () => voi
           <p className="mt-1 text-sm font-bold text-content-muted leading-relaxed">
             {toast.description}
           </p>
+        )}
+        {toast.code && (
+          <p className="mt-1 text-sm font-medium text-content-muted">{i18n.t('errors.user.code', { code: toast.code })}</p>
+        )}
+        {toast.details && (
+          <details className="mt-2 text-sm text-content-muted">
+            <summary className="cursor-pointer font-bold">{i18n.t('errors.user.technical_details')}</summary>
+            <p className="mt-1 break-all font-mono" dir="ltr">{toast.details}</p>
+          </details>
         )}
       </div>
       <button

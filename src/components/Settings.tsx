@@ -45,6 +45,7 @@ import { isValidMeasurementUnit, type MeasurementUnit } from '../utils/measureme
 import { DEFAULT_FABRIC_ESTIMATE_SETTINGS, normalizeFabricEstimateSettings } from '../utils/fabricEstimate';
 import { useVerticalConfig } from '../hooks/useVerticalConfig';
 import { measurementSetFor } from '../constants/measurementFields';
+import { explainOr } from '../lib/userFacingError';
 // P6 (SECURITY-11): the owner sees every support session in the shop.
 const TenantSupportHistory = React.lazy(() => import('./TenantSupportHistory'));
 
@@ -485,7 +486,7 @@ export default function Settings({ tenantId }: SettingsProps) {
         setResetResult({ type: 'success', message: t('settings_page.data.delete_test_success', { records: result.deletedCount }) });
         window.dispatchEvent(new CustomEvent('data_cleared'));
       } else {
-        setResetResult({ type: 'error', message: t('settings_page.data.delete_test_error', { error: result.error || '' }) });
+        setResetResult({ type: 'error', message: explainOr(result.error, t('settings_page.data.delete_test_error')) });
       }
     } catch (error) {
       handleError(error, OperationType.DELETE, 'test_data');

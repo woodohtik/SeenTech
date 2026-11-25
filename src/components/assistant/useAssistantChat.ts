@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '../../lib/supabase/client';
 import type { ChatMessage, ChatNotice, ChatProgress, ToolResult } from './types';
+import { ownMessageOr } from '../../lib/userFacingError';
 
 // seen-ai-assistant-zatca-cr-task.md #1: مهلة زمنية قصوى لطلب الدردشة --
 // بدونها، أي تعلّق في الخادم (مزوّد لا يرجع خطأ صريح) يُبقي الواجهة في وضع
@@ -229,17 +230,17 @@ export function useAssistantChat({ tenantId, userName, userRole, page, onTourReq
         const data = await res.json().catch(() => ({}));
         // Stays on screen until the user closes the panel: it used to close
         // itself after 2.5s, before the reason could be read.
-        setNotice({ kind: 'disabled', message: data.message || t('ai.assistant_disabled_message'), canRetry: false });
+        setNotice({ kind: 'disabled', message: ownMessageOr(data.message, t('ai.assistant_disabled_message'), { silent: true }), canRetry: false });
         return;
       }
       if (res.status === 429) {
         const data = await res.json().catch(() => ({}));
-        setNotice({ kind: 'limit', message: data.message || t('ai.daily_limit_reached'), canRetry: false });
+        setNotice({ kind: 'limit', message: ownMessageOr(data.message, t('ai.daily_limit_reached'), { silent: true }), canRetry: false });
         return;
       }
       if (res.status === 503) {
         const data = await res.json().catch(() => ({}));
-        setNotice({ kind: 'not_configured', message: data.message || t('ai.not_configured_message'), canRetry: false });
+        setNotice({ kind: 'not_configured', message: ownMessageOr(data.message, t('ai.not_configured_message'), { silent: true }), canRetry: false });
         return;
       }
       if (!res.ok || !res.body) throw new Error('request_failed');

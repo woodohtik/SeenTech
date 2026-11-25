@@ -1,4 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { authAdminErrorKind } from './userErrors';
 
 export interface CreateOrUpdateStaffAccountInput {
   email: string;
@@ -12,7 +13,7 @@ export interface CreateOrUpdateStaffAccountInput {
 
 export type CreateOrUpdateStaffAccountResult =
   | { ok: true; uid: string; alreadyExisted: boolean }
-  | { ok: false; status: 400 | 409; error: string };
+  | { ok: false; status: 400 | 409; error: string; detail?: string };
 
 /**
  * Creates a Supabase Auth account for a new staff/SaaS-team member.
@@ -54,11 +55,13 @@ export async function createOrUpdateStaffAccount(
   });
 
   if (error) {
-    const alreadyRegistered = /already been registered|already registered/i.test(error.message || '');
-    if (alreadyRegistered) {
-      return { ok: false, status: 409, error: 'email_already_in_use' };
+    // seen-friendly-errors-everywhere-task.md: a reason word for the route,
+    // never Supabase Auth's English text (it is logged by the route).
+    const { reason } = authAdminErrorKind(error.message);
+    if (reason === 'email_already_in_use') {
+      return { ok: false, status: 409, error: 'email_already_in_use', detail: error.message };
     }
-    return { ok: false, status: 400, error: error.message };
+    return { ok: false, status: 400, error: reason, detail: error.message };
   }
 
   const uid = data.user!.id;
@@ -73,13 +76,13 @@ export async function createOrUpdateStaffAccount(
     .from('users')
     .upsert({ id: uid, email: normalizedEmail, created_by_tenant_id: requesterTenantId }, { onConflict: 'id' });
   if (usersError) {
-    return { ok: false, status: 400, error: usersError.message };
+    return { ok: false, status: 400, error: 'account_failed', detail: usersError.message };
   }
 
   return { ok: true, uid, alreadyExisted: false };
 }
 
-export type ResetStaffPasswordResult = { ok: true } | { ok: false; status: 400; error: string };
+export type ResetStaffPasswordResult = { ok: true } | { ok: false; status: 400; error: string; detail?: string };
 
 /** Resets an existing staff/SaaS-team member's password via the Admin API (super_admin-only caller, enforced by the route). */
 export async function resetStaffPassword(
@@ -89,7 +92,7 @@ export async function resetStaffPassword(
 ): Promise<ResetStaffPasswordResult> {
   const { error } = await supabaseAdmin.auth.admin.updateUserById(uid, { password });
   if (error) {
-    return { ok: false, status: 400, error: error.message };
+    return { ok: false, status: 400, error: authAdminErrorKind(error.message).reason, detail: error.message };
   }
   return { ok: true };
 }
