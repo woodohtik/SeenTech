@@ -74,6 +74,14 @@ describe('the error\'s own text never reaches the screen', () => {
     expect(ue).toMatchObject({ kind: 'refusal', title: 'افتح وردية قبل استلام أي دفعة', action: '' });
   });
 
+  it('a database error wrapped as JSON (a write error event): its own Arabic sentence, never the JSON', () => {
+    const info = { error: JSON.stringify({ code: '22023', message: 'سطر القماش هذا ليس من أصناف الطلب. حدّث الصفحة ثم أعد المحاولة.', hint: 'fabric_line_mismatch' }), operationType: 'update', path: 'orders' };
+    const ue = toUserError(info);
+    expect(ue.kind).toBe('refusal');
+    expect(ue.message).toBe('سطر القماش هذا ليس من أصناف الطلب. حدّث الصفحة ثم أعد المحاولة.');
+    expect(ue.message).not.toContain('{');
+  });
+
   it('the duplicate phone of the acceptance list', () => {
     const ue = toUserError({ code: '23505', message: 'duplicate key value violates unique constraint "customers_phone_key"' });
     expect(ue.title).toBe(ar.errors.user.duplicate_phone.title);

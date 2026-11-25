@@ -18,9 +18,15 @@ export interface CuttingFabricDialogProps {
   onCancel: () => void;
   /** The reviewed lines, meters as confirmed. */
   onConfirm: (lines: CuttingFabricLine[]) => void;
+  /**
+   * seen-cutting-fabric-pos-orders-fix-task.md: a POS thobe whose cloth was
+   * taken at the sale -- the window is optional, and this moves the order on
+   * without touching the cloth.
+   */
+  onSkip?: () => void;
 }
 
-export default function CuttingFabricDialog({ lines, busy = false, onCancel, onConfirm }: CuttingFabricDialogProps) {
+export default function CuttingFabricDialog({ lines, busy = false, onCancel, onConfirm, onSkip }: CuttingFabricDialogProps) {
   const { t, i18n } = useTranslation();
   // Text per line, so a half-typed decimal is not rewritten while typing.
   const [values, setValues] = useState<Record<string, string>>(() =>
@@ -74,6 +80,9 @@ export default function CuttingFabricDialog({ lines, busy = false, onCancel, onC
         >
           <div className="flex-1 overflow-y-auto p-4 main-640:p-5 space-y-3">
             <p className="text-sm font-bold text-content-muted">{t('orders.cutting_fabric_desc')}</p>
+            {lines.some((line) => (line.takenMeters ?? 0) > 0) && (
+              <p className="text-sm font-bold text-content">{t('orders.cutting_fabric_taken_desc')}</p>
+            )}
             {lines.map((line, index) => (
               <div key={line.lineKey} className="flex items-center gap-3 rounded-2xl border border-border bg-surface-muted p-3">
                 <div className="flex-1 min-w-0">
@@ -81,6 +90,9 @@ export default function CuttingFabricDialog({ lines, busy = false, onCancel, onC
                   <p className="text-sm font-bold text-content-muted truncate">
                     {t('orders.cutting_fabric_line', { garment: line.garmentType, count: line.pieces })}
                   </p>
+                  {(line.takenMeters ?? 0) > 0 && (
+                    <p className="text-sm font-bold text-brand">{t('orders.cutting_fabric_taken', { meters: line.takenMeters })}</p>
+                  )}
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
                   <input
@@ -108,6 +120,11 @@ export default function CuttingFabricDialog({ lines, busy = false, onCancel, onC
             <button type="button" onClick={onCancel} disabled={busy} className="px-6 py-2.5 text-content-muted font-bold hover:text-content transition-colors text-sm rounded-xl hover:bg-surface-muted disabled:opacity-50">
               {t('common.cancel')}
             </button>
+            {onSkip && (
+              <button type="button" onClick={onSkip} disabled={busy} className="px-5 py-2.5 border border-border text-content font-bold text-sm rounded-xl hover:bg-surface-muted disabled:opacity-50">
+                {t('orders.cutting_fabric_skip')}
+              </button>
+            )}
             <button type="submit" disabled={busy} className="bg-brand text-white px-8 py-2.5 rounded-xl font-bold hover:bg-brand/90 shadow-lg shadow-brand/20 transition-all disabled:opacity-50 text-sm">
               {busy ? t('common.saving') : t('orders.cutting_fabric_confirm')}
             </button>

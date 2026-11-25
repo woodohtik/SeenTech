@@ -4,6 +4,7 @@ import {
   computeTailoringTotals,
   cuttingFabricLines,
   isFabricDeductionDue,
+  isFabricReviewOffered,
   fabricFromContentUnit,
   fabricInContentUnit,
   lineToServerItem,
@@ -191,5 +192,30 @@ describe('cuttingFabricLines', () => {
       { lineKey: 'idx-2', fabricId: 'f-2', fabricName: 'صوف', garmentType: '', pieces: 2, meters: 0 },
     ]);
     expect(cuttingFabricLines(undefined)).toEqual([]);
+  });
+});
+
+// seen-cutting-fabric-pos-orders-fix-task.md
+describe('a thobe sold from the POS, at cutting', () => {
+  it('cloth taken at the sale: the window is not forced, it is offered once', () => {
+    const sold = { kind: 'pos_sale', fabricDeductedAt: '2026-11-25T10:00:00Z' };
+    expect(isFabricDeductionDue({ currentStatus: 'measurements_taken', targetStatus: 'cutting', ...sold })).toBe(false);
+    expect(isFabricReviewOffered({ currentStatus: 'measurements_taken', targetStatus: 'cutting', ...sold })).toBe(true);
+    expect(isFabricReviewOffered({ currentStatus: 'cutting', targetStatus: 'sewing', ...sold })).toBe(false);
+  });
+
+  it('no cloth taken at the sale: due like a tailoring order (question 2)', () => {
+    expect(isFabricDeductionDue({ currentStatus: 'measurements_taken', targetStatus: 'cutting', kind: 'pos_sale' })).toBe(true);
+    expect(isFabricReviewOffered({ currentStatus: 'measurements_taken', targetStatus: 'cutting', kind: 'pos_sale' })).toBe(false);
+  });
+
+  it('other orders are never offered the optional window', () => {
+    expect(isFabricReviewOffered({ currentStatus: 'measurements_taken', targetStatus: 'cutting', kind: 'tailoring', fabricDeductedAt: 'x' })).toBe(false);
+    expect(isFabricReviewOffered({ currentStatus: 'measurements_taken', targetStatus: 'cutting', fabricDeductedAt: 'x' })).toBe(false);
+  });
+
+  it('each line carries what it took at the sale', () => {
+    const line = orderItemRowToLine({ id: 'l1', type: 'custom', fabric_id: 'f1', fabric: 'قطن', quantity: 1, consumed_meters: 3.5, fabric_taken_meters: 3.5 } as any);
+    expect(cuttingFabricLines([line])[0]).toMatchObject({ lineKey: 'l1', meters: 3.5, takenMeters: 3.5 });
   });
 });

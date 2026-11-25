@@ -162,6 +162,8 @@ export function orderItemRowToLine(row: Record<string, any>): Record<string, any
     quantity: Number(row.quantity) || 0,
     price: Number(row.price) || 0,
     consumedMeters: Number(row.consumed_meters) || 0,
+    // seen-cutting-fabric-pos-orders-fix-task.md: what the line took from stock (a POS sale takes it at the sale).
+    fabricTakenMeters: Number(row.fabric_taken_meters) || 0,
     quantityUnit: attributes.quantityUnit,
     fabricManual: Boolean(attributes.fabricManual),
     fabricPerPieceMeters: Number(attributes.fabricPerPieceMeters) || 0,
@@ -205,12 +207,32 @@ export function isFabricDeductionDue(input: {
   if (input.fabricDeductedAt) return false;
   const target = STAGE_RANK[input.targetStatus];
   if (target === undefined || target < STAGE_RANK.cutting) return false;
-  // The server stamps a tailoring-kind order only after a real deduction, so
-  // one that passed cutting with no figure entered is still due at its next move.
-  if (input.kind === 'tailoring') return true;
+  // The server stamps a tailoring-kind order (and a POS sale) only after a
+  // real deduction, so one that passed cutting with no figure entered is
+  // still due at its next move.
+  if (input.kind === 'tailoring' || input.kind === 'pos_sale') return true;
   // An older order carries no stamp: its fabric was handled when it reached
   // cutting, so only the move that first takes it there is due.
   const current = STAGE_RANK[input.currentStatus];
+  return current === undefined || current < STAGE_RANK.cutting;
+}
+
+/**
+ * seen-cutting-fabric-pos-orders-fix-task.md question 1: a thobe sold from
+ * the POS whose cloth was taken at the sale. The move that first takes it
+ * to cutting offers the cutting window (not forced): the tailor may enter
+ * the real figure, and only the difference moves.
+ */
+export function isFabricReviewOffered(input: {
+  currentStatus: string;
+  targetStatus: string;
+  fabricDeductedAt?: string | null;
+  kind?: string | null;
+}): boolean {
+  if (input.kind !== 'pos_sale' || !input.fabricDeductedAt) return false;
+  const target = STAGE_RANK[input.targetStatus];
+  const current = STAGE_RANK[input.currentStatus];
+  if (target === undefined || target < STAGE_RANK.cutting) return false;
   return current === undefined || current < STAGE_RANK.cutting;
 }
 
@@ -223,6 +245,8 @@ export interface CuttingFabricLine {
   pieces: number;
   /** The figure saved with the line, in meters. */
   meters: number;
+  /** Already taken from stock for this line (a POS sale at the sale); cutting moves only the difference. */
+  takenMeters?: number;
 }
 
 /** The lines of an order that draw cloth from stock, for the cutting dialog. */
@@ -238,6 +262,8 @@ export function cuttingFabricLines(items: ReadonlyArray<Record<string, any>> | n
       garmentType: item.garmentType || item.name || '',
       pieces: Number(item.quantity) || 0,
       meters: Math.max(0, Number(item.consumedMeters) || 0),
+      // Only when the line took cloth already (a POS sale at the sale).
+      ...(Number(item.fabricTakenMeters) > 0 ? { takenMeters: Number(item.fabricTakenMeters) } : {}),
     }];
   });
 }

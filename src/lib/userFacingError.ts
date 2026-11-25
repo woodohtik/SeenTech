@@ -99,6 +99,15 @@ function rawOf(err: unknown): Raw {
       if (typeof parsed.error === 'string') return { message: parsed.error, code: '', details: '' };
     } catch { /* not ours */ }
   }
+  // A write error event carries the database error as JSON text in `error`
+  // (seen-cutting-fabric-pos-orders-fix-task.md: it reached the shop as raw JSON).
+  const wrapped = (err as { error?: unknown } | null)?.error;
+  if (typeof wrapped === 'string' && wrapped.startsWith('{')) {
+    try {
+      const inner = JSON.parse(wrapped) as unknown;
+      if (inner && typeof inner === 'object' && typeof (inner as { message?: unknown }).message === 'string') return rawOf(inner);
+    } catch { /* not JSON after all */ }
+  }
   const e = (err ?? {}) as Record<string, unknown>;
   const status = typeof e.status === 'number' ? e.status : typeof e.statusCode === 'number' ? e.statusCode : undefined;
   const message = typeof e.message === 'string' ? e.message : typeof e.error === 'string' ? e.error : '';

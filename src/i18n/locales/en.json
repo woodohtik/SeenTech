@@ -2399,7 +2399,10 @@
     "fabric_shortage_continue": "Go on and record the shortage",
     "fabric_shortage_continued": "The order moved; the fabric shortage was recorded",
     "fabric_shortage_failed": "Could not go on",
-    "invoice_not_found": "The original invoice of this order could not be found"
+    "invoice_not_found": "The original invoice of this order could not be found",
+    "cutting_fabric_taken": "Taken at the sale: {{meters}} m",
+    "cutting_fabric_taken_desc": "This thobe's cloth was taken from stock at the sale. Enter the real figure if it differs: only the difference moves in stock, nothing is taken twice.",
+    "cutting_fabric_skip": "Continue without a change"
   },
   "permissions": {
     "access_denied_desc": "Not specified",

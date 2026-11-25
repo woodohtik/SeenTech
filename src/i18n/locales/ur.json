@@ -2399,7 +2399,10 @@
     "fabric_shortage_continue": "آگے بڑھیں اور کمی درج کریں",
     "fabric_shortage_continued": "آرڈر آگے بڑھا؛ کپڑے کی کمی درج ہو گئی",
     "fabric_shortage_failed": "آگے نہیں بڑھ سکے",
-    "invoice_not_found": "اس آرڈر کی اصل انوائس نہیں مل سکی"
+    "invoice_not_found": "اس آرڈر کی اصل انوائس نہیں مل سکی",
+    "cutting_fabric_taken": "فروخت کے وقت کٹا: {{meters}} میٹر",
+    "cutting_fabric_taken_desc": "اس تھوب کا کپڑا فروخت کے وقت اسٹاک سے کٹ گیا تھا۔ اصل مقدار مختلف ہو تو لکھیں: صرف فرق اسٹاک میں منتقل ہوگا، کچھ دوبارہ نہیں کٹے گا۔",
+    "cutting_fabric_skip": "بغیر تبدیلی کے جاری رکھیں"
   },
   "permissions": {
     "access_denied_desc": "غیر متعین",

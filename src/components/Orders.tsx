@@ -6,7 +6,7 @@ import { useDebouncedValue } from '../hooks/useDebouncedValue';
 import { useMeasurementUnit } from '../hooks/useMeasurementUnit';
 import { formatMeasurement, measurementText, unitLabelKey } from '../utils/measurementUnits';
 import { measurementRows, measurementSetFor } from '../constants/measurementFields';
-import { orderItemRowToLine, cuttingFabricLines, isFabricDeductionDue, type CuttingFabricLine } from '../utils/tailoringOrder';
+import { orderItemRowToLine, cuttingFabricLines, isFabricDeductionDue, isFabricReviewOffered, type CuttingFabricLine } from '../utils/tailoringOrder';
 import CuttingFabricDialog from './CuttingFabricDialog';
 import { createPortal } from 'react-dom';
 import { useSearchParams } from 'react-router-dom';
@@ -347,7 +347,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
   // opens it (optionally with a customer preselected) and lists what it saves.
   const [newOrderCustomerId, setNewOrderCustomerId] = useState<string | undefined>(undefined);
   // The move to cutting waiting on its fabric quantities to be confirmed.
-  const [cuttingPrompt, setCuttingPrompt] = useState<{ id: string; status: string; notes?: string; lines: CuttingFabricLine[] } | null>(null);
+  const [cuttingPrompt, setCuttingPrompt] = useState<{ id: string; status: string; notes?: string; lines: CuttingFabricLine[]; optional?: boolean } | null>(null);
   const [isCuttingBusy, setIsCuttingBusy] = useState(false);
 
   // The measurements an order shows: the snapshot stored on its lines when it
@@ -500,7 +500,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
           .from('order_history')
           .select('order_id, status, notes, updated_at, updated_by_name, updated_by_staff, orders!inner(kind)')
           .eq('tenant_id', tenantId)
-          .eq('orders.kind', 'tailoring')
+          .in('orders.kind', ['tailoring', 'pos_sale'])
           .order('updated_at', { ascending: true }),
       ]);
       if (itemsError) throw itemsError;
@@ -532,13 +532,16 @@ export default function Orders({ tenantId }: { tenantId: string }) {
         const mapped = mapOrderData(o);
         const lines = linesByOrder.get(o.id);
         const isTailoringKind = o.kind === 'tailoring';
+        // seen-cutting-fabric-pos-orders-fix-task.md: a POS sale's lines and
+        // history are in their tables too (its notes keep the buyer's company).
+        const linesInTables = isTailoringKind || o.kind === 'pos_sale';
         // Orders made before create_tailoring_order still carry their lines
         // in notes; those win when present.
-        const items = lines && (isTailoringKind || mapped.items.length === 0) ? lines : mapped.items;
+        const items = lines && (linesInTables || mapped.items.length === 0) ? lines : mapped.items;
         return {
           ...mapped,
           items,
-          history: isTailoringKind ? (historyByOrder.get(o.id) || mapped.history) : mapped.history,
+          history: linesInTables ? (historyByOrder.get(o.id) || mapped.history) : mapped.history,
           isPosSale: ordersWithItemRows.has(o.id) && !lines && !isTailoringKind,
         } as Order;
       });
@@ -873,6 +876,18 @@ export default function Orders({ tenantId }: { tenantId: string }) {
       setCuttingPrompt({ id, status, notes, lines: fabricLines });
       return;
     }
+    // A POS thobe whose cloth was taken at the sale: the window is offered,
+    // not forced -- the real figure may differ, and only the difference moves.
+    const reviewOffered = isFabricReviewOffered({
+      currentStatus: legacyOrderStatusFor(order.status, workflowStages),
+      targetStatus: legacyOrderStatusFor(status, workflowStages),
+      fabricDeductedAt: (order as any).fabricDeductedAt,
+      kind: (order as any).kind,
+    });
+    if (reviewOffered && fabricLines.length > 0) {
+      setCuttingPrompt({ id, status, notes, lines: fabricLines, optional: true });
+      return;
+    }
 
     await performStatusUpdate(order, status, notes);
   };
@@ -934,7 +949,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
               ...(fabricLines.some((l) => l.meters > 0) ? { fabricDeductedAt: new Date().toISOString() } : {}),
               items: (o.items || []).map((item: any, index: number) => {
                 const line = fabricLines.find((l) => l.lineKey === (item.id ? String(item.id) : `idx-${index}`));
-                return line ? { ...item, consumedMeters: line.meters } : item;
+                return line ? { ...item, consumedMeters: line.meters, ...(line.takenMeters !== undefined ? { fabricTakenMeters: line.meters } : {}) } : item;
               }),
             } : {}),
           } as Order
@@ -2773,6 +2788,17 @@ export default function Orders({ tenantId }: { tenantId: string }) {
           lines={cuttingPrompt.lines}
           busy={isCuttingBusy}
           onCancel={() => setCuttingPrompt(null)}
+          onSkip={cuttingPrompt.optional ? async () => {
+            const order = orders.find(o => o.id === cuttingPrompt.id);
+            if (!order) { setCuttingPrompt(null); return; }
+            setIsCuttingBusy(true);
+            try {
+              await performStatusUpdate(order, cuttingPrompt.status, cuttingPrompt.notes);
+              setCuttingPrompt(null);
+            } finally {
+              setIsCuttingBusy(false);
+            }
+          } : undefined}
           onConfirm={async (lines) => {
             const order = orders.find(o => o.id === cuttingPrompt.id);
             if (!order) { setCuttingPrompt(null); return; }

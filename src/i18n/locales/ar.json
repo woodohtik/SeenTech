@@ -2399,7 +2399,10 @@
     "fabric_shortage_continue": "تابع وسجّل النقص",
     "fabric_shortage_continued": "نُقل الطلب وسُجّل نقص القماش",
     "fabric_shortage_failed": "تعذّرت المتابعة",
-    "invoice_not_found": "تعذر العثور على الفاتورة الأصلية لهذا الطلب"
+    "invoice_not_found": "تعذر العثور على الفاتورة الأصلية لهذا الطلب",
+    "cutting_fabric_taken": "انخصم عند البيع: {{meters}} م",
+    "cutting_fabric_taken_desc": "هذا الثوب انخصم قماشه وقت البيع. اكتب الكمية الفعلية إذا اختلفت: الفرق فقط يتحرك في المخزون، ولا ينخصم شيء مرة ثانية.",
+    "cutting_fabric_skip": "متابعة بدون تغيير"
   },
   "permissions": {
     "access_denied_desc": "غير محدد",
