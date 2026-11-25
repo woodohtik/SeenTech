@@ -1614,15 +1614,12 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
         });
         setTimeout(async () => {
           try {
-            const { printElementDetailed } = await import('../utils/printManager');
+            const { printElementDetailed, getConfiguredPaperSize } = await import('../utils/printManager');
             // الفاتورة الضريبية الكاملة (B2B) تُطبع على ورق A4، أما إيصال الكاشير
-            // فيتبع حجم الورق المضبوط للطابعة الافتراضية في إعدادات الطابعة.
-            const storedSize = (localStorage.getItem('active_printer_size') || '80mm') as
-              | '80mm'
-              | '58mm'
-              | 'A4';
+            // فيتبع إعداد الطابعة إن وُجد، وإلا مقاس الورق في تخطيط الفاتورة
+            // (lib/invoiceLayout.ts paperSizeFromLayout).
             const paperSize =
-              invoiceData?.invoiceType === 'standard_b2b' ? 'A4' : storedSize;
+              invoiceData?.invoiceType === 'standard_b2b' ? 'A4' : getConfiguredPaperSize('80mm');
 
             const res = await printElementDetailed('pos-invoice-print-area', {
               paperSize,

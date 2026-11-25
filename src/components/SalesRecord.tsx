@@ -1,4 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import { useMeasurementUnit } from '../hooks/useMeasurementUnit';
+import { measurementRows } from '../constants/measurementFields';
+import { measurementText, unitLabelKey } from '../utils/measurementUnits';
 import { supabase } from '../lib/supabase/client';
 import { handleError, OperationType, getFriendlyErrorMessage } from '../lib/appErrors';
 import { Order } from '../types';
@@ -28,6 +31,7 @@ import { taxRateFraction } from '../shared/taxRate';
 const PAGE_SIZE = 20;
 
 export default function SalesRecord({ tenantId, shiftId, filterStatus }: { tenantId: string, shiftId?: string, filterStatus?: string }) {
+  const measurementUnit = useMeasurementUnit(tenantId);
   const { t, i18n } = useTranslation();
   const isRtl = isRtlLang(i18n.language);
   const { error: toastError } = useToast();
@@ -523,6 +527,14 @@ export default function SalesRecord({ tenantId, shiftId, filterStatus }: { tenan
                 quantity: Number(item.quantity || 0),
                 unitPrice: Number(item.price || item.unitPrice || 0),
                 taxType: item.taxType,
+                // The line's measurements as on the first print (the order line's
+                // snapshot); shown when the shop's layout prints measurements.
+                measurements: item.type === 'custom' && item.measurements
+                  ? measurementRows(item.measurements).filter((row) => row.value > 0).map((row) => ({
+                      label: t(row.labelKey),
+                      value: measurementText(row.value, measurementUnit, t(unitLabelKey(measurementUnit))),
+                    }))
+                  : undefined,
                 vatAmount: Number((item.price || item.unitPrice || 0) * item.quantity - ((item.price || item.unitPrice || 0) * item.quantity) / (1 + vatRateFraction)),
                 total: Number((item.price || item.unitPrice || 0) * item.quantity)
               }));

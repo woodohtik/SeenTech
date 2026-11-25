@@ -10,6 +10,7 @@ import { computePaidRemaining } from '../../utils/cartTotals';
 import { ShoppingBag, Printer } from 'lucide-react';
 import { CurrencySymbol } from '../CurrencySymbol';
 import type { ProductTaxType } from '../../types';
+import { DEFAULT_THANK_YOU, allocateInvoiceLines, useInvoiceLayout, type InvoiceLayoutState } from '../../lib/invoiceLayout';
 
 export interface SimplifiedInvoiceItem {
   id?: string;
@@ -62,13 +63,16 @@ export interface SimplifiedTaxInvoiceProps {
   hidePrintButton?: boolean;
   branchName?: string;
   sellerName?: string;
+  /** Each of these overrides the shop's layout (useInvoiceLayout); left out, the layout decides. */
   showCustomerName?: boolean;
   logoBorder?: boolean;
   showMeasurements?: boolean;
-  /** Print each line's specs under its name (default: yes). */
+  /** Print each line's specs under its name. */
   showItemSpecs?: boolean;
-  /** Fraction (e.g. 0.15 for 15%), not a percentage. Defaults to 0.15 (KSA standard rate). */
+  /** Fraction (e.g. 0.15 for 15%), not a percentage. Left out: the shop's VAT rate. */
   vatRate?: number;
+  /** The layout to print with (the settings preview passes its unsaved edits); left out: the shop's. */
+  layout?: InvoiceLayoutState;
 }
 
 export default function SimplifiedTaxInvoice({
@@ -87,26 +91,30 @@ export default function SimplifiedTaxInvoice({
   hidePrintButton = false,
   branchName = 'الفرع الرئيسي',
   sellerName = 'النظام',
-  showCustomerName = true,
-  logoBorder = true,
-  showMeasurements = false,
-  showItemSpecs = true,
-  vatRate = 0.15,
+  showCustomerName: showCustomerNameProp,
+  logoBorder: logoBorderProp,
+  showMeasurements: showMeasurementsProp,
+  showItemSpecs: showItemSpecsProp,
+  vatRate: vatRateProp,
+  layout: layoutProp,
 }: SimplifiedTaxInvoiceProps) {
   const { t } = useTranslation();
   const [fontSizeScale, setFontSizeScale] = React.useState<number>(100);
 
-  const [layoutSettings] = React.useState(() => {
-    try {
-      const stored = localStorage.getItem('pos_invoice_settings');
-      return stored ? JSON.parse(stored) : null;
-    } catch { return null; }
-  });
+  // seen-invoice-layout-settings-task.md: the shop's layout, from the shop's
+  // row (lib/invoiceLayout.ts) -- the same on every device and on a reprint.
+  const shopLayout = useInvoiceLayout();
+  const layout = layoutProp ?? shopLayout;
+  const showCustomerName = showCustomerNameProp ?? layout.columns.showCustomerName;
+  const logoBorder = logoBorderProp ?? layout.header.logoBorder;
+  const showMeasurements = showMeasurementsProp ?? layout.columns.showMeasurements;
+  const showItemSpecs = showItemSpecsProp ?? layout.columns.showItemSpecs;
+  const vatRate = vatRateProp ?? layout.shopVatRate;
 
-  // P6 (ZATCA-16): the shop's official details win; the layout settings kept
-  // in this browser only fill an empty one, and choose the contact numbers
-  // and the logo -- see sellerForInvoice.
-  const seller = { ...rawSeller, ...sellerForInvoice(rawSeller, layoutSettings?.header) };
+  // P6 (ZATCA-16): the shop's official details win; the layout only fills an
+  // empty one, and chooses the contact numbers and the logo -- see sellerForInvoice.
+  const seller = { ...rawSeller, ...sellerForInvoice(rawSeller, layout.header), logoUrl: layout.header.logoUrl || rawSeller.logoUrl };
+  const align = layout.header.alignment;
 
   // P6 (MONEY-21): a line without a tax type of its own is read the way that
   // makes the lines add up to the server's total -- see inferLineTaxType.
@@ -145,6 +153,19 @@ export default function SimplifiedTaxInvoice({
       grandTotal,
     };
   })();
+
+  // Task file phase 3: each line's share of the discount, VAT at the shop's
+  // rate, the lines adding up to the invoice (as in the ZATCA XML).
+  const allocated = allocateInvoiceLines(
+    items.map((item) => ({ unitPrice: item.unitPrice, quantity: item.quantity, taxType: item.taxType || fallbackTaxType })),
+    { subtotal: computedTotals.subtotal, discount: computedTotals.discount, vatAmount: computedTotals.vatAmount },
+    vatRate,
+  );
+  // A tax invoice always shows a real discount (its totals must add up);
+  // the setting only hides it on a receipt that is not a tax invoice.
+  const isTaxDocument = !provisional && computedTotals.vatAmount > 0;
+  const showDiscountLine = computedTotals.discount > 0 && (isTaxDocument || layout.columns.showDiscount);
+  const showUnitPrice = layout.columns.showUnitPrice;
 
   const invoiceDate = new Date(issueDate || new Date().toISOString());
   const finalQr = qrCodeBase64 || generateZatcaQR(
@@ -201,17 +222,17 @@ export default function SimplifiedTaxInvoice({
       <div id="simplified-invoice-container" className="bg-white px-2 py-1 print:px-2.5 print:py-1 text-slate-900 text-[9px] leading-tight" style={{ zoom: `${fontSizeScale}%` }}>
 
         {/* Store Name & Logo - Centered */}
-        <div className="text-center mb-1">
+        <div className={`mb-1 ${align === 'right' ? 'text-right' : align === 'left' ? 'text-left' : 'text-center'}`}>
           {seller.logoUrl ? (
             <img
               src={seller.logoUrl}
               alt="Seller Logo"
-              className={`w-24 h-24 object-contain rounded-xl p-1 mx-auto mb-1 ${logoBorder ? 'border border-slate-200' : ''}`}
+              className={`w-24 h-24 object-contain rounded-xl p-1 mb-1 ${align === 'right' ? 'ml-auto mr-0' : align === 'left' ? 'mr-auto ml-0' : 'mx-auto'} ${logoBorder ? 'border border-slate-200' : ''}`}
               referrerPolicy="no-referrer"
               crossOrigin="anonymous"
             />
           ) : (
-            <div className="w-11 h-11 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 mx-auto mb-1">
+            <div className={`w-11 h-11 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 mb-1 ${align === 'right' ? 'ml-auto mr-0' : align === 'left' ? 'mr-auto ml-0' : 'mx-auto'}`}>
               <ShoppingBag size={20} />
             </div>
           )}
@@ -321,7 +342,7 @@ export default function SimplifiedTaxInvoice({
         <div className="mb-1 border-b border-solid border-slate-300 pb-1 space-y-0.5">
           <div className="flex justify-between items-end text-[8px] font-black text-slate-700 uppercase tracking-tight border-b border-solid border-slate-300 pb-0.5 gap-1">
             <span className="flex-1 min-w-0 text-right">المنتج / Item</span>
-            <span className="w-12 shrink-0 text-center">السعر</span>
+            {showUnitPrice && <span className="w-12 shrink-0 text-center">السعر</span>}
             <span className="w-14 shrink-0 text-left font-bold">الإجمالي</span>
           </div>
 
@@ -332,10 +353,11 @@ export default function SimplifiedTaxInvoice({
             // already knows how to turn this item's own taxType into a
             // correct base/tax/final split; use its finalPrice as the
             // displayed line total instead of re-deriving it naively.
-            const itemTaxType = item.taxType || fallbackTaxType;
-            const { basePrice: itemExc, taxAmount: itemVat, finalPrice: itemTotalInc } =
-              calculateItemTax(item.unitPrice, itemTaxType, vatRate, item.quantity);
-            const showBreakdown = vatRate > 0 && itemTaxType !== 'exempt';
+            const line = allocated[idx];
+            const itemExc = line.taxable;
+            const itemVat = line.vat;
+            const itemTotalInc = line.total;
+            const showBreakdown = line.vatRate > 0;
             return (
               <div key={idx} className="py-0.5 border-b border-solid border-slate-100 last:border-0">
                 <div className="flex justify-between items-start text-[9px] text-slate-900 gap-1">
@@ -344,9 +366,11 @@ export default function SimplifiedTaxInvoice({
                     {item.quantityUnit ? <span className="font-bold text-slate-800"> {item.quantityUnit}</span> : null}{' '}
                     {item.name}
                   </div>
-                  <span className="w-12 shrink-0 text-center font-mono font-bold text-slate-800 inline-flex items-center justify-center gap-0.5 whitespace-nowrap">
-                    {item.unitPrice.toFixed(2)}<CurrencySymbol className="h-[1em] w-auto shrink-0" />
-                  </span>
+                  {showUnitPrice && (
+                    <span className="w-12 shrink-0 text-center font-mono font-bold text-slate-800 inline-flex items-center justify-center gap-0.5 whitespace-nowrap">
+                      {item.unitPrice.toFixed(2)}<CurrencySymbol className="h-[1em] w-auto shrink-0" />
+                    </span>
+                  )}
                   <span className="w-14 shrink-0 text-left font-mono font-black text-slate-900 inline-flex items-center justify-end gap-0.5 whitespace-nowrap">
                     {itemTotalInc.toFixed(2)}<CurrencySymbol className="h-[1em] w-auto shrink-0" />
                   </span>
@@ -393,7 +417,7 @@ export default function SimplifiedTaxInvoice({
           </div>
 
           {/* Discount */}
-          {computedTotals.discount > 0 && (
+          {showDiscountLine && (
             <div className="flex justify-between items-center gap-2 text-red-600 font-black text-[9px]">
               <span className="whitespace-nowrap">الخصم / Discount:</span>
               <span className="font-mono shrink-0 inline-flex items-center gap-0.5">-{computedTotals.discount.toFixed(2)} <CurrencySymbol className="h-[1em] w-auto shrink-0" /></span>
@@ -402,7 +426,7 @@ export default function SimplifiedTaxInvoice({
 
           {/* VAT Amount */}
           <div className="flex justify-between items-center gap-2 text-slate-800 font-bold">
-            <span className="whitespace-nowrap">الضريبة (15%) / VAT Amount:</span>
+            <span className="whitespace-nowrap">الضريبة ({Math.round(vatRate * 100)}%) / VAT Amount:</span>
             <span className="font-mono font-bold shrink-0 inline-flex items-center gap-0.5">{computedTotals.vatAmount.toFixed(2)} <CurrencySymbol className="h-[1em] w-auto shrink-0" /></span>
           </div>
 
@@ -451,9 +475,23 @@ export default function SimplifiedTaxInvoice({
           </div>
         )}
 
-        {/* Retail Slip Bottom note */}
+        {/* The invoice number as a barcode (layout: showBarcode) */}
+        {layout.columns.showBarcode && invoiceNumber && (
+          <div className="flex justify-center mb-1" data-testid="invoice-barcode">
+            <Barcode value={String(invoiceNumber)} format="CODE128" width={1} height={28} fontSize={9} margin={0} displayValue />
+          </div>
+        )}
+
+        {/* The shop's return policy (layout), wrapped to the paper */}
+        {layout.footer.returnPolicy && (
+          <p className="mb-1 text-[8px] font-bold text-slate-700 leading-snug whitespace-pre-line break-words text-center" data-testid="invoice-return-policy">
+            {layout.footer.returnPolicy}
+          </p>
+        )}
+
+        {/* Retail Slip Bottom note: the shop's own thanks (layout), else the default */}
         <div className="pt-0.5 text-center">
-          <p className="font-black text-slate-900 text-[9.5px] mb-0.5">شكراً لزيارتكم وعودتكم تسعدنا</p>
+          <p className="font-black text-slate-900 text-[9.5px] mb-0.5 break-words">{layout.footer.thankYouMessage || DEFAULT_THANK_YOU}</p>
           <p className="text-[7.5px] text-slate-600 font-bold font-sans uppercase tracking-wider">Thank you for your visit</p>
         </div>
 

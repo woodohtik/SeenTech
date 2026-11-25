@@ -37,6 +37,7 @@
  */
 
 import i18n from 'i18next';
+import { getInvoiceLayout, paperSizeFromLayout } from '../lib/invoiceLayout';
 
 // مراجعة-الفريق-التقني-الكامل-2026-10-19.md (نتيجة أمنية حرجة): أي نص يُحقَن
 // مباشرة في قالب HTML خام يُمرَّر لـ printHtmlContent/printHtmlContentDetailed
@@ -762,13 +763,22 @@ export const getActivePrinterConfig = (): ActivePrinterConfig | null => {
 };
 
 /** حجم الورق المضبوط للطابعة الافتراضية (يُستخدم كقيمة افتراضية في كل مكان). */
+/**
+ * The paper for a receipt (not a B2B invoice, which callers keep on A4):
+ * the printer's own setting when set, else the shop's invoice layout
+ * (seen-invoice-layout-settings-task.md 2.3 -- paperSizeFromLayout), else
+ * `fallback`.
+ */
 export const getConfiguredPaperSize = (fallback: PrintPaperSize = '80mm'): PrintPaperSize => {
+  let printerSize: string | null = null;
   try {
-    const size = localStorage.getItem('active_printer_size') as PrintPaperSize | null;
-    return size && ['80mm', '58mm', 'A4', 'A5'].includes(size) ? size : fallback;
-  } catch {
-    return fallback;
-  }
+    printerSize = localStorage.getItem('active_printer_size');
+  } catch { /* no storage */ }
+  const layoutSize = getInvoiceLayout().printSize;
+  const chosen = paperSizeFromLayout({ isB2B: false, printerSize, layoutSize });
+  // No printer setting and the layout left at its default: the caller's fallback.
+  if (!printerSize && layoutSize === 'thermal80' && fallback !== '80mm') return fallback;
+  return chosen as PrintPaperSize;
 };
 
 /**

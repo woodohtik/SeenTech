@@ -24,49 +24,31 @@ import { ThermalInvoice, StandardInvoice, InvoiceData, InvoiceLayoutSettingsType
 import { isRtlLang } from '../lib/direction';
 import { measurementText } from '../utils/measurementUnits';
 import { useToast } from '../contexts/ToastContext';
+import { readTenantRow, forgetTenantRow } from '../lib/tenantRow';
+import {
+  RETURN_POLICY_MAX,
+  THANK_YOU_MAX,
+  applySavedInvoiceLayout,
+  getInvoiceLayout,
+  normalizeInvoiceLayout,
+  type InvoiceLayout,
+} from '../lib/invoiceLayout';
 
 interface InvoiceLayoutSettingsProps {
   tenantId: string;
+  /**
+   * May save the layout (settings.edit: the owner, admin and manager by
+   * default -- seen-invoice-layout-settings-task.md question 2). Without it
+   * the screen is a preview only; the database refuses the write too
+   * (tenants_owner_update).
+   */
+  canEdit?: boolean;
 }
 
-// tsconfig `strict` (seen-cto-sprint4-design-quality-task.md item 2):
-// the settings useState initializer below spreads JSON.parse's `any`
-// result into its returned object, which widened the whole state's
-// inferred type to `any` -- every setSettings(prev => ...)/setSettings(s
-// => ...) callback below then had an implicit-any `prev`/`s` parameter.
-// Matches this component's actual field set/enums, not the narrower
-// InvoiceLayoutSettingsType shared with InvoiceReceipt.tsx (missing
-// printSize, and a different layoutTemplate union there).
-interface InvoiceSettings {
-  printSize: 'thermal80' | 'thermal58' | 'a4' | 'a5';
-  layoutTemplate: 'classic' | 'detailed' | 'tax';
-  fastThermalMode: boolean;
-  header: {
-    logoUrl: string;
-    facilityName: string;
-    contactNumbers: string;
-    address: string;
-    taxId: string;
-    alignment: 'right' | 'left' | 'center';
-    logoBorder: boolean;
-  };
-  columns: {
-    showUnitPrice: boolean;
-    showDiscount: boolean;
-    showMeasurements: boolean;
-    showBarcode: boolean;
-    showCustomerName: boolean;
-    /** Each line's specs in the shop's own fields (Phase 3); on by default. */
-    showItemSpecs?: boolean;
-  };
-  footer: {
-    returnPolicy: string;
-    thankYouMessage: string;
-    showZatcaQr: boolean;
-  };
-}
+/** The shop's official details: what the invoice prints (sellerForInvoice, ZATCA-16). */
+interface OfficialSeller { name: string; vatNumber: string; address: string; phone: string }
 
-export default function InvoiceLayoutSettings({ tenantId }: InvoiceLayoutSettingsProps) {
+export default function InvoiceLayoutSettings({ tenantId, canEdit = true }: InvoiceLayoutSettingsProps) {
   const { t, i18n } = useTranslation();
   const { isLegacyVertical, orderItemFields } = useVerticalConfig();
   const { error: toastError } = useToast();
@@ -76,103 +58,44 @@ export default function InvoiceLayoutSettings({ tenantId }: InvoiceLayoutSetting
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [mobileTab, setMobileTab] = useState<'controls' | 'preview'>('controls');
 
-  const [settings, setSettings] = useState<InvoiceSettings>(() => {
-    const defaultSettings: InvoiceSettings = {
-      printSize: 'thermal80',
-      layoutTemplate: 'classic',
-      fastThermalMode: localStorage.getItem('pos_fast_thermal_mode') === 'true',
-      header: {
-        logoUrl: '',
-        facilityName: '',
-        contactNumbers: '',
-        address: '',
-        taxId: '',
-        alignment: 'center' as 'right' | 'left' | 'center',
-        logoBorder: true,
-      },
-      columns: {
-        showUnitPrice: true,
-        showDiscount: true,
-        showMeasurements: false,
-        showBarcode: true,
-        showCustomerName: true,
-        showItemSpecs: true,
-      },
-      footer: {
-        returnPolicy: '',
-        thankYouMessage: 'شكراً لتسوقكم معنا',
-        showZatcaQr: true,
-      }
-    };
-    try {
-      const stored = localStorage.getItem('pos_invoice_settings');
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        return {
-          ...defaultSettings,
-          ...parsed,
-          header: { ...defaultSettings.header, ...(parsed.header || {}) },
-          columns: { ...defaultSettings.columns, ...(parsed.columns || {}) },
-          footer: { ...defaultSettings.footer, ...(parsed.footer || {}) },
-          fastThermalMode: parsed.fastThermalMode ?? defaultSettings.fastThermalMode
-        };
-      }
-    } catch {
-      /* ignore */
+  // The form starts from the shop's layout (lib/invoiceLayout.ts); the
+  // browser's copy is only that module's cache, never read here.
+  const [settings, setSettings] = useState<InvoiceLayout>(() => normalizeInvoiceLayout(getInvoiceLayout()));
+  const [official, setOfficial] = useState<OfficialSeller>({ name: '', vatNumber: '', address: '', phone: '' });
+  const [uploadingLogo, setUploadingLogo] = useState(false);
+  const activeTenantIdOf = () => {
+    let activeTenantId = tenantId;
+    if (!activeTenantId || activeTenantId === 'saas_management') {
+      const storedId = localStorage.getItem('tenant_id') || localStorage.getItem('current_tenant_id');
+      if (storedId && storedId !== 'saas_management') activeTenantId = storedId;
     }
-    return defaultSettings;
-  });
+    return activeTenantId && activeTenantId !== 'saas_management' ? activeTenantId : null;
+  };
 
   useEffect(() => {
     const fetchSettings = async () => {
-      let activeTenantId = tenantId;
-      if (!activeTenantId || activeTenantId === 'saas_management') {
-        const storedId = localStorage.getItem('tenant_id') || localStorage.getItem('current_tenant_id');
-        if (storedId && storedId !== 'saas_management') {
-          activeTenantId = storedId;
-        }
-      }
-
-      if (!activeTenantId || activeTenantId === 'saas_management') {
+      const activeTenantId = activeTenantIdOf();
+      if (!activeTenantId) {
         setLoading(false);
         return;
       }
-
       try {
-        const { data, error } = await supabase
-          .from('tenants')
-          .select('*')
-          .eq('id', activeTenantId)
-          .single();
-
+        const { data, error } = await readTenantRow(activeTenantId);
         if (data && !error) {
-          if (data.invoice_settings) {
-            const mergedSettings = {
-              ...data.invoice_settings,
-              fastThermalMode: data.invoice_settings.fastThermalMode ?? (localStorage.getItem('pos_fast_thermal_mode') === 'true')
-            };
-            setSettings(mergedSettings);
-            localStorage.setItem('pos_invoice_settings', JSON.stringify(mergedSettings));
-            if (data.invoice_settings.header?.logoUrl) {
-              setLogoPreview(data.invoice_settings.header.logoUrl);
-            }
-          } else {
-            setSettings(prev => {
-              const updated = {
-                ...prev,
-                header: {
-                  ...prev.header,
-                  facilityName: prev.header.facilityName || data.name || '',
-                  contactNumbers: prev.header.contactNumbers || data.phone || '',
-                  address: prev.header.address || data.address || '',
-                  logoUrl: prev.header.logoUrl || data.logo_url || ''
-                }
-              };
-              localStorage.setItem('pos_invoice_settings', JSON.stringify(updated));
-              return updated;
-            });
-            if (data.logo_url) setLogoPreview(data.logo_url);
+          setOfficial({
+            name: data.name || '',
+            vatNumber: data.vat_number || '',
+            address: data.address || '',
+            phone: data.phone || '',
+          });
+          const layout = normalizeInvoiceLayout(data.invoice_settings);
+          // A shop that never saved a layout starts from its own phone and logo.
+          if (!data.invoice_settings) {
+            layout.header.contactNumbers = data.phone || '';
+            layout.header.logoUrl = data.logo_url || '';
           }
+          setSettings(layout);
+          if (layout.header.logoUrl) setLogoPreview(layout.header.logoUrl);
         }
       } catch (error) {
         handleError(error, OperationType.GET, 'tenants');
@@ -181,71 +104,72 @@ export default function InvoiceLayoutSettings({ tenantId }: InvoiceLayoutSetting
       }
     };
     fetchSettings();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tenantId]);
 
-  const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // The logo goes to Storage (the shop's own folder, public read) and only
+  // its link is kept in invoice_settings -- not a base64 copy in every read
+  // of the shop's row (phase 5). An old base64 logo prints as it is until
+  // a new one is chosen.
+  const handleLogoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      if (file.size > 1024 * 1024) {
-        toastError(t('settings_page.invoice.logo_too_large_error'));
-        return;
-      }
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const base64 = reader.result as string;
-        setLogoPreview(base64);
-        setSettings(prev => ({
-          ...prev,
-          header: { ...prev.header, logoUrl: base64 }
-        }));
-      };
-      reader.readAsDataURL(file);
+    e.target.value = '';
+    if (!file) return;
+    if (file.size > 1024 * 1024) {
+      toastError(t('settings_page.invoice.logo_too_large_error'));
+      return;
+    }
+    const activeTenantId = activeTenantIdOf();
+    if (!activeTenantId) return;
+    setUploadingLogo(true);
+    try {
+      const safeName = (file.name || 'logo.png').replace(/[^a-zA-Z0-9._-]/g, '_');
+      const path = `tenants/${activeTenantId}/invoice-logo-${crypto.randomUUID()}-${safeName}`;
+      const { error } = await supabase.storage.from('uploads').upload(path, file, { cacheControl: '31536000', upsert: false, contentType: file.type || undefined });
+      if (error) throw error;
+      const { data } = supabase.storage.from('uploads').getPublicUrl(path);
+      if (!data?.publicUrl) throw new Error('no public URL');
+      setLogoPreview(data.publicUrl);
+      setSettings(prev => ({ ...prev, header: { ...prev.header, logoUrl: data.publicUrl } }));
+    } catch (error) {
+      console.warn('[InvoiceLayoutSettings] logo upload failed:', error);
+      toastError(t('settings_page.invoice.logo_upload_failed'));
+    } finally {
+      setUploadingLogo(false);
     }
   };
 
   const [saveSuccess, setSaveSuccess] = useState(false);
 
   const handleSave = async () => {
+    if (!canEdit) return;
+    const activeTenantId = activeTenantIdOf();
+    if (!activeTenantId) return;
     setSaving(true);
     try {
-      // 1. Save locally FIRST so settings update immediately and persist across sessions
-      localStorage.setItem('pos_invoice_settings', JSON.stringify(settings));
-      localStorage.setItem('pos_fast_thermal_mode', String(settings.fastThermalMode));
-
-      // Dispatch custom events for live listener sync across app
+      const layout = normalizeInvoiceLayout(settings);
+      // .select: a write the database refuses (no permission) updates no row
+      // without an error -- that is a failure too.
+      const { data, error } = await supabase
+        .from('tenants')
+        .update({ invoice_settings: layout })
+        .eq('id', activeTenantId)
+        .select('id');
+      if (error || !data || data.length === 0) {
+        console.warn('[InvoiceLayoutSettings] save failed:', error);
+        toastError(t('settings_page.invoice.save_failed'));
+        return;
+      }
+      forgetTenantRow(activeTenantId);
+      applySavedInvoiceLayout(layout);
+      try { localStorage.setItem('pos_fast_thermal_mode', String(layout.fastThermalMode)); } catch { /* no storage */ }
       window.dispatchEvent(new CustomEvent('tenant_settings_updated'));
-      window.dispatchEvent(new CustomEvent('invoice_settings_updated', { detail: settings }));
-      window.dispatchEvent(new CustomEvent('fast_thermal_mode_changed', { detail: settings.fastThermalMode }));
-
-      // 2. Try to save to Supabase tenant record if valid ID is found
-      let activeTenantId = tenantId;
-      if (!activeTenantId || activeTenantId === 'saas_management') {
-        const storedId = localStorage.getItem('tenant_id') || localStorage.getItem('current_tenant_id');
-        if (storedId && storedId !== 'saas_management') {
-          activeTenantId = storedId;
-        }
-      }
-
-      if (activeTenantId && activeTenantId !== 'saas_management') {
-        const { error } = await supabase
-          .from('tenants')
-          .update({
-            invoice_settings: settings
-          })
-          .eq('id', activeTenantId);
-
-        if (error) {
-          console.warn('[InvoiceLayoutSettings] Could not sync to Supabase server:', error);
-        }
-      }
-
+      window.dispatchEvent(new CustomEvent('fast_thermal_mode_changed', { detail: layout.fastThermalMode }));
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 3500);
     } catch (error) {
       console.error('[InvoiceLayoutSettings] Save error:', error);
-      // Still notify success locally
-      setSaveSuccess(true);
-      setTimeout(() => setSaveSuccess(false), 3500);
+      toastError(t('settings_page.invoice.save_failed'));
     } finally {
       setSaving(false);
     }
@@ -263,9 +187,9 @@ export default function InvoiceLayoutSettings({ tenantId }: InvoiceLayoutSetting
     invoiceNumber: 'INV-2026-00042',
     issueDate: new Date().toISOString(),
     seller: {
-      name: settings.header.facilityName || t('settings_page.invoice.preview_store_name'),
-      vatNumber: settings.header.taxId || '300012345600003',
-      address: settings.header.address || t('settings_page.invoice.preview_address'),
+      name: official.name || t('settings_page.invoice.preview_store_name'),
+      vatNumber: official.vatNumber || '300012345600003',
+      address: official.address || t('settings_page.invoice.preview_address'),
       phone: settings.header.contactNumbers || ''
     },
     customer: {
@@ -287,13 +211,15 @@ export default function InvoiceLayoutSettings({ tenantId }: InvoiceLayoutSetting
         ]
       }
     ],
+    // A fixed example: the numbers never move with a display option.
     subtotal: 350.00,
-    discountAmount: settings.columns.showDiscount ? 20.00 : 0,
-    vatAmount: (settings.columns.showDiscount ? 330.00 : 350.00) * 0.15,
-    grandTotal: (settings.columns.showDiscount ? 330.00 : 350.00) * 1.15,
-    qrValue: settings.footer.showZatcaQr ? 'https://zatca.gov.sa' : '',
-    invoiceType: settings.layoutTemplate === 'tax' ? 'simplified_tax' : 'standard_b2b',
-    paidAmount: (settings.columns.showDiscount ? 330.00 : 350.00) * 1.15,
+    discountAmount: 20.00,
+    vatAmount: 49.50,
+    grandTotal: 379.50,
+    vatRate: 0.15,
+    qrValue: 'https://zatca.gov.sa',
+    invoiceType: 'simplified_tax',
+    paidAmount: 379.50,
     remainingAmount: 0.00,
     branchName: t('branches.master'),
     sellerName: t('settings_page.invoice.preview_seller_name')
@@ -344,7 +270,8 @@ export default function InvoiceLayoutSettings({ tenantId }: InvoiceLayoutSetting
           </div>
           <button 
             onClick={handleSave}
-            disabled={saving}
+            disabled={saving || uploadingLogo || !canEdit}
+            title={canEdit ? undefined : t('settings_page.invoice.no_permission_to_save')}
             className={cn(
               "w-full main-640:w-auto text-white px-6 py-3 rounded-xl font-black transition-all shadow-lg flex items-center justify-center gap-2 disabled:opacity-50 hover:scale-102 active:scale-98 cursor-pointer text-sm",
               saveSuccess ? "bg-success shadow-success/20" : "bg-brand hover:bg-brand/90 shadow-brand/20"
@@ -360,6 +287,12 @@ export default function InvoiceLayoutSettings({ tenantId }: InvoiceLayoutSetting
             <span>{saving ? t('settings_page.invoice.saving') : saveSuccess ? t('settings_page.invoice.save_success') : t('settings_page.invoice.apply_design')}</span>
           </button>
         </div>
+
+        {!canEdit && (
+          <p role="note" className="rounded-xl border border-border bg-surface-muted p-3 text-sm font-bold text-content-muted">
+            {t('settings_page.invoice.no_permission_to_save')}
+          </p>
+        )}
 
         {/* 1. Hardware & Format */}
         <div className="space-y-6">
@@ -389,30 +322,6 @@ export default function InvoiceLayoutSettings({ tenantId }: InvoiceLayoutSetting
                     )}
                   >
                     {size.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="space-y-3">
-              <label className="text-sm font-black text-content-muted px-1">{t('settings_page.invoice.layout_template')}</label>
-              <div className="grid grid-cols-1 main-640:grid-cols-3 gap-4">
-                {[
-                  { id: 'classic' as const, label: t('settings_page.invoice.classic') },
-                  { id: 'detailed' as const, label: t('settings_page.invoice.detailed') },
-                  { id: 'tax' as const, label: t('settings_page.invoice.tax') },
-                ].map(template => (
-                  <button
-                    key={template.id}
-                    onClick={() => setSettings(s => ({ ...s, layoutTemplate: template.id }))}
-                    className={cn(
-                      "group py-4 px-4 rounded-xl text-sm font-black transition-all border-2 flex flex-col items-center gap-3",
-                      settings.layoutTemplate === template.id 
-                        ? "border-brand bg-brand/5 text-brand shadow-lg shadow-brand/5" 
-                        : "border-border bg-white text-content-muted hover:border-brand/30"
-                    )}
-                  >
-                    <span className="text-sm font-black group-hover:text-brand">{template.label}</span>
                   </button>
                 ))}
               </div>
@@ -509,7 +418,10 @@ export default function InvoiceLayoutSettings({ tenantId }: InvoiceLayoutSetting
                     ].map(align => (
                       <button
                         key={align.id}
-                        onClick={() => setSettings(s => ({ ...s, header: { ...s.header, alignment: align.id as any } }))}
+                        type="button"
+                        aria-label={t(`settings_page.invoice.align_${align.id}`)}
+                        aria-pressed={settings.header.alignment === align.id}
+                        onClick={() => setSettings(s => ({ ...s, header: { ...s.header, alignment: align.id as 'right' | 'center' | 'left' } }))}
                         className={cn(
                           "p-2.5 rounded-lg transition-all",
                           settings.header.alignment === align.id ? "bg-brand text-white shadow-lg shadow-brand/20" : "text-content-muted hover:bg-surface-muted"
@@ -536,39 +448,20 @@ export default function InvoiceLayoutSettings({ tenantId }: InvoiceLayoutSetting
             </div>
 
             <div className="space-y-4">
-              <div className="space-y-1.5">
-                <label className="text-sm font-black text-content-muted px-1">{t('settings_page.invoice.facility_name')}</label>
-                <input 
-                  type="text" 
-                  value={settings.header.facilityName}
-                  onChange={e => setSettings(s => ({ ...s, header: { ...s.header, facilityName: e.target.value } }))}
-                  placeholder={t('settings_page.invoice.facility_name_placeholder')}
-                  className="w-full bg-white border border-border rounded-xl p-3.5 text-sm font-bold outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand shadow-sm"
-                />
-              </div>
-
-              <div className="grid grid-cols-1 main-720:grid-cols-2 gap-4 main-720:gap-6">
-                <div className="space-y-1.5">
-                  <label className="text-sm font-black text-content-muted px-1">{t('settings_page.invoice.custom_address')}</label>
-                  <input 
-                    type="text" 
-                    value={settings.header.address}
-                    onChange={e => setSettings(s => ({ ...s, header: { ...s.header, address: e.target.value } }))}
-                    placeholder={t('settings_page.invoice.custom_address_placeholder')}
-                    className="w-full bg-white border border-border rounded-xl p-3.5 text-sm font-bold outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand shadow-sm"
-                  />
-                  <p className="text-sm text-content-muted px-1">{t('settings_page.invoice.custom_address_help')}</p>
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-sm font-black text-content-muted px-1">{t('settings_page.invoice.tax_id')}</label>
-                  <input 
-                    type="text" 
-                    value={settings.header.taxId}
-                    onChange={e => setSettings(s => ({ ...s, header: { ...s.header, taxId: e.target.value } }))}
-                    className="w-full bg-white border border-border rounded-xl p-3.5 text-sm font-black outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand shadow-sm text-left"
-                    dir="ltr"
-                  />
-                </div>
+              {/* Read only: the invoice prints the shop's official details
+                  (sellerForInvoice, ZATCA-16); they are edited in one place. */}
+              <div className="rounded-xl border border-border bg-white p-4 space-y-2" data-testid="official-seller">
+                <dl className="grid grid-cols-1 main-720:grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
+                  <dt className="font-bold text-content-muted">{t('settings_page.invoice.facility_name')}</dt>
+                  <dd className="font-bold text-content break-words">{official.name || '—'}</dd>
+                  <dt className="font-bold text-content-muted">{t('settings_page.invoice.tax_id')}</dt>
+                  <dd className="font-bold text-content tabular-nums" dir="ltr">{official.vatNumber || '—'}</dd>
+                  <dt className="font-bold text-content-muted">{t('settings_page.invoice.custom_address')}</dt>
+                  <dd className="font-bold text-content break-words">{official.address || '—'}</dd>
+                </dl>
+                <a href="/settings?tab=profile" className="inline-flex min-h-11 items-center text-sm font-bold text-brand underline-offset-4 hover:underline">
+                  {t('settings_page.invoice.edit_official_details')}
+                </a>
               </div>
             </div>
           </div>
@@ -624,6 +517,7 @@ export default function InvoiceLayoutSettings({ tenantId }: InvoiceLayoutSetting
               <label className="text-sm font-black text-content-muted px-1">{t('settings_page.invoice.return_policy')}</label>
               <textarea 
                 rows={4}
+                maxLength={RETURN_POLICY_MAX}
                 value={settings.footer.returnPolicy}
                 onChange={e => setSettings(s => ({ ...s, footer: { ...s.footer, returnPolicy: e.target.value } }))}
                 className="w-full bg-white border border-border rounded-2xl p-4 main-640:p-6 text-sm font-medium outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand resize-none leading-relaxed shadow-inner"
@@ -634,35 +528,14 @@ export default function InvoiceLayoutSettings({ tenantId }: InvoiceLayoutSetting
             <div className="space-y-2">
               <label className="text-sm font-black text-content-muted px-1">{t('settings_page.invoice.thank_you_message')}</label>
               <input 
-                type="text" 
+                type="text"
+                maxLength={THANK_YOU_MAX}
                 value={settings.footer.thankYouMessage}
                 onChange={e => setSettings(s => ({ ...s, footer: { ...s.footer, thankYouMessage: e.target.value } }))}
                 className="w-full bg-white border border-border rounded-xl p-3.5 text-sm font-bold outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand shadow-sm"
               />
             </div>
 
-            <label className="flex flex-col main-640:flex-row items-stretch main-640:items-center justify-between p-4 main-640:p-6 bg-surface-muted/50 rounded-2xl border border-dashed border-brand/20 cursor-pointer hover:bg-brand/5 transition-all gap-4">
-              <div className={cn("flex items-center gap-4", isRtl ? "text-right" : "text-left")}>
-                 <div className="p-3 bg-white rounded-2xl shadow-sm text-brand shrink-0">
-                    <Zap size={24} className="animate-pulse" />
-                 </div>
-                 <div>
-                    <p className="font-black text-content text-sm">{t('settings_page.invoice.zatca_qr')}</p>
-                    <p className="text-sm text-content-muted font-medium">{t('settings_page.invoice.zatca_compatibility')}</p>
-                 </div>
-              </div>
-              <div className="flex justify-end main-640:justify-start">
-                <div className="relative inline-flex items-center cursor-pointer">
-                  <input 
-                    type="checkbox" 
-                    className="sr-only peer"
-                    checked={settings.footer.showZatcaQr}
-                    onChange={(e) => setSettings(s => ({ ...s, footer: { ...s.footer, showZatcaQr: e.target.checked } }))}
-                  />
-                  <div className="w-14 h-7 bg-border peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[4px] after:start-[4px] after:bg-white after:border-border after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brand"></div>
-                </div>
-              </div>
-            </label>
           </div>
         </div>
       </div>

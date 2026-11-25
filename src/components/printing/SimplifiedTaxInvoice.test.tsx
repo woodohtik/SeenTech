@@ -3,6 +3,8 @@ import React from 'react';
 import { cleanup, render, screen } from '@testing-library/react';
 import { afterEach, expect, test, vi } from 'vitest';
 
+// react-barcode draws on a canvas, which jsdom lacks: an svg stands in.
+vi.mock('react-barcode', () => ({ default: ({ value }: { value: string }) => <svg data-barcode={value} /> }));
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (k: string, d?: any) => (typeof d === 'string' ? d : k), i18n: { language: 'ar' } }),
 }));

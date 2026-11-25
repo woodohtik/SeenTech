@@ -3,6 +3,8 @@ import { sellerForInvoice } from '../../utils/sellerDetails';
 import { useTranslation } from 'react-i18next';
 import { QRCodeSVG } from 'qrcode.react';
 import Barcode from 'react-barcode';
+import { inferLineTaxType } from '../../utils/lineTaxType';
+import { DEFAULT_THANK_YOU, allocateInvoiceLines, useInvoiceLayout, type InvoiceLayoutState } from '../../lib/invoiceLayout';
 import { generateZatcaQR } from '../../services/zatcaService';
 import { calculateItemTax } from '../../utils/b2bHelper';
 import { computePaidRemaining } from '../../utils/cartTotals';
@@ -77,6 +79,8 @@ export interface TaxInvoiceProps {
   showItemSpecs?: boolean;
   /** Fraction (e.g. 0.15 for 15%), not a percentage. Defaults to 0.15 (KSA standard rate). */
   vatRate?: number;
+  /** The layout to print with (the settings preview passes its unsaved edits); left out: the shop's. */
+  layout?: InvoiceLayoutState;
 }
 
 export default function TaxInvoice({
@@ -93,24 +97,32 @@ export default function TaxInvoice({
   orderId,
   onPrint,
   hidePrintButton = false,
-  showCustomerName = true,
-  logoBorder = true,
-  showMeasurements = false,
-  showItemSpecs = true,
-  vatRate = 0.15,
+  showCustomerName: showCustomerNameProp,
+  logoBorder: logoBorderProp,
+  showMeasurements: showMeasurementsProp,
+  showItemSpecs: showItemSpecsProp,
+  vatRate: vatRateProp,
+  layout: layoutProp,
 }: TaxInvoiceProps) {
   const { t } = useTranslation();
-  const [layoutSettings] = React.useState(() => {
-    try {
-      const stored = localStorage.getItem('pos_invoice_settings');
-      return stored ? JSON.parse(stored) : null;
-    } catch { return null; }
-  });
-
-  // P6 (ZATCA-16): the shop's official details win; the layout settings kept
-  // in this browser only fill an empty one, and choose the contact numbers
-  // and the logo -- see sellerForInvoice.
-  const seller = { ...rawSeller, ...sellerForInvoice(rawSeller, layoutSettings?.header) };
+  // seen-invoice-layout-settings-task.md: the shop's layout, from the shop's
+  // row (lib/invoiceLayout.ts) -- the same on every device and on a reprint.
+  const shopLayout = useInvoiceLayout();
+  const layout = layoutProp ?? shopLayout;
+  const showCustomerName = showCustomerNameProp ?? layout.columns.showCustomerName;
+  const logoBorder = logoBorderProp ?? layout.header.logoBorder;
+  const showMeasurements = showMeasurementsProp ?? layout.columns.showMeasurements;
+  const showItemSpecs = showItemSpecsProp ?? layout.columns.showItemSpecs;
+  const vatRate = vatRateProp ?? layout.shopVatRate;
+  const align = layout.header.alignment;
+  // P6 (MONEY-21), as on the thermal receipt: a line without a tax type of its
+  // own is read the way that makes the lines add up to the invoice's total --
+  // not assumed to include VAT (a 350 line before VAT printed as 304.35).
+  const fallbackTaxType = inferLineTaxType(items, totals, vatRate);
+  const showUnitPrice = layout.columns.showUnitPrice;
+  // P6 (ZATCA-16): the shop's official details win; the layout only fills an
+  // empty one, and chooses the contact numbers and the logo.
+  const seller = { ...rawSeller, ...sellerForInvoice(rawSeller, layout.header), logoUrl: layout.header.logoUrl || rawSeller.logoUrl };
   // If totals are not provided, compute them dynamically (assuming unitPrice is VAT-inclusive)
   const computedTotals = totals || (() => {
     let grandTotal = 0;
@@ -128,7 +140,7 @@ export default function TaxInvoice({
     // understating both the taxable amount and the real total.
     items.forEach((item) => {
       const { basePrice: itemTotalExc, taxAmount: itemVat, finalPrice: itemTotalInc } =
-        calculateItemTax(item.unitPrice, item.taxType || 'inclusive', vatRate, item.quantity);
+        calculateItemTax(item.unitPrice, item.taxType || fallbackTaxType, vatRate, item.quantity);
 
       grandTotal += itemTotalInc;
       vatAmount += itemVat;
@@ -144,6 +156,14 @@ export default function TaxInvoice({
       grandTotal,
     };
   })();
+
+  // Task file phase 3: each line's share of the discount, VAT at the shop's
+  // rate, the lines adding up to the invoice (as in the ZATCA XML).
+  const allocated = allocateInvoiceLines(
+    items.map((item) => ({ unitPrice: item.unitPrice, quantity: item.quantity, taxType: item.taxType || fallbackTaxType })),
+    { subtotal: computedTotals.subtotal, discount: computedTotals.discount, vatAmount: computedTotals.vatAmount },
+    vatRate,
+  );
 
   // Was entirely absent from this component -- a partially-paid B2B order
   // printed through TaxInvoice (unlike SimplifiedTaxInvoice, which already
@@ -187,9 +207,9 @@ export default function TaxInvoice({
       <div id="standard-tax-invoice-container" className="bg-white border border-slate-200 rounded-2xl p-8 print:border-none print:px-5 print:py-4">
         
         {/* Bilingual Title Ribbon */}
-        <div className="border-b-2 border-slate-800 pb-6 mb-8 flex flex-col md:flex-row justify-between items-center gap-6">
-          {/* Logo & Seller Title */}
-          <div className="flex items-center gap-4 text-right">
+        <div className={`border-b-2 border-slate-800 pb-6 mb-8 flex flex-col justify-between items-center gap-6 ${align === 'center' ? '' : align === 'left' ? 'md:flex-row-reverse' : 'md:flex-row'}`}>
+          {/* Logo & Seller Title, placed by the layout's alignment */}
+          <div className={`flex items-center gap-4 ${align === 'center' ? 'flex-col text-center' : align === 'left' ? 'flex-row-reverse text-left' : 'text-right'}`}>
             {seller.logoUrl ? (
               <img
                 src={seller.logoUrl}
@@ -340,7 +360,7 @@ export default function TaxInvoice({
                 <th className="p-2.5 leading-tight text-right w-8">#</th>
                 <th className="p-2.5 leading-tight text-right">الصنف والوصف<br/><span className="text-[8px] text-slate-300 uppercase font-sans font-normal">Line Item Description</span></th>
                 <th className="p-2.5 leading-tight text-center w-12">الكمية<br/><span className="text-[8px] text-slate-300 uppercase font-sans font-normal">Qty</span></th>
-                <th className="p-2.5 leading-tight text-right w-20">سعر الوحدة خاضع<br/><span className="text-[8px] text-slate-300 uppercase font-sans font-normal">Unit Price (Exc)</span></th>
+                {showUnitPrice && (<th className="p-2.5 leading-tight text-right w-20">سعر الوحدة خاضع<br/><span className="text-[8px] text-slate-300 uppercase font-sans font-normal">Unit Price (Exc)</span></th>)}
                 <th className="p-2.5 leading-tight text-right w-20">المبلغ الخاضع<br/><span className="text-[8px] text-slate-300 uppercase font-sans font-normal">Taxable Amt</span></th>
                 <th className="p-2.5 leading-tight text-center w-14">الضريبة<br/><span className="text-[8px] text-slate-300 uppercase font-sans font-normal">VAT Rate</span></th>
                 <th className="p-2.5 leading-tight text-right w-20">مبلغ الضريبة<br/><span className="text-[8px] text-slate-300 uppercase font-sans font-normal">VAT Amount</span></th>
@@ -349,9 +369,11 @@ export default function TaxInvoice({
             </thead>
             <tbody className="divide-y divide-slate-100 font-medium">
               {items.map((item, index) => {
-                const itemTaxType = item.taxType || 'inclusive';
-                const { basePrice: itemTotalExc, taxAmount: itemVat, finalPrice: itemTotalInc } =
-                  calculateItemTax(item.unitPrice, itemTaxType, vatRate, item.quantity);
+                const itemTaxType = item.taxType || fallbackTaxType;
+                const line = allocated[index];
+                const itemTotalExc = line.taxable;
+                const itemVat = line.vat;
+                const itemTotalInc = line.total;
                 const itemUnitExc = calculateItemTax(item.unitPrice, itemTaxType, vatRate, 1).basePrice;
 
                 return (
@@ -371,9 +393,9 @@ export default function TaxInvoice({
                         )}
                       </td>
                       <td className="p-2.5 text-center font-bold font-mono text-slate-800">{item.quantity}</td>
-                      <td className="p-2.5 font-mono text-slate-600">{itemUnitExc.toFixed(2)}</td>
+                      {showUnitPrice && <td className="p-2.5 font-mono text-slate-600">{itemUnitExc.toFixed(2)}</td>}
                       <td className="p-2.5 font-mono text-slate-600">{itemTotalExc.toFixed(2)}</td>
-                      <td className="p-2.5 text-center font-bold text-slate-500 font-mono text-[10px]">{Math.round(vatRate * 100)}%</td>
+                      <td className="p-2.5 text-center font-bold text-slate-500 font-mono text-[10px]">{Math.round(line.vatRate * 100)}%</td>
                       <td className="p-2.5 font-mono text-slate-600">{itemVat.toFixed(2)}</td>
                       <td className="p-2.5 font-mono font-black text-slate-900 bg-slate-50/50">{itemTotalInc.toFixed(2)}</td>
                     </tr>
@@ -493,7 +515,17 @@ export default function TaxInvoice({
 
         {/* Official Compliance Footer */}
         <div className="pt-6 border-t-2 border-slate-900 border-dashed text-center flex flex-col items-center">
-          <p className="text-sm font-black text-slate-900 mb-1">شكراً لتعاملكم معنا ونسعد بزيارتكم مجدداً</p>
+          {layout.columns.showBarcode && invoiceNumber && (
+            <div className="mb-3" data-testid="invoice-barcode">
+              <Barcode value={String(invoiceNumber)} format="CODE128" width={1.2} height={36} fontSize={11} margin={0} displayValue />
+            </div>
+          )}
+          {layout.footer.returnPolicy && (
+            <p className="mb-3 max-w-xl text-xs font-bold text-slate-700 leading-relaxed whitespace-pre-line break-words" data-testid="invoice-return-policy">
+              {layout.footer.returnPolicy}
+            </p>
+          )}
+          <p className="text-sm font-black text-slate-900 mb-1 break-words">{layout.footer.thankYouMessage || DEFAULT_THANK_YOU}</p>
           <p className="text-xs font-bold text-slate-500 font-sans tracking-wide">Thank you for your business. We look forward to seeing you again.</p>
         </div>
 

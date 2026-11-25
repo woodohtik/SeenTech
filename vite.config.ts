@@ -133,6 +133,20 @@ export default defineConfig(({mode}) => {
               },
             },
             {
+              // The shop's images in Storage (the invoice logo,
+              // seen-invoice-layout-settings-task.md phase 5): kept after the
+              // first view, so a receipt prints with its logo offline. Only a
+              // real 200 image is kept.
+              urlPattern: ({ url, request }) =>
+                request.destination === 'image' && /\/storage\/v1\/object\/public\/uploads\/tenants\//.test(url.pathname),
+              handler: 'CacheFirst',
+              options: {
+                cacheName: 'seen-shop-images',
+                expiration: { maxEntries: 40, maxAgeSeconds: 60 * 60 * 24 * 90 },
+                cacheableResponse: { statuses: [200] },
+              },
+            },
+            {
               // Pages come from the network first (phase 4.2): a normal reload
               // while online gets the newest build. Offline, or after 3
               // seconds without an answer, the precached index.html -- the

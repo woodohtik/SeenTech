@@ -10,6 +10,7 @@ import StandardTaxInvoice from './TaxInvoice';
 import { useToast } from '../../contexts/ToastContext';
 import { computePaidRemaining } from '../../utils/cartTotals';
 import type { ProductTaxType } from '../../types';
+import { normalizeInvoiceLayout, useInvoiceLayout, type InvoiceLayoutState } from '../../lib/invoiceLayout';
 
 export type PrintSize = '58mm' | '80mm' | 'A5' | 'A4';
 
@@ -52,6 +53,8 @@ export interface InvoiceData {
   qrValue?: string;
   branchName?: string;
   sellerName?: string;
+  /** The sale's VAT rate as a fraction; left out, the shop's rate (never one derived from the totals). */
+  vatRate?: number;
 }
 
 export const formatPaymentMethodLabels = (method?: string) => {
@@ -124,38 +127,20 @@ export const ThermalInvoice = ({
   size?: '58mm' | '80mm';
   settings?: InvoiceLayoutSettingsType;
 }) => {
-  const [localSettings, setLocalSettings] = React.useState<InvoiceLayoutSettingsType | null>(() => {
-    try {
-      const stored = localStorage.getItem('pos_invoice_settings');
-      return stored ? JSON.parse(stored) : null;
-    } catch { return null; }
-  });
-
-  React.useEffect(() => {
-    const handleUpdate = () => {
-      try {
-        const stored = localStorage.getItem('pos_invoice_settings');
-        if (stored) setLocalSettings(JSON.parse(stored));
-      } catch { /* ignore */ }
-    };
-    window.addEventListener('invoice_settings_updated', handleUpdate);
-    window.addEventListener('tenant_settings_updated', handleUpdate);
-    return () => {
-      window.removeEventListener('invoice_settings_updated', handleUpdate);
-      window.removeEventListener('tenant_settings_updated', handleUpdate);
-    };
-  }, []);
-
-  const settings = propSettings || localSettings;
+  // seen-invoice-layout-settings-task.md: the shop's layout (lib/invoiceLayout.ts),
+  // or the preview's unsaved one -- never this browser's storage directly.
+  const shopLayout = useInvoiceLayout();
+  const layout: InvoiceLayoutState = propSettings ? { ...normalizeInvoiceLayout(propSettings), shopVatRate: shopLayout.shopVatRate } : shopLayout;
+  const settings = layout;
 
   // P6 (ZATCA-16): the shop's official details first -- see sellerForInvoice.
-  const officialSeller = sellerForInvoice(data.seller, settings?.header);
+  const officialSeller = sellerForInvoice(data.seller, settings.header);
   const sellerInfo = {
     name: officialSeller.name || 'المنشأة',
     vatNumber: officialSeller.vatNumber || '000000000000000',
     address: officialSeller.address || 'المملكة العربية السعودية',
     phone: officialSeller.phone || '',
-    logoUrl: settings?.header?.logoUrl || '',
+    logoUrl: settings.header.logoUrl || '',
   };
 
   const { paidAmount, remainingAmount } = computePaidRemaining(data.grandTotal || 0, data.paidAmount, data.remainingAmount);
@@ -169,10 +154,10 @@ export const ThermalInvoice = ({
     remainingAmount,
   };
 
-  // InvoiceData only carries absolute amounts, not a rate -- derive it from
-  // the actual totals so the per-line VAT breakdown stays consistent with
-  // them (was previously hardcoded to 15% regardless of these totals).
-  const vatRate = totals.subtotal > 0 ? totals.vatAmount / totals.subtotal : 0.15;
+  // Task file phase 3: the sale's rate, else the shop's -- never vatAmount /
+  // subtotal, which a discount bends (350, 20 off, 49.50 VAT gave 14.14%).
+  // No VAT on the invoice: 0.
+  const vatRate = totals.vatAmount > 0 ? (data.vatRate ?? layout.shopVatRate) : 0;
 
   const formattedItems = (data.items || []).map((item) => ({
     name: item.name,
@@ -186,10 +171,6 @@ export const ThermalInvoice = ({
 
   const payLabels = formatPaymentMethodLabels(data.paymentMethod);
 
-  const showCustomerName = settings?.columns?.showCustomerName !== false;
-  const logoBorder = settings?.header?.logoBorder !== false;
-  const showMeasurements = settings?.columns?.showMeasurements === true;
-  const showItemSpecs = settings?.columns?.showItemSpecs !== false;
 
   return (
     <SimplifiedTaxInvoice
@@ -206,10 +187,7 @@ export const ThermalInvoice = ({
       hidePrintButton={true}
       branchName={data.branchName || 'الفرع الرئيسي'}
       sellerName={data.sellerName || 'النظام'}
-      showCustomerName={showCustomerName}
-      logoBorder={logoBorder}
-      showMeasurements={showMeasurements}
-      showItemSpecs={showItemSpecs}
+      layout={layout}
       vatRate={vatRate}
     />
   );
@@ -224,38 +202,20 @@ export const StandardInvoice = ({
   size?: 'A5' | 'A4';
   settings?: InvoiceLayoutSettingsType;
 }) => {
-  const [localSettings, setLocalSettings] = React.useState<InvoiceLayoutSettingsType | null>(() => {
-    try {
-      const stored = localStorage.getItem('pos_invoice_settings');
-      return stored ? JSON.parse(stored) : null;
-    } catch { return null; }
-  });
-
-  React.useEffect(() => {
-    const handleUpdate = () => {
-      try {
-        const stored = localStorage.getItem('pos_invoice_settings');
-        if (stored) setLocalSettings(JSON.parse(stored));
-      } catch { /* ignore */ }
-    };
-    window.addEventListener('invoice_settings_updated', handleUpdate);
-    window.addEventListener('tenant_settings_updated', handleUpdate);
-    return () => {
-      window.removeEventListener('invoice_settings_updated', handleUpdate);
-      window.removeEventListener('tenant_settings_updated', handleUpdate);
-    };
-  }, []);
-
-  const settings = propSettings || localSettings;
+  // seen-invoice-layout-settings-task.md: the shop's layout (lib/invoiceLayout.ts),
+  // or the preview's unsaved one -- never this browser's storage directly.
+  const shopLayout = useInvoiceLayout();
+  const layout: InvoiceLayoutState = propSettings ? { ...normalizeInvoiceLayout(propSettings), shopVatRate: shopLayout.shopVatRate } : shopLayout;
+  const settings = layout;
 
   // P6 (ZATCA-16): the shop's official details first -- see sellerForInvoice.
-  const officialSeller = sellerForInvoice(data.seller, settings?.header);
+  const officialSeller = sellerForInvoice(data.seller, settings.header);
   const sellerInfo = {
     name: officialSeller.name || 'المنشأة',
     vatNumber: officialSeller.vatNumber || '000000000000000',
     address: officialSeller.address || 'المملكة العربية السعودية',
     phone: officialSeller.phone || '',
-    logoUrl: settings?.header?.logoUrl || '',
+    logoUrl: settings.header.logoUrl || '',
   };
 
   // Was dropping data.paidAmount/remainingAmount entirely -- InvoiceData
@@ -273,8 +233,8 @@ export const StandardInvoice = ({
     remainingAmount,
   };
 
-  // See ThermalInvoice above -- same derivation, same reason.
-  const vatRate = totals.subtotal > 0 ? totals.vatAmount / totals.subtotal : 0.15;
+  // See ThermalInvoice above.
+  const vatRate = totals.vatAmount > 0 ? (data.vatRate ?? layout.shopVatRate) : 0;
 
   const formattedItems = (data.items || []).map((item) => ({
     name: item.name,
@@ -288,10 +248,6 @@ export const StandardInvoice = ({
 
   const payLabels = formatPaymentMethodLabels(data.paymentMethod);
 
-  const showCustomerName = settings?.columns?.showCustomerName !== false;
-  const logoBorder = settings?.header?.logoBorder !== false;
-  const showMeasurements = settings?.columns?.showMeasurements === true;
-  const showItemSpecs = settings?.columns?.showItemSpecs !== false;
 
   return (
     <StandardTaxInvoice
@@ -309,10 +265,7 @@ export const StandardInvoice = ({
       totals={totals}
       qrCodeBase64={data.qrValue}
       hidePrintButton={true}
-      showCustomerName={showCustomerName}
-      logoBorder={logoBorder}
-      showMeasurements={showMeasurements}
-      showItemSpecs={showItemSpecs}
+      layout={layout}
       vatRate={vatRate}
     />
   );

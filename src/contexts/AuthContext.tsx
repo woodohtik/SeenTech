@@ -20,6 +20,7 @@ import { getIsOnline } from '../lib/offline/connectivity';
 import { cacheIdentitySnapshot, getCachedIdentitySnapshot } from '../lib/offline/identityCache';
 import { fetchSessionIdentity, STAFF_IDENTITY_COLUMNS } from '../lib/sessionIdentity';
 import { primeTenantRow } from '../lib/tenantRow';
+import { setInvoiceLayoutTenant } from '../lib/invoiceLayout';
 import type { Database } from '../types/supabase';
 import type { UserRole, Staff as StaffType } from '../types';
 
@@ -153,6 +154,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             branchId: appState.currentUserStaff?.branchId ?? null,
         });
     }, [session?.user?.id, appState.userRole, appState.tenantId, appState.currentUserStaff, impersonationTenantId]);
+
+    // The shop's invoice layout follows the shop that is signed in
+    // (seen-invoice-layout-settings-task.md): every device prints with it.
+    useEffect(() => {
+        setInvoiceLayoutTenant(session?.user?.id ? (impersonationTenantId || appState.tenantId) : null);
+    }, [session?.user?.id, appState.tenantId, impersonationTenantId]);
 
     // Resolves the full app-facing identity (device-session conflict, role,
     // tenant, onboarding step) from a Supabase session. This is the single

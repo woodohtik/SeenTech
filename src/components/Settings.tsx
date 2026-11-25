@@ -917,7 +917,7 @@ export default function Settings({ tenantId }: SettingsProps) {
               )}
 
               {activeTab === 'invoice' && (
-                <InvoiceLayoutSettings tenantId={tenantId} />
+                <InvoiceLayoutSettings tenantId={tenantId} canEdit={hasPermission('settings.edit')} />
               )}
 
               {activeTab === 'tax' && hasPermission('settings.tax') && (

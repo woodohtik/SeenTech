@@ -4312,7 +4312,14 @@
       "whatsapp_number": "Sales WhatsApp Number",
       "zatca_compatibility": "Fully compliant with Phase 2 e-Invoicing",
       "zatca_qr": "ZATCA QR Code",
-      "col_item_specs": "Show item specs"
+      "col_item_specs": "Show item specs",
+      "save_failed": "The invoice layout was not saved. Check the connection and try again.",
+      "logo_upload_failed": "The logo could not be uploaded. Check the connection and try again.",
+      "edit_official_details": "Edit in the shop details",
+      "no_permission_to_save": "Only the owner and managers can change the invoice layout. You can view the preview.",
+      "align_right": "Align right",
+      "align_center": "Centre",
+      "align_left": "Align left"
     },
     "notifications": {
       "daily_close_desc": "Summary of profits, losses, and sales immediately upon shift closure.",
