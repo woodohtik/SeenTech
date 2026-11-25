@@ -12,7 +12,7 @@ test('the owner opens a shift, sells a ready-made item for cash, and the invoice
   const posTabs = page.getByRole('button', { name: 'نقطة البيع (POS)' });
   const openShift = page.getByRole('button', { name: 'تأكيد وفتح الوردية' });
   await posTabs.first().click();
-  if (!(await openShift.isVisible())) await posTabs.last().click();
+  await openShift.waitFor({ timeout: 8_000 }).catch(() => posTabs.last().click());
 
   // No shift yet: the shift opener comes first.
   await openShift.click();

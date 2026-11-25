@@ -7,6 +7,9 @@ import { STAFF, TEST_PASSWORD } from './fixtures';
  * whether to move the session here -- answered yes, as a person would.
  */
 export async function signIn(page: Page, who: keyof typeof STAFF): Promise<void> {
+  // Someone who has seen the first-visit tour (it would cover every screen
+  // after each page load) -- the tour's own flag (OnboardingTour.tsx).
+  await page.addInitScript(() => { try { localStorage.setItem('hasSeenOnboarding', 'true'); } catch { /* none */ } });
   await page.goto('/login');
   await page.getByPlaceholder('example@mail.com أو 05xxxxxxxx').fill(STAFF[who].email);
   await page.getByPlaceholder('••••••••').first().fill(TEST_PASSWORD);
