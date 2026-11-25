@@ -7,7 +7,7 @@
  * the service role. Anything left from an earlier run is removed first.
  */
 import { db } from './db';
-import { CUSTOMER, FABRIC, SHOP, STAFF, TEST_PASSWORD } from './fixtures';
+import { CUSTOMER, FABRIC, PRODUCT, SHOP, STAFF, TEST_PASSWORD } from './fixtures';
 
 async function must<T>(label: string, p: PromiseLike<{ data: T; error: unknown }>): Promise<T> {
   const { data, error } = await p;
@@ -46,7 +46,14 @@ async function main() {
     id: FABRIC.id, tenant_id: SHOP.tenantId, name: FABRIC.name, sku: 'GOLDEN-COTTON', category: 'fabric', category_key: 'cotton',
     unit: 'meter', base_unit: 'meter', conversion_rate: 1, price_per_unit: 20, min_threshold: 0,
   }));
-  await must('stock', sb.from('branch_inventory').insert({ tenant_id: SHOP.tenantId, branch_id: SHOP.branchId, item_id: FABRIC.id, quantity: FABRIC.stock }));
+  await must('product', sb.from('inventory_items').insert({
+    id: PRODUCT.id, tenant_id: SHOP.tenantId, name: PRODUCT.name, sku: 'GOLDEN-SHEMAGH', category: 'accessories',
+    unit: 'piece', base_unit: 'piece', conversion_rate: 1, price_per_unit: PRODUCT.price, min_threshold: 0,
+  }));
+  await must('stock', sb.from('branch_inventory').insert([
+    { tenant_id: SHOP.tenantId, branch_id: SHOP.branchId, item_id: FABRIC.id, quantity: FABRIC.stock },
+    { tenant_id: SHOP.tenantId, branch_id: SHOP.branchId, item_id: PRODUCT.id, quantity: PRODUCT.stock },
+  ]));
 
   console.log(`seeded ${SHOP.name}: ${Object.keys(STAFF).length} staff, 1 customer, ${FABRIC.stock} m of ${FABRIC.name}`);
 }

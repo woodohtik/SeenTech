@@ -26,3 +26,6 @@ export const STAFF = {
 export const CUSTOMER = { id: '0e000000-0000-4000-8000-0000000000e1', name: 'عميل الاختبار', phone: '0501111111' } as const;
 
 export const FABRIC = { id: '0e000000-0000-4000-8000-0000000000f1', name: 'قطن الاختبار', stock: 100 } as const;
+
+/** A ready-made item for the POS: 50 SAR before VAT, 10 in stock. */
+export const PRODUCT = { id: '0e000000-0000-4000-8000-0000000000f2', name: 'شماغ الاختبار', price: 50, stock: 10 } as const;
