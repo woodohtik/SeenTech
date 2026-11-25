@@ -2004,7 +2004,8 @@
     "notes_title": "ملاحظات المقاسات",
     "field_note_too_long": "الملاحظة أطول من {{max}} حرفاً. اختصرها.",
     "field_note_invalid": "ملاحظات المقاسات غير صحيحة.",
-    "title": "المقاسات"
+    "title": "المقاسات",
+    "field_note_optional": "ملاحظة (اختياري)"
   },
   "onboarding": {
     "categories": {

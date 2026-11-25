@@ -29,7 +29,7 @@ const RECEIPT_ONLY = process.argv.includes('--receipt-only');
 // --extras-only: just the 1280 extras (assistant open, work card, receipt), added to an existing set.
 const EXTRAS_ONLY = process.argv.includes('--extras-only');
 const PARTIAL = RECEIPT_ONLY || EXTRAS_ONLY;
-const WIDTHS = PARTIAL ? [1280] : [360, 768, 1280];
+const WIDTHS = PARTIAL ? [1280] : arg('widths', '360,768,1280').split(',').map(Number);
 
 type Place = { key: string; path: string; open?: (page: Page) => Promise<void> };
 const PLACES: Place[] = [
@@ -59,7 +59,8 @@ async function measure(page: Page) {
       rects.sort((a, b) => a.top - b.top);
       for (let i = 1; i < rects.length; i++) maxGap = Math.max(maxGap, Math.round(rects[i].top - rects[i - 1].bottom));
     }
-    return { visible: fields.length, maxGapPx: maxGap };
+    const box = document.querySelector('[data-measurement-selector]') as HTMLElement | null;
+    return { visible: fields.length, maxGapPx: maxGap, selectorWidth: box ? Math.round(box.getBoundingClientRect().width) : null };
   });
 }
 
@@ -137,7 +138,7 @@ async function main() {
         // A note with text on the shoulder (staff screens only).
         const note = page.locator('#thobe-note-shoulder').first();
         if ((await note.count()) > 0) {
-          await note.fill('الكتف اليمين نازل شوي');
+          await note.fill('الكتف اليمين نازل شوي، وخلّ الكم أوسع بنص سانتي من المقاس');
           await page.waitForTimeout(200);
           await shoot(page, selector, width, path.join(OUT, `${place.key}-${width}-note.jpg`), page.locator('#thobe-field-shoulder').first());
           results.push({ place: place.key, width, state: 'note', ...(await measure(page)) });

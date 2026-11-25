@@ -7,7 +7,7 @@ import {
   MEASUREMENT_KEYS,
   LEGACY_MEASUREMENT_KEYS,
   countAdvancedValues,
-  fieldsDownTheFigure,
+  fieldsInColumn,
   validateFieldNotes,
   hasAdvancedValues,
   measurementRows,
@@ -48,12 +48,13 @@ describe('the approved measurement list', () => {
     expect(MEASUREMENT_KEYS).not.toContain('hips');
   });
 
-  it('orders each side down the thobe (task file question 5)', () => {
-    // Five basic on the body side, four on the sleeve side.
-    expect(fieldsDownTheFigure('right', false)).toEqual(['neck', 'shoulder', 'chest', 'length', 'bottomWidth']);
-    expect(fieldsDownTheFigure('left', false)).toEqual(['midSleeveWidth', 'sleeve', 'handWidth', 'cuffLength']);
-    expect(fieldsDownTheFigure('right', true)).toEqual(['neck', 'neckFold', 'shoulder', 'chest', 'waist', 'length', 'bottomWidth', 'bottomHem']);
-    expect(fieldsDownTheFigure('left', true)).toEqual(['sleeveTopWidth', 'midSleeveWidth', 'sleeve', 'sleeveCuff', 'handWidth', 'sleeveHem', 'cuffLength', 'cuffWidth']);
+  // seen-measurements-layout-fix-task.md: the founder's own order on screen.
+  it('numbers the fields 1-16 and puts them in the founder columns', () => {
+    expect(fieldsInColumn('start', 'basic')).toEqual(['length', 'shoulder', 'sleeve', 'chest', 'neck']);
+    expect(fieldsInColumn('end', 'basic')).toEqual(['handWidth', 'midSleeveWidth', 'cuffLength', 'bottomWidth']);
+    expect(fieldsInColumn('start', 'advanced')).toEqual(['sleeveCuff', 'sleeveTopWidth', 'sleeveHem', 'cuffWidth']);
+    expect(fieldsInColumn('end', 'advanced')).toEqual(['waist', 'bottomHem', 'neckFold']);
+    expect(MEASUREMENT_FIELDS.map((f) => f.slot)).toEqual(Array.from({ length: 16 }, (_, i) => i + 1));
   });
 });
 

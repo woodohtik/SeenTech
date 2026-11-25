@@ -1,4 +1,12 @@
 /**
+ * ORDER ON SCREEN -- founder decision, 24 Nov 2026 (seen-measurements-layout-fix-task.md):
+ * `slot` numbers the fields 1-16 and `column` puts each in a column: the
+ * reading start (the right in Arabic) takes 1-5, the other side 6-9; the
+ * advanced ones follow the same rule, 10-13 then 14-16. Enter and Tab go
+ * 1 -> 16. This is the founder's own order and changes only by his
+ * decision -- not to follow the drawing (figureY and zone only light the
+ * drawing and place a value on it).
+ *
  * The shop's approved measurement list (founder decision, 24 Nov 2026, last version,
  * seen-measurements-basic-advanced-task.md): sixteen measurements, the nine
  * basic ones first in the founder's order, then the seven advanced ones. This
@@ -62,33 +70,36 @@ export interface MeasurementField {
    */
   tier: 'basic' | 'advanced';
   /**
-   * How far down the thobe (on the 800-high drawing) the field's part is.
-   * Each side lists its fields by it, so a field sits beside what it measures
-   * (task file question 5): neck and shoulder at the top, length below.
+   * How far down the thobe (on the 800-high drawing) the field's part is:
+   * where its number sits on the drawing. Not the order of the fields.
    */
   figureY: number;
+  /** Its number on screen, 1-16, in the founder's order: Enter and Tab follow it. */
+  slot: number;
+  /** start: the column the reader begins with (the right in Arabic, the left in English); end: the other. */
+  column: 'start' | 'end';
 }
 
 /** In the founder's order. The voice wizard follows it; the screen places each side by figureY. */
 export const MEASUREMENT_FIELDS: readonly MeasurementField[] = [
   // The nine basic ones.
-  { key: 'length', side: 'right', zone: 'length', maxCm: 300, tier: 'basic', figureY: 560 },
-  { key: 'shoulder', side: 'right', zone: 'shoulder', maxCm: 100, tier: 'basic', figureY: 140 },
-  { key: 'sleeve', side: 'left', zone: 'sleeve', maxCm: 150, tier: 'basic', figureY: 360 },
-  { key: 'chest', side: 'right', zone: 'chest', maxCm: 200, tier: 'basic', figureY: 250 },
-  { key: 'neck', side: 'right', zone: 'neck', maxCm: 100, tier: 'basic', figureY: 85 },
-  { key: 'handWidth', side: 'left', zone: 'wrist', maxCm: 100, tier: 'basic', figureY: 430 },
-  { key: 'midSleeveWidth', side: 'left', zone: 'midSleeve', maxCm: 100, tier: 'basic', figureY: 340 },
-  { key: 'cuffLength', side: 'left', zone: 'cuff', maxCm: 100, tier: 'basic', figureY: 470 },
-  { key: 'bottomWidth', side: 'right', zone: 'bottomWidth', maxCm: 200, tier: 'basic', figureY: 700 },
+  { key: 'length', side: 'right', zone: 'length', maxCm: 300, tier: 'basic', figureY: 560, slot: 1, column: 'start' },
+  { key: 'shoulder', side: 'right', zone: 'shoulder', maxCm: 100, tier: 'basic', figureY: 140, slot: 2, column: 'start' },
+  { key: 'sleeve', side: 'left', zone: 'sleeve', maxCm: 150, tier: 'basic', figureY: 360, slot: 3, column: 'start' },
+  { key: 'chest', side: 'right', zone: 'chest', maxCm: 200, tier: 'basic', figureY: 250, slot: 4, column: 'start' },
+  { key: 'neck', side: 'right', zone: 'neck', maxCm: 100, tier: 'basic', figureY: 85, slot: 5, column: 'start' },
+  { key: 'handWidth', side: 'left', zone: 'wrist', maxCm: 100, tier: 'basic', figureY: 430, slot: 6, column: 'end' },
+  { key: 'midSleeveWidth', side: 'left', zone: 'midSleeve', maxCm: 100, tier: 'basic', figureY: 340, slot: 7, column: 'end' },
+  { key: 'cuffLength', side: 'left', zone: 'cuff', maxCm: 100, tier: 'basic', figureY: 470, slot: 8, column: 'end' },
+  { key: 'bottomWidth', side: 'right', zone: 'bottomWidth', maxCm: 200, tier: 'basic', figureY: 700, slot: 9, column: 'end' },
   // The seven advanced ones.
-  { key: 'sleeveCuff', side: 'left', zone: 'sleeve', maxCm: 150, tier: 'advanced', figureY: 365 },
-  { key: 'sleeveTopWidth', side: 'left', zone: 'sleeveTop', maxCm: 100, tier: 'advanced', figureY: 240 },
-  { key: 'sleeveHem', side: 'left', zone: 'cuff', maxCm: 50, tier: 'advanced', figureY: 445 },
-  { key: 'cuffWidth', side: 'left', zone: 'cuffWidth', maxCm: 50, tier: 'advanced', figureY: 500 },
-  { key: 'waist', side: 'right', zone: 'waist', maxCm: 200, tier: 'advanced', figureY: 380 },
-  { key: 'bottomHem', side: 'right', zone: 'bottomHem', maxCm: 50, tier: 'advanced', figureY: 752 },
-  { key: 'neckFold', side: 'right', zone: 'neck', maxCm: 100, tier: 'advanced', figureY: 92 },
+  { key: 'sleeveCuff', side: 'left', zone: 'sleeve', maxCm: 150, tier: 'advanced', figureY: 365, slot: 10, column: 'start' },
+  { key: 'sleeveTopWidth', side: 'left', zone: 'sleeveTop', maxCm: 100, tier: 'advanced', figureY: 240, slot: 11, column: 'start' },
+  { key: 'sleeveHem', side: 'left', zone: 'cuff', maxCm: 50, tier: 'advanced', figureY: 445, slot: 12, column: 'start' },
+  { key: 'cuffWidth', side: 'left', zone: 'cuffWidth', maxCm: 50, tier: 'advanced', figureY: 500, slot: 13, column: 'start' },
+  { key: 'waist', side: 'right', zone: 'waist', maxCm: 200, tier: 'advanced', figureY: 380, slot: 14, column: 'end' },
+  { key: 'bottomHem', side: 'right', zone: 'bottomHem', maxCm: 50, tier: 'advanced', figureY: 752, slot: 15, column: 'end' },
+  { key: 'neckFold', side: 'right', zone: 'neck', maxCm: 100, tier: 'advanced', figureY: 92, slot: 16, column: 'end' },
 ];
 
 export const MEASUREMENT_KEYS: readonly MeasurementKey[] = MEASUREMENT_FIELDS.map((f) => f.key);
@@ -98,12 +109,15 @@ export const BASIC_MEASUREMENT_KEYS: readonly MeasurementKey[] = MEASUREMENT_FIE
 /** The seven behind the "advanced measurements" button, in list order. */
 export const ADVANCED_MEASUREMENT_KEYS: readonly MeasurementKey[] = MEASUREMENT_FIELDS.filter((f) => f.tier === 'advanced').map((f) => f.key);
 
-/** One side's fields on screen, top of the thobe first (the order beside the drawing, and Tab's). */
-export function fieldsDownTheFigure(side: 'right' | 'left', showAdvanced: boolean): MeasurementKey[] {
+/**
+ * One column's fields of one tier, in slot order (the founder's order):
+ * start basic 1-5, end basic 6-9, start advanced 10-13, end advanced 14-16.
+ */
+export function fieldsInColumn(column: 'start' | 'end', tier: 'basic' | 'advanced'): MeasurementKey[] {
   return MEASUREMENT_FIELDS
-    .filter((f) => f.side === side && (showAdvanced || f.tier === 'basic'))
+    .filter((f) => f.column === column && f.tier === tier)
     .slice()
-    .sort((a, b) => a.figureY - b.figureY)
+    .sort((a, b) => a.slot - b.slot)
     .map((f) => f.key);
 }
 

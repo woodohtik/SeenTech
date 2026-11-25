@@ -2004,7 +2004,8 @@
     "notes_title": "Measurement notes",
     "field_note_too_long": "A note is longer than {{max}} characters. Shorten it.",
     "field_note_invalid": "The measurement notes are not valid.",
-    "title": "Measurements"
+    "title": "Measurements",
+    "field_note_optional": "Note (optional)"
   },
   "onboarding": {
     "categories": {

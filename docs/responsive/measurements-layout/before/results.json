@@ -1,0 +1,364 @@
+[
+ {
+  "place": "order",
+  "width": 360,
+  "state": "closed",
+  "visible": 9,
+  "maxGapPx": 8,
+  "selectorWidth": 294
+ },
+ {
+  "place": "order",
+  "width": 360,
+  "state": "open",
+  "visible": 16,
+  "maxGapPx": 64,
+  "selectorWidth": 294
+ },
+ {
+  "place": "order",
+  "width": 360,
+  "state": "note",
+  "visible": 16,
+  "maxGapPx": 64,
+  "selectorWidth": 294
+ },
+ {
+  "place": "order",
+  "width": 360,
+  "state": "focus",
+  "visible": 16,
+  "maxGapPx": 64,
+  "selectorWidth": 294
+ },
+ {
+  "place": "customer",
+  "width": 360,
+  "state": "closed",
+  "visible": 9,
+  "maxGapPx": 8,
+  "selectorWidth": 304
+ },
+ {
+  "place": "customer",
+  "width": 360,
+  "state": "open",
+  "visible": 16,
+  "maxGapPx": 64,
+  "selectorWidth": 304
+ },
+ {
+  "place": "customer",
+  "width": 360,
+  "state": "note",
+  "visible": 16,
+  "maxGapPx": 64,
+  "selectorWidth": 304
+ },
+ {
+  "place": "customer",
+  "width": 360,
+  "state": "focus",
+  "visible": 16,
+  "maxGapPx": 64,
+  "selectorWidth": 304
+ },
+ {
+  "place": "public",
+  "width": 360,
+  "state": "closed",
+  "visible": 9,
+  "maxGapPx": 8,
+  "selectorWidth": 104
+ },
+ {
+  "place": "public",
+  "width": 360,
+  "state": "open",
+  "visible": 16,
+  "maxGapPx": 64,
+  "selectorWidth": 104
+ },
+ {
+  "place": "public",
+  "width": 360,
+  "state": "focus",
+  "visible": 16,
+  "maxGapPx": 64,
+  "selectorWidth": 104
+ },
+ {
+  "place": "order",
+  "width": 1000,
+  "state": "closed",
+  "visible": 9,
+  "maxGapPx": 8,
+  "selectorWidth": 890
+ },
+ {
+  "place": "order",
+  "width": 1000,
+  "state": "open",
+  "visible": 16,
+  "maxGapPx": 8,
+  "selectorWidth": 890
+ },
+ {
+  "place": "order",
+  "width": 1000,
+  "state": "note",
+  "visible": 16,
+  "maxGapPx": 8,
+  "selectorWidth": 890
+ },
+ {
+  "place": "order",
+  "width": 1000,
+  "state": "focus",
+  "visible": 16,
+  "maxGapPx": 8,
+  "selectorWidth": 890
+ },
+ {
+  "place": "customer",
+  "width": 1000,
+  "state": "closed",
+  "visible": 9,
+  "maxGapPx": 8,
+  "selectorWidth": 890
+ },
+ {
+  "place": "customer",
+  "width": 1000,
+  "state": "open",
+  "visible": 16,
+  "maxGapPx": 8,
+  "selectorWidth": 890
+ },
+ {
+  "place": "customer",
+  "width": 1000,
+  "state": "note",
+  "visible": 16,
+  "maxGapPx": 8,
+  "selectorWidth": 890
+ },
+ {
+  "place": "customer",
+  "width": 1000,
+  "state": "focus",
+  "visible": 16,
+  "maxGapPx": 8,
+  "selectorWidth": 890
+ },
+ {
+  "place": "public",
+  "width": 1000,
+  "state": "closed",
+  "visible": 9,
+  "maxGapPx": 8,
+  "selectorWidth": 672
+ },
+ {
+  "place": "public",
+  "width": 1000,
+  "state": "open",
+  "visible": 16,
+  "maxGapPx": 64,
+  "selectorWidth": 672
+ },
+ {
+  "place": "public",
+  "width": 1000,
+  "state": "focus",
+  "visible": 16,
+  "maxGapPx": 64,
+  "selectorWidth": 672
+ },
+ {
+  "place": "order",
+  "width": 1280,
+  "state": "closed",
+  "visible": 9,
+  "maxGapPx": 8,
+  "selectorWidth": 1050
+ },
+ {
+  "place": "order",
+  "width": 1280,
+  "state": "open",
+  "visible": 16,
+  "maxGapPx": 8,
+  "selectorWidth": 1050
+ },
+ {
+  "place": "order",
+  "width": 1280,
+  "state": "note",
+  "visible": 16,
+  "maxGapPx": 8,
+  "selectorWidth": 1050
+ },
+ {
+  "place": "order",
+  "width": 1280,
+  "state": "focus",
+  "visible": 16,
+  "maxGapPx": 8,
+  "selectorWidth": 1050
+ },
+ {
+  "place": "customer",
+  "width": 1280,
+  "state": "closed",
+  "visible": 9,
+  "maxGapPx": 8,
+  "selectorWidth": 1050
+ },
+ {
+  "place": "customer",
+  "width": 1280,
+  "state": "open",
+  "visible": 16,
+  "maxGapPx": 8,
+  "selectorWidth": 1050
+ },
+ {
+  "place": "customer",
+  "width": 1280,
+  "state": "note",
+  "visible": 16,
+  "maxGapPx": 8,
+  "selectorWidth": 1050
+ },
+ {
+  "place": "customer",
+  "width": 1280,
+  "state": "focus",
+  "visible": 16,
+  "maxGapPx": 8,
+  "selectorWidth": 1050
+ },
+ {
+  "place": "public",
+  "width": 1280,
+  "state": "closed",
+  "visible": 9,
+  "maxGapPx": 8,
+  "selectorWidth": 912
+ },
+ {
+  "place": "public",
+  "width": 1280,
+  "state": "open",
+  "visible": 16,
+  "maxGapPx": 8,
+  "selectorWidth": 912
+ },
+ {
+  "place": "public",
+  "width": 1280,
+  "state": "focus",
+  "visible": 16,
+  "maxGapPx": 8,
+  "selectorWidth": 912
+ },
+ {
+  "place": "workcard",
+  "width": 1280,
+  "state": "printed"
+ },
+ {
+  "place": "receipt",
+  "width": 1280,
+  "state": "measurements"
+ },
+ {
+  "place": "order",
+  "width": 1600,
+  "state": "closed",
+  "visible": 9,
+  "maxGapPx": 8,
+  "selectorWidth": 1050
+ },
+ {
+  "place": "order",
+  "width": 1600,
+  "state": "open",
+  "visible": 16,
+  "maxGapPx": 8,
+  "selectorWidth": 1050
+ },
+ {
+  "place": "order",
+  "width": 1600,
+  "state": "note",
+  "visible": 16,
+  "maxGapPx": 8,
+  "selectorWidth": 1050
+ },
+ {
+  "place": "order",
+  "width": 1600,
+  "state": "focus",
+  "visible": 16,
+  "maxGapPx": 8,
+  "selectorWidth": 1050
+ },
+ {
+  "place": "customer",
+  "width": 1600,
+  "state": "closed",
+  "visible": 9,
+  "maxGapPx": 8,
+  "selectorWidth": 1050
+ },
+ {
+  "place": "customer",
+  "width": 1600,
+  "state": "open",
+  "visible": 16,
+  "maxGapPx": 8,
+  "selectorWidth": 1050
+ },
+ {
+  "place": "customer",
+  "width": 1600,
+  "state": "note",
+  "visible": 16,
+  "maxGapPx": 8,
+  "selectorWidth": 1050
+ },
+ {
+  "place": "customer",
+  "width": 1600,
+  "state": "focus",
+  "visible": 16,
+  "maxGapPx": 8,
+  "selectorWidth": 1050
+ },
+ {
+  "place": "public",
+  "width": 1600,
+  "state": "closed",
+  "visible": 9,
+  "maxGapPx": 8,
+  "selectorWidth": 912
+ },
+ {
+  "place": "public",
+  "width": 1600,
+  "state": "open",
+  "visible": 16,
+  "maxGapPx": 8,
+  "selectorWidth": 912
+ },
+ {
+  "place": "public",
+  "width": 1600,
+  "state": "focus",
+  "visible": 16,
+  "maxGapPx": 8,
+  "selectorWidth": 912
+ }
+]

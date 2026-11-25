@@ -6,7 +6,7 @@ import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import ar from '../i18n/locales/ar.json';
 import type { Measurements } from '../types';
-import { ADVANCED_MEASUREMENT_KEYS, BASIC_MEASUREMENT_KEYS, MEASUREMENT_KEYS, fieldsDownTheFigure } from '../constants/measurementFields';
+import { ADVANCED_MEASUREMENT_KEYS, BASIC_MEASUREMENT_KEYS, MEASUREMENT_KEYS } from '../constants/measurementFields';
 import type { MeasurementUnit } from '../utils/measurementUnits';
 
 vi.mock('./Branding', () => ({ default: () => null }));
@@ -71,15 +71,56 @@ describe('ThobeMeasurementSelector: basic and advanced', () => {
     expect(advancedButton().getAttribute('aria-expanded')).toBe('false');
   });
 
-  it('gives each side consecutive rows of the shown fields only: no holes', () => {
+  // seen-measurements-layout-fix-task.md: the founder's order on screen.
+  it('puts 1-5 in the start column and 6-9 in the end column, each from the top, numbered', () => {
     render(<Harness />);
-    const rowOf = (key: string) => Number(card(key).style.getPropertyValue('--field-row'));
-    // Five basic on the body side, four on the sleeve side.
-    expect(fieldsDownTheFigure('right', false).map(rowOf)).toEqual([1, 2, 3, 4, 5]);
-    expect(fieldsDownTheFigure('left', false).map(rowOf)).toEqual([1, 2, 3, 4]);
+    const column = (name: 'start' | 'end') => Array.from(document.querySelectorAll(`[data-column="${name}"]`))[0];
+    const keysIn = (el: Element) => Array.from(el.querySelectorAll('[id^="thobe-field-"]')).map((c) => c.id.replace('thobe-field-', ''));
+    expect(keysIn(column('start'))).toEqual(['length', 'shoulder', 'sleeve', 'chest', 'neck']);
+    expect(keysIn(column('end'))).toEqual(['handWidth', 'midSleeveWidth', 'cuffLength', 'bottomWidth']);
+    expect(card('neck').getAttribute('data-slot')).toBe('5');
+    expect(card('handWidth').getAttribute('data-slot')).toBe('6');
+    expect(card('length').textContent).toContain('1');
+  });
+
+  it('opening and closing the advanced section never moves a basic card', () => {
+    render(<Harness />);
+    const placeOf = (key: string) => {
+      const el = card(key);
+      return `${el.parentElement!.getAttribute('data-column')}:${Array.from(el.parentElement!.children).indexOf(el)}`;
+    };
+    const before = BASIC_MEASUREMENT_KEYS.map(placeOf);
     fireEvent.click(advancedButton());
-    expect(fieldsDownTheFigure('right', true).map(rowOf)).toEqual([1, 2, 3, 4, 5, 6, 7, 8]);
-    expect(fieldsDownTheFigure('left', true).map(rowOf)).toEqual([1, 2, 3, 4, 5, 6, 7, 8]);
+    expect(BASIC_MEASUREMENT_KEYS.map(placeOf)).toEqual(before);
+    // The advanced ones sit in their own section: 10-13 at the start, 14-16 at the end.
+    const section = card('sleeveCuff').closest('section')!;
+    expect(section.hidden).toBe(false);
+    expect(Array.from(section.querySelectorAll('[data-column="start"] [id^="thobe-field-"]')).map((c) => c.id.replace('thobe-field-', ''))).toEqual(['sleeveCuff', 'sleeveTopWidth', 'sleeveHem', 'cuffWidth']);
+    expect(Array.from(section.querySelectorAll('[data-column="end"] [id^="thobe-field-"]')).map((c) => c.id.replace('thobe-field-', ''))).toEqual(['waist', 'bottomHem', 'neckFold']);
+    fireEvent.click(advancedButton());
+    expect(BASIC_MEASUREMENT_KEYS.map(placeOf)).toEqual(before);
+  });
+
+  it('the value box is framed, 48px tall, the number 22px; the note sits under it, full width, 16px', () => {
+    render(<Harness />);
+    const value = input('length');
+    expect(value.className).toContain('h-12');
+    expect(value.className).toContain('border');
+    expect(value.className).toContain('text-[22px]');
+    const note = document.getElementById('thobe-note-length')!;
+    expect(note.tagName).toBe('TEXTAREA');
+    expect(note.className).toContain('w-full');
+    expect(note.className).toContain('text-base');
+    expect(note.getAttribute('placeholder')).toBe('ملاحظة (اختياري)');
+    // Under the value, in the same card.
+    expect(value.compareDocumentPosition(note) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it('Enter from 5 (the neck) goes to 6 (the hand width)', () => {
+    render(<Harness />);
+    input('neck').focus();
+    fireEvent.keyDown(input('neck'), { key: 'Enter' });
+    expect(document.activeElement?.id).toBe('thobe-part-handWidth');
   });
 
   it('points the button at the seven advanced fields', () => {
@@ -248,7 +289,7 @@ describe('ThobeMeasurementSelector: fractions', () => {
 });
 
 describe('ThobeMeasurementSelector: a note per measurement', () => {
-  const noteOf = (key: string) => document.getElementById(`thobe-note-${key}`) as HTMLInputElement | null;
+  const noteOf = (key: string) => document.getElementById(`thobe-note-${key}`) as HTMLTextAreaElement | null;
 
   it('every measurement has a note field beside it, named for screen readers, one line of 80 at most', () => {
     render(<Harness />);
@@ -256,7 +297,7 @@ describe('ThobeMeasurementSelector: a note per measurement', () => {
     for (const key of MEASUREMENT_KEYS) expect(noteOf(key)).not.toBeNull();
     expect(noteOf('shoulder')!.getAttribute('aria-label')).toBe('ملاحظة على الكتف');
     expect(noteOf('shoulder')!.maxLength).toBe(80);
-    expect(noteOf('shoulder')!.placeholder).toBe('ملاحظة');
+    expect(noteOf('shoulder')!.getAttribute('placeholder')).toBe('ملاحظة (اختياري)');
   });
 
   it('a note is saved with the measurements, trimmed on leaving, and removed when emptied', () => {
