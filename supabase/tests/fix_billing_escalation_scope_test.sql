@@ -137,6 +137,14 @@ INSERT INTO test_output (line) SELECT lives_ok(
 -- create_subscription_request for their own tenant must also succeed --
 -- the common case (BillingSettings.tsx is normally used by the owner)
 -- must keep working.
+--
+-- seen-stability-guardrails-task.md: a shop may have one request under review
+-- at a time (added after this test), and scenario 4 has just made one -- so it
+-- is cleared first; otherwise the owner is refused for that reason, not for
+-- permission (CI's pgtap job had been failing here).
+RESET ROLE;
+DELETE FROM public.subscription_requests WHERE tenant_id = 'bbbbbbbb-1111-1111-1111-111111111111';
+SET LOCAL ROLE authenticated;
 SET LOCAL request.jwt.claims = '{"sub":"11111111-aaaa-aaaa-aaaa-aaaaaaaaaaaa"}';
 INSERT INTO test_output (line) SELECT lives_ok(
   $$ SELECT * FROM public.create_subscription_request(

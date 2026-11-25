@@ -189,7 +189,9 @@ SELECT throws_matching(
        (SELECT jsonb_agg(jsonb_build_object('line_key', id, 'fabric_id', fabric_id, 'meters', 1))
           FROM public.order_items WHERE order_id = '10000000-0000-4000-8000-00000000000d'),
        NULL, '20000000-0000-4000-8000-000000000015'::uuid, 'cut') $$,
-  'لا يتبع هذا الطلب',
+  -- seen-cutting-fabric-pos-orders-fix-task.md: a clear sentence (and 22023 with
+  -- HINT fabric_line_mismatch, not 42501) since 20270115000000.
+  'ليس من أصناف الطلب',
   'a line of another order is refused'
 );
 
@@ -214,7 +216,8 @@ SELECT public.update_order_status('10000000-0000-4000-8000-00000000000b'::uuid, 
 SELECT throws_matching(
   $$ SELECT public.update_order_status('10000000-0000-4000-8000-00000000000c'::uuid, 'cutting', 'cutting',
        NULL, '20000000-0000-4000-8000-00000000001a'::uuid, 'cut') $$,
-  'غير متوفرة في المخزون',
+  -- P4 (OPERATIONS-09, 20270105000007): the refusal names the cloth and the meters.
+  'غير كافٍ: المطلوب 5',
   'short stock refuses the move to cutting'
 );
 
