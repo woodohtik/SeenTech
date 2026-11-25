@@ -43,9 +43,11 @@ async function main() {
   }
   const keys = Object.keys(STAFF) as Array<keyof typeof STAFF>;
 
+  // One statement (the local query runs it as a prepared statement), one transaction.
   runSql(`
-BEGIN;
-SET LOCAL session_replication_role = replica;
+DO $seed$
+BEGIN
+PERFORM set_config('session_replication_role', 'replica', true);
 DELETE FROM public.tenants WHERE id = ${q(SHOP.tenantId)};
 INSERT INTO public.users (id, email, display_name) VALUES
   ${keys.map((k) => `(${q(uid[k])}, ${q(STAFF[k].email)}, ${q(STAFF[k].name)})`).join(',\n  ')}
@@ -63,7 +65,8 @@ INSERT INTO public.inventory_items (id, tenant_id, name, sku, category, category
 INSERT INTO public.branch_inventory (tenant_id, branch_id, item_id, quantity) VALUES
   (${q(SHOP.tenantId)}, ${q(SHOP.branchId)}, ${q(FABRIC.id)}, ${FABRIC.stock}),
   (${q(SHOP.tenantId)}, ${q(SHOP.branchId)}, ${q(PRODUCT.id)}, ${PRODUCT.stock});
-COMMIT;
+END
+$seed$;
 `);
 
   // The seed is checked, not assumed.
