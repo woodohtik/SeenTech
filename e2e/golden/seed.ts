@@ -10,9 +10,6 @@
  * building a test shop. Anything left from an earlier run is removed first.
  */
 import { execFileSync } from 'node:child_process';
-import { writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
-import path from 'node:path';
 import { db } from './db';
 import { CUSTOMER, FABRIC, PRODUCT, SHOP, STAFF, TEST_PASSWORD } from './fixtures';
 
@@ -20,11 +17,12 @@ const q = (v: string | number | boolean | null) =>
   v === null ? 'NULL' : typeof v === 'string' ? `'${v.replace(/'/g, "''")}'` : String(v);
 
 function runSql(sql: string): void {
-  const file = path.join(tmpdir(), `golden-seed-${process.pid}.sql`);
-  writeFileSync(file, sql);
-  const cli = process.env.SUPABASE_CLI;
-  execFileSync(cli || 'npx', [...(cli ? [] : ['supabase']), 'db', 'query', '--local', '--file', file], {
-    stdio: ['ignore', 'pipe', 'inherit'], shell: process.platform === 'win32',
+  // Inside the local database's container, as its superuser (only a superuser
+  // may set triggers aside). CI names the container (GOLDEN_DB_CONTAINER).
+  const container = process.env.GOLDEN_DB_CONTAINER;
+  if (!container) throw new Error('GOLDEN_DB_CONTAINER is needed (docker ps --filter name=supabase_db_)');
+  execFileSync('docker', ['exec', '-i', container, 'psql', '-U', 'supabase_admin', '-d', 'postgres', '-v', 'ON_ERROR_STOP=1', '-q'], {
+    input: sql, stdio: ['pipe', 'pipe', 'inherit'],
   });
 }
 
@@ -43,7 +41,7 @@ async function main() {
   }
   const keys = Object.keys(STAFF) as Array<keyof typeof STAFF>;
 
-  // One statement (the local query runs it as a prepared statement), one transaction.
+  // One transaction.
   runSql(`
 DO $seed$
 BEGIN

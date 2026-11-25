@@ -135,7 +135,8 @@ jobs:
         run: VITE_SUPABASE_URL="$API_URL" VITE_SUPABASE_ANON_KEY="$ANON_KEY" npm run build
 
       - name: Seed the test shop
-        run: GOLDEN_SUPABASE_URL="$API_URL" GOLDEN_SERVICE_ROLE_KEY="$SERVICE_ROLE_KEY" SUPABASE_CLI=supabase npx tsx e2e/golden/seed.ts
+        run: |
+          GOLDEN_DB_CONTAINER="$(docker ps --filter name=supabase_db_ --format '{{.Names}}' | head -1)"           GOLDEN_SUPABASE_URL="$API_URL" GOLDEN_SERVICE_ROLE_KEY="$SERVICE_ROLE_KEY" npx tsx e2e/golden/seed.ts
 
       - name: Start the server
         run: |
