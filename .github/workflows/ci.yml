@@ -153,6 +153,22 @@ jobs:
           GOLDEN_SERVICE_ROLE_KEY: ${{ env.SERVICE_ROLE_KEY }}
         run: npx playwright test -c playwright.golden.config.ts
 
+      # A map of the screens the next paths walk through (temporary, while the paths are written).
+      - name: Probe the next screens
+        if: always()
+        env:
+          GOLDEN_PROBE: '1'
+          GOLDEN_SUPABASE_URL: ${{ env.API_URL }}
+          GOLDEN_SERVICE_ROLE_KEY: ${{ env.SERVICE_ROLE_KEY }}
+        run: npx playwright test -c playwright.golden.config.ts zz-probe || true
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: golden-probe
+          path: golden-probe/
+          retention-days: 3
+
       - name: Server log on failure
         if: failure()
         run: |

@@ -10,11 +10,12 @@ test('the owner opens a shift, sells a ready-made item for cash, and the invoice
   await page.goto('/sales');
   // The POS tab, then its POS sub-tab (the page may open on the sales record).
   const posTabs = page.getByRole('button', { name: 'نقطة البيع (POS)' });
+  const openShift = page.getByRole('button', { name: 'تأكيد وفتح الوردية' });
   await posTabs.first().click();
-  await posTabs.last().click();
+  if (!(await openShift.isVisible())) await posTabs.last().click();
 
   // No shift yet: the shift opener comes first.
-  await page.getByRole('button', { name: 'تأكيد وفتح الوردية' }).click();
+  await openShift.click();
   const search = page.getByPlaceholder('ابحث عن منتج أو باركود...');
   await expect(search).toBeVisible();
   const { data: shifts } = await db().from('shifts').select('id, status').eq('tenant_id', SHOP.tenantId).eq('staff_id', STAFF.owner.staffId).eq('status', 'open');

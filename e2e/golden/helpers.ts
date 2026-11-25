@@ -18,4 +18,16 @@ export async function signIn(page: Page, who: keyof typeof STAFF): Promise<void>
 
   // Out of the sign-in page, into the app.
   await expect(page).not.toHaveURL(/\/login/, { timeout: 30_000 });
+  await dismissTour(page);
+}
+
+/** The first-visit tour covers the screen; a person skips it. */
+export async function dismissTour(page: Page): Promise<void> {
+  const skip = page.getByRole('button', { name: 'تخطي' });
+  try {
+    await skip.waitFor({ state: 'visible', timeout: 5_000 });
+    await skip.click();
+  } catch {
+    /* no tour this time */
+  }
 }
