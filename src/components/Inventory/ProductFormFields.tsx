@@ -502,6 +502,7 @@ export default function ProductFormFields({
                 onChange={(e) => setFormData({ ...formData, openingBalance: e.target.value === "" ? 0 : Number(e.target.value) })}
                 className="w-full px-5 py-3 bg-surface border border-border rounded-xl font-semibold text-content text-right outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand"
               />
+              <p className="text-sm text-content-muted mx-1">{t("inventory.initial_stock_hint")}</p>
             </div>
           )}
         </div>

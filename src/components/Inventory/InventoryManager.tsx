@@ -1,3 +1,4 @@
+import { openingBaseQuantity } from '../../utils/openingBalance';
 import React, { useState, useEffect, useMemo } from "react";
 import { AutoGrid } from '../ui/AutoGrid';
 import { StatCard } from '../ui/StatCard';
@@ -1994,6 +1995,15 @@ const AddItemModal = ({ onClose, tenantId, branches }: any) => {
         });
       }
 
+      // The opening quantity, as a stock movement "opening balance" (once per item).
+      const openingQty = openingBaseQuantity(Number(formData.openingBalance) || 0, formData as any);
+      if (openingQty > 0 && mainBranch) {
+        const { error: openingError } = await supabase.rpc('record_opening_balance', {
+          p_item_id: item.id, p_branch_id: mainBranch.id, p_quantity: openingQty,
+        });
+        if (openingError) toastError(t('inventory.opening_balance_not_saved'));
+      }
+
       router.refresh();
 
       if (productMode === "advanced" && variantRowsToSave.length > 0) {
@@ -2107,7 +2117,8 @@ const AddItemModal = ({ onClose, tenantId, branches }: any) => {
             categoryPicker={categoryPicker}
             suppliersList={suppliersList}
             handleError={handleError}
-            showOpeningBalance={false}
+            // seen-merchant-trial-test-2026-11-26.md, phase 3 item 1: stock on hand today.
+            showOpeningBalance
             applyCategoryUnitDefaults
           />
 
@@ -3912,6 +3923,8 @@ const EditItemModal = ({ onClose, tenantId, item, branches }: any) => {
             categoryPicker={categoryPicker}
             suppliersList={suppliersList}
             handleError={handleError}
+            // Once, when the item is added; later changes go through the stock count.
+            showOpeningBalance={false}
           />
 
           <ProductVariantsSection tenantId={tenantId} itemId={item.id} branches={branches} baseSku={item.sku} />

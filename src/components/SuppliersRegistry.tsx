@@ -198,7 +198,7 @@ export default function SuppliersRegistry({
                       </span>
                     ) : (
                       <span className="inline-flex items-center gap-1 bg-[var(--seen-warning-bg)] text-warning px-2.5 py-1 rounded-full text-sm font-black border border-warning/20 uppercase">
-                        <span>{t('procurement.status_partially_paid', 'قرض قيد السداد')}</span>
+                        <span>{t('procurement.status_partially_paid', 'مستحق للمورد')}</span>
                       </span>
                     )}
                   </td>
@@ -298,7 +298,7 @@ export default function SuppliersRegistry({
                     </span>
                   ) : (
                     <span className="inline-flex items-center gap-1 bg-[var(--seen-warning-bg)] text-warning px-2 py-0.5 rounded-full text-sm font-black border border-warning/20">
-                      <span>{t('procurement.status_partially_paid', 'قرض قيد السداد')}</span>
+                      <span>{t('procurement.status_partially_paid', 'مستحق للمورد')}</span>
                     </span>
                   )}
                 </div>

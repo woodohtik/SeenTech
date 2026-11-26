@@ -56,6 +56,9 @@ import { useToast } from '../contexts/ToastContext';
 import { useConfirm } from '../contexts/ConfirmContext';
 import { useSafeMutation } from '../hooks/useSafeMutation';
 import { useTenantCategoryPicker, ADD_NEW_CATEGORY_VALUE } from '../hooks/useTenantCategoryPicker';
+import { totalStockByItem, type StockRow } from '../utils/stockTotals';
+import { supplierCategoryFilter } from '../utils/supplierCategories';
+import { SupplierExtraCategories } from './suppliers/SupplierExtraCategories';
 import { LEGACY_SUPPLIER_CATEGORY_SEED } from '../services/categoryService';
 import Branding from './Branding';
 import { PriceDisplay } from './PriceDisplay';
@@ -157,7 +160,9 @@ export default function Suppliers({ tenantId }: { tenantId: string }) {
   const [tenantName, setTenantName] = useState('نظام سين - SEEN POS');
   const [supplierReloadTrigger, setSupplierReloadTrigger] = useState(0);
 
-  const { register, handleSubmit, reset, control, setValue, formState: { errors, isSubmitting } } = useForm({
+  // seen-merchant-trial-test-2026-11-26.md, phase 3 item 4: more categories beside the main one.
+  const [extraCategories, setExtraCategories] = useState<string[]>([]);
+  const { register, handleSubmit, reset, control, setValue, watch, formState: { errors, isSubmitting } } = useForm({
     resolver: zodResolver(supplierSchema),
     defaultValues: {
       name: '',
@@ -356,16 +361,24 @@ export default function Suppliers({ tenantId }: { tenantId: string }) {
       .subscribe();
 
     const fetchInv = async () => {
-      const { data } = await supabase
-        .from('inventory_items')
-        .select('*')
-        .eq('tenant_id', tenantId);
-      setInventory(data as InventoryItem[] || []);
+      // The stock the inventory page shows (branch_inventory), not the item's
+      // own quantity column, which is not kept current
+      // (seen-merchant-trial-test-2026-11-26.md, phase 3 item 2).
+      const [{ data }, { data: stockRows }] = await Promise.all([
+        supabase.from('inventory_items').select('*').eq('tenant_id', tenantId),
+        supabase.from('branch_inventory').select('item_id, variant_id, quantity').eq('tenant_id', tenantId),
+      ]);
+      const totals = totalStockByItem((stockRows || []) as StockRow[]);
+      setInventory(((data || []) as any[]).map((i) => ({ ...i, availableQty: totals.get(i.id) ?? 0 })) as InventoryItem[]);
     };
     fetchInv();
     const invChannel = supabase
       .channel('inv-changes')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'inventory_items', filter: `tenant_id=eq.${tenantId}` }, () => {
+        fetchInv();
+      })
+      // A received order moves stock: the list follows.
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'branch_inventory', filter: `tenant_id=eq.${tenantId}` }, () => {
         fetchInv();
       })
       .subscribe();
@@ -403,6 +416,7 @@ export default function Suppliers({ tenantId }: { tenantId: string }) {
       address: formData.address,
       tax_number: formData.taxNumber,
       category: formData.category,
+      extra_categories: extraCategories.filter((k) => k !== formData.category),
       updated_at: new Date().toISOString()
     };
 
@@ -473,7 +487,7 @@ export default function Suppliers({ tenantId }: { tenantId: string }) {
         const term = `%${debouncedSearchTerm.trim()}%`;
         query = query.or(`name.ilike.${term},contact_person.ilike.${term}`);
       }
-      if (categoryFilter !== 'all') query = query.eq('category', categoryFilter);
+      if (categoryFilter !== 'all') query = query.or(supplierCategoryFilter(categoryFilter));
       const { data, count, error } = await query.order('created_at', { ascending: false }).range(from, to);
       if (error) throw error;
       return {
@@ -515,6 +529,7 @@ export default function Suppliers({ tenantId }: { tenantId: string }) {
               <button
                 onClick={() => {
                   setEditingSupplier(null);
+                  setExtraCategories([]);
                   setIsModalOpen(true);
                 }}
                 className="flex-1 main-720:flex-none bg-brand text-white px-4 py-2 rounded-xl flex items-center justify-center gap-2 hover:bg-brand/90 transition-colors"
@@ -635,6 +650,7 @@ export default function Suppliers({ tenantId }: { tenantId: string }) {
                       taxNumber: supplier.taxNumber,
                       category: supplier.category as any
                     });
+                    setExtraCategories(((supplier as any).extra_categories as string[] | null) || []);
                     setIsModalOpen(true);
                   }}
                   onDelete={handleDelete}
@@ -760,6 +776,14 @@ export default function Suppliers({ tenantId }: { tenantId: string }) {
                       />
                     )}
                   />
+                  <div className="mt-3">
+                    <SupplierExtraCategories
+                      options={categoryPicker.options}
+                      main={watch('category')}
+                      value={extraCategories}
+                      onChange={setExtraCategories}
+                    />
+                  </div>
                   {categoryPicker.addingNew && (
                     <div className="flex items-center gap-2 mt-2 p-2.5 rounded-xl border-2 border-brand/40 bg-brand/5">
                       <input

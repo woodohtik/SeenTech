@@ -1704,7 +1704,9 @@
     "add_success_with_variants": "The product and {{count}} variants were added",
     "bulk_import_branch_inventory_failed": "Branch stock could not be set up for some imported products -- check them by hand on the inventory screen",
     "item_added_success": "The product was added",
-    "save_failed": "Saving failed"
+    "save_failed": "Saving failed",
+    "opening_balance_not_saved": "The item was added, but its opening quantity was not saved. Enter it with a stock count.",
+    "initial_stock_hint": "What you have today, in the item's unit. Recorded once, as the opening balance."
   },
   "invoice_print": {
     "address": "Address",
@@ -2418,7 +2420,9 @@
     "ready_prompt_body": "Tell {{name}} their order is ready?",
     "ready_prompt_send": "Send on WhatsApp",
     "ready_prompt_later": "Later",
-    "ready_prompt_no_phone": "The customer has no mobile number."
+    "ready_prompt_no_phone": "The customer has no mobile number.",
+    "order_due_badge_title": "Left on this order. The customer's whole balance: {{total}}",
+    "move_back_confirm": "Move the order back from \"{{from}}\" to \"{{to}}\"? The earlier stage was done."
   },
   "permissions": {
     "access_denied_desc": "Not specified",
@@ -3004,7 +3008,8 @@
     "attach_invoice_pdf": "Attach the invoice as a PDF too",
     "variants": {
       "add_to_cart": "Add to cart"
-    }
+    },
+    "quantity_label": "Quantity"
   },
   "printing": {
     "agent": {
@@ -3402,7 +3407,7 @@
     "status_draft": "Draft",
     "status_high_due": "High Outstanding",
     "status_paid_full": "Fully Settled",
-    "status_partially_paid": "Debt Repaying",
+    "status_partially_paid": "Due to supplier",
     "status_pending": "Pending",
     "sub_ledger": "Subsidiary Ledger",
     "subsidiary_ledger": "Subsidiary Ledger",
@@ -3458,7 +3463,10 @@
     "print_action": "Print",
     "bulk_import_opening_balance_note": "Opening balance at import",
     "supplier_aggregates_failed": "Total purchases / paid could not be worked out for some suppliers -- their figures may not be accurate",
-    "supplier_aggregate_failed_tooltip": "This figure could not be worked out -- it may not be accurate"
+    "supplier_aggregate_failed_tooltip": "This figure could not be worked out -- it may not be accurate",
+    "extra_categories": "Also sells",
+    "net_before_vat": "Before VAT",
+    "input_vat": "Input VAT ({{rate}}%)"
   },
   "public_invoice": {
     "digital_access": "Digital Invoice Access",
