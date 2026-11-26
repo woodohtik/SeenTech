@@ -44,6 +44,8 @@ import VisualMeasurements from './VisualMeasurements';
 import ThobeMeasurementSelector from './ThobeMeasurementSelector';
 import { SmartSelect } from './ui/SmartSelect';
 import { QuickAddTailor } from './staff/QuickAddTailor';
+import { OrderImagesField } from './orders/OrderImagesField';
+import { deleteOrderImage } from '../lib/orderImages';
 import { useCustomerStylePrefill, rememberCustomerStylePrefs } from './orders/useCustomerStylePrefill';
 import { applyStylePrefs } from '../utils/customerStylePrefs';
 import { DatePicker, todayYmd } from './ui/DatePicker';
@@ -412,7 +414,7 @@ function QuickAddCustomerModal({
 }
 
 function TailoringOrderFormBody({
-  onClose, tenantId, initialCustomerId, topSlot, showReceipt, onCreated,
+  onClose: onCloseProp, tenantId, initialCustomerId, topSlot, showReceipt, onCreated,
 }: TailoringOrderFormProps) {
   const { t, i18n } = useTranslation();
   const isRtl = isRtlLang(i18n.language);
@@ -452,11 +454,24 @@ function TailoringOrderFormBody({
   const [isEditingMeasurements, setIsEditingMeasurements] = useState(false);
   const [tempMeasurements, setTempMeasurements] = useState<Measurements>({});
   const [isSavingMeasurements, setIsSavingMeasurements] = useState(false);
-  const [imageUrl, setImageUrl] = useState('');
   const [savedOrder, setSavedOrder] = useState<{ order: Record<string, any>; queuedOffline: boolean; depositSkipped: boolean } | null>(null);
   // One id for this form session: a second click or a retry after a dropped
   // response saves the same order instead of a new one.
   const orderIdRef = useRef<string>(globalThis.crypto.randomUUID());
+  // seen-order-images-upload-task.md: photos upload as they are added, into
+  // this order's folder. Abandoning the form removes them again (no orphan
+  // files); saving keeps them. The order waits for a photo still uploading.
+  const sessionUploadsRef = useRef<string[]>([]);
+  const savedRef = useRef(false);
+  const [imagesBusy, setImagesBusy] = useState(false);
+  const onClose = useCallback(() => {
+    if (!savedRef.current && sessionUploadsRef.current.length) {
+      const paths = sessionUploadsRef.current;
+      sessionUploadsRef.current = [];
+      void Promise.all(paths.map((p) => deleteOrderImage(p).catch(() => undefined)));
+    }
+    onCloseProp();
+  }, [onCloseProp]);
 
   const firstStageKey = isLegacyVertical || workflowStages.length === 0 ? 'measurements_taken' : workflowStages[0].stage_key;
 
@@ -697,6 +712,7 @@ function TailoringOrderFormBody({
         return;
       }
 
+      savedRef.current = true;
       const queuedOffline = result.status === 'queued';
       // The order's choices become the customer's preferences (best effort; not offline).
       if (!queuedOffline && selectedCustomer && items[0]) {
@@ -1300,44 +1316,14 @@ function TailoringOrderFormBody({
                     <ImageIcon size={16} />
                     {t('orders.illustration_images')}
                   </h4>
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      value={imageUrl}
-                      onChange={(e) => setImageUrl(e.target.value)}
-                      aria-label={t('orders.image_url_placeholder')}
-                      placeholder={t('orders.image_url_placeholder')}
-                      className={cn(inputClass, "flex-1")}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (!imageUrl.trim()) return;
-                        setValue('images' as any, [...images, imageUrl.trim()]);
-                        setImageUrl('');
-                      }}
-                      className="bg-brand text-white px-4 rounded-xl font-bold text-sm"
-                    >
-                      {t('common.add')}
-                    </button>
-                  </div>
-                  {images.length > 0 && (
-                    <div className="grid grid-cols-4 gap-2">
-                      {images.map((img, idx) => (
-                        <div key={img + idx} className="relative aspect-square">
-                          <img src={img} alt="" className="w-full h-full object-cover rounded-xl border border-border" referrerPolicy="no-referrer" />
-                          <button
-                            type="button"
-                            onClick={() => setValue('images' as any, images.filter((_, i) => i !== idx))}
-                            aria-label={t('common.delete')}
-                            className="absolute -top-1 end-[-0.25rem] bg-danger text-white p-1 rounded-full"
-                          >
-                            <X size={10} />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
+                  <OrderImagesField
+                    tenantId={tenantId}
+                    orderId={orderIdRef.current}
+                    value={images}
+                    onChange={(next) => setValue('images' as any, next, { shouldDirty: true })}
+                    onBusyChange={setImagesBusy}
+                    onUploaded={(path) => { sessionUploadsRef.current.push(path); }}
+                  />
                 </div>
 
                 {/* The whole strip toggles it: a 48px target (seen-responsive-layout-task.md Phase 5). */}
@@ -1367,10 +1353,10 @@ function TailoringOrderFormBody({
               </button>
               <button
                 type="submit"
-                disabled={isSubmitting}
+                disabled={isSubmitting || imagesBusy}
                 className="bg-brand text-white px-8 py-2.5 main-640:px-12 main-640:py-3 rounded-xl font-bold hover:bg-brand/90 shadow-lg shadow-brand/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed text-sm main-640:text-base"
               >
-                {isSubmitting ? t('orders.saving') : t('orders.confirm_create_order')}
+                {imagesBusy ? t('orders.images.waiting_upload') : isSubmitting ? t('orders.saving') : t('orders.confirm_create_order')}
               </button>
             </div>
           </div>

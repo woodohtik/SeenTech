@@ -1,10 +1,12 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { X } from 'lucide-react';
 import { supabase } from '../lib/supabase/client';
 import { dbRefusalMessage } from '../lib/appErrors';
 import { useToast } from '../contexts/ToastContext';
 import { isRtlLang } from '../lib/direction';
+import { OrderImagesField } from './orders/OrderImagesField';
+import { deleteOrderImage, isStoredOrderImagePath } from '../lib/orderImages';
 
 /**
  * seen-readiness-fixes-task.md P4 (OPERATIONS-06; founder question 5): change
@@ -35,12 +37,24 @@ export default function OrderEditDialog({ orderId, tenantId, onClose, onSaved }:
   const [tailor, setTailor] = useState('');
   const [notes, setNotes] = useState('');
   const [reason, setReason] = useState('');
+  // Photos (seen-order-images-upload-task.md): added or removed here, saved
+  // with set_order_images; new uploads go if the edit is abandoned, removed
+  // ones only once the edit is saved.
+  const [images, setImages] = useState<string[]>([]);
+  const [imagesBusy, setImagesBusy] = useState(false);
+  const sessionUploads = useRef<string[]>([]);
+  const saved = useRef(false);
+  useEffect(() => () => {
+    if (!saved.current && sessionUploads.current.length) {
+      void Promise.all(sessionUploads.current.map((p) => deleteOrderImage(p).catch(() => undefined)));
+    }
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
       const [o, items, inv, st] = await Promise.all([
-        supabase.from('orders').select('id, kind, status, notes, delivery_date, assigned_tailor_id, fabric_deducted_at, total_amount, paid_amount').eq('id', orderId).maybeSingle(),
+        supabase.from('orders').select('id, kind, status, notes, delivery_date, assigned_tailor_id, fabric_deducted_at, total_amount, paid_amount, images').eq('id', orderId).maybeSingle(),
         supabase.from('order_items').select('*').eq('order_id', orderId).order('created_at').order('id'),
         supabase.from('tax_invoices').select('id').eq('order_id', orderId).maybeSingle(),
         supabase.from('staff').select('id, name').eq('tenant_id', tenantId).eq('status', 'active').order('name'),
@@ -52,6 +66,7 @@ export default function OrderEditDialog({ orderId, tenantId, onClose, onSaved }:
         return;
       }
       setOrder(o.data);
+      setImages(Array.isArray(o.data.images) ? o.data.images : []);
       setLines((items.data || []).map((row: any) => ({ row, quantity: Number(row.quantity) || 1, price: Number(row.price) || 0, removed: false })));
       setHasInvoice(Boolean(inv.data));
       setStaff(st.data || []);
@@ -111,7 +126,18 @@ export default function OrderEditDialog({ orderId, tenantId, onClose, onSaved }:
         p_reason: reason.trim() || null,
       });
       if (error) throw error;
-      toastSuccess((data?.changed || []).length ? t('orders.edit_saved') : t('orders.edit_nothing_changed'));
+      const before: string[] = Array.isArray(order.images) ? order.images : [];
+      const imagesChanged = before.length !== images.length || before.some((p, i) => p !== images[i]);
+      if (imagesChanged) {
+        const { error: imgError } = await supabase.rpc('set_order_images', { p_order_id: order.id, p_images: images });
+        if (imgError) throw imgError;
+        saved.current = true;
+        // Removed photos leave storage only now that the order no longer names them.
+        before.filter((p) => !images.includes(p) && isStoredOrderImagePath(p))
+          .forEach((p) => void deleteOrderImage(p).catch(() => undefined));
+      }
+      saved.current = true;
+      toastSuccess((data?.changed || []).length || imagesChanged ? t('orders.edit_saved') : t('orders.edit_nothing_changed'));
       onSaved();
       onClose();
     } catch (err) {
@@ -147,6 +173,18 @@ export default function OrderEditDialog({ orderId, tenantId, onClose, onSaved }:
                 {staff.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
               </select>
             </label>
+            <div className="space-y-1">
+              <span className="text-sm font-bold text-content">{t('orders.illustration_images')}</span>
+              <OrderImagesField
+                tenantId={tenantId}
+                orderId={orderId}
+                value={images}
+                onChange={setImages}
+                onBusyChange={setImagesBusy}
+                onUploaded={(path) => { sessionUploads.current.push(path); }}
+                deferDelete
+              />
+            </div>
             <label className="block space-y-1">
               <span className="text-sm font-bold text-content">{t('orders.edit_notes')}</span>
               <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} className={`${field} py-2`} />
@@ -184,7 +222,7 @@ export default function OrderEditDialog({ orderId, tenantId, onClose, onSaved }:
             )}
 
             <div className="flex gap-2 pt-2">
-              <button type="button" onClick={() => void save()} disabled={saving}
+              <button type="button" onClick={() => void save()} disabled={saving || imagesBusy}
                 className="flex-1 min-h-12 rounded-2xl bg-brand text-white font-bold disabled:opacity-50">
                 {t('orders.edit_save')}
               </button>

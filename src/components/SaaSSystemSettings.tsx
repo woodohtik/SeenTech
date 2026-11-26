@@ -32,6 +32,15 @@ import { isRtlLang } from '../lib/direction';
 import { useToast } from '../contexts/ToastContext';
 import { logError } from '../lib/logger';
 
+/** A deleted shop's order photos, removed on the server (seen-order-images-upload-task.md, phase 5). */
+async function removeShopOrderImages(tenantId: string): Promise<void> {
+  const { data: { session } } = await supabase.auth.getSession();
+  await fetch(`/api/super-admin/tenants/${tenantId}/order-images`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${session?.access_token || ''}` },
+  }).catch(() => undefined);
+}
+
 export default function SaaSSystemSettings() {
   const { t, i18n } = useTranslation();
   const { success: toastSuccess, error: toastError } = useToast();
@@ -299,6 +308,7 @@ export default function SaaSSystemSettings() {
         if (count) totalDeleted += count;
       }
 
+      void removeShopOrderImages(tenantId);
       await logAuditAction('wipe_tenant_data', `Full data wipe performed for tenant ${tenantId} (${tenantName}). Total records deleted: ${totalDeleted}`, tenantId);
       toastSuccess(t('saas.tenant_data_wiped_success', { count: totalDeleted }));
     } catch (error) {

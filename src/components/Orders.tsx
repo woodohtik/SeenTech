@@ -15,6 +15,8 @@ import { saveGarmentComponentDefaults } from '../services/garmentComponentsServi
 import { OrderReadyPrompt, type ReadyOrder } from './orders/OrderReadyPrompt';
 import { customerTotalDue, orderBadgeDue } from '../utils/orderDues';
 import { isBackwardMove } from '../utils/stageMoves';
+import { OrderImageGallery, useOrderImageLinks } from './orders/OrderImageGallery';
+import { deleteOrderImageFolder } from '../lib/orderImages';
 import { createPortal } from 'react-dom';
 import { useSearchParams } from 'react-router-dom';
 import { useRealtimeSync } from '../hooks/useRealtimeSync';
@@ -1129,6 +1131,8 @@ export default function Orders({ tenantId }: { tenantId: string }) {
           .eq('id', id);
         
         if (error) throw error;
+        // Its photos go with it (seen-order-images-upload-task.md, phase 5).
+        void deleteOrderImageFolder(tenantId, id).catch(() => undefined);
         
         // Realtime local update
         setOrders(prev => prev.filter(o => o.id !== id));
@@ -1368,6 +1372,8 @@ export default function Orders({ tenantId }: { tenantId: string }) {
 
   const OrderDetailsDrawer = ({ order }: { order: Order }) => {
     const [isPaying, setIsPaying] = useState(false);
+    // The photos as links, for the work card (ready before it is printed).
+    const workCardImages = useOrderImageLinks((order as any).images);
     const [payAmount, setPayAmount] = useState(order.remainingAmount || 0);
     const [payMethod, setPayMethod] = useState<PaymentMethod>('cash');
     const [isProcessing, setIsProcessing] = useState(false);
@@ -1799,6 +1805,14 @@ export default function Orders({ tenantId }: { tenantId: string }) {
               )}
             </section>
 
+            {/* The order's photos (seen-order-images-upload-task.md, phase 4). */}
+            {Array.isArray((order as any).images) && (order as any).images.length > 0 && (
+              <section className="bg-surface p-5 rounded-3xl border border-border space-y-3">
+                <h3 className="font-black text-content text-sm">{t('orders.illustration_images')}</h3>
+                <OrderImageGallery images={(order as any).images} />
+              </section>
+            )}
+
             {/* Status Timeline */}
             <section className="space-y-4">
               <h3 className="text-sm font-black text-content-muted uppercase flex items-center gap-2">
@@ -1946,6 +1960,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                 stages={workflowStages}
                 showFabric={capabilities.fabric_consumption}
                 measurements={workCardMeasurements(order)}
+                images={workCardImages}
               />
             </div>
           )}

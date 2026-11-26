@@ -2232,7 +2232,6 @@
     "general_notes": "ملاحظات عامة",
     "grand_total": "الإجمالي الكلي",
     "illustration_images": "صور توضيحية / تصاميم",
-    "image_url_placeholder": "رابط الصورة (URL)...",
     "in_tailoring": "قيد الخياطة",
     "invoice": "الفاتورة",
     "item_type": "نوع القطعة",
@@ -2425,7 +2424,28 @@
     "ready_prompt_later": "لاحقاً",
     "ready_prompt_no_phone": "ما فيه رقم جوال للعميل.",
     "order_due_badge_title": "متبقي هذا الطلب. كل مديونية العميل: {{total}}",
-    "move_back_confirm": "ترجّع الطلب من «{{from}}» إلى «{{to}}»؟ المرحلة السابقة انتهت."
+    "move_back_confirm": "ترجّع الطلب من «{{from}}» إلى «{{to}}»؟ المرحلة السابقة انتهت.",
+    "images": {
+      "take_photo": "تصوير",
+      "from_gallery": "من المعرض/الملفات",
+      "hint": "حتى {{max}} صور. تقدر تسحبها هنا أو تلصقها.",
+      "offline": "رفع الصور يحتاج إنترنت، تقدر تضيفها لاحقاً من تعديل الطلب.",
+      "too_many": "الحد {{max}} صور للطلب.",
+      "uploading": "جاري الرفع",
+      "retry": "إعادة المحاولة",
+      "remove": "حذف الصورة",
+      "size_kb": "{{kb}} ك.ب",
+      "waiting_upload": "جاري رفع الصور…",
+      "error_too_large": "الصورة كبيرة جداً (أكثر من 25 ميجا).",
+      "error_heic": "صيغة HEIC ما تنفتح هنا. صوّرها من الكاميرا مباشرة أو حوّلها JPEG.",
+      "error_not_image": "هذا الملف مو صورة.",
+      "error_compress_failed": "تعذّر تجهيز الصورة.",
+      "error_upload": "ما ارتفعت الصورة. جرّب مرة ثانية.",
+      "open": "فتح الصورة",
+      "close": "إغلاق",
+      "next": "الصورة التالية",
+      "prev": "الصورة السابقة"
+    }
   },
   "permissions": {
     "access_denied_desc": "غير محدد",

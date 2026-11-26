@@ -2232,7 +2232,6 @@
     "general_notes": "General Notes",
     "grand_total": "Grand Total",
     "illustration_images": "Illustration Images / Designs",
-    "image_url_placeholder": "Image URL...",
     "in_tailoring": "In Tailoring",
     "invoice": "Invoice",
     "item_type": "Item Type",
@@ -2425,7 +2424,28 @@
     "ready_prompt_later": "Later",
     "ready_prompt_no_phone": "The customer has no mobile number.",
     "order_due_badge_title": "Left on this order. The customer's whole balance: {{total}}",
-    "move_back_confirm": "Move the order back from \"{{from}}\" to \"{{to}}\"? The earlier stage was done."
+    "move_back_confirm": "Move the order back from \"{{from}}\" to \"{{to}}\"? The earlier stage was done.",
+    "images": {
+      "take_photo": "Take photo",
+      "from_gallery": "From gallery/files",
+      "hint": "Up to {{max}} photos. You can drag them here or paste them.",
+      "offline": "Uploading photos needs the internet; you can add them later by editing the order.",
+      "too_many": "An order holds {{max}} photos at most.",
+      "uploading": "Uploading",
+      "retry": "Retry",
+      "remove": "Remove photo",
+      "size_kb": "{{kb}} KB",
+      "waiting_upload": "Uploading photos…",
+      "error_too_large": "The photo is too large (over 25 MB).",
+      "error_heic": "HEIC photos cannot be opened here. Take it with the camera, or convert it to JPEG.",
+      "error_not_image": "This file is not an image.",
+      "error_compress_failed": "The photo could not be prepared.",
+      "error_upload": "The photo did not upload. Try again.",
+      "open": "Open photo",
+      "close": "Close",
+      "next": "Next photo",
+      "prev": "Previous photo"
+    }
   },
   "permissions": {
     "access_denied_desc": "Not specified",

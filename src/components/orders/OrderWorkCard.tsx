@@ -36,7 +36,7 @@ export interface WorkCardOrder {
 export interface WorkCardMeasurement { key: string; label: string; value: string; note: string }
 
 export default function OrderWorkCard({
-  order, shopName, fields, stages, showFabric, measurements = [],
+  order, shopName, fields, stages, showFabric, measurements = [], images = [],
 }: {
   order: WorkCardOrder;
   shopName: string;
@@ -44,6 +44,8 @@ export default function OrderWorkCard({
   stages: ReadonlyArray<WorkflowStage>;
   showFabric: boolean;
   measurements?: ReadonlyArray<WorkCardMeasurement>;
+  /** The order's photos as links (seen-order-images-upload-task.md, phase 4). */
+  images?: ReadonlyArray<string>;
 }) {
   const { t, i18n } = useTranslation();
   const lang = i18n.language;
@@ -87,6 +89,16 @@ export default function OrderWorkCard({
               {m.note && <span style={{ flexBasis: '100%', color: '#334155', paddingInlineStart: 8 }}>{m.note}</span>}
             </div>
           ))}
+        </div>
+      )}
+      {images.length > 0 && (
+        <div style={{ borderTop: '1px solid #cbd5e1', marginTop: 6, paddingTop: 4 }}>
+          <div style={{ fontWeight: 900, marginBottom: 4 }}>{t('orders.illustration_images', 'صور توضيحية')}</div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 4 }}>
+            {images.map((src) => (
+              <img key={src} src={src} alt="" style={{ width: '100%', aspectRatio: '1 / 1', objectFit: 'cover', borderRadius: 4, border: '1px solid #cbd5e1' }} />
+            ))}
+          </div>
         </div>
       )}
       {order.notes && (
