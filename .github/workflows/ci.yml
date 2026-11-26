@@ -162,6 +162,24 @@ jobs:
           GOLDEN_SERVICE_ROLE_KEY: ${{ env.SERVICE_ROLE_KEY }}
         run: npx playwright test -c playwright.golden.config.ts zz-probe || true
 
+      # seen-merchant-trial-test-2026-11-26.md, phase 4: the design table's screens
+      # at 400/820/1280/1700, of the test shop (temporary, for the before/after).
+      - name: Screens of the design table
+        if: always()
+        env:
+          GOLDEN_SCREENS: '1'
+          GOLDEN_SCREENS_LABEL: ${{ github.sha }}
+          GOLDEN_SUPABASE_URL: ${{ env.API_URL }}
+          GOLDEN_SERVICE_ROLE_KEY: ${{ env.SERVICE_ROLE_KEY }}
+        run: npx playwright test -c playwright.golden.config.ts zz-screens || true
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: golden-screens
+          path: golden-screens/
+          retention-days: 7
+
       - uses: actions/upload-artifact@v4
         if: always()
         with:
