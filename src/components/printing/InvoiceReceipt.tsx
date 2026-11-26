@@ -185,8 +185,9 @@ export const ThermalInvoice = ({
       totals={totals}
       qrCodeBase64={data.qrValue}
       hidePrintButton={true}
-      branchName={data.branchName || 'الفرع الرئيسي'}
-      sellerName={data.sellerName || 'النظام'}
+      // No invented branch or seller (seen-merchant-trial-test-2026-11-26.md): the row is left out.
+      branchName={data.branchName}
+      sellerName={data.sellerName}
       layout={layout}
       vatRate={vatRate}
     />
