@@ -45,13 +45,16 @@ async function shot(page: Page, width: number, name: string, act?: () => Promise
   }
 }
 
-const go = (page: Page, url: string) => page.goto(url, { waitUntil: 'networkidle' }).catch(() => page.goto(url));
+// Not "networkidle": the app keeps live connections open, so it never settles.
+const go = async (page: Page, url: string) => { await page.goto(url, { waitUntil: 'domcontentloaded' }); await page.waitForTimeout(2500); };
 const closeModal = (page: Page) => page.keyboard.press('Escape').catch(() => {});
 
 for (const width of WIDTHS) {
   test(`screens at ${width}`, async ({ page }) => {
     test.setTimeout(420_000);
     await page.setViewportSize({ width, height: HEIGHT[width] });
+    page.setDefaultTimeout(8_000);
+    page.setDefaultNavigationTimeout(20_000);
     await signIn(page, 'owner');
 
     await shot(page, width, '01-dashboard', () => go(page, '/dashboard'));
