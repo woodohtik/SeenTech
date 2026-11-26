@@ -79,6 +79,8 @@ import { VoiceMicButton } from './ui/VoiceMicButton';
 import { isSpeechRecognitionSupported } from '../hooks/useSpeechRecognition';
 import ThobeMeasurementSelector from './ThobeMeasurementSelector';
 import { CustomerStylePreferences } from './customers/CustomerStylePreferences';
+import { CustomerOrderHistory } from './customers/CustomerOrderHistory';
+import { CustomerMeasurementsGrid } from './customers/CustomerMeasurementsGrid';
 import VisualMeasurements from './VisualMeasurements';
 import { useStaff } from '../contexts/StaffContext';
 import { openWhatsApp, whatsappMessage } from '../utils/whatsapp';
@@ -2151,28 +2153,8 @@ const CustomerDetailsModal = ({
           <>
           {/* Measurements Section */}
           <DetailSection title={t('customers.current_measurements')} icon={Ruler}>
-            <div className="grid grid-cols-2 main-720:grid-cols-4 gap-3 main-640:gap-4">
-              {measurementRows(customer.measurements, true).map((row) => ({
-                label: t(row.labelKey), value: row.value, note: row.note, icon: <Ruler size={14} />, color: 'bg-brand/10 text-brand',
-              })).map((m) => {
-                const displayValue = typeof m.value === 'number' ? formatMeasurement(m.value, measurementUnit) : m.value;
-                return (
-                  <div key={m.label} className="bg-surface p-3 main-640:p-4 rounded-xl main-640:rounded-2xl border border-border hover:border-brand/20 transition-all group shadow-sm">
-                    <div className="flex items-center gap-1.5 main-640:gap-2 mb-1.5 main-640:mb-2">
-                      <div className={cn("p-1.5 rounded-lg", m.color)}>
-                        {m.icon}
-                      </div>
-                      <p className="text-sm text-content-muted font-black uppercase">{m.label}</p>
-                    </div>
-                    <p className="text-base main-640:text-xl font-black text-content">
-                      <bdi dir="ltr" className="tabular-nums">{displayValue || '-'}</bdi>
-                      <span className="text-sm text-content-muted mr-1 font-bold">{t(unitLabelKey(measurementUnit))}</span>
-                    </p>
-                    {m.note && <p className="mt-1 text-sm text-content-muted break-words">{m.note}</p>}
-                  </div>
-                );
-              })}
-            </div>
+            {/* seen-merchant-trial-test-2026-11-26.md: filled ones as cards, empty ones on one line. */}
+            <CustomerMeasurementsGrid measurements={customer.measurements} unit={measurementUnit} />
           </DetailSection>
           </>
           )}
@@ -2221,36 +2203,8 @@ const CustomerDetailsModal = ({
 
           {/* Order History Section */}
           <DetailSection title={t('customers.order_history')} icon={History} defaultOpen={false}>
-            <div className="space-y-3">
-              {orders.length > 0 ? (
-                orders.map((order) => (
-                  <div key={order.id} className="bg-surface p-4 rounded-xl main-640:rounded-2xl border border-border shadow-sm flex items-center justify-between hover:border-brand/20 transition-colors">
-                    <div className="flex items-center gap-2.5 main-640:gap-3">
-                      <div className="p-2 bg-surface-muted rounded-xl text-content-muted animate-pulse">
-                        <ShoppingBag size={16} className="main-640:w-[18px] main-640:h-[18px]" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-bold text-content">#{order.id.slice(-6).toUpperCase()}</p>
-                        <DateTimeDisplay date={order.orderDate} showTime={true} size="xs" />
-                      </div>
-                    </div>
-                    <div className={cn(isRtl ? "text-left" : "text-right")}>
-                      <p className="text-sm font-black text-brand"><PriceDisplay amount={order.totalAmount} /></p>
-                      <span className={cn(
-                        "text-sm font-bold px-2 py-0.5 rounded-full",
-                        order.status === 'delivered' ? "bg-[var(--seen-success-bg)] text-success" : "bg-[var(--seen-warning-bg)] text-warning"
-                      )}>
-                        {order.status === 'delivered' ? t('common.status_delivered') : t('common.status_in_progress')}
-                      </span>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div className="text-center py-8 bg-surface-muted rounded-xl main-640:rounded-2xl border-2 border-dashed border-border text-content-muted">
-                  <p className="text-sm font-bold">{t('customers.no_previous_orders')}</p>
-                </div>
-              )}
-            </div>
+            {/* seen-merchant-trial-test-2026-11-26.md: the order's own number and real stage. */}
+            <CustomerOrderHistory orders={orders as any} />
           </DetailSection>
 
           {customer.notes && (
