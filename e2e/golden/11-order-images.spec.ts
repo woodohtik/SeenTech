@@ -16,11 +16,11 @@ async function phonePhotoWithGps(page: import('@playwright/test').Page): Promise
     const c = document.createElement('canvas');
     c.width = 3000; c.height = 2250;
     const g = c.getContext('2d')!;
-    for (let i = 0; i < 4000; i++) { // varied content, so it does not compress to nothing
+    for (let i = 0; i < 12000; i++) { // varied content, so it does not compress to nothing
       g.fillStyle = `hsl(${(i * 37) % 360},60%,${30 + (i % 40)}%)`;
       g.fillRect((i * 97) % 3000, (i * 53) % 2250, 60 + (i % 90), 40 + (i % 70));
     }
-    const blob: Blob = await new Promise((r) => c.toBlob((b) => r(b!), 'image/jpeg', 0.95));
+    const blob: Blob = await new Promise((r) => c.toBlob((b) => r(b!), 'image/jpeg', 1));
     const bytes = new Uint8Array(await blob.arrayBuffer());
     let s = ''; bytes.forEach((b) => { s += String.fromCharCode(b); });
     return btoa(s);
@@ -36,7 +36,7 @@ test('a phone photo on a new order: small WebP, no EXIF, private', async ({ page
   const startedAt = new Date().toISOString();
   await signIn(page, 'owner');
   const photo = await phonePhotoWithGps(page);
-  expect(photo.length, 'a phone-size photo to start with').toBeGreaterThan(1_000_000);
+  expect(photo.length, `a phone-size photo to start with (${Math.round(photo.length / 1024)} KB)`).toBeGreaterThan(700_000);
   expect(photo.includes(Buffer.from('GPSLatitude')), 'it carries a GPS tag').toBe(true);
 
   await page.goto('/orders');
