@@ -1,4 +1,4 @@
-import { mkdirSync } from 'node:fs';
+import { mkdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { test, type Page } from '@playwright/test';
 import { db } from './db';
@@ -41,6 +41,8 @@ async function shot(page: Page, width: number, name: string, act?: () => Promise
     const dir = path.join(OUT, String(width));
     mkdirSync(dir, { recursive: true });
     await page.screenshot({ path: path.join(dir, `${name}.png`), fullPage: true });
+    // The accessibility tree too: the golden paths are written from it.
+    writeFileSync(path.join(dir, `${name}.yml`), await page.locator('body').ariaSnapshot().catch(() => ''));
   } catch (e) {
     console.log(`[screens] ${width} ${name}: ${(e as Error).message.split('\n')[0]}`);
   }
@@ -87,5 +89,19 @@ for (const width of WIDTHS) {
       if (await open.isVisible().catch(() => false)) await open.click();
     });
     await shot(page, width, '18-tracking', () => go(page, `/track/${TRACK}`));
+    if (width === 820) {
+      await shot(page, width, '19-order-status-menu', async () => {
+        await go(page, '/orders');
+        await page.getByText(CUSTOMER.name).first().click();
+        await page.waitForTimeout(800);
+        await page.getByRole('button', { name: /خياطة/ }).last().click();
+      });
+      await closeModal(page);
+      await shot(page, width, '20-new-order-customer', async () => {
+        await go(page, '/orders');
+        await page.getByText('إنشاء طلب جديد').first().click();
+        await page.getByRole('button', { name: /اختر عميل/ }).first().click();
+      });
+    }
   });
 }

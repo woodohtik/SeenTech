@@ -113,3 +113,17 @@ describe('customerSchema nullable optional fields', () => {
     expect(result.success).toBe(false);
   });
 });
+
+// Found by golden path 5 (seen-merchant-trial-test-2026-11-26.md): the form
+// showed "Saudi cutting" chosen, and the order saved no cutting type -- the
+// line schema did not list cuttingType or shoulderStyle, so zod dropped them.
+import { orderSchema as orderSchemaForStyles } from './validations';
+it('an order line keeps every style the form offers', () => {
+  const parsed = orderSchemaForStyles.parse({
+    customerId: 'c1', deliveryDate: '2026-12-01', paidAmount: 0, paymentMethod: 'cash', status: 'measurements_taken',
+    items: [{ garmentType: 'ثوب', fabric: 'قطن', quantity: 1, price: 250,
+      cuttingType: 'saudi', shoulderStyle: 'padded', collarPadding: 'hard', pocketType: 'visible', collarType: 'classic',
+      cuffType: 'square', chestStyle: 'plain', closureType: 'buttons', closureVisibility: 'hidden' }],
+  });
+  expect(parsed.items[0]).toMatchObject({ cuttingType: 'saudi', shoulderStyle: 'padded', collarPadding: 'hard', pocketType: 'visible' });
+});

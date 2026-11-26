@@ -1,3 +1,4 @@
+import { showHeaderTrialBadge } from './headerTrialBadge';
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase/client';
 import { resolveTaxSettings } from '../utils/taxSettings';
@@ -81,7 +82,8 @@ export default function Header({ tenantId, title, subtitle, children }: HeaderPr
     };
   }, [tenantId]);
 
-  const badge = trialDays !== null ? (
+  // Not while the expiry banner above says the same (phase 4).
+  const badge = trialDays !== null && showHeaderTrialBadge(trialDays, isTrialPlan) ? (
     <span className={cn(
       "inline-flex shrink-0 select-none items-center gap-1.5 whitespace-nowrap rounded-full border px-3 py-1 text-sm font-bold",
       trialDays <= 3
