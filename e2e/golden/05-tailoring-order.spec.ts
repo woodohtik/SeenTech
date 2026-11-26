@@ -34,6 +34,7 @@ const buttonsStock = async () => {
 
 test("a returning customer's order, its buttons at cutting, and the 'ready' message", async ({ page }) => {
   test.setTimeout(150_000);
+  const startedAt = new Date().toISOString();
   await signIn(page, 'owner');
   await page.goto('/orders');
   await page.getByText('إنشاء طلب جديد').first().click();
@@ -55,11 +56,11 @@ test("a returning customer's order, its buttons at cutting, and the 'ready' mess
   await expect(form).toBeHidden({ timeout: 20_000 });
 
   const { data: orders } = await db().from('orders').select('id, order_number, kind, components_taken_at')
-    .eq('tenant_id', SHOP.tenantId).eq('customer_id', CUSTOMER.id).eq('kind', 'tailoring').order('created_at', { ascending: false }).limit(1);
+    .eq('tenant_id', SHOP.tenantId).eq('customer_id', CUSTOMER.id).eq('kind', 'tailoring').gte('created_at', startedAt).order('created_at', { ascending: false }).limit(1);
   expect(orders, 'the tailoring order is saved').toHaveLength(1);
   const order = orders![0];
   const { data: lines } = await db().from('order_items').select('collar_padding, cutting_type, pocket_type').eq('order_id', order.id);
-  expect(lines?.[0], "the line carries the customer's preferences").toMatchObject({ collar_padding: 'hard', cutting_type: 'saudi', pocket_type: 'visible' });
+  expect(lines?.[0], `the line carries the customer's preferences: ${JSON.stringify(lines)}`).toMatchObject({ collar_padding: 'hard', cutting_type: 'saudi', pocket_type: 'visible' });
 
   // Cutting: the 5 buttons with the cloth, in the same move.
   const before = await buttonsStock();
