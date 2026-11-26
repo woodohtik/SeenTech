@@ -544,7 +544,8 @@ export const InventoryAdjustment: React.FC<InventoryAdjustmentProps> = ({
   const formatCurrency = (val: number) => {
     return new Intl.NumberFormat(localeOf(), {
       style: "currency",
-      currency: isRtl ? "SAR" : "USD",
+      // The shop's money is riyals in every language (was USD in English).
+      currency: "SAR",
       minimumFractionDigits: 2,
     }).format(val);
   };

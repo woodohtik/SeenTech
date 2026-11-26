@@ -20,7 +20,7 @@ export function CustomerMeasurementsGrid({ measurements, unit }: { measurements:
   return (
     <div className="space-y-3">
       {filled.length > 0 ? (
-        <div className="grid grid-cols-2 main-720:grid-cols-4 gap-3 main-640:gap-4">
+        <div className="grid grid-cols-2 main-1024:grid-cols-4 gap-3 main-640:gap-4">
           {filled.map((row) => (
             <div key={row.key} className="bg-surface p-3 main-640:p-4 rounded-xl main-640:rounded-2xl border border-border hover:border-brand/20 transition-all shadow-sm min-w-0">
               <div className="flex items-center gap-1.5 main-640:gap-2 mb-1.5 main-640:mb-2 min-w-0">

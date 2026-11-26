@@ -9,10 +9,10 @@ test('the owner opens a shift, sells a ready-made item for cash, and the invoice
   await signIn(page, 'owner');
   await page.goto('/sales');
   // The POS tab, then its POS sub-tab (the page may open on the sales record).
-  const posTabs = page.getByRole('button', { name: 'نقطة البيع (POS)' });
+  // The POS tab, then its "new sale" sub-tab (the second one was also named POS until phase 4).
   const openShift = page.getByRole('button', { name: 'تأكيد وفتح الوردية' });
-  await posTabs.first().click();
-  await openShift.waitFor({ timeout: 8_000 }).catch(() => posTabs.last().click());
+  await page.getByRole('button', { name: 'نقطة البيع (POS)' }).first().click();
+  await openShift.waitFor({ timeout: 8_000 }).catch(() => page.getByRole('button', { name: 'بيع جديد' }).click());
 
   // No shift yet: the shift opener comes first.
   await openShift.click();

@@ -590,7 +590,7 @@ export default function PurchaseOrders({
               setModalType('purchase');
               setIsModalOpen(true);
             }}
-            className="flex-1 main-640:flex-initial bg-brand text-white px-5 py-3 rounded-2xl font-black text-sm flex items-center justify-center gap-2 hover:bg-brand/95 transition-all shadow-lg shadow-brand/10 active:scale-95 duration-100"
+            className="flex-1 main-640:flex-initial bg-brand text-white px-5 py-3 rounded-2xl font-black text-sm whitespace-nowrap flex items-center justify-center gap-2 hover:bg-brand/95 transition-all shadow-lg shadow-brand/10 active:scale-95 duration-100"
           >
             <Plus size={18} />
             <span>{t('procurement.create_po', 'إنشاء أمر شراء')}</span>
@@ -600,7 +600,7 @@ export default function PurchaseOrders({
               setModalType('return');
               setIsModalOpen(true);
             }}
-            className="flex-1 main-640:flex-initial bg-danger text-white px-5 py-3 rounded-2xl font-black text-sm flex items-center justify-center gap-2 hover:bg-danger/95 transition-all shadow-lg shadow-danger/10 active:scale-95 duration-100"
+            className="flex-1 main-640:flex-initial bg-danger text-white px-5 py-3 rounded-2xl font-black text-sm whitespace-nowrap flex items-center justify-center gap-2 hover:bg-danger/95 transition-all shadow-lg shadow-danger/10 active:scale-95 duration-100"
           >
             <Plus size={18} />
             <span>{t('procurement.create_return_order', 'أمر إرجاع بضاعة')}</span>
@@ -1087,7 +1087,10 @@ export default function PurchaseOrders({
                       placeholder="0"
                       value={quantity || ''}
                       onChange={(e) => setQuantity(Number(e.target.value))}
-                      className="w-full px-4 py-2 bg-surface border border-border rounded-xl outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand text-content font-bold text-sm"
+                      inputMode="decimal"
+                      dir="ltr"
+                      // No spinner arrows: the figure hid behind them (phase 4).
+                      className="w-full px-4 py-2 bg-surface border border-border rounded-xl outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand text-content font-bold text-sm [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                     />
                   </div>
                   <div className="space-y-2">
@@ -1099,8 +1102,10 @@ export default function PurchaseOrders({
                       onChange={(e) => setPricePerUnit(Number(e.target.value))}
                       readOnly={modalType === 'return'}
                       title={modalType === 'return' ? t('procurement.return_price_locked', 'السعر مقفل على سعر الشراء الفعلي ولا يمكن تعديله') : undefined}
+                      inputMode="decimal"
+                      dir="ltr"
                       className={cn(
-                        "w-full px-4 py-2 bg-surface border border-border rounded-xl outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand text-content font-bold text-sm",
+                        "w-full px-4 py-2 bg-surface border border-border rounded-xl outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand text-content font-bold text-sm [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none",
                         modalType === 'return' && "bg-surface-muted cursor-not-allowed opacity-80"
                       )}
                     />

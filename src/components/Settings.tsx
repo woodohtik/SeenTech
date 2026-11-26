@@ -855,15 +855,8 @@ export default function Settings({ tenantId }: SettingsProps) {
 
               {activeTab === 'staff' && hasPermission('staff.manage') && (
                 <div className="space-y-5 main-640:space-y-6">
-                  <div className={cn("bg-surface-muted/30 p-4 main-640:p-6 rounded-2xl border border-border flex flex-col main-640:flex-row items-center gap-4 main-640:gap-6 text-center", isRtl ? "main-640:text-right" : "main-640:text-left")}>
-                    <div className="w-12 h-12 main-640:w-14 main-640:h-14 bg-brand/10 text-brand rounded-2xl flex items-center justify-center shadow-inner shrink-0">
-                      <Shield size={24} />
-                    </div>
-                    <div className="space-y-1 min-w-0">
-                      <h4 className="text-base main-640:text-lg font-black text-content">{t('settings_page.staff.title', 'طاقم الموظفين')}</h4>
-                      <p className="text-sm text-content-muted font-medium">{t('settings_page.staff.subtitle', 'قم بإضافة الموظفين وتعيين الفروع والأدوار الوظيفية لهم في النظام.')}</p>
-                    </div>
-                  </div>
+                  {/* The staff screen carries its own title; a second card above it
+                      repeated "إدارة الطاقم الموظفين" (seen-merchant-trial-test-2026-11-26.md, phase 4). */}
                   {/* No overflow-hidden: the staff view has its own horizontal
                       scrollers, and clipping here cut its tab bar off instead. */}
                   <div className="bg-surface rounded-2xl border border-border shadow-xl shadow-brand/5">

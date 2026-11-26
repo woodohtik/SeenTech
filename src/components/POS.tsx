@@ -1854,7 +1854,8 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
                           {t('pos.type_ready_made')}
                         </span>
                       )}
-                      <span className="font-medium text-content line-clamp-1">
+                      {/* Two lines, not one ("أزرار.."), and the whole name on hover (phase 4). */}
+                      <span className="font-medium text-content line-clamp-2 min-w-0 break-words" title={item.type === 'custom' ? item.garmentType : item.name}>
                         {item.type === 'custom' ? item.garmentType : (i18n.language === 'en' && item.nameEn ? item.nameEn : item.name)}
                       </span>
                     </div>
@@ -2162,11 +2163,13 @@ const invoiceData: InvoiceData | null = buildPosInvoiceData(completedOrder, {
               // shares the content with the cart, so the content's width said
               // five columns where the panel had room for three, and names
               // went one word a line (seen-responsive-layout-task.md Phase 3).
-              <AutoGrid min={128} className="w-full" style={{ ['--auto-grid-gap' as string]: '0.75rem' }}>
+              // 104px: three cards to a phone row, not two of ~300px each
+              // (seen-merchant-trial-test-2026-11-26.md, phase 4).
+              <AutoGrid min={104} className="w-full" style={{ ['--auto-grid-gap' as string]: '0.75rem' }}>
                 {ordersModuleOn && (
                 <button
                   onClick={() => setIsCustomOrderModalOpen(true)}
-                  className="flex flex-col items-center p-3.5 bg-brand/5 border border-brand/40 hover:border-brand rounded-xl transition-all duration-200 group active:scale-95 cursor-pointer text-center w-full"
+                  className="flex flex-col items-center p-2.5 main-640:p-3.5 bg-brand/5 border border-brand/40 hover:border-brand rounded-xl transition-all duration-200 group active:scale-95 cursor-pointer text-center w-full"
                 >
                   <div className="w-full aspect-square bg-brand/10 rounded-xl flex items-center justify-center mb-2.5 group-hover:scale-105 transition-transform overflow-hidden border border-brand/20">
                     <Scissors size={26} className="text-brand" />
@@ -2180,7 +2183,7 @@ const invoiceData: InvoiceData | null = buildPosInvoiceData(completedOrder, {
                   <button
                     key={item.id}
                     onClick={() => handleProductTileClick(item)}
-                    className="flex flex-col items-center p-3.5 bg-surface border border-border/70 hover:border-brand/50 rounded-xl transition-all duration-200 group active:scale-95 cursor-pointer text-center w-full"
+                    className="flex flex-col items-center p-2.5 main-640:p-3.5 bg-surface border border-border/70 hover:border-brand/50 rounded-xl transition-all duration-200 group active:scale-95 cursor-pointer text-center w-full"
                   >
                     <div className="w-full aspect-square bg-surface-muted/60 rounded-xl flex items-center justify-center mb-2.5 group-hover:scale-105 transition-transform overflow-hidden border border-border/40">
                       {item.mainImage ? (

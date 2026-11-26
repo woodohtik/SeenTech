@@ -50,3 +50,11 @@ test('a delivery date cannot be in the past', () => {
   fireEvent.click(screen.getAllByRole('button', { name: '21' })[0]);
   expect(onChange).toHaveBeenCalledWith('2026-11-21');
 });
+
+test('in Arabic the weekdays are one letter each, so they do not run together', () => {
+  lang.value = 'ar';
+  render(<DatePicker value="2026-11-22" onChange={() => {}} />);
+  fireEvent.click(screen.getByRole('button', { name: /2026|22/ }));
+  expect(screen.getByText('خ')).toBeTruthy();
+  expect(screen.queryByText('الخميس')).toBeNull();
+});

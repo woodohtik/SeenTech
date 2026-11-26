@@ -26,11 +26,12 @@ test.beforeAll(async () => {
   await sb.from('tenants').update({ subscription_status: 'trial', trial_ends_at: new Date(Date.now() + 6 * 86400000).toISOString() }).eq('id', SHOP.tenantId);
   await sb.from('suppliers').upsert({ id: '0e000000-0000-4000-8000-0000000000a1', tenant_id: SHOP.tenantId, name: 'مؤسسة الحرير للأقمشة', phone: '0500000077', category: 'fabric' });
   await sb.from('customers').update({ measurements: { length: 145, shoulder: 46, chest: 104, sleeve: 62, neck: 40, collarType: 'classic', pocketType: 'hidden', cuttingType: 'saudi', collarPadding: 'hard', closureType: 'buttons' } }).eq('id', CUSTOMER.id);
-  await sb.from('orders').upsert({
+  const { error: orderError } = await sb.from('orders').upsert({
     id: ORDER_ID, tenant_id: SHOP.tenantId, customer_id: CUSTOMER.id, customer_name: CUSTOMER.name, order_number: 7,
     delivery_date: new Date(Date.now() + 9 * 86400000).toISOString(), total_amount: 115, paid_amount: 50, remaining_amount: 65,
     status: 'sewing', status_key: 'sewing', kind: 'tailoring', tracking_token: TRACK, branch_id: SHOP.branchId,
   });
+  if (orderError) console.log(`[screens] order seed: ${orderError.message}`);
 });
 
 async function shot(page: Page, width: number, name: string, act?: () => Promise<unknown>) {
@@ -74,7 +75,7 @@ for (const width of WIDTHS) {
     await closeModal(page);
     await shot(page, width, '12-customer-profile', async () => { await go(page, '/customers'); await page.getByText(CUSTOMER.name).first().click(); });
     await shot(page, width, '13-orders', () => go(page, '/orders'));
-    await shot(page, width, '14-order-details', async () => { await go(page, '/orders'); await page.getByText('#7').first().click(); });
+    await shot(page, width, '14-order-details', async () => { await go(page, '/orders'); await page.getByText(CUSTOMER.name).first().click(); });
     await closeModal(page);
     await shot(page, width, '15-new-order', async () => { await go(page, '/orders'); await page.getByText('إنشاء طلب جديد').first().click(); });
     await shot(page, width, '16-calendar', () => page.getByRole('button', { name: /اختر التاريخ|تاريخ/ }).first().click());

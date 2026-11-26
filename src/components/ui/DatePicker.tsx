@@ -64,7 +64,11 @@ export function DatePicker({ value, onChange, id, className, placeholder, trigge
     new Intl.DateTimeFormat(locale, { month: 'long', timeZone: 'UTC' }).format(new Date(Date.UTC(2026, m, 1))));
   // 2026-11-01 is a Sunday: the week starts on Sunday, as before.
   const weekDays = Array.from({ length: 7 }, (_, d) =>
-    new Intl.DateTimeFormat(locale, { weekday: 'short', timeZone: 'UTC' }).format(new Date(Date.UTC(2026, 10, 1 + d))));
+    // Arabic "short" names are whole words ("الخميسالجمعةالسبت" ran together in
+    // seven columns); its one-letter form is the usual calendar header
+    // (seen-merchant-trial-test-2026-11-26.md, phase 4). Urdu's one-letter form is
+    // Latin, so it keeps its names, cut to fit.
+    new Intl.DateTimeFormat(locale, { weekday: i18n.language.startsWith('ar') ? 'narrow' : 'short', timeZone: 'UTC' }).format(new Date(Date.UTC(2026, 10, 1 + d))));
 
   // Format selected date for display button
   const formatDisplayDate = (dateStr: string) => {
@@ -259,7 +263,8 @@ export function DatePicker({ value, onChange, id, className, placeholder, trigge
               {weekDays.map((wd, index) => (
                 <span 
                   key={index} 
-                  className="text-sm font-black text-content-muted uppercase py-1"
+                  className="text-sm font-black text-content-muted py-1 truncate min-w-0"
+                  title={wd}
                 >
                   {wd}
                 </span>

@@ -1706,7 +1706,10 @@
     "item_added_success": "The product was added",
     "save_failed": "Saving failed",
     "opening_balance_not_saved": "The item was added, but its opening quantity was not saved. Enter it with a stock count.",
-    "initial_stock_hint": "What you have today, in the item's unit. Recorded once, as the opening balance."
+    "initial_stock_hint": "What you have today, in the item's unit. Recorded once, as the opening balance.",
+    "tax_inclusive_hint": "15% in the price",
+    "tax_exclusive_hint": "+15% on top",
+    "tax_exempt_hint": "No VAT"
   },
   "invoice_print": {
     "address": "Address",
@@ -2172,7 +2175,7 @@
     "all_statuses": "All Statuses",
     "amount_paid": "Amount Paid",
     "awaiting_tailoring": "Awaiting Tailoring",
-    "b2b_data_title": "(Optional)",
+    "b2b_data_title": "Company details (optional)",
     "bolt": "Bolt",
     "cancel": "Cancel",
     "cannot_deliver_unpaid": "The order cannot be delivered until the full remaining amount is paid.",
@@ -3231,8 +3234,8 @@
     "filter_date_start": "Filter by Date:",
     "filter_payment": "Payouts (Vouchers)",
     "filter_payments": "Payout Vouchers & Payments",
-    "filter_purchase": "Purchases (Invoices)",
-    "filter_purchases": "Purchases (Invoiced Dues)",
+    "filter_purchase": "Purchases",
+    "filter_purchases": "Purchases",
     "final_balance_due_supplier": "Final Balance Due to Supplier",
     "final_due_balance": "Final Outstanding Balance",
     "financial_record": "Financial Entry",
@@ -3466,7 +3469,12 @@
     "supplier_aggregate_failed_tooltip": "This figure could not be worked out -- it may not be accurate",
     "extra_categories": "Also sells",
     "net_before_vat": "Before VAT",
-    "input_vat": "Input VAT ({{rate}}%)"
+    "input_vat": "Input VAT ({{rate}}%)",
+    "col_total_purchases": "Purchases",
+    "col_total_paid": "Paid",
+    "col_outstanding_balance": "Due to supplier",
+    "col_account_status": "Status",
+    "col_actions_and_inventory": "Actions"
   },
   "public_invoice": {
     "digital_access": "Digital Invoice Access",
@@ -4272,7 +4280,8 @@
     "tax_invoices": "Tax Invoices",
     "title": "Sales Operation Dashboard",
     "unknown": "Unknown",
-    "cash_drawer_balance_failed": "The cash drawer balance could not be worked out"
+    "cash_drawer_balance_failed": "The cash drawer balance could not be worked out",
+    "new_sale": "New sale"
   },
   "sales_record": {
     "download_pdf": "Download as PDF",

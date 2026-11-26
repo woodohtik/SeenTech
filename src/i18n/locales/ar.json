@@ -1706,7 +1706,10 @@
     "item_added_success": "تمت إضافة المنتج بنجاح",
     "save_failed": "فشل الحفظ",
     "opening_balance_not_saved": "انضاف الصنف، لكن الكمية الافتتاحية ما انحفظت. أدخلها من الجرد.",
-    "initial_stock_hint": "الموجود عندك اليوم، بوحدة الصنف. يُسجَّل مرة وحدة كرصيد افتتاحي."
+    "initial_stock_hint": "الموجود عندك اليوم، بوحدة الصنف. يُسجَّل مرة وحدة كرصيد افتتاحي.",
+    "tax_inclusive_hint": "15% ضمن السعر",
+    "tax_exclusive_hint": "+15% فوق السعر",
+    "tax_exempt_hint": "بدون ضريبة"
   },
   "invoice_print": {
     "address": "العنوان",
@@ -2172,7 +2175,7 @@
     "all_statuses": "كل الحالات",
     "amount_paid": "المبلغ المدفوع",
     "awaiting_tailoring": "بانتظار التفصيل",
-    "b2b_data_title": "(اختياري)",
+    "b2b_data_title": "بيانات الشركة (اختياري)",
     "bolt": "لفة",
     "cancel": "إلغاء",
     "cannot_deliver_unpaid": "لا يمكن تسليم الطلب قبل سداد كامل المبلغ المتبقي.",
@@ -3231,8 +3234,8 @@
     "filter_date_start": "تصفية التاريخ:",
     "filter_payment": "سندات الصرف والمدفوعات",
     "filter_payments": "سندات الصرف والمدفوعات",
-    "filter_purchase": "عمليات المشتريات (متأخرات في فواتير)",
-    "filter_purchases": "عمليات المشتريات (متأخرات في فواتير)",
+    "filter_purchase": "المشتريات",
+    "filter_purchases": "المشتريات",
     "final_balance_due_supplier": "الرصيد النهائي المستحق للمورد",
     "final_due_balance": "الرصيد النهائي المستحق للمورد",
     "financial_record": "قيد مالي",
@@ -3466,7 +3469,12 @@
     "supplier_aggregate_failed_tooltip": "تعذّر حساب هذا الرقم — قد لا يكون دقيقاً",
     "extra_categories": "يبيع أيضاً",
     "net_before_vat": "قبل الضريبة",
-    "input_vat": "ضريبة المدخلات ({{rate}}%)"
+    "input_vat": "ضريبة المدخلات ({{rate}}%)",
+    "col_total_purchases": "المشتريات",
+    "col_total_paid": "المدفوع",
+    "col_outstanding_balance": "المستحق للمورد",
+    "col_account_status": "الحالة",
+    "col_actions_and_inventory": "الإجراءات"
   },
   "public_invoice": {
     "digital_access": "الوصول الرقمي للفاتورة",
@@ -4367,7 +4375,8 @@
     "tax_invoices": "الفواتير الضريبية",
     "title": "لوحة عمليات المبيعات",
     "unknown": "غير معروف",
-    "cash_drawer_balance_failed": "تعذّر حساب رصيد الدرج النقدي"
+    "cash_drawer_balance_failed": "تعذّر حساب رصيد الدرج النقدي",
+    "new_sale": "بيع جديد"
   },
   "sales_record": {
     "download_pdf": "تحميل كـ PDF",
@@ -5213,7 +5222,7 @@
       "tab_list": "القائمة",
       "tab_permissions": "الصلاحيات",
       "test_badge": "تجريبي",
-      "title": "إدارة الطاقم الموظفين"
+      "title": "إدارة الموظفين"
     },
     "subtitle": "تخصيص تجربة متجرك وإدارة اشتراكك",
     "tabs": {

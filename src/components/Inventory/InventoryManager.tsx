@@ -1,3 +1,4 @@
+import { PriceDisplay } from '../PriceDisplay';
 import { openingBaseQuantity } from '../../utils/openingBalance';
 import React, { useState, useEffect, useMemo } from "react";
 import { AutoGrid } from '../ui/AutoGrid';
@@ -849,9 +850,9 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
                           <span className="text-sm font-black text-content-muted uppercase">
                             {t("inventory.price_per_unit")}
                           </span>
+                          {/* The riyal as everywhere else, not "SAR" (seen-merchant-trial-test-2026-11-26.md, phase 4). */}
                           <p className="text-sm font-black text-content">
-                            {item.pricePerUnit}{" "}
-                            <span className="text-sm">SAR</span>
+                            <PriceDisplay amount={Number(item.pricePerUnit) || 0} />
                           </p>
                         </div>
                         <div className="flex flex-col gap-0.5 border-l border-border/50 pl-2 main-640:pl-4 rtl:pr-2 rtl:pl-0 main-640:rtl:pr-4 rtl:border-l-0 rtl:border-r">
