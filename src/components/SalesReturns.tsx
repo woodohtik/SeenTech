@@ -1,3 +1,4 @@
+import { invoiceNumberCandidates, matchesReturnSearch } from '../utils/returnSearch';
 import React, { useState, useEffect } from 'react';
 import { 
   Search, 
@@ -117,6 +118,14 @@ export default function SalesReturns({ tenantId, shiftId }: { tenantId: string, 
         customerIds = customersData.map(c => c.id);
       }
 
+      // The invoice number on the receipt (INV-21, or 21) -- the box asks for it.
+      const { data: invoiceRows } = await supabase
+        .from('tax_invoices')
+        .select('order_id')
+        .eq('tenant_id', tenantId)
+        .in('invoice_number', invoiceNumberCandidates(trimmedQuery));
+      const invoiceOrderIds = (invoiceRows || []).map((r: { order_id: string | null }) => r.order_id).filter(Boolean) as string[];
+
       // 2. Query orders for the tenant
       const { data, error } = await supabase
         .from('orders')
@@ -127,15 +136,7 @@ export default function SalesReturns({ tenantId, shiftId }: { tenantId: string, 
       if (error) throw error;
 
       // 3. Filter orders matching invoice identifier OR matching customer IDs
-      const matchedOrders = (data || []).filter(d => {
-        const matchesInvoice = (
-          d.id.includes(trimmedQuery) || 
-          d.id.slice(-6).toUpperCase() === trimmedQuery.toUpperCase() ||
-          d.order_number?.toString() === trimmedQuery
-        );
-        const matchesCustomer = d.customer_id && customerIds.includes(d.customer_id);
-        return matchesInvoice || matchesCustomer;
-      }).map(foundDoc => {
+      const matchedOrders = (data || []).filter(d => matchesReturnSearch(d, trimmedQuery, { invoiceOrderIds, customerIds })).map(foundDoc => {
         const decoded = decodeOrderRow(foundDoc);
         return {
           ...decoded,
