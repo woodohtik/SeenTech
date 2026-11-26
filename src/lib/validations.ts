@@ -110,6 +110,10 @@ export const orderSchema = z.object({
     cuffType: z.string().optional(),
     pocketType: z.string().optional(),
     chestStyle: z.string().optional(),
+    // Were missing, so zod dropped them: the form showed "Saudi cutting" and
+    // the order saved none (found by golden path 5, seen-merchant-trial-test-2026-11-26.md).
+    shoulderStyle: z.string().max(40).optional(),
+    cuttingType: z.string().max(40).optional(),
     collarPadding: z.enum(['hard', 'soft']).optional(),
     additions: z.string().optional(),
     embroidery: z.string().optional(),
