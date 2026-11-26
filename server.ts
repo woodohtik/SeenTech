@@ -1121,6 +1121,46 @@ app.post("/api/saas/complete-temp-password", authenticate, async (req: any, res)
 // service-role key, which must never reach the browser. Replaces the old
 // client-side "spin up a secondary Firebase app" trick used by
 // SaaSTeamManagement.tsx / AddEmployeeModal.tsx / Staff.tsx.
+// seen-merchant-trial-test-2026-11-26.md, phase 1: an employee is made in one
+// request -- account, users row and staff row together, rolled back on any
+// failure (src/server/createStaffMember.ts).
+app.post("/api/staff/create", authenticate, requirePermission('staff.create'), async (req: any, res) => {
+  try {
+    const { supabaseAdmin } = await import("./src/server/supabase-admin.ts");
+    const { count: attemptCount, error: rateLimitError } = await supabaseAdmin
+      .rpc('increment_staff_account_create_attempt', { p_caller_uid: req.user.uid })
+      .then((r: any) => ({ count: r.data, error: r.error }));
+    if (rateLimitError) {
+      logger.warn({ err: rateLimitError }, '[staff/create] rate-limit check failed -- failing open');
+    } else if (attemptCount > 5) {
+      return res.status(429).json(userErrorBody(req, 'rate_limited'));
+    }
+
+    const { createOrUpdateStaffAccount } = await import("./src/server/staffAccountService.ts");
+    const { createStaffMember } = await import("./src/server/createStaffMember.ts");
+    const { userScopedClient } = await import("./src/server/userScopedClient.ts");
+    const asUser = userScopedClient(req);
+    const result = await createStaffMember({
+      createAccount: (input) => createOrUpdateStaffAccount(supabaseAdmin, input),
+      staffInsert: async (row) => {
+        const { data, error } = await asUser.from('staff').insert(row).select('id').single();
+        return { data: data as { id: string } | null, error };
+      },
+      auditInsert: async (row) => asUser.from('audit_logs').insert(row),
+      deleteAuthUser: (uid) => supabaseAdmin.auth.admin.deleteUser(uid),
+      deleteUsersRow: async (uid) => supabaseAdmin.from('users').delete().eq('id', uid),
+    }, req.body || {}, { uid: req.user.uid, tenantId: req.user.tenantId, role: req.user.role, email: req.user.email });
+
+    if (result.ok === false) {
+      logger.warn({ reason: result.reason }, '[staff/create] refused');
+      return res.status(result.status).json(userErrorBody(req, result.kind, result.reason));
+    }
+    res.json(result);
+  } catch (err: any) {
+    internalError(res, "Error creating staff:", err);
+  }
+});
+
 app.post("/api/staff/create-account", authenticate, requirePermission('staff.create'), async (req: any, res) => {
   try {
     const { email, password, name } = req.body;

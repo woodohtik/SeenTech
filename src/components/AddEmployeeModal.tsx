@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { motion } from 'motion/react';
 import { User, Mail, Smartphone, X, Store, Key } from 'lucide-react';
 import { useForm, Controller } from 'react-hook-form';
@@ -61,6 +61,9 @@ export default function AddEmployeeModal({
   const { user: currentAuthUser } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  const errorRef = useRef<HTMLDivElement>(null);
+  // The message sits by the save button; bring it into view when it appears.
+  useEffect(() => { if (errorMsg) errorRef.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); }, [errorMsg]);
   const [enablePin, setEnablePin] = useState(false);
 
   const { register, handleSubmit, control, formState: { errors }, reset, setValue } = useForm({
@@ -105,60 +108,22 @@ export default function AddEmployeeModal({
         }
       }
 
-      // 2. Create or find Auth User via the server (service-role key never
-      // reaches the browser, so account creation must happen there).
-      let uid = '';
-      const { data: { session } } = await supabase.auth.getSession();
-      const createRes = await fetch('/api/staff/create-account', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${session?.access_token || ''}`
-        },
-        body: JSON.stringify({ email: data.email.toLowerCase(), password: data.password, name: data.name })
-      });
-      const createResult = await createRes.json();
-
-      if (!createRes.ok) {
-        // SECURITY (seen-cto-sprint0-critical-fixes-task.md item 1 follow-up):
-        // this used to resolve a uid from ANY tenant's staff/users rows on
-        // any 409 and link it as staff here anyway, with no password reset
-        // -- so adding a stranger's (or another tenant's owner's, or a
-        // super_admin's) email created a second `staff` row for the same
-        // uid across tenants. authMiddleware.ts's staff lookup is a
-        // .maybeSingle(), which errors when more than one row matches,
-        // breaking that real account's ability to log in anywhere until
-        // manually cleaned up -- a griefing/denial-of-service path with no
-        // password ever needed. The server now only ever returns 409 when
-        // this account must not be touched at all, so there is no longer a
-        // safe case to self-resolve a uid and proceed.
-        // seen-friendly-errors-everywhere-task.md: the server's kind, in this screen's words.
-        setErrorMsg(createRes.status === 409
-          ? t('staff.email_belongs_to_another_account')
-          : getFriendlyErrorMessage(new UserFacingError(createResult?.kind === 'validation' ? 'validation' : createResult?.kind === 'rate_limited' ? 'rate_limited' : 'server')));
+      // seen-merchant-trial-test-2026-11-26.md: never the person's own sign-in
+      // (the browser fills this form with the owner's email and password).
+      const ownEmails = [currentAuthUser?.email, currentStaffEmail].filter(Boolean).map((e) => String(e).toLowerCase());
+      if (ownEmails.includes(data.email.toLowerCase())) {
+        setErrorMsg(t('staff.own_email_not_allowed'));
         setIsSubmitting(false);
         return;
-      } else {
-        uid = createResult.uid;
       }
 
-      // Ensure user exists in users table
-      if (uid) {
-         const { error: upsertErr } = await supabase.from('users').upsert({ id: uid, email: data.email.toLowerCase(), display_name: data.name }, { onConflict: 'id' });
-         if (upsertErr) throw upsertErr;
-      }
-
-      // 3. Prepare PIN
-      let finalPin = null;
       let hashedPin = null;
       if (enablePin && data.pin && data.pin.length === 4) {
-        finalPin = data.pin;
         hashedPin = await hashPin(data.pin);
       }
 
-      // 4. Insert Staff Record
       const VALID_DB_ROLES = [
-        'super_admin', 'support_tech', 'billing_admin', 'owner', 'admin', 'manager', 
+        'super_admin', 'support_tech', 'billing_admin', 'owner', 'admin', 'manager',
         'cashier', 'tailor', 'accountant', 'branch_manager', 'warehouse_manager'
       ];
       const dbRoleValue = VALID_DB_ROLES.includes(data.role) ? data.role : staffRoleForSave(data.role, roles.find(r => r.roleKey === data.role) as any);
@@ -166,34 +131,38 @@ export default function AddEmployeeModal({
       const isUuid = (val: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val);
       const validRoleId = selectedRole?.id && isUuid(selectedRole.id) ? selectedRole.id : null;
 
-      const { error: insertErr } = await supabase.from('staff').insert({
-        uid: uid,
-        name: data.name,
-        role: dbRoleValue,
-        role_id: validRoleId,
-        branch_id: data.branchId || null,
-        email: data.email.toLowerCase(),
-        phone: data.phone,
-        status: 'active',
-        is_test: false,
-        pin_hash: hashedPin,
-        must_change_pin: false,
-        tenant_id: tenantId,
-        created_at: new Date().toISOString()
+      // One request: the server makes the sign-in account, the users row and
+      // the staff row together, and undoes the account if anything fails --
+      // the browser can't write another person's users row (that 403 left a
+      // half-made account and "email already used" on the next try).
+      const { data: { session } } = await supabase.auth.getSession();
+      const createRes = await fetch('/api/staff/create', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session?.access_token || ''}`,
+        },
+        body: JSON.stringify({
+          email: data.email.toLowerCase(),
+          password: data.password,
+          name: data.name,
+          phone: data.phone,
+          role: dbRoleValue,
+          roleId: validRoleId,
+          branchId: data.branchId || null,
+          pinHash: hashedPin,
+        })
       });
-
-      if (insertErr) throw insertErr;
-
-      // Audit Log
-      await supabase.from('audit_logs').insert({
-        action: 'إضافة موظف',
-        performed_by: currentAuthUser?.id || null,
-        performed_by_email: currentStaffEmail || 'unknown',
-        target_tenant_id: tenantId,
-        details: `تم إضافة الموظف ${data.name} بنجاح`,
-        occurred_at: new Date().toISOString(),
-        type: 'security'
-      });
+      const createResult = await createRes.json().catch(() => ({}));
+      if (!createRes.ok) {
+        setErrorMsg(createRes.status === 409
+          ? t('staff.email_belongs_to_another_account')
+          : createRes.status === 403
+            ? t('staff.no_permission_to_add')
+            : getFriendlyErrorMessage(new UserFacingError(createResult?.kind === 'validation' ? 'validation' : createResult?.kind === 'rate_limited' ? 'rate_limited' : 'server')));
+        setIsSubmitting(false);
+        return;
+      }
 
       reset();
       setEnablePin(false);
@@ -231,12 +200,7 @@ export default function AddEmployeeModal({
           </button>
         </div>
         
-        <form onSubmit={handleSubmit(onSubmit)} className="p-8 space-y-6">
-          {errorMsg && (
-            <div className="p-4 bg-[var(--seen-danger-bg)] text-danger rounded-2xl border border-danger/20 font-bold text-sm">
-              {errorMsg}
-            </div>
-          )}
+        <form onSubmit={handleSubmit(onSubmit)} autoComplete="off" className="p-8 space-y-6">
 
           <IconInput
             {...register('name')}
@@ -290,6 +254,9 @@ export default function AddEmployeeModal({
 
           <IconInput
             {...register('email')}
+            // Not the person's own saved sign-in (seen-merchant-trial-test-2026-11-26.md).
+            autoComplete="off"
+            data-lpignore="true"
             label={t('staff.email_required_label')}
             startIcon={Mail}
             error={errors.email?.message ? t(errors.email.message as string) : undefined}
@@ -299,6 +266,7 @@ export default function AddEmployeeModal({
 
           <PasswordInput
             {...register('password')}
+            autoComplete="new-password"
             label={t('staff.password_required_label')}
             error={errors.password?.message ? t(errors.password.message as string) : undefined}
             dir="ltr"
@@ -353,6 +321,12 @@ export default function AddEmployeeModal({
               </div>
             )}
           </div>
+
+          {errorMsg && (
+            <div ref={errorRef} role="alert" className="p-4 bg-[var(--seen-danger-bg)] text-danger rounded-2xl border border-danger/20 font-bold text-sm">
+              {errorMsg}
+            </div>
+          )}
 
           <button 
             type="submit"

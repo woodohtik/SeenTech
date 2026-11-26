@@ -5373,7 +5373,9 @@
     "tutorial_step2_title": "2. Add Products",
     "tutorial_step3_desc": "Review the cart on the left, then tap Pay to issue the invoice and confirm the order.",
     "tutorial_step3_title": "3. Complete Payment",
-    "tutorial_title": "Quick Start Guide"
+    "tutorial_title": "Quick Start Guide",
+    "own_email_not_allowed": "This is your own email. Enter the new employee's email, not your account's.",
+    "no_permission_to_add": "You don't have permission to add employees. Ask the shop owner."
   },
   "subscription": {
     "account_email_label": "Account Email:",

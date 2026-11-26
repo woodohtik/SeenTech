@@ -185,14 +185,9 @@ export default function SaaSTeamManagement() {
 
         const uid = createResult.uid;
 
-        // Ensure user exists in the global users table first due to foreign key constraints
-        const { error: userError } = await supabase.from('users').upsert({
-          id: uid,
-          email: formData.email.toLowerCase(),
-          display_name: formData.name
-        }, { onConflict: 'id' });
-
-        if (userError) throw userError;
+        // The users row (with the display name) is written by the server with
+        // the account (staffAccountService) -- the browser can't write another
+        // person's users row (seen-merchant-trial-test-2026-11-26.md).
 
         const { error } = await supabase
           .from('saas_users')

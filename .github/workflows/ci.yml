@@ -140,7 +140,7 @@ jobs:
 
       - name: Start the server
         run: |
-          VITE_SUPABASE_URL="$API_URL" SUPABASE_SERVICE_ROLE_KEY="$SERVICE_ROLE_KEY" SUPABASE_JWT_SECRET="$JWT_SECRET"             NODE_ENV=production nohup node server-build/server.cjs > server.log 2>&1 &
+          VITE_SUPABASE_URL="$API_URL" VITE_SUPABASE_ANON_KEY="$ANON_KEY" SUPABASE_SERVICE_ROLE_KEY="$SERVICE_ROLE_KEY" SUPABASE_JWT_SECRET="$JWT_SECRET"             NODE_ENV=production nohup node server-build/server.cjs > server.log 2>&1 &
           for i in $(seq 1 60); do curl -sf http://localhost:3000/api/ping > /dev/null && exit 0; sleep 1; done
           echo "::error::the server did not start"; tail -50 server.log; exit 1
 
