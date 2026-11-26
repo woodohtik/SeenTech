@@ -78,6 +78,7 @@ import { IconInput } from './ui/IconInput';
 import { VoiceMicButton } from './ui/VoiceMicButton';
 import { isSpeechRecognitionSupported } from '../hooks/useSpeechRecognition';
 import ThobeMeasurementSelector from './ThobeMeasurementSelector';
+import { CustomerStylePreferences } from './customers/CustomerStylePreferences';
 import VisualMeasurements from './VisualMeasurements';
 import { useStaff } from '../contexts/StaffContext';
 import { openWhatsApp, whatsappMessage } from '../utils/whatsapp';
@@ -2214,26 +2215,8 @@ const CustomerDetailsModal = ({
 
           {/* Style Preferences Section */}
           <DetailSection title={t('customers.design_preferences')} icon={ShoppingBag} defaultOpen={false}>
-            <div className="grid grid-cols-1 main-640:grid-cols-3 gap-3 main-640:gap-4">
-              <div className="bg-surface-muted p-4 rounded-xl main-640:rounded-2xl border border-border">
-                <span className="text-sm text-content-muted font-bold block mb-1">{t('customers.neck_shape')}</span>
-                <span className="text-sm font-bold text-content">
-                  {customer.styles?.neckShape === 'round' ? t('customers.neck_shape_round') : customer.styles?.neckShape === 'v-neck' ? t('customers.neck_shape_v') : customer.styles?.neckShape === 'square' ? t('customers.neck_shape_square') : '-'}
-                </span>
-              </div>
-              <div className="bg-surface-muted p-4 rounded-xl main-640:rounded-2xl border border-border">
-                <span className="text-sm text-content-muted font-bold block mb-1">{t('customers.sleeve_type')}</span>
-                <span className="text-sm font-bold text-content">
-                  {customer.styles?.sleeveStyle === 'normal' ? t('inventory.cuff_regular') : customer.styles?.sleeveStyle === 'cuff' ? t('customers.sleeve_style_cuff') : customer.styles?.sleeveStyle === 'wide' ? t('customers.sleeve_style_wide') : '-'}
-                </span>
-              </div>
-              <div className="bg-surface-muted p-4 rounded-xl main-640:rounded-2xl border border-border">
-                <span className="text-sm text-content-muted font-bold block mb-1">{t('customers.pocket_style')}</span>
-                <span className="text-sm font-bold text-content">
-                  {customer.styles?.pocketType === 'none' ? t('customers.pocket_none') : customer.styles?.pocketType === 'single' ? t('customers.pocket_single') : customer.styles?.pocketType === 'double' ? t('customers.pocket_double') : '-'}
-                </span>
-              </div>
-            </div>
+            {/* seen-merchant-trial-test-2026-11-26.md: the saved style fields, as the order form reads them. */}
+            <CustomerStylePreferences measurements={customer.measurements as Record<string, unknown> | null} />
           </DetailSection>
 
           {/* Order History Section */}

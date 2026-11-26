@@ -2403,7 +2403,15 @@
     "cutting_fabric_taken": "انخصم عند البيع: {{meters}} م",
     "cutting_fabric_taken_desc": "هذا الثوب انخصم قماشه وقت البيع. اكتب الكمية الفعلية إذا اختلفت: الفرق فقط يتحرك في المخزون، ولا ينخصم شيء مرة ثانية.",
     "cutting_fabric_skip": "متابعة بدون تغيير",
-    "add_tailor": "إضافة خياط"
+    "add_tailor": "إضافة خياط",
+    "cutting_components_title": "المكوّنات (أزرار، خيوط...)",
+    "cutting_components_none": "ما فيه مكوّنات محفوظة لهذا النوع. أضف اللي يحتاجه، وتقدر تحفظها افتراضية.",
+    "cutting_component_qty_label": "كمية {{name}}",
+    "cutting_component_remove": "إزالة {{name}}",
+    "cutting_component_add": "إضافة مكوّن من المخزون",
+    "cutting_components_save_default": "احفظها افتراضية لـ«{{garment}}» (لكل قطعة)",
+    "cutting_components_default_not_saved": "انخصمت المكوّنات، لكن ما انحفظت كافتراضية. جرّب مرة ثانية من الطلب الجاي.",
+    "customer_prefs_filled": "تم تعبئة تفضيلات {{name}}، وتقدر تغيّرها."
   },
   "permissions": {
     "access_denied_desc": "غير محدد",

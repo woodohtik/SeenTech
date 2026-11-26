@@ -2403,7 +2403,15 @@
     "cutting_fabric_taken": "Taken at the sale: {{meters}} m",
     "cutting_fabric_taken_desc": "This thobe's cloth was taken from stock at the sale. Enter the real figure if it differs: only the difference moves in stock, nothing is taken twice.",
     "cutting_fabric_skip": "Continue without a change",
-    "add_tailor": "Add tailor"
+    "add_tailor": "Add tailor",
+    "cutting_components_title": "Components (buttons, thread...)",
+    "cutting_components_none": "No components are kept for this garment yet. Add what it needs, and you can keep them as the default.",
+    "cutting_component_qty_label": "Quantity of {{name}}",
+    "cutting_component_remove": "Remove {{name}}",
+    "cutting_component_add": "Add a component from stock",
+    "cutting_components_save_default": "Keep these as the default for \"{{garment}}\" (per piece)",
+    "cutting_components_default_not_saved": "The components were taken from stock, but were not kept as the default. Try again on the next order.",
+    "customer_prefs_filled": "{{name}}'s preferences were filled in; you can change them."
   },
   "permissions": {
     "access_denied_desc": "Not specified",

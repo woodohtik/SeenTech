@@ -44,6 +44,8 @@ import VisualMeasurements from './VisualMeasurements';
 import ThobeMeasurementSelector from './ThobeMeasurementSelector';
 import { SmartSelect } from './ui/SmartSelect';
 import { QuickAddTailor } from './staff/QuickAddTailor';
+import { useCustomerStylePrefill, rememberCustomerStylePrefs } from './orders/useCustomerStylePrefill';
+import { applyStylePrefs } from '../utils/customerStylePrefs';
 import { DatePicker } from './ui/DatePicker';
 import { VoiceMicButton } from './ui/VoiceMicButton';
 
@@ -502,6 +504,12 @@ function TailoringOrderFormBody({
   const selectedCustomer = customers.find((c) => c.id === watchCustomerId);
   const totals = computeTailoringTotals(watchItems, canDiscount ? watch('discountAmount' as any) : 0, tax);
   const activeMeasurements = isEditingMeasurements ? tempMeasurements : selectedCustomer?.measurements;
+  // Phase 2 item 3: the chosen customer's preferences fill the lines.
+  const stylePrefill = useCustomerStylePrefill({
+    customer: selectedCustomer as any,
+    lineCount: watchItems.length,
+    setLineValue: (index, key, value) => setValue(`items.${index}.${key}` as any, value, { shouldDirty: true }),
+  });
 
   // ---- data ----
   useEffect(() => {
@@ -690,6 +698,10 @@ function TailoringOrderFormBody({
       }
 
       const queuedOffline = result.status === 'queued';
+      // The order's choices become the customer's preferences (best effort; not offline).
+      if (!queuedOffline && selectedCustomer && items[0]) {
+        void rememberCustomerStylePrefs(tenantId, selectedCustomer.id, items[0] as Record<string, unknown>).catch(() => undefined);
+      }
       onCreated?.(result.order, { queuedOffline });
       if (queuedOffline) {
         toastSuccess(
@@ -877,6 +889,9 @@ function TailoringOrderFormBody({
                   </button>
                 </div>
                 {errors.customerId && <p className="text-sm text-danger font-bold">{String(errors.customerId.message)}</p>}
+                {stylePrefill.filledFor && (
+                  <p role="status" className="text-sm font-bold text-brand">{t('orders.customer_prefs_filled', { name: stylePrefill.filledFor })}</p>
+                )}
               </div>
 
               <div className="space-y-2" aria-invalid={!!errors.deliveryDate}>
@@ -990,7 +1005,7 @@ function TailoringOrderFormBody({
                 </h4>
                 <button
                   type="button"
-                  onClick={() => append(newLine())}
+                  onClick={() => append(applyStylePrefs(newLine(), stylePrefill.prefs()))}
                   className="bg-brand/5 text-brand px-4 py-2 rounded-xl text-sm font-black hover:bg-brand/10 transition-all flex items-center gap-2"
                 >
                   <Plus size={14} /> {t('orders.add_item')}

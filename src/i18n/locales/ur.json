@@ -2403,7 +2403,15 @@
     "cutting_fabric_taken": "فروخت کے وقت کٹا: {{meters}} میٹر",
     "cutting_fabric_taken_desc": "اس تھوب کا کپڑا فروخت کے وقت اسٹاک سے کٹ گیا تھا۔ اصل مقدار مختلف ہو تو لکھیں: صرف فرق اسٹاک میں منتقل ہوگا، کچھ دوبارہ نہیں کٹے گا۔",
     "cutting_fabric_skip": "بغیر تبدیلی کے جاری رکھیں",
-    "add_tailor": "درزی شامل کریں"
+    "add_tailor": "درزی شامل کریں",
+    "cutting_components_title": "اجزاء (بٹن، دھاگہ...)",
+    "cutting_components_none": "اس قسم کے لیے کوئی اجزاء محفوظ نہیں۔ جو چاہیے شامل کریں، اور انہیں طے شدہ بنا سکتے ہیں۔",
+    "cutting_component_qty_label": "{{name}} کی مقدار",
+    "cutting_component_remove": "{{name}} ہٹائیں",
+    "cutting_component_add": "اسٹاک سے جزو شامل کریں",
+    "cutting_components_save_default": "\"{{garment}}\" کے لیے طے شدہ محفوظ کریں (فی عدد)",
+    "cutting_components_default_not_saved": "اجزاء اسٹاک سے نکل گئے، مگر طے شدہ محفوظ نہیں ہوئے۔ اگلے آرڈر پر دوبارہ کوشش کریں۔",
+    "customer_prefs_filled": "{{name}} کی ترجیحات بھر دی گئیں، آپ بدل سکتے ہیں۔"
   },
   "permissions": {
     "access_denied_desc": "غیر متعین",
