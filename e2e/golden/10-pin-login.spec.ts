@@ -10,11 +10,13 @@ const CASHIER_PIN = '2468';
 
 test.beforeAll(async () => {
   // PINs are kept as plain 4 digits (an explicit product decision).
-  const { error } = await db().from('staff').update({ pin_hash: CASHIER_PIN }).eq('id', STAFF.cashier.staffId);
-  if (error) throw new Error(`pin seed: ${error.message}`);
+  // The device's own account needs a PIN too: without one it goes straight in.
+  const a = await db().from('staff').update({ pin_hash: '1357' }).eq('id', STAFF.owner.staffId);
+  const b = await db().from('staff').update({ pin_hash: CASHIER_PIN }).eq('id', STAFF.cashier.staffId);
+  if (a.error || b.error) throw new Error(`pin seed: ${(a.error || b.error)!.message}`);
 });
 test.afterAll(async () => {
-  await db().from('staff').update({ pin_hash: null }).eq('id', STAFF.cashier.staffId);
+  await db().from('staff').update({ pin_hash: null }).in('id', [STAFF.owner.staffId, STAFF.cashier.staffId]);
 });
 
 async function deviceSignIn(page: Page) {
