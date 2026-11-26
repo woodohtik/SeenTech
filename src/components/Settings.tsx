@@ -97,6 +97,18 @@ export default function Settings({ tenantId }: SettingsProps) {
 
   const tabsContainerRef = useRef<HTMLDivElement>(null);
   const [highlightActiveTab, setHighlightActiveTab] = useState(false);
+  // The active tab in view inside its own row (opened from a link such as
+  // ?tab=staff it sat off-screen; seen-merchant-trial-test-2026-11-26.md, phase 4).
+  useEffect(() => {
+    const row = tabsContainerRef.current;
+    const tab = row?.querySelector<HTMLElement>('[aria-current="page"]');
+    if (!row || !tab) return;
+    const rowBox = row.getBoundingClientRect();
+    const tabBox = tab.getBoundingClientRect();
+    if (tabBox.left < rowBox.left || tabBox.right > rowBox.right) {
+      row.scrollBy({ left: tabBox.left - rowBox.left - (rowBox.width - tabBox.width) / 2, behavior: 'smooth' });
+    }
+  }, [activeTab]);
 
   useEffect(() => {
     const handleSidebarSettingsClicked = () => {
@@ -587,6 +599,7 @@ export default function Settings({ tenantId }: SettingsProps) {
             <button
               key={tab.id}
               type="button"
+              aria-current={isActive ? 'page' : undefined}
               onClick={() => setActiveTab(tab.id)}
               className={cn(
                 "flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-black whitespace-nowrap transition-all duration-300 border shrink-0 cursor-pointer",
