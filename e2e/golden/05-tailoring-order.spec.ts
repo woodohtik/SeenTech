@@ -20,9 +20,10 @@ test.beforeAll(async () => {
   }).eq('id', CUSTOMER.id);
   // Buttons in stock, and "a thobe takes 5 buttons" kept once by the shop.
   await sb.from('inventory_items').upsert({ id: BUTTONS.id, tenant_id: SHOP.tenantId, name: BUTTONS.name, sku: 'GOLDEN-BUTTONS', category: 'accessories', unit: 'piece', base_unit: 'piece', conversion_rate: 1, price_per_unit: 1, min_threshold: 0 });
-  await sb.from('branch_inventory').upsert({ tenant_id: SHOP.tenantId, branch_id: SHOP.branchId, item_id: BUTTONS.id, quantity: BUTTONS.stock }, { onConflict: 'tenant_id,branch_id,item_id,variant_id' }).then(async ({ error }) => {
-    if (error) await sb.from('branch_inventory').update({ quantity: BUTTONS.stock }).eq('tenant_id', SHOP.tenantId).eq('item_id', BUTTONS.id);
-  });
+  // Exactly 200 buttons in the main branch (no upsert: the table has no such unique key).
+  await sb.from('branch_inventory').delete().eq('tenant_id', SHOP.tenantId).eq('item_id', BUTTONS.id);
+  const { error: stockError } = await sb.from('branch_inventory').insert({ tenant_id: SHOP.tenantId, branch_id: SHOP.branchId, item_id: BUTTONS.id, quantity: BUTTONS.stock });
+  if (stockError) throw new Error(`stock seed: ${stockError.message}`);
   const { error } = await sb.from('garment_components').upsert({ tenant_id: SHOP.tenantId, garment_type: 'ثوب', item_id: BUTTONS.id, quantity: 5 }, { onConflict: 'tenant_id,garment_type,item_id' });
   if (error) throw new Error(`components seed: ${error.message}`);
 });
@@ -64,6 +65,7 @@ test("a returning customer's order, its buttons at cutting, and the 'ready' mess
 
   // Cutting: the 5 buttons with the cloth, in the same move.
   const before = await buttonsStock();
+  expect(before, 'the buttons are in stock before cutting').toBe(BUTTONS.stock);
   await page.getByPlaceholder('ابحث برقم الطلب أو اسم العميل...').fill(String(order.order_number));
   await page.getByRole('button', { name: 'التفاصيل' }).first().click();
   const details = page.getByRole('dialog', { name: 'تفاصيل الطلب' });
