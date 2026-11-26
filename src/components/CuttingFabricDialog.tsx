@@ -5,6 +5,8 @@ import { Scissors, X } from 'lucide-react';
 import { isRtlLang } from '../lib/direction';
 import { metersToYards } from '../utils/fabricEstimate';
 import type { CuttingFabricLine } from '../utils/tailoringOrder';
+import type { CuttingComponent } from '../utils/garmentComponents';
+import { CuttingComponentsSection, type CuttingComponentsValue } from './cutting/CuttingComponentsSection';
 
 /**
  * Shown when an order first reaches cutting (or skips past it): every line
@@ -16,8 +18,13 @@ export interface CuttingFabricDialogProps {
   lines: CuttingFabricLine[];
   busy?: boolean;
   onCancel: () => void;
-  /** The reviewed lines, meters as confirmed. */
-  onConfirm: (lines: CuttingFabricLine[]) => void;
+  /** The reviewed lines, meters as confirmed; the components when shown. */
+  onConfirm: (lines: CuttingFabricLine[], components?: CuttingComponentsValue) => void;
+  /**
+   * seen-merchant-trial-test-2026-11-26.md, phase 2 item 2: the garment's
+   * components (buttons, thread), taken with the cloth -- shown when due.
+   */
+  components?: { initial: CuttingComponent[]; options: { id: string; name: string }[]; garmentTypes: string[]; canSaveDefault: boolean };
   /**
    * seen-cutting-fabric-pos-orders-fix-task.md: a POS thobe whose cloth was
    * taken at the sale -- the window is optional, and this moves the order on
@@ -26,7 +33,8 @@ export interface CuttingFabricDialogProps {
   onSkip?: () => void;
 }
 
-export default function CuttingFabricDialog({ lines, busy = false, onCancel, onConfirm, onSkip }: CuttingFabricDialogProps) {
+export default function CuttingFabricDialog({ lines, busy = false, onCancel, onConfirm, onSkip, components }: CuttingFabricDialogProps) {
+  const [componentsValue, setComponentsValue] = useState<CuttingComponentsValue>(() => ({ components: components?.initial || [], saveAsDefault: false }));
   const { t, i18n } = useTranslation();
   // Text per line, so a half-typed decimal is not rewritten while typing.
   const [values, setValues] = useState<Record<string, string>>(() =>
@@ -75,11 +83,11 @@ export default function CuttingFabricDialog({ lines, busy = false, onCancel, onC
           className="flex-1 flex flex-col min-h-0"
           onSubmit={(e) => {
             e.preventDefault();
-            onConfirm(lines.map((line) => ({ ...line, meters: metersOf(line.lineKey) })));
+            onConfirm(lines.map((line) => ({ ...line, meters: metersOf(line.lineKey) })), components ? componentsValue : undefined);
           }}
         >
           <div className="flex-1 overflow-y-auto p-4 main-640:p-5 space-y-3">
-            <p className="text-sm font-bold text-content-muted">{t('orders.cutting_fabric_desc')}</p>
+            {lines.length > 0 && <p className="text-sm font-bold text-content-muted">{t('orders.cutting_fabric_desc')}</p>}
             {lines.some((line) => (line.takenMeters ?? 0) > 0) && (
               <p className="text-sm font-bold text-content">{t('orders.cutting_fabric_taken_desc')}</p>
             )}
@@ -111,9 +119,20 @@ export default function CuttingFabricDialog({ lines, busy = false, onCancel, onC
                 </div>
               </div>
             ))}
-            <p className="text-sm font-black text-brand" role="status">
-              {t('orders.cutting_fabric_total', { meters: total.toFixed(2), yards: metersToYards(total).toFixed(2) })}
-            </p>
+            {lines.length > 0 && (
+              <p className="text-sm font-black text-brand" role="status">
+                {t('orders.cutting_fabric_total', { meters: total.toFixed(2), yards: metersToYards(total).toFixed(2) })}
+              </p>
+            )}
+            {components && (
+              <CuttingComponentsSection
+                value={componentsValue}
+                onChange={setComponentsValue}
+                options={components.options}
+                garmentTypes={components.garmentTypes}
+                canSaveDefault={components.canSaveDefault}
+              />
+            )}
           </div>
 
           <div className="shrink-0 p-4 main-640:p-5 border-t border-border flex items-center justify-end gap-3">

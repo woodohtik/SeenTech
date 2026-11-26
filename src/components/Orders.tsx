@@ -8,6 +8,10 @@ import { formatMeasurement, measurementText, unitLabelKey } from '../utils/measu
 import { measurementRows, measurementSetFor } from '../constants/measurementFields';
 import { orderItemRowToLine, cuttingFabricLines, isFabricDeductionDue, isFabricReviewOffered, type CuttingFabricLine } from '../utils/tailoringOrder';
 import CuttingFabricDialog from './CuttingFabricDialog';
+import type { CuttingComponentsValue } from './cutting/CuttingComponentsSection';
+import { useGarmentComponents } from './cutting/useGarmentComponents';
+import { defaultComponentsFor, garmentTypesOf, isComponentsDue, type CuttingComponent } from '../utils/garmentComponents';
+import { saveGarmentComponentDefaults } from '../services/garmentComponentsService';
 import { createPortal } from 'react-dom';
 import { useSearchParams } from 'react-router-dom';
 import { useRealtimeSync } from '../hooks/useRealtimeSync';
@@ -347,7 +351,9 @@ export default function Orders({ tenantId }: { tenantId: string }) {
   // opens it (optionally with a customer preselected) and lists what it saves.
   const [newOrderCustomerId, setNewOrderCustomerId] = useState<string | undefined>(undefined);
   // The move to cutting waiting on its fabric quantities to be confirmed.
-  const [cuttingPrompt, setCuttingPrompt] = useState<{ id: string; status: string; notes?: string; lines: CuttingFabricLine[]; optional?: boolean } | null>(null);
+  const [cuttingPrompt, setCuttingPrompt] = useState<{ id: string; status: string; notes?: string; lines: CuttingFabricLine[]; optional?: boolean; components?: { initial: CuttingComponent[]; garmentTypes: string[] } } | null>(null);
+  // seen-merchant-trial-test-2026-11-26.md, phase 2 item 2: buttons and thread with the cloth.
+  const garmentComponents = useGarmentComponents(tenantId);
   const [isCuttingBusy, setIsCuttingBusy] = useState(false);
 
   // The measurements an order shows: the snapshot stored on its lines when it
@@ -429,6 +435,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
       trackingToken: decoded.tracking_token ?? decoded.trackingToken,
       kind: decoded.kind,
       fabricDeductedAt: decoded.fabric_deducted_at ?? decoded.fabricDeductedAt,
+      componentsTakenAt: decoded.components_taken_at ?? decoded.componentsTakenAt,
       items: Array.isArray(decoded.items) ? decoded.items : [],
       history: Array.isArray(decoded.history) ? decoded.history : []
     } as Order;
@@ -872,8 +879,16 @@ export default function Orders({ tenantId }: { tenantId: string }) {
       fabricDeductedAt: (order as any).fabricDeductedAt,
       kind: (order as any).kind,
     });
-    if (deductionDue && fabricLines.length > 0) {
-      setCuttingPrompt({ id, status, notes, lines: fabricLines });
+    // The garment's components come with the first move to cutting, once.
+    const componentsDue = isComponentsDue({
+      currentStatus: legacyOrderStatusFor(order.status, workflowStages),
+      targetStatus: legacyOrderStatusFor(status, workflowStages),
+      componentsTakenAt: (order as any).componentsTakenAt,
+    }) && (order as any).kind !== 'pos_sale';
+    const defaultComponents = componentsDue ? defaultComponentsFor(order.items, garmentComponents.defaults) : [];
+    const componentsPrompt = componentsDue ? { initial: defaultComponents, garmentTypes: garmentTypesOf(order.items) } : undefined;
+    if ((deductionDue && fabricLines.length > 0) || defaultComponents.length > 0) {
+      setCuttingPrompt({ id, status, notes, lines: deductionDue ? fabricLines : [], components: componentsPrompt });
       return;
     }
     // A POS thobe whose cloth was taken at the sale: the window is offered,
@@ -892,7 +907,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
     await performStatusUpdate(order, status, notes);
   };
 
-  const performStatusUpdate = async (order: Order, status: string, notes?: string, fabricLines?: CuttingFabricLine[]) => {
+  const performStatusUpdate = async (order: Order, status: string, notes?: string, fabricLines?: CuttingFabricLine[], components?: CuttingComponentsValue) => {
     const id = order.id;
     let sentArgs: Record<string, unknown> | null = null;
     try {
@@ -931,20 +946,39 @@ export default function Orders({ tenantId }: { tenantId: string }) {
       };
       // With reviewed fabric lines the deduction and the status change are one
       // server transaction: short stock fails both.
-      const { error } = fabricLines
-        ? await supabase.rpc('update_order_status_with_fabric', {
+      const fabricArg = fabricLines && fabricLines.length > 0
+        ? fabricLines.map((line) => ({ line_key: line.lineKey, fabric_id: line.fabricId, meters: line.meters }))
+        : null;
+      // Components (phase 2 item 2): taken in the same server transaction.
+      const { error } = components
+        ? await supabase.rpc('update_order_status_with_components', {
             ...statusArgs,
-            p_fabric_lines: fabricLines.map((line) => ({ line_key: line.lineKey, fabric_id: line.fabricId, meters: line.meters })),
+            p_fabric_lines: fabricArg,
+            p_components: components.components.map((c) => ({ item_id: c.itemId, quantity: c.quantity })),
           })
-        : await supabase.rpc('update_order_status', statusArgs);
+        : fabricArg
+          ? await supabase.rpc('update_order_status_with_fabric', { ...statusArgs, p_fabric_lines: fabricArg })
+          : await supabase.rpc('update_order_status', statusArgs);
 
       if (error) throw error;
+
+      if (components?.saveAsDefault) {
+        const types = garmentTypesOf(order.items);
+        if (types.length === 1) {
+          const pieces = (order.items || []).filter((it: any) => String(it?.garmentType || it?.name || '').trim() === types[0])
+            .reduce((n: number, it: any) => n + Math.max(1, Number(it?.quantity) || 1), 0);
+          await saveGarmentComponentDefaults(tenantId, types[0], components.components, pieces)
+            .then(() => garmentComponents.reload())
+            .catch(() => toastWarning(t('orders.cutting_components_default_not_saved')));
+        }
+      }
 
       // Realtime local update
       const patch = (o: Order) => o.id === id
         ? {
             ...o, status, history: updatedHistory,
-            ...(fabricLines ? {
+            ...(components && components.components.length > 0 ? { componentsTakenAt: new Date().toISOString() } : {}),
+            ...(fabricLines && fabricLines.length > 0 ? {
               // Mirrors the server: stamped only when something was deducted.
               ...(fabricLines.some((l) => l.meters > 0) ? { fabricDeductedAt: new Date().toISOString() } : {}),
               items: (o.items || []).map((item: any, index: number) => {
@@ -963,6 +997,10 @@ export default function Orders({ tenantId }: { tenantId: string }) {
       toastSuccess(t('orders.status_updated_success'));
     } catch (error) {
       // P4 (OPERATIONS-09): short fabric -- say what is short and offer a way on.
+      if ((error as any)?.hint === 'component_shortage' || (error as any)?.hint === 'component_unknown') {
+        toastError(String((error as any).message || ''));
+        return;
+      }
       if ((error as any)?.hint === 'fabric_shortage' && sentArgs) {
         setFabricShortage({ args: sentArgs, message: String((error as any).message || '') });
         setShortageReason('');
@@ -2799,12 +2837,13 @@ export default function Orders({ tenantId }: { tenantId: string }) {
               setIsCuttingBusy(false);
             }
           } : undefined}
-          onConfirm={async (lines) => {
+          components={cuttingPrompt.components ? { ...cuttingPrompt.components, options: garmentComponents.options, canSaveDefault: hasPermission('inventory.edit') } : undefined}
+          onConfirm={async (lines, components) => {
             const order = orders.find(o => o.id === cuttingPrompt.id);
             if (!order) { setCuttingPrompt(null); return; }
             setIsCuttingBusy(true);
             try {
-              await performStatusUpdate(order, cuttingPrompt.status, cuttingPrompt.notes, lines);
+              await performStatusUpdate(order, cuttingPrompt.status, cuttingPrompt.notes, lines, components);
             } finally {
               setIsCuttingBusy(false);
             }
