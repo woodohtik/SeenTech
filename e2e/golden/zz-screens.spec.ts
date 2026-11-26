@@ -2,7 +2,7 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { test, type Page } from '@playwright/test';
 import { db } from './db';
-import { CUSTOMER, SHOP } from './fixtures';
+import { CUSTOMER, SHOP, STAFF } from './fixtures';
 import { signIn } from './helpers';
 
 /**
@@ -32,6 +32,9 @@ test.beforeAll(async () => {
     status: 'sewing', status_key: 'sewing', kind: 'tailoring', tracking_token: TRACK, branch_id: SHOP.branchId,
   });
   if (orderError) console.log(`[screens] order seed: ${orderError.message}`);
+  // PINs (plain 4 digits, by product decision): the lock screen needs one.
+  await sb.from('staff').update({ pin_hash: '1357' }).eq('id', STAFF.owner.staffId);
+  await sb.from('staff').update({ pin_hash: '2468' }).eq('id', STAFF.cashier.staffId);
 });
 
 async function shot(page: Page, width: number, name: string, act?: () => Promise<unknown>) {
@@ -89,6 +92,28 @@ for (const width of WIDTHS) {
       if (await open.isVisible().catch(() => false)) await open.click();
     });
     await shot(page, width, '18-tracking', () => go(page, `/track/${TRACK}`));
+    if (width === 1280) {
+      // For golden paths 7-10: returns, closing a shift, the lock/PIN screen.
+      await shot(page, width, '21-returns', async () => {
+        await go(page, '/sales');
+        await page.getByRole('button', { name: 'المرتجعات' }).first().click();
+      });
+      await shot(page, width, '22-shifts', async () => {
+        await go(page, '/sales');
+        await page.getByRole('button', { name: 'الورديات' }).first().click();
+      });
+      await shot(page, width, '23-close-shift', async () => {
+        await go(page, '/sales');
+        await page.getByRole('button', { name: 'نقطة البيع (POS)' }).first().click();
+        await page.getByRole('button', { name: 'إغلاق الوردية' }).first().click();
+      });
+      await closeModal(page);
+      await shot(page, width, '24-profile-menu', async () => {
+        await go(page, '/dashboard');
+        await page.getByRole('button', { name: /صاحب المحل/ }).first().click();
+      });
+      await shot(page, width, '25-lock', () => page.getByText('قفل الشاشة مؤقتاً').first().click());
+    }
     if (width === 820) {
       await shot(page, width, '19-order-status-menu', async () => {
         await go(page, '/orders');
@@ -103,5 +128,19 @@ for (const width of WIDTHS) {
         await page.getByRole('button', { name: /اختر عميل/ }).first().click();
       });
     }
+  });
+}
+
+// What a cashier and a tailor see (golden path 9, permissions).
+for (const who of ['cashier', 'tailor'] as const) {
+  test(`screens as ${who}`, async ({ page }) => {
+    test.setTimeout(180_000);
+    await page.setViewportSize({ width: 1280, height: 800 });
+    page.setDefaultTimeout(8_000);
+    page.setDefaultNavigationTimeout(20_000);
+    await signIn(page, who);
+    await shot(page, 1280, `30-${who}-home`, () => page.waitForTimeout(1500));
+    await shot(page, 1280, `31-${who}-settings`, () => go(page, '/settings?tab=staff'));
+    await shot(page, 1280, `32-${who}-orders`, () => go(page, '/orders'));
   });
 }
