@@ -38,7 +38,7 @@ test('creates a fresh account when the email is unused, and records created_by_t
     expect.objectContaining({ email: 'new@example.com', password: 'secret123', email_confirm: true })
   );
   expect(usersUpsert).toHaveBeenCalledWith(
-    { id: 'new-uid', email: 'new@example.com', created_by_tenant_id: 'tenant-caller' },
+    { id: 'new-uid', email: 'new@example.com', display_name: null, created_by_tenant_id: 'tenant-caller' },
     { onConflict: 'id' }
   );
 });

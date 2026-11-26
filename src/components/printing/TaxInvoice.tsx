@@ -261,7 +261,7 @@ export default function TaxInvoice({
                 <span className="text-xs font-black text-slate-800">رقم الفاتورة</span>
                 <span className="block text-[9px] text-slate-500 uppercase font-sans font-bold">Invoice Number</span>
               </div>
-              <span className="font-mono font-black text-slate-900 text-lg uppercase">#{invoiceNumber}</span>
+              <bdi dir="ltr" className="font-mono font-black text-slate-900 text-lg uppercase">#{invoiceNumber}</bdi>
             </div>
 
             <div className="flex justify-between border-b border-dashed border-slate-200 pb-2">

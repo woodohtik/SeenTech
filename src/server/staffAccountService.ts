@@ -74,7 +74,10 @@ export async function createOrUpdateStaffAccount(
   // brand-new Auth user here, there is no pre-existing row to clobber.
   const { error: usersError } = await supabaseAdmin
     .from('users')
-    .upsert({ id: uid, email: normalizedEmail, created_by_tenant_id: requesterTenantId }, { onConflict: 'id' });
+    // seen-merchant-trial-test-2026-11-26.md: the display name here too -- the
+    // browser can no longer write another person's users row (RLS, 403),
+    // which is what made adding an employee fail for the shop owner.
+    .upsert({ id: uid, email: normalizedEmail, display_name: name || null, created_by_tenant_id: requesterTenantId }, { onConflict: 'id' });
   if (usersError) {
     return { ok: false, status: 400, error: 'account_failed', detail: usersError.message };
   }

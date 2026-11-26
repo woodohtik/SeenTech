@@ -89,8 +89,8 @@ export default function SimplifiedTaxInvoice({
   orderId,
   onPrint,
   hidePrintButton = false,
-  branchName = 'الفرع الرئيسي',
-  sellerName = 'النظام',
+  branchName,
+  sellerName,
   showCustomerName: showCustomerNameProp,
   logoBorder: logoBorderProp,
   showMeasurements: showMeasurementsProp,
@@ -281,28 +281,32 @@ export default function SimplifiedTaxInvoice({
           <div className="flex justify-between items-center py-0.5">
             <div className="text-right font-bold text-slate-900 min-w-0 break-words">
               <span className="text-slate-600 font-bold">رقم الفاتورة: </span>
-              <span className="font-mono font-black text-[9.5px] uppercase">#{invoiceNumber}</span>
+              <bdi dir="ltr" className="font-mono font-black text-[9.5px] uppercase">#{invoiceNumber}</bdi>
             </div>
             <span className="text-slate-500 font-sans text-[7.5px] font-bold shrink-0 ps-1 whitespace-nowrap">Invoice No.</span>
           </div>
 
           {/* Branch */}
-          <div className="flex justify-between items-center py-0.5">
-            <div className="text-right font-bold text-slate-900 min-w-0 break-words">
-              <span className="text-slate-600 font-bold">الفرع: </span>
-              <span>{branchName}</span>
+          {branchName && (
+            <div className="flex justify-between items-center py-0.5">
+              <div className="text-right font-bold text-slate-900 min-w-0 break-words">
+                <span className="text-slate-600 font-bold">الفرع: </span>
+                <span>{branchName}</span>
+              </div>
+              <span className="text-slate-500 font-sans text-[7.5px] font-bold shrink-0 ps-1 whitespace-nowrap">Branch</span>
             </div>
-            <span className="text-slate-500 font-sans text-[7.5px] font-bold shrink-0 ps-1 whitespace-nowrap">Branch</span>
-          </div>
+          )}
 
           {/* Seller */}
-          <div className="flex justify-between items-center py-0.5">
-            <div className="text-right font-bold text-slate-900 min-w-0 break-words">
-              <span className="text-slate-600 font-bold">البائع: </span>
-              <span>{sellerName}</span>
+          {sellerName && (
+            <div className="flex justify-between items-center py-0.5">
+              <div className="text-right font-bold text-slate-900 min-w-0 break-words">
+                <span className="text-slate-600 font-bold">البائع: </span>
+                <span>{sellerName}</span>
+              </div>
+              <span className="text-slate-500 font-sans text-[7.5px] font-bold shrink-0 ps-1 whitespace-nowrap">Seller</span>
             </div>
-            <span className="text-slate-500 font-sans text-[7.5px] font-bold shrink-0 ps-1 whitespace-nowrap">Seller</span>
-          </div>
+          )}
 
           {/* Customer / Buyer Name (optional) */}
           {showCustomerName && customerName && (

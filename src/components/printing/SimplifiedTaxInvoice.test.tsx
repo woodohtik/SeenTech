@@ -75,3 +75,13 @@ test("the printed VAT number and name are the shop's official ones, whatever the
     localStorage.removeItem('pos_invoice_settings');
   }
 });
+
+// seen-merchant-trial-test-2026-11-26.md: the number read "INV-23#" -- the
+// mark landed on the wrong side in the Arabic line. Isolated as left-to-right.
+test('the invoice number reads left-to-right, the mark before it', () => {
+  const { container } = render(<SimplifiedTaxInvoice {...props} />);
+  const number = Array.from(container.querySelectorAll('bdi')).find((el) => el.textContent?.includes('INV-501'));
+  expect(number, 'the number sits in its own left-to-right island').toBeTruthy();
+  expect(number!.getAttribute('dir')).toBe('ltr');
+  expect(number!.textContent).toBe('#INV-501');
+});

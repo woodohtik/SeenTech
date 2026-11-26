@@ -952,7 +952,9 @@
     "measurements_link_failed": "پیمائش کا لنک تیار نہیں ہو سکا",
     "measurements_link_revoked": "پیمائش کا لنک ختم کر دیا گیا",
     "revoke_measurements_link": "پیمائش کا لنک ختم کریں",
-    "send_measurements_link": "پیمائش کا لنک بھیجیں"
+    "send_measurements_link": "پیمائش کا لنک بھیجیں",
+    "measurements_not_filled": "خالی پیمائشیں",
+    "no_measurements_yet": "ابھی کوئی پیمائش محفوظ نہیں۔"
   },
   "dashboard": {
     "above_avg": "اوسط سے زیادہ",
@@ -2402,7 +2404,21 @@
     "invoice_not_found": "اس آرڈر کی اصل انوائس نہیں مل سکی",
     "cutting_fabric_taken": "فروخت کے وقت کٹا: {{meters}} میٹر",
     "cutting_fabric_taken_desc": "اس تھوب کا کپڑا فروخت کے وقت اسٹاک سے کٹ گیا تھا۔ اصل مقدار مختلف ہو تو لکھیں: صرف فرق اسٹاک میں منتقل ہوگا، کچھ دوبارہ نہیں کٹے گا۔",
-    "cutting_fabric_skip": "بغیر تبدیلی کے جاری رکھیں"
+    "cutting_fabric_skip": "بغیر تبدیلی کے جاری رکھیں",
+    "add_tailor": "درزی شامل کریں",
+    "cutting_components_title": "اجزاء (بٹن، دھاگہ...)",
+    "cutting_components_none": "اس قسم کے لیے کوئی اجزاء محفوظ نہیں۔ جو چاہیے شامل کریں، اور انہیں طے شدہ بنا سکتے ہیں۔",
+    "cutting_component_qty_label": "{{name}} کی مقدار",
+    "cutting_component_remove": "{{name}} ہٹائیں",
+    "cutting_component_add": "اسٹاک سے جزو شامل کریں",
+    "cutting_components_save_default": "\"{{garment}}\" کے لیے طے شدہ محفوظ کریں (فی عدد)",
+    "cutting_components_default_not_saved": "اجزاء اسٹاک سے نکل گئے، مگر طے شدہ محفوظ نہیں ہوئے۔ اگلے آرڈر پر دوبارہ کوشش کریں۔",
+    "customer_prefs_filled": "{{name}} کی ترجیحات بھر دی گئیں، آپ بدل سکتے ہیں۔",
+    "ready_prompt_title": "آرڈر تیار ہے",
+    "ready_prompt_body": "{{name}} کو بتائیں کہ آرڈر تیار ہے؟",
+    "ready_prompt_send": "واٹس ایپ بھیجیں",
+    "ready_prompt_later": "بعد میں",
+    "ready_prompt_no_phone": "گاہک کا موبائل نمبر نہیں ہے۔"
   },
   "permissions": {
     "access_denied_desc": "غیر متعین",
@@ -3479,7 +3495,13 @@
     "notify_native_auto": "ایپ کے اندر اطلاعات خودکار طور پر فعال ہیں۔",
     "delivery_today": "آج ڈیلیوری",
     "delivery_tomorrow": "کل ڈیلیوری",
-    "delivery_in_days_other": "ڈیلیوری میں {{count}} دن باقی"
+    "delivery_in_days_other": "ڈیلیوری میں {{count}} دن باقی",
+    "ready_for_pickup": "آپ کا آرڈر وصولی کے لیے تیار ہے 🎉",
+    "delivery_on": "ترسیل: {{date}}",
+    "remaining_amount": "باقی رقم: {{amount}} ریال",
+    "call_shop": "دکان کو کال کریں",
+    "shop_location": "دکان کا مقام",
+    "page_title": "اپنا آرڈر ٹریک کریں"
   },
   "my_orders": {
     "title": "میرے آرڈرز",
@@ -5167,7 +5189,9 @@
       "kind_order_received_where": "آرڈرز اسکرین سے گاہک کو آرڈر بھیجتے وقت۔",
       "kind_invoice_where": "پوائنٹ آف سیل میں فروخت کے بعد، سیلز ریکارڈ سے، اور ٹیکس انوائس ونڈو سے۔",
       "kind_tracking_link_where": "آرڈرز اسکرین سے «ٹریکنگ لنک بھیجیں» کے ساتھ۔",
-      "kind_measurements_link_where": "گاہکوں کی اسکرین سے «پیمائش کا لنک بھیجیں» کے ساتھ۔"
+      "kind_measurements_link_where": "گاہکوں کی اسکرین سے «پیمائش کا لنک بھیجیں» کے ساتھ۔",
+      "kind_order_ready": "آرڈر تیار",
+      "kind_order_ready_where": "جب آرڈر \"وصولی کے لیے تیار\" ہو تو پیش کیا جاتا ہے۔"
     },
     "fabric_estimate": {
       "title": "فی ثوب کپڑے کا حساب",
@@ -5362,7 +5386,21 @@
     "tutorial_step2_title": "2. پروڈکٹس شامل کریں",
     "tutorial_step3_desc": "بائیں طرف ٹوکری کا جائزہ لیں، پھر انوائس جاری کرنے اور آرڈر کی تصدیق کے لیے ادائیگی پر کلک کریں۔",
     "tutorial_step3_title": "3. ادائیگی مکمل کریں",
-    "tutorial_title": "سسٹم استعمال کی فوری گائیڈ"
+    "tutorial_title": "سسٹم استعمال کی فوری گائیڈ",
+    "own_email_not_allowed": "یہ آپ کی اپنی ای میل ہے۔ نئے ملازم کی ای میل لکھیں۔",
+    "no_permission_to_add": "آپ کو ملازم شامل کرنے کی اجازت نہیں۔ دکان کے مالک سے کہیں۔",
+    "commission_title": "درزی کا کمیشن",
+    "commission_percentage": "آرڈر کا حصہ",
+    "commission_fixed": "فی آرڈر مقررہ رقم",
+    "commission_value_percentage": "ٹیکس سے پہلے آرڈر کا حصہ (%)",
+    "commission_value_fixed": "فی آرڈر رقم (ریال)",
+    "commission_hint": "کمیشن اس وقت بنتا ہے جب آرڈر وصولی کے لیے تیار ہو۔ بعد میں \"درزیوں کے کمیشن\" سے بدل سکتے ہیں۔",
+    "commission_invalid": "کمیشن درست نہیں: حصہ 0 سے 100 کے درمیان، اور رقم منفی نہیں ہو سکتی۔",
+    "email_required_for_role": "اس کردار کے لیے ای میل اور پاس ورڈ ضروری ہیں۔ صرف درزی بغیر ای میل کے PIN سے داخل ہو سکتا ہے۔",
+    "pin_required_for_tailor": "بغیر ای میل کے درزی کو 4 ہندسوں کا PIN چاہیے۔",
+    "email_optional_tailor_label": "ای میل (درزی کے لیے اختیاری)",
+    "password_optional_tailor_label": "پاس ورڈ (درزی کے لیے اختیاری)",
+    "tailor_pin_hint": "درزی دکان کے آلے پر PIN سے داخل ہوتا ہے، اس لیے ای میل اور پاس ورڈ اختیاری ہیں۔"
   },
   "subscription": {
     "account_email_label": "اکاؤنٹ ای میل:",
@@ -5762,7 +5800,8 @@
       "order_received": "السلام علیکم {customer_name}،\n{store_name} میں آپ کا آرڈر نمبر {order_id} موصول ہو گیا۔\nکل رقم: {total_amount} ریال\nاپنے آرڈر کی صورتحال یہاں دیکھیں: {invoice_url}",
       "invoice": "السلام علیکم {customer_name}،\n{store_name} سے خریداری کا شکریہ۔\nآپ کی انوائس نمبر {order_id}، کل رقم {total_amount} ریال\nاپنا آرڈر یہاں دیکھیں: {invoice_url}",
       "tracking_link": "السلام علیکم {customer_name}،\nاپنے آرڈر نمبر {order_id} کی صورتحال یہاں دیکھیں: {tracking_url}\n{store_name}",
-      "measurements_link": "السلام علیکم {customer_name}،\nاپنی پیمائشیں اس لنک سے بھریں: {measurements_url}\n{store_name}"
+      "measurements_link": "السلام علیکم {customer_name}،\nاپنی پیمائشیں اس لنک سے بھریں: {measurements_url}\n{store_name}",
+      "order_ready": "السلام علیکم {customer_name}،\nآپ کا آرڈر {order_id} {store_name} سے وصولی کے لیے تیار ہے 🎉\nیہاں ٹریک کریں: {tracking_url}"
     },
     "var_tracking_url": "آرڈر ٹریکنگ لنک",
     "var_measurements_url": "پیمائش کا لنک",

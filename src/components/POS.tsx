@@ -72,7 +72,8 @@ import TailoringOrderForm from './TailoringOrderForm';
 import Branding from './Branding';
 import { downloadInvoicePDF, shareOrDownloadInvoicePDF } from '../utils/pdfGenerator';
 import { openWhatsApp, whatsappMessage } from '../utils/whatsapp';
-import { useBranding } from '../contexts/BrandingContext';
+import { buildPosInvoiceData } from './pos/posInvoiceData';
+import { useSaleBranchName } from './pos/useSaleBranchName';
 import { useRealtimeSync } from '../hooks/useRealtimeSync';
 import { useRouter, useRefreshCounter } from '../hooks/useRouter';
 import { encodeOrderB2BNotes, encodeInvoiceExtendedNotes } from '../utils/b2bHelper';
@@ -206,12 +207,13 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
   const searchInputRef = React.useRef<HTMLInputElement>(null);
 
   const [taxSettings, setTaxSettings] = useState<any>(null);
+  const [shopContact, setShopContact] = useState<{ address?: string | null; phone?: string | null }>({});
   // P3.1 / RELIABILITY-11: the shop's tax settings could not be read (offline,
   // nothing kept on this device) -- selling would mean selling with no VAT.
   const [taxSettingsUnavailable, setTaxSettingsUnavailable] = useState(false);
 
   const [discountType, setDiscountType] = useState<'percent' | 'fixed'>('fixed');
-  const { settings: brandingSettings } = useBranding();
+  const saleBranchName = useSaleBranchName(tenantId, shiftId, currentStaff?.branchId);
   const [discountValue, setDiscountValue] = useState<number>(0);
 
   // Customer Combobox State
@@ -531,6 +533,8 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
         const tenantData = tenantResult.data as {
           vat_number: string | null;
           name: string | null;
+          address?: string | null;
+          phone?: string | null;
           tax_settings: {
             enabled?: boolean;
             trn?: string;
@@ -542,6 +546,7 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
         // One reading of the shop's tax settings (utils/taxSettings.ts).
         const resolvedTax = resolveTaxSettings(tenantData);
         setTaxSettings(resolvedTax);
+        setShopContact({ address: tenantData.address, phone: tenantData.phone });
         setTaxSettingsUnavailable(false);
         rememberTaxSettings(tenantId, resolvedTax);
         // P3.2: keep a few invoice numbers reserved for a sale made offline.
@@ -1953,39 +1958,12 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
     );
   };
 
-const invoiceData: InvoiceData | null = completedOrder ? {
-  invoiceNumber: completedOrder.invoiceNumber,
-  provisional: Boolean(completedOrder.provisional),
-  issueDate: completedOrder.issuedAt,
-  paymentMethod: completedOrder.paymentMethod || 'cash',
-  seller: {
-    // No fake fallback here either (ZATCA Phase 0) -- by the time
-    // completedOrder exists, handleCheckout's own guard above has already
-    // confirmed taxSettings.trn/legalName are real, so this only ever
-    // renders genuine tenant data.
-    name: brandingSettings?.storeName || taxSettings?.legalName || '',
-    vatNumber: taxSettings?.trn || '',
-  },
-  customer: {
-    name: completedOrder.customerName || 'عميل نقدي',
-    vatNumber: completedOrder.customerVat || undefined
-  },
-  items: completedOrder.items.map((item: any, index: number) => ({
-    id: index,
-    name: item.name,
-    quantity: item.quantity,
-    unitPrice: item.price,
-    taxType: item.taxType
-  })),
-  subtotal: completedOrder.subTotal,
-  vatAmount: completedOrder.taxAmount,
-  discountAmount: completedOrder.discountAmount,
-  // Was absent entirely -- see the completedOrder.paidAmount comment above.
-  paidAmount: completedOrder.paidAmount,
-  grandTotal: completedOrder.total,
-  qrValue: completedOrder.qrCode,
-  invoiceType: completedOrder.invoiceType
-} : null;
+// seen-merchant-trial-test-2026-11-26.md: the shop's own name, branch and employee (pos/posInvoiceData.ts).
+const invoiceData: InvoiceData | null = buildPosInvoiceData(completedOrder, {
+  shop: { legalName: taxSettings?.legalName, trn: taxSettings?.trn, address: shopContact.address, phone: shopContact.phone },
+  branchName: saleBranchName,
+  staffName: currentStaff?.name,
+});
 
   // The user's own customizable template (WhatsAppSettings), not a fixed
   // string -- the invoice share message must match what they configured.

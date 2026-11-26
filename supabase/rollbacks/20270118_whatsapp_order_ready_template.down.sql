@@ -1,0 +1,47 @@
+-- Rollback of 20270118000000_whatsapp_order_ready_template.sql: the four
+-- names only, as before. A saved order_ready text stays in whatsapp_settings
+-- (the app falls back to the default text when the kind is unknown to it).
+CREATE OR REPLACE FUNCTION public.save_whatsapp_templates(p_enabled boolean, p_templates jsonb)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+DECLARE
+  v_tenant   uuid := public.app_current_tenant_id();
+  v_current  jsonb;
+  v_templates jsonb;
+  v_key      text;
+  v_text     text;
+BEGIN
+  IF v_tenant IS NULL OR NOT public.app_has_permission('settings.whatsapp') THEN
+    RAISE EXCEPTION 'لا تملك صلاحية إعدادات واتساب' USING ERRCODE = '42501';
+  END IF;
+  IF p_templates IS NOT NULL AND jsonb_typeof(p_templates) <> 'object' THEN
+    RAISE EXCEPTION 'قوالب واتساب غير صحيحة' USING ERRCODE = '22023';
+  END IF;
+
+  SELECT COALESCE(whatsapp_settings, '{}'::jsonb) INTO v_current FROM public.tenants WHERE id = v_tenant FOR UPDATE;
+  v_templates := CASE WHEN jsonb_typeof(v_current -> 'templates') = 'object' THEN v_current -> 'templates' ELSE '{}'::jsonb END;
+
+  FOR v_key, v_text IN SELECT key, value #>> '{}' FROM jsonb_each(COALESCE(p_templates, '{}'::jsonb)) LOOP
+    IF v_key NOT IN ('order_received', 'invoice', 'tracking_link', 'measurements_link') THEN
+      RAISE EXCEPTION 'قالب واتساب غير معروف: %', v_key USING ERRCODE = '22023';
+    END IF;
+    IF jsonb_typeof(p_templates -> v_key) <> 'string' OR btrim(COALESCE(v_text, '')) = '' THEN
+      RAISE EXCEPTION 'قالب الرسالة لا يكون فارغاً' USING ERRCODE = '22023';
+    END IF;
+    IF length(v_text) > 1000 THEN
+      RAISE EXCEPTION 'نص الرسالة أطول من 1000 حرف' USING ERRCODE = '22023';
+    END IF;
+    v_templates := v_templates || jsonb_build_object(v_key, v_text);
+  END LOOP;
+
+  v_current := v_current || jsonb_build_object('templates', v_templates);
+  IF p_enabled IS NOT NULL THEN
+    v_current := v_current || jsonb_build_object('enabled', p_enabled);
+  END IF;
+  UPDATE public.tenants SET whatsapp_settings = v_current WHERE id = v_tenant;
+  RETURN v_current;
+END;
+$function$;

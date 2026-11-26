@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { motion } from 'motion/react';
 import { User, Mail, Smartphone, X, Store, Key } from 'lucide-react';
 import { useForm, Controller } from 'react-hook-form';
@@ -18,18 +18,21 @@ import { PasswordInput } from './ui/PasswordInput';
 import { SmartSelect } from './ui/SmartSelect';
 import { staffRoleForSave } from '../services/permissionService';
 import { UserFacingError } from '../lib/userFacingError';
+import { StaffCommissionFields, type StaffCommissionValue } from './staff/StaffCommissionFields';
+import { isTailorRole } from './staff/isTailorRole';
 
 const phoneRegex = /^(\+?\d{1,3}[- ]?)?\d{10}$/;
 
 const baseStaffSchema = z.object({
   // Messages are i18n keys, translated at the render site so they follow language changes.
   name: z.string().min(2, "validation.name_min_two_chars"),
-  email: z.string().email("validation.invalid_email"),
+  // Optional for a tailor (PIN only, phase 2 item 1); required for the rest in onSubmit.
+  email: z.string().email("validation.invalid_email").optional().or(z.literal('')),
   phone: z.string().regex(phoneRegex, "validation.phone_format"),
   role: z.string().min(1, "validation.required"),
   branchId: z.string().min(1, "validation.required"),
   pin: z.string().length(4, "validation.pin_four_digits").regex(/^\d+$/, "validation.digits_only").optional().or(z.literal('')),
-  password: z.string().min(6, "saas.password_too_short"),
+  password: z.string().min(6, "saas.password_too_short").optional().or(z.literal('')),
 });
 
 interface AddEmployeeModalProps {
@@ -41,6 +44,8 @@ interface AddEmployeeModalProps {
   onSuccess: () => void;
   currentStaffName?: string;
   currentStaffEmail?: string;
+  /** The role chosen up front (the order form's "+ add tailor"). */
+  presetRole?: string;
 }
 
 export default function AddEmployeeModal({ 
@@ -51,7 +56,8 @@ export default function AddEmployeeModal({
   branches, 
   onSuccess,
   currentStaffName,
-  currentStaffEmail
+  currentStaffEmail,
+  presetRole
 }: AddEmployeeModalProps) {
   const { t, dir } = useDirection();
   // Unsupported browsers render VoiceMicButton as null -- without this
@@ -61,37 +67,55 @@ export default function AddEmployeeModal({
   const { user: currentAuthUser } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  const errorRef = useRef<HTMLDivElement>(null);
+  // The message sits by the save button; bring it into view when it appears.
+  useEffect(() => { if (errorMsg) errorRef.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); }, [errorMsg]);
   const [enablePin, setEnablePin] = useState(false);
 
-  const { register, handleSubmit, control, formState: { errors }, reset, setValue } = useForm({
+  const [commission, setCommission] = useState<StaffCommissionValue>({ type: 'percentage', value: '' });
+
+  const { register, handleSubmit, control, formState: { errors }, reset, setValue, watch } = useForm({
     resolver: zodResolver(baseStaffSchema),
     defaultValues: {
       name: '',
       email: '',
       phone: '',
-      role: '',
+      role: presetRole || '',
       branchId: '',
       pin: '',
       password: '',
     }
   });
 
+  // seen-merchant-trial-test-2026-11-26.md, phase 2 item 1: a tailor signs in
+  // with a PIN on the shop's device; email and password are optional for them.
+  const watchedRole = watch('role');
+  const isTailor = isTailorRole(watchedRole, roles);
+  const showPin = enablePin || isTailor;
+
   const onSubmit = async (data: any) => {
     setIsSubmitting(true);
     setErrorMsg('');
+    const stop = (msg: string) => { setErrorMsg(msg); setIsSubmitting(false); };
     try {
-      if (!data.password || data.password.length < 6) {
-        setErrorMsg(t('staff.password_invalid'));
-        setIsSubmitting(false);
-        return;
+      const email = String(data.email || '').trim().toLowerCase();
+      // Never the person's own sign-in (the browser fills this form with the
+      // owner's email and password) -- checked before anything else.
+      const ownEmails = [currentAuthUser?.email, currentStaffEmail].filter(Boolean).map((e) => String(e).toLowerCase());
+      if (email && ownEmails.includes(email)) return stop(t('staff.own_email_not_allowed'));
+
+      if (!email && !isTailor) return stop(t('staff.email_required_for_role'));
+      if (email && (!data.password || data.password.length < 6)) return stop(t('staff.password_invalid'));
+      if (!email && !(data.pin && /^\d{4}$/.test(data.pin))) return stop(t('staff.pin_required_for_tailor'));
+      if (isTailor && commission.value !== '' && (Number(commission.value) < 0 || (commission.type === 'percentage' && Number(commission.value) > 100))) {
+        return stop(t('staff.commission_invalid'));
       }
 
       // 1. Multi-tenant Email Validation
       // Check if email exists in staff table
-      const { data: existingStaff, error: checkErr } = await supabase
-        .from('staff')
-        .select('id, tenant_id, uid')
-        .eq('email', data.email.toLowerCase());
+      const { data: existingStaff, error: checkErr } = email
+        ? await supabase.from('staff').select('id, tenant_id, uid').eq('email', email)
+        : { data: [] as { id: string; tenant_id: string; uid: string | null }[], error: null };
 
       if (checkErr) throw checkErr;
 
@@ -105,60 +129,13 @@ export default function AddEmployeeModal({
         }
       }
 
-      // 2. Create or find Auth User via the server (service-role key never
-      // reaches the browser, so account creation must happen there).
-      let uid = '';
-      const { data: { session } } = await supabase.auth.getSession();
-      const createRes = await fetch('/api/staff/create-account', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${session?.access_token || ''}`
-        },
-        body: JSON.stringify({ email: data.email.toLowerCase(), password: data.password, name: data.name })
-      });
-      const createResult = await createRes.json();
-
-      if (!createRes.ok) {
-        // SECURITY (seen-cto-sprint0-critical-fixes-task.md item 1 follow-up):
-        // this used to resolve a uid from ANY tenant's staff/users rows on
-        // any 409 and link it as staff here anyway, with no password reset
-        // -- so adding a stranger's (or another tenant's owner's, or a
-        // super_admin's) email created a second `staff` row for the same
-        // uid across tenants. authMiddleware.ts's staff lookup is a
-        // .maybeSingle(), which errors when more than one row matches,
-        // breaking that real account's ability to log in anywhere until
-        // manually cleaned up -- a griefing/denial-of-service path with no
-        // password ever needed. The server now only ever returns 409 when
-        // this account must not be touched at all, so there is no longer a
-        // safe case to self-resolve a uid and proceed.
-        // seen-friendly-errors-everywhere-task.md: the server's kind, in this screen's words.
-        setErrorMsg(createRes.status === 409
-          ? t('staff.email_belongs_to_another_account')
-          : getFriendlyErrorMessage(new UserFacingError(createResult?.kind === 'validation' ? 'validation' : createResult?.kind === 'rate_limited' ? 'rate_limited' : 'server')));
-        setIsSubmitting(false);
-        return;
-      } else {
-        uid = createResult.uid;
-      }
-
-      // Ensure user exists in users table
-      if (uid) {
-         const { error: upsertErr } = await supabase.from('users').upsert({ id: uid, email: data.email.toLowerCase(), display_name: data.name }, { onConflict: 'id' });
-         if (upsertErr) throw upsertErr;
-      }
-
-      // 3. Prepare PIN
-      let finalPin = null;
       let hashedPin = null;
-      if (enablePin && data.pin && data.pin.length === 4) {
-        finalPin = data.pin;
+      if (showPin && data.pin && data.pin.length === 4) {
         hashedPin = await hashPin(data.pin);
       }
 
-      // 4. Insert Staff Record
       const VALID_DB_ROLES = [
-        'super_admin', 'support_tech', 'billing_admin', 'owner', 'admin', 'manager', 
+        'super_admin', 'support_tech', 'billing_admin', 'owner', 'admin', 'manager',
         'cashier', 'tailor', 'accountant', 'branch_manager', 'warehouse_manager'
       ];
       const dbRoleValue = VALID_DB_ROLES.includes(data.role) ? data.role : staffRoleForSave(data.role, roles.find(r => r.roleKey === data.role) as any);
@@ -166,37 +143,43 @@ export default function AddEmployeeModal({
       const isUuid = (val: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val);
       const validRoleId = selectedRole?.id && isUuid(selectedRole.id) ? selectedRole.id : null;
 
-      const { error: insertErr } = await supabase.from('staff').insert({
-        uid: uid,
-        name: data.name,
-        role: dbRoleValue,
-        role_id: validRoleId,
-        branch_id: data.branchId || null,
-        email: data.email.toLowerCase(),
-        phone: data.phone,
-        status: 'active',
-        is_test: false,
-        pin_hash: hashedPin,
-        must_change_pin: false,
-        tenant_id: tenantId,
-        created_at: new Date().toISOString()
+      // One request: the server makes the sign-in account, the users row and
+      // the staff row together, and undoes the account if anything fails --
+      // the browser can't write another person's users row (that 403 left a
+      // half-made account and "email already used" on the next try).
+      const { data: { session } } = await supabase.auth.getSession();
+      const createRes = await fetch('/api/staff/create', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session?.access_token || ''}`,
+        },
+        body: JSON.stringify({
+          email,
+          password: email ? data.password : '',
+          name: data.name,
+          phone: data.phone,
+          role: dbRoleValue,
+          roleId: validRoleId,
+          branchId: data.branchId || null,
+          pinHash: hashedPin,
+          ...(isTailor && commission.value !== '' ? { commissionType: commission.type, commissionValue: Number(commission.value) } : {}),
+        })
       });
-
-      if (insertErr) throw insertErr;
-
-      // Audit Log
-      await supabase.from('audit_logs').insert({
-        action: 'إضافة موظف',
-        performed_by: currentAuthUser?.id || null,
-        performed_by_email: currentStaffEmail || 'unknown',
-        target_tenant_id: tenantId,
-        details: `تم إضافة الموظف ${data.name} بنجاح`,
-        occurred_at: new Date().toISOString(),
-        type: 'security'
-      });
+      const createResult = await createRes.json().catch(() => ({}));
+      if (!createRes.ok) {
+        setErrorMsg(createRes.status === 409
+          ? t('staff.email_belongs_to_another_account')
+          : createRes.status === 403
+            ? t('staff.no_permission_to_add')
+            : getFriendlyErrorMessage(new UserFacingError(createResult?.kind === 'validation' ? 'validation' : createResult?.kind === 'rate_limited' ? 'rate_limited' : 'server')));
+        setIsSubmitting(false);
+        return;
+      }
 
       reset();
       setEnablePin(false);
+      setCommission({ type: 'percentage', value: '' });
       onSuccess();
 
     } catch (error: any) {
@@ -231,12 +214,7 @@ export default function AddEmployeeModal({
           </button>
         </div>
         
-        <form onSubmit={handleSubmit(onSubmit)} className="p-8 space-y-6">
-          {errorMsg && (
-            <div className="p-4 bg-[var(--seen-danger-bg)] text-danger rounded-2xl border border-danger/20 font-bold text-sm">
-              {errorMsg}
-            </div>
-          )}
+        <form onSubmit={handleSubmit(onSubmit)} autoComplete="off" className="p-8 space-y-6">
 
           <IconInput
             {...register('name')}
@@ -290,7 +268,10 @@ export default function AddEmployeeModal({
 
           <IconInput
             {...register('email')}
-            label={t('staff.email_required_label')}
+            // Not the person's own saved sign-in (seen-merchant-trial-test-2026-11-26.md).
+            autoComplete="off"
+            data-lpignore="true"
+            label={isTailor ? t('staff.email_optional_tailor_label') : t('staff.email_required_label')}
             startIcon={Mail}
             error={errors.email?.message ? t(errors.email.message as string) : undefined}
             dir="ltr"
@@ -299,7 +280,8 @@ export default function AddEmployeeModal({
 
           <PasswordInput
             {...register('password')}
-            label={t('staff.password_required_label')}
+            autoComplete="new-password"
+            label={isTailor ? t('staff.password_optional_tailor_label') : t('staff.password_required_label')}
             error={errors.password?.message ? t(errors.password.message as string) : undefined}
             dir="ltr"
             placeholder="••••••••"
@@ -322,23 +304,25 @@ export default function AddEmployeeModal({
               <button
                 type="button"
                 role="switch"
-                aria-checked={enablePin}
+                aria-checked={showPin}
+                disabled={isTailor}
                 onClick={() => setEnablePin(!enablePin)}
                 className={cn(
                   "relative inline-flex h-6 w-11 items-center rounded-full transition-colors",
-                  enablePin ? "bg-brand" : "bg-content-muted/30"
+                  showPin ? "bg-brand" : "bg-content-muted/30"
                 )}
               >
                 <span
                   className={cn(
                     "inline-block h-4 w-4 transform rounded-full bg-white transition-transform",
-                    enablePin ? "-translate-x-6 rtl:translate-x-6" : "-translate-x-1 rtl:translate-x-1"
+                    showPin ? "-translate-x-6 rtl:translate-x-6" : "-translate-x-1 rtl:translate-x-1"
                   )}
                 />
               </button>
             </div>
 
-            {enablePin && (
+            {isTailor && <p className="text-sm font-bold text-content-muted">{t('staff.tailor_pin_hint')}</p>}
+            {showPin && (
               <div className="pt-2 border-t border-border">
                 <IconInput
                   {...register('pin')}
@@ -353,6 +337,14 @@ export default function AddEmployeeModal({
               </div>
             )}
           </div>
+
+          {isTailor && <StaffCommissionFields value={commission} onChange={setCommission} />}
+
+          {errorMsg && (
+            <div ref={errorRef} role="alert" className="p-4 bg-[var(--seen-danger-bg)] text-danger rounded-2xl border border-danger/20 font-bold text-sm">
+              {errorMsg}
+            </div>
+          )}
 
           <button 
             type="submit"

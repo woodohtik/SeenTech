@@ -50,3 +50,15 @@ dist-perf-server2/
 
 # seen-responsive-layout-task.md: the snapshot tool's build and raw probe output
 /.responsive-out/
+
+# seen-stability-guardrails-task.md phase 4: the founder's task, review and
+# working files live in docs/tasks, docs/reviews and docs/founder. The
+# repository is public, so they stay out of git -- except the index and the
+# files that were tracked before (already public; git keeps tracking them).
+docs/tasks/*
+!docs/tasks/INDEX.md
+docs/reviews/*
+docs/founder/
+# The security audit's detail files (findings, ledger) never go to the public repository.
+docs/security/audit-2026-11-22/*
+!docs/security/audit-2026-11-22/README.md

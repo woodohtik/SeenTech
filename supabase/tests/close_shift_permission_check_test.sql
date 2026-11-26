@@ -1,7 +1,14 @@
 -- docs/superpowers/plans/2026-11-18-permissions-server-enforcement.md Task 3.
--- Proves close_shift lets a staff member close their OWN shift regardless of
--- permissions, and gates a cross-staff close on shifts.manage (via
--- app_has_permission() from Task 1) instead of the hard-coded role list.
+-- Proves close_shift lets a staff member who handles cash (payments.collect)
+-- close their OWN shift without shifts.manage, and gates a cross-staff close
+-- on shifts.manage (via app_has_permission() from Task 1) instead of the
+-- hard-coded role list.
+--
+-- seen-stability-guardrails-task.md: test 1 used to have a tailor close their
+-- own shift. Since 20270101000003 a shift is opened and closed by whoever
+-- handles cash (shifts.manage or payments.collect) -- a tailor can no longer
+-- open one -- so the test now uses a cashier (CI's pgtap job had been failing
+-- on it since).
 --
 -- Run with: npx supabase db query --linked --file <this file>
 -- (supabase test db --linked needs Docker, which is down on this machine.)
@@ -25,7 +32,9 @@ VALUES
   ('99999999-9999-9999-9999-999999999999', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
    'ffffffff-ffff-ffff-ffff-ffffffffffff', 'Test Tailor 2', 'tailor2@close-shift-perm.test.invalid', 'tailor', NULL, 'active'),
   ('dddddddd-dddd-dddd-dddd-dddddddddddd', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
-   'eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee', 'Test Manager', 'manager@close-shift-perm.test.invalid', 'manager', NULL, 'active');
+   'eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee', 'Test Manager', 'manager@close-shift-perm.test.invalid', 'manager', NULL, 'active'),
+  ('77777777-7777-7777-7777-777777777777', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+   '88888888-8888-8888-8888-888888888888', 'Test Cashier', 'cashier@close-shift-perm.test.invalid', 'cashier', NULL, 'active');
 
 -- Custom role (not owner/admin/manager by name) that grants shifts.manage via
 -- its own roles.permissions JSONB; the staff member below is assigned to it.
@@ -45,23 +54,27 @@ VALUES
   ('f2222222-2222-2222-2222-222222222222', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', NULL,
    'dddddddd-dddd-dddd-dddd-dddddddddddd', 'Test Manager', 0, 'open'),
   ('f3333333-3333-3333-3333-333333333333', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', NULL,
-   '99999999-9999-9999-9999-999999999999', 'Test Tailor 2', 0, 'open');
+   '99999999-9999-9999-9999-999999999999', 'Test Tailor 2', 0, 'open'),
+  ('f4444444-4444-4444-4444-444444444444', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', NULL,
+   '77777777-7777-7777-7777-777777777777', 'Test Cashier', 0, 'open');
 
 SET session_replication_role = DEFAULT;
 
 -- Scenario 1: tailor closes their OWN shift -- lives_ok (never gated by
 -- shifts.manage; the v_staff IS DISTINCT FROM v_shift_staff short-circuit).
 SET LOCAL ROLE authenticated;
-SET LOCAL request.jwt.claims = '{"sub":"cccccccc-cccc-cccc-cccc-cccccccccccc"}';
+SET LOCAL request.jwt.claims = '{"sub":"88888888-8888-8888-8888-888888888888"}';
 SELECT lives_ok(
   $$ SELECT public.close_shift(
        'a1000000-0000-0000-0000-000000000001'::uuid,
-       'f1111111-1111-1111-1111-111111111111'::uuid,
+       'f4444444-4444-4444-4444-444444444444'::uuid,
        0,
        NULL
      ) $$,
-  'tailor closes their own shift -- lives_ok, not gated by shifts.manage'
+  'cashier closes their own shift -- lives_ok, payments.collect, not shifts.manage'
 );
+
+SET LOCAL request.jwt.claims = '{"sub":"cccccccc-cccc-cccc-cccc-cccccccccccc"}';
 
 -- Scenario 2: tailor attempts to close the manager's shift -- must throw the
 -- existing "not your shift" message (now reached via app_has_permission).

@@ -2,7 +2,8 @@ name: CI
 
 on:
   push:
-    branches: [staging, main]
+    # ci/** : a branch to run CI on without deploying (Vercel builds only main and staging).
+    branches: [staging, main, 'ci/**']
   pull_request:
     branches: [staging, main]
 
@@ -99,6 +100,90 @@ jobs:
           path: playwright-report/
           retention-days: 14
 
+  # seen-stability-guardrails-task.md phase 1: the golden paths -- the day's
+  # real work end to end, against the app built on a LOCAL Supabase (never
+  # staging or production) with "محل الاختبار الآلي" seeded from nothing.
+  # Each path checks the database, not only the screen. Failures arrive as
+  # annotations, with screenshots and the server log as artifacts.
+  golden:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 2.114.0
+
+      - name: Start the local Supabase (database, auth, API)
+        run: supabase start -x studio,imgproxy
+
+      - name: Its address and keys (local, throw-away)
+        run: |
+          supabase status -o env > /tmp/supabase.env
+          grep -E '^(API_URL|ANON_KEY|SERVICE_ROLE_KEY|JWT_SECRET)=' /tmp/supabase.env | sed 's/"//g' >> "$GITHUB_ENV"
+
+      - name: Build the app against it
+        run: VITE_SUPABASE_URL="$API_URL" VITE_SUPABASE_ANON_KEY="$ANON_KEY" npm run build
+
+      - name: Seed the test shop
+        run: |
+          GOLDEN_DB_CONTAINER="$(docker ps --filter name=supabase_db_ --format '{{.Names}}' | head -1)"           GOLDEN_SUPABASE_URL="$API_URL" GOLDEN_SERVICE_ROLE_KEY="$SERVICE_ROLE_KEY" npx tsx e2e/golden/seed.ts
+
+      - name: Start the server
+        run: |
+          VITE_SUPABASE_URL="$API_URL" VITE_SUPABASE_ANON_KEY="$ANON_KEY" SUPABASE_SERVICE_ROLE_KEY="$SERVICE_ROLE_KEY" SUPABASE_JWT_SECRET="$JWT_SECRET"             NODE_ENV=production nohup node server-build/server.cjs > server.log 2>&1 &
+          for i in $(seq 1 60); do curl -sf http://localhost:3000/api/ping > /dev/null && exit 0; sleep 1; done
+          echo "::error::the server did not start"; tail -50 server.log; exit 1
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Golden paths
+        env:
+          GOLDEN_SUPABASE_URL: ${{ env.API_URL }}
+          GOLDEN_SERVICE_ROLE_KEY: ${{ env.SERVICE_ROLE_KEY }}
+        run: npx playwright test -c playwright.golden.config.ts
+
+      # A map of the screens the next paths walk through (temporary, while the paths are written).
+      - name: Probe the next screens
+        if: always()
+        env:
+          GOLDEN_PROBE: '1'
+          GOLDEN_SUPABASE_URL: ${{ env.API_URL }}
+          GOLDEN_SERVICE_ROLE_KEY: ${{ env.SERVICE_ROLE_KEY }}
+        run: npx playwright test -c playwright.golden.config.ts zz-probe || true
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: golden-probe
+          path: golden-probe/
+          retention-days: 3
+
+      - name: Server log on failure
+        if: failure()
+        run: |
+          tail -100 server.log | sed 's/^/::warning::server: /' || true
+
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: golden-report
+          path: |
+            playwright-golden-report/
+            test-results/
+            server.log
+          retention-days: 14
+
   # seen-cto-sprint4-design-quality-task.md item 4 (CTO review section
   # 6/9): zero pgTAP coverage existed for any RLS policy or financial
   # RPC -- the role-gating fixed in 20261121000000/20261122000000 (sprint
@@ -135,6 +220,24 @@ jobs:
 
       - name: Run pgTAP tests
         run: supabase test db
+
+      # seen-stability-guardrails-task.md phase 3: the functions the migrations
+      # build must match the committed snapshot (supabase/schema/functions/).
+      # A change to a function without updating the snapshot -- or a function
+      # rebuilt from an old migration's copy, losing a later fix -- fails here,
+      # with an annotation on each differing file.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: 'npm'
+
+      - name: Install dependencies (for the snapshot script)
+        run: npm ci
+
+      - name: Database functions match the snapshot
+        env:
+          SUPABASE_CLI: supabase
+        run: npx tsx scripts/db/snapshot-functions.ts --local --check
 
   # مراجعة-الفريق-التقني-الكامل-2026-10-19.md (ديف أوبس): لا توجد خطوة CI
   # تبني capacitor-customer/android (تطبيق العملاء، Google Play) قبل أي

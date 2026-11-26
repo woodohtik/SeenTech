@@ -77,9 +77,12 @@ app.use((req: any, res, next) => {
 // vars reach the browser bundle, it doesn't hide them from plain Node
 // process.env, so the server can derive the exact project host instead of
 // hardcoding it.
-const supabaseHost = (() => {
-  try { return new URL(process.env.VITE_SUPABASE_URL || '').host; } catch { return ''; }
+// The origins as they are (https/wss in production; http/ws for the local
+// database the golden-path tests run against -- seen-stability-guardrails-task.md).
+const supabaseOrigin = (() => {
+  try { return new URL(process.env.VITE_SUPABASE_URL || '').origin; } catch { return ''; }
 })();
+const supabaseSocketOrigin = supabaseOrigin.replace(/^http/, 'ws');
 const firebaseAuthDomain = process.env.VITE_FIREBASE_AUTH_DOMAIN || '';
 
 // crossOriginOpenerPolicy is explicitly relaxed to same-origin-allow-popups
@@ -105,13 +108,13 @@ app.use(helmet({
       fontSrc: ["'self'", 'https://fonts.gstatic.com'],
       imgSrc: [
         "'self'", 'data:', 'blob:',
-        ...(supabaseHost ? [`https://${supabaseHost}`] : []),
+        ...(supabaseOrigin ? [supabaseOrigin] : []),
         'https://*.tile.openstreetmap.org',
         'https://firebasestorage.googleapis.com',
       ],
       connectSrc: [
         "'self'",
-        ...(supabaseHost ? [`https://${supabaseHost}`, `wss://${supabaseHost}`] : []),
+        ...(supabaseOrigin ? [supabaseOrigin, supabaseSocketOrigin] : []),
         'https://accounts.google.com',
         'https://oauth2.googleapis.com',
         'https://identitytoolkit.googleapis.com',
@@ -478,7 +481,7 @@ app.get("/api/public/order-tracking/:token", asyncHandler(async (req, res) => {
   // whole point is a fast first load.
   const { data: orderData } = await supabaseAdmin
     .from('orders')
-    .select('order_number, status, status_key, delivery_date, tenant:tenants(name, logo_url, vertical)')
+    .select('order_number, status, status_key, delivery_date, total_amount, paid_amount, remaining_amount, tenant:tenants(name, logo_url, vertical, phone, address, city)')
     .eq('tracking_token', token)
     .maybeSingle();
 
@@ -495,6 +498,8 @@ app.get("/api/public/order-tracking/:token", asyncHandler(async (req, res) => {
     shop_name: tenantData?.name || '',
     shop_logo_url: tenantData?.logo_url || null,
     delivery_date: orderData.delivery_date,
+    // seen-merchant-trial-test-2026-11-26.md: what is left to pay, and how to reach the shop.
+    ...(await import("./src/server/publicTrackingExtras.ts")).publicTrackingExtras(orderData as any, tenantData),
     ...(await publicTrackingStages(supabaseAdmin, tenantData?.vertical, (orderData as any).status_key)),
   });
 }));
@@ -1118,6 +1123,46 @@ app.post("/api/saas/complete-temp-password", authenticate, async (req: any, res)
 // service-role key, which must never reach the browser. Replaces the old
 // client-side "spin up a secondary Firebase app" trick used by
 // SaaSTeamManagement.tsx / AddEmployeeModal.tsx / Staff.tsx.
+// seen-merchant-trial-test-2026-11-26.md, phase 1: an employee is made in one
+// request -- account, users row and staff row together, rolled back on any
+// failure (src/server/createStaffMember.ts).
+app.post("/api/staff/create", authenticate, requirePermission('staff.create'), async (req: any, res) => {
+  try {
+    const { supabaseAdmin } = await import("./src/server/supabase-admin.ts");
+    const { count: attemptCount, error: rateLimitError } = await supabaseAdmin
+      .rpc('increment_staff_account_create_attempt', { p_caller_uid: req.user.uid })
+      .then((r: any) => ({ count: r.data, error: r.error }));
+    if (rateLimitError) {
+      logger.warn({ err: rateLimitError }, '[staff/create] rate-limit check failed -- failing open');
+    } else if (attemptCount > 5) {
+      return res.status(429).json(userErrorBody(req, 'rate_limited'));
+    }
+
+    const { createOrUpdateStaffAccount } = await import("./src/server/staffAccountService.ts");
+    const { createStaffMember } = await import("./src/server/createStaffMember.ts");
+    const { userScopedClient } = await import("./src/server/userScopedClient.ts");
+    const asUser = userScopedClient(req);
+    const result = await createStaffMember({
+      createAccount: (input) => createOrUpdateStaffAccount(supabaseAdmin, input),
+      staffInsert: async (row) => {
+        const { data, error } = await asUser.from('staff').insert(row).select('id').single();
+        return { data: data as { id: string } | null, error };
+      },
+      auditInsert: async (row) => asUser.from('audit_logs').insert(row),
+      deleteAuthUser: (uid) => supabaseAdmin.auth.admin.deleteUser(uid),
+      deleteUsersRow: async (uid) => supabaseAdmin.from('users').delete().eq('id', uid),
+    }, req.body || {}, { uid: req.user.uid, tenantId: req.user.tenantId, role: req.user.role, email: req.user.email });
+
+    if (result.ok === false) {
+      logger.warn({ reason: result.reason }, '[staff/create] refused');
+      return res.status(result.status).json(userErrorBody(req, result.kind, result.reason));
+    }
+    res.json(result);
+  } catch (err: any) {
+    internalError(res, "Error creating staff:", err);
+  }
+});
+
 app.post("/api/staff/create-account", authenticate, requirePermission('staff.create'), async (req: any, res) => {
   try {
     const { email, password, name } = req.body;
