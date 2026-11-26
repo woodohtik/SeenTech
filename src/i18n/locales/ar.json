@@ -952,7 +952,9 @@
     "export_col_measurement": "{{label}} (سم)",
     "measurements_link_failed": "تعذّر تجهيز رابط المقاسات",
     "measurements_link_revoked": "أُلغي رابط المقاسات",
-    "revoke_measurements_link": "إلغاء رابط المقاسات"
+    "revoke_measurements_link": "إلغاء رابط المقاسات",
+    "measurements_not_filled": "مقاسات غير معبّاة",
+    "no_measurements_yet": "ما فيه مقاسات محفوظة بعد."
   },
   "dashboard": {
     "above_avg": "فوق المتوسط",
@@ -2411,7 +2413,12 @@
     "cutting_component_add": "إضافة مكوّن من المخزون",
     "cutting_components_save_default": "احفظها افتراضية لـ«{{garment}}» (لكل قطعة)",
     "cutting_components_default_not_saved": "انخصمت المكوّنات، لكن ما انحفظت كافتراضية. جرّب مرة ثانية من الطلب الجاي.",
-    "customer_prefs_filled": "تم تعبئة تفضيلات {{name}}، وتقدر تغيّرها."
+    "customer_prefs_filled": "تم تعبئة تفضيلات {{name}}، وتقدر تغيّرها.",
+    "ready_prompt_title": "الطلب جاهز",
+    "ready_prompt_body": "أرسل لـ{{name}} إن طلبه جاهز؟",
+    "ready_prompt_send": "إرسال واتساب",
+    "ready_prompt_later": "لاحقاً",
+    "ready_prompt_no_phone": "ما فيه رقم جوال للعميل."
   },
   "permissions": {
     "access_denied_desc": "غير محدد",
@@ -3491,7 +3498,13 @@
     "delivery_in_days_two": "متبقّي يومان للتسليم",
     "delivery_in_days_few": "متبقّي {{count}} أيام للتسليم",
     "delivery_in_days_many": "متبقّي {{count}} يومًا للتسليم",
-    "delivery_in_days_other": "متبقّي {{count}} يوم للتسليم"
+    "delivery_in_days_other": "متبقّي {{count}} يوم للتسليم",
+    "ready_for_pickup": "طلبك جاهز للاستلام 🎉",
+    "delivery_on": "موعد التسليم: {{date}}",
+    "remaining_amount": "المبلغ المتبقي: {{amount}} ر.س",
+    "call_shop": "اتصل بالمحل",
+    "shop_location": "موقع المحل",
+    "page_title": "تتبّع طلبك"
   },
   "public_measurements": {
     "title": "مقاساتك",
@@ -5282,7 +5295,9 @@
       "kind_order_received_where": "تُرسل من شاشة الطلبات عند إرسال الطلب للعميل.",
       "kind_invoice_where": "تُرسل بعد البيع من نقطة البيع، ومن سجل المبيعات، ومن نافذة الفاتورة الضريبية.",
       "kind_tracking_link_where": "تُرسل من شاشة الطلبات بزر «إرسال رابط التتبع».",
-      "kind_measurements_link_where": "تُرسل من شاشة العملاء بزر «إرسال رابط المقاسات»."
+      "kind_measurements_link_where": "تُرسل من شاشة العملاء بزر «إرسال رابط المقاسات».",
+      "kind_order_ready": "طلبك جاهز",
+      "kind_order_ready_where": "يُقترح إرساله لما ينتقل الطلب إلى «جاهز للاستلام»."
     },
     "fabric_estimate": {
       "title": "حساب قماش الثوب",
@@ -5891,7 +5906,8 @@
       "order_received": "مرحباً {customer_name}،\nاستلمنا طلبك رقم {order_id} في {store_name}.\nالإجمالي: {total_amount} ر.س\nتابع حالة طلبك من هنا: {invoice_url}",
       "invoice": "مرحباً {customer_name}،\nشكراً لتسوقك من {store_name}.\nفاتورتك رقم {order_id} بإجمالي {total_amount} ر.س\nتابع طلبك من هنا: {invoice_url}",
       "tracking_link": "مرحباً {customer_name}،\nتابع حالة طلبك رقم {order_id} من هنا: {tracking_url}\n{store_name}",
-      "measurements_link": "مرحباً {customer_name}،\nعبّئ مقاساتك من هذا الرابط: {measurements_url}\n{store_name}"
+      "measurements_link": "مرحباً {customer_name}،\nعبّئ مقاساتك من هذا الرابط: {measurements_url}\n{store_name}",
+      "order_ready": "مرحباً {customer_name}،\nطلبك رقم {order_id} جاهز للاستلام من {store_name} 🎉\nتابع طلبك من هنا: {tracking_url}"
     },
     "var_tracking_url": "رابط متابعة الطلب",
     "var_measurements_url": "رابط تعبئة المقاسات",

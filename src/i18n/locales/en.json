@@ -952,7 +952,9 @@
     "export_col_measurement": "{{label}} (cm)",
     "measurements_link_failed": "The measurements link could not be prepared",
     "measurements_link_revoked": "The measurements link was ended",
-    "revoke_measurements_link": "End the measurements link"
+    "revoke_measurements_link": "End the measurements link",
+    "measurements_not_filled": "Not filled",
+    "no_measurements_yet": "No measurements saved yet."
   },
   "dashboard": {
     "above_avg": "Above Average",
@@ -2411,7 +2413,12 @@
     "cutting_component_add": "Add a component from stock",
     "cutting_components_save_default": "Keep these as the default for \"{{garment}}\" (per piece)",
     "cutting_components_default_not_saved": "The components were taken from stock, but were not kept as the default. Try again on the next order.",
-    "customer_prefs_filled": "{{name}}'s preferences were filled in; you can change them."
+    "customer_prefs_filled": "{{name}}'s preferences were filled in; you can change them.",
+    "ready_prompt_title": "The order is ready",
+    "ready_prompt_body": "Tell {{name}} their order is ready?",
+    "ready_prompt_send": "Send on WhatsApp",
+    "ready_prompt_later": "Later",
+    "ready_prompt_no_phone": "The customer has no mobile number."
   },
   "permissions": {
     "access_denied_desc": "Not specified",
@@ -3488,7 +3495,13 @@
     "notify_native_auto": "Notifications are enabled automatically inside the app.",
     "delivery_today": "Delivery today",
     "delivery_tomorrow": "Delivery tomorrow",
-    "delivery_in_days_other": "{{count}} days until delivery"
+    "delivery_in_days_other": "{{count}} days until delivery",
+    "ready_for_pickup": "Your order is ready for pickup 🎉",
+    "delivery_on": "Delivery: {{date}}",
+    "remaining_amount": "Left to pay: {{amount}} SAR",
+    "call_shop": "Call the shop",
+    "shop_location": "Shop's location",
+    "page_title": "Track your order"
   },
   "public_measurements": {
     "title": "Your Measurements",
@@ -5187,7 +5200,9 @@
       "kind_order_received_where": "Sent from Orders when you send the order to the customer.",
       "kind_invoice_where": "Sent after a sale in the POS, from Sales records, and from the tax invoice window.",
       "kind_tracking_link_where": "Sent from Orders with \"Send tracking link\".",
-      "kind_measurements_link_where": "Sent from Customers with \"Send measurements link\"."
+      "kind_measurements_link_where": "Sent from Customers with \"Send measurements link\".",
+      "kind_order_ready": "Order ready",
+      "kind_order_ready_where": "Offered when an order moves to \"ready for pickup\"."
     },
     "fabric_estimate": {
       "title": "Fabric per thobe",
@@ -5796,7 +5811,8 @@
       "order_received": "Hello {customer_name},\nWe received your order {order_id} at {store_name}.\nTotal: {total_amount} SAR\nFollow your order here: {invoice_url}",
       "invoice": "Hello {customer_name},\nThank you for shopping at {store_name}.\nYour invoice {order_id}, total {total_amount} SAR\nFollow your order here: {invoice_url}",
       "tracking_link": "Hello {customer_name},\nFollow your order {order_id} here: {tracking_url}\n{store_name}",
-      "measurements_link": "Hello {customer_name},\nFill in your measurements here: {measurements_url}\n{store_name}"
+      "measurements_link": "Hello {customer_name},\nFill in your measurements here: {measurements_url}\n{store_name}",
+      "order_ready": "Hello {customer_name},\nyour order {order_id} is ready for pickup at {store_name} 🎉\nTrack it here: {tracking_url}"
     },
     "var_tracking_url": "Order tracking link",
     "var_measurements_url": "Measurements link",

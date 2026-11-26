@@ -26,7 +26,7 @@ BEGIN
   v_templates := CASE WHEN jsonb_typeof(v_current -> 'templates') = 'object' THEN v_current -> 'templates' ELSE '{}'::jsonb END;
 
   FOR v_key, v_text IN SELECT key, value #>> '{}' FROM jsonb_each(COALESCE(p_templates, '{}'::jsonb)) LOOP
-    IF v_key NOT IN ('order_received', 'invoice', 'tracking_link', 'measurements_link') THEN
+    IF v_key NOT IN ('order_received', 'invoice', 'tracking_link', 'measurements_link', 'order_ready') THEN
       RAISE EXCEPTION 'قالب واتساب غير معروف: %', v_key USING ERRCODE = '22023';
     END IF;
     IF jsonb_typeof(p_templates -> v_key) <> 'string' OR btrim(COALESCE(v_text, '')) = '' THEN

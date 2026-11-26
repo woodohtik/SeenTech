@@ -12,6 +12,7 @@ import type { CuttingComponentsValue } from './cutting/CuttingComponentsSection'
 import { useGarmentComponents } from './cutting/useGarmentComponents';
 import { defaultComponentsFor, garmentTypesOf, isComponentsDue, type CuttingComponent } from '../utils/garmentComponents';
 import { saveGarmentComponentDefaults } from '../services/garmentComponentsService';
+import { OrderReadyPrompt, type ReadyOrder } from './orders/OrderReadyPrompt';
 import { createPortal } from 'react-dom';
 import { useSearchParams } from 'react-router-dom';
 import { useRealtimeSync } from '../hooks/useRealtimeSync';
@@ -223,6 +224,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
   const [isLoading, setIsLoading] = useState(true);
   const [orders, setOrders] = useState<Order[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
+  const orderPhone = (order: Order): string => customers.find((c) => c.id === order.customerId)?.phone || order.customerPhone || '';
   const [unpaidOrders, setUnpaidOrders] = useState<Order[]>([]);
   const [dueDetailsCustomer, setDueDetailsCustomer] = useState<Customer | null>(null);
   const [staff, setStaff] = useState<Staff[]>([]);
@@ -354,6 +356,8 @@ export default function Orders({ tenantId }: { tenantId: string }) {
   const [cuttingPrompt, setCuttingPrompt] = useState<{ id: string; status: string; notes?: string; lines: CuttingFabricLine[]; optional?: boolean; components?: { initial: CuttingComponent[]; garmentTypes: string[] } } | null>(null);
   // seen-merchant-trial-test-2026-11-26.md, phase 2 item 2: buttons and thread with the cloth.
   const garmentComponents = useGarmentComponents(tenantId);
+  // Phase 2 item 6: "tell the customer it's ready" after the move to ready.
+  const [readyPrompt, setReadyPrompt] = useState<ReadyOrder | null>(null);
   const [isCuttingBusy, setIsCuttingBusy] = useState(false);
 
   // The measurements an order shows: the snapshot stored on its lines when it
@@ -995,6 +999,15 @@ export default function Orders({ tenantId }: { tenantId: string }) {
       void notifyOrderStatusChange(id);
       router.refresh();
       toastSuccess(t('orders.status_updated_success'));
+      if (legacyOrderStatusFor(status, workflowStages) === 'ready' && legacyOrderStatusFor(order.status, workflowStages) !== 'ready') {
+        setReadyPrompt({
+          customerName: order.customerName,
+          orderNumber: (order as any).orderNumber,
+          totalAmount: order.totalAmount,
+          trackingToken: (order as any).trackingToken,
+          phone: orderPhone(order),
+        });
+      }
     } catch (error) {
       // P4 (OPERATIONS-09): short fabric -- say what is short and offer a way on.
       if ((error as any)?.hint === 'component_shortage' || (error as any)?.hint === 'component_unknown') {
@@ -1632,10 +1645,12 @@ export default function Orders({ tenantId }: { tenantId: string }) {
               </div>
               <div className="min-w-0">
                 <p className="text-content-muted font-bold">{t('orders.phone_label', 'الجوال')}</p>
-                {order.customerPhone ? (
-                  <a href={`tel:${order.customerPhone}`} dir="ltr" className="inline-flex items-center gap-1.5 font-black text-brand tabular-nums hover:underline">
+                {/* seen-merchant-trial-test-2026-11-26.md: orders.customer_phone is not written at
+                    checkout -- the number lives on the customer, so read it there first. */}
+                {orderPhone(order) ? (
+                  <a href={`tel:${orderPhone(order)}`} dir="ltr" className="inline-flex items-center gap-1.5 font-black text-brand tabular-nums hover:underline">
                     <Phone size={14} aria-hidden="true" />
-                    {order.customerPhone}
+                    {orderPhone(order)}
                   </a>
                 ) : (
                   <p className="font-bold text-content-muted">—</p>
@@ -2850,6 +2865,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
           }}
         />
       )}
+      {readyPrompt && <OrderReadyPrompt order={readyPrompt} onClose={() => setReadyPrompt(null)} />}
       {fabricShortage && (
         <div className="fixed inset-0 z-[170] flex items-center justify-center bg-black/40 p-4" role="dialog" aria-modal="true" aria-labelledby="fabric-shortage-title">
           <div className="w-full max-w-md rounded-3xl bg-surface p-6 shadow-2xl border border-border space-y-4" dir={isRtlLang(i18n.language) ? 'rtl' : 'ltr'}>

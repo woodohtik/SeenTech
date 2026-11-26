@@ -17,8 +17,9 @@
 import i18n from 'i18next';
 import { formatSaudiPhone } from './phoneUtils';
 
-export type WhatsAppTemplateKind = 'order_received' | 'invoice' | 'tracking_link' | 'measurements_link';
-export const WHATSAPP_TEMPLATE_KINDS: readonly WhatsAppTemplateKind[] = ['order_received', 'invoice', 'tracking_link', 'measurements_link'];
+// 'order_ready': seen-merchant-trial-test-2026-11-26.md, phase 2 item 6.
+export type WhatsAppTemplateKind = 'order_received' | 'invoice' | 'tracking_link' | 'measurements_link' | 'order_ready';
+export const WHATSAPP_TEMPLATE_KINDS: readonly WhatsAppTemplateKind[] = ['order_received', 'invoice', 'tracking_link', 'measurements_link', 'order_ready'];
 export const WHATSAPP_TEMPLATE_MAX = 1000;
 
 /** The variables each template may use (task file 2.3). */
@@ -27,6 +28,7 @@ export const TEMPLATE_VARIABLES: Readonly<Record<WhatsAppTemplateKind, readonly 
   invoice: ['{customer_name}', '{order_id}', '{total_amount}', '{customer_phone}', '{invoice_url}', '{store_name}'],
   tracking_link: ['{customer_name}', '{order_id}', '{tracking_url}', '{store_name}'],
   measurements_link: ['{customer_name}', '{measurements_url}', '{store_name}'],
+  order_ready: ['{customer_name}', '{order_id}', '{total_amount}', '{tracking_url}', '{store_name}'],
 };
 
 export const WHATSAPP_VARIABLES = [
