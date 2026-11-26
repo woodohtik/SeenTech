@@ -24,7 +24,7 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Capacitor } from '@capacitor/core';
 import {
-  ClipboardCheck, Scissors, Shirt, PackageCheck, CheckCircle2, XCircle, Bell, CalendarClock, Wrench,
+  ClipboardCheck, Scissors, Shirt, PackageCheck, CheckCircle2, XCircle, Bell, CalendarClock, Wrench, Phone, MapPin,
 } from 'lucide-react';
 import { useDirection } from '../../lib/direction';
 import { subscribeToOrderNotifications, type SubscribeResult } from '../../lib/pushNotifications';
@@ -60,6 +60,11 @@ interface PublicOrder {
    */
   phase?: 'received' | 'in_progress' | 'ready' | 'delivered' | 'cancelled' | null;
   stages?: PublicStage[];
+  /** seen-merchant-trial-test-2026-11-26.md, phase 2 item 5. */
+  remaining_amount?: number | null;
+  shop_phone?: string | null;
+  shop_address?: string | null;
+  shop_map_url?: string | null;
 }
 
 // One generic icon per phase for any vertical -- no scissors or thobe for a sofa.
@@ -116,6 +121,12 @@ function DeliverySkeleton() {
 
 export default function OrderTracking({ token }: { token: string }) {
   const { t, i18n } = useTranslation();
+  // The tab reads "Track your order", not the app's own name (seen-merchant-trial-test-2026-11-26.md).
+  useEffect(() => {
+    const before = document.title;
+    document.title = t('public_tracking.page_title');
+    return () => { document.title = before; };
+  }, [t]);
   const { dir, isRtl } = useDirection();
   const [order, setOrder] = useState<PublicOrder | null>(null);
   const [loading, setLoading] = useState(true);
@@ -193,9 +204,11 @@ export default function OrderTracking({ token }: { token: string }) {
     : -1;
   const isDelivered = order?.status === 'delivered' || order?.phase === 'delivered';
   const isCancelled = order?.status === 'cancelled' || order?.phase === 'cancelled';
+  // Ready: say it plainly, instead of "9 days left" as if nothing had happened.
+  const isReady = !isDelivered && !isCancelled && (order?.status === 'ready' || order?.phase === 'ready');
 
   let deliveryLabel: string | null = null;
-  if (order?.delivery_date && !isCancelled && !isDelivered) {
+  if (order?.delivery_date && !isCancelled && !isDelivered && !isReady) {
     const diff = daysUntil(order.delivery_date);
     deliveryLabel = diff <= 0
       ? t('public_tracking.delivery_today')
@@ -204,10 +217,16 @@ export default function OrderTracking({ token }: { token: string }) {
         : t('public_tracking.delivery_in_days', { count: diff });
   }
 
+  const deliveryDate = order?.delivery_date && !isCancelled && !isDelivered
+    ? new Intl.DateTimeFormat(i18n.language === 'ar' ? 'ar-SA-u-ca-gregory' : i18n.language, { weekday: 'long', day: 'numeric', month: 'long' }).format(new Date(order.delivery_date))
+    : null;
+  const remaining = Number(order?.remaining_amount || 0);
+
   return (
     <div dir={dir} style={styles.page}>
-      <PublicLanguageSwitch className="mb-3" />
       <div style={styles.card}>
+        {/* Inside the card: on a wide screen the switch sat outside it. */}
+        <PublicLanguageSwitch className="mb-3" />
         <div style={styles.brand}>
           <span style={styles.brandMark}>{t('public_tracking.brand_mark')}</span>
           <span style={styles.brandSub}>{t('public_tracking.title')}</span>
@@ -255,12 +274,46 @@ export default function OrderTracking({ token }: { token: string }) {
               </ol>
             )}
 
+            {isReady && (
+              <div role="status" style={styles.readyBox}>
+                <PackageCheck size={28} color={customerColors.navy} />
+                <p style={styles.readyText}>{t('public_tracking.ready_for_pickup')}</p>
+              </div>
+            )}
+
             {deliveryLabel && (
               <p style={styles.delivery}>
                 <CalendarClock size={16} style={{ verticalAlign: 'text-bottom', marginInlineEnd: 6 }} />
                 {deliveryLabel}
               </p>
             )}
+            {deliveryDate && !isReady && (
+              <p style={styles.muted}>{t('public_tracking.delivery_on', { date: deliveryDate })}</p>
+            )}
+
+            {!isCancelled && remaining > 0 && (
+              <p style={styles.remaining}>
+                {t('public_tracking.remaining_amount', { amount: remaining.toLocaleString(i18n.language === 'ar' ? 'ar-SA' : i18n.language, { maximumFractionDigits: 2 }) })}
+              </p>
+            )}
+
+            {(order.shop_phone || order.shop_map_url) && (
+              <div style={styles.contactRow}>
+                {order.shop_phone && (
+                  <a href={`tel:${order.shop_phone}`} style={styles.contactButton}>
+                    <Phone size={16} aria-hidden="true" />
+                    {t('public_tracking.call_shop')}
+                  </a>
+                )}
+                {order.shop_map_url && (
+                  <a href={order.shop_map_url} target="_blank" rel="noopener noreferrer" style={styles.contactButton}>
+                    <MapPin size={16} aria-hidden="true" />
+                    {t('public_tracking.shop_location')}
+                  </a>
+                )}
+              </div>
+            )}
+            {order.shop_address && <p style={styles.muted}>{order.shop_address}</p>}
 
             {!isCancelled && !isDelivered && (
               <div style={styles.notifyBox}>
@@ -329,6 +382,11 @@ const styles: Record<string, React.CSSProperties> = {
   },
   dotActive: { background: customerColors.blue, color: '#fff' },
   delivery: { marginTop: 12, color: customerColors.navy, fontSize: 15, fontWeight: 600 },
+  readyBox: { marginTop: 16, padding: 16, borderRadius: 16, background: '#E8F5EE', display: 'flex', alignItems: 'center', gap: 12, justifyContent: 'center' },
+  readyText: { margin: 0, color: customerColors.navy, fontSize: 18, fontWeight: 800 },
+  remaining: { marginTop: 12, color: customerColors.navy, fontSize: 16, fontWeight: 700 },
+  contactRow: { marginTop: 16, display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center' },
+  contactButton: { display: 'inline-flex', alignItems: 'center', gap: 6, minHeight: 44, padding: '0 16px', borderRadius: 12, border: `1px solid ${customerColors.navy}`, color: customerColors.navy, fontSize: 15, fontWeight: 700, textDecoration: 'none' },
   notifyBox: { marginTop: 20 },
   notifyButton: {
     width: '100%', padding: '12px 16px', borderRadius: customerRadius.sm, border: 'none',

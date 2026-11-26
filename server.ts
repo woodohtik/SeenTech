@@ -481,7 +481,7 @@ app.get("/api/public/order-tracking/:token", asyncHandler(async (req, res) => {
   // whole point is a fast first load.
   const { data: orderData } = await supabaseAdmin
     .from('orders')
-    .select('order_number, status, status_key, delivery_date, tenant:tenants(name, logo_url, vertical)')
+    .select('order_number, status, status_key, delivery_date, total_amount, paid_amount, remaining_amount, tenant:tenants(name, logo_url, vertical, phone, address, city)')
     .eq('tracking_token', token)
     .maybeSingle();
 
@@ -498,6 +498,8 @@ app.get("/api/public/order-tracking/:token", asyncHandler(async (req, res) => {
     shop_name: tenantData?.name || '',
     shop_logo_url: tenantData?.logo_url || null,
     delivery_date: orderData.delivery_date,
+    // seen-merchant-trial-test-2026-11-26.md: what is left to pay, and how to reach the shop.
+    ...(await import("./src/server/publicTrackingExtras.ts")).publicTrackingExtras(orderData as any, tenantData),
     ...(await publicTrackingStages(supabaseAdmin, tenantData?.vertical, (orderData as any).status_key)),
   });
 }));
