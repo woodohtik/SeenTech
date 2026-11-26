@@ -52,3 +52,24 @@ test('the owner adds a tailor: one sign-in account, one staff row', async ({ pag
   const { data: users } = await db().from('users').select('id, display_name').eq('id', staff![0].uid);
   expect(users?.[0]?.display_name).toBe(NEW_TAILOR.name);
 });
+
+// Phase 2 item 1: a tailor with no email -- a PIN and a commission, no sign-in account.
+test('the owner adds a PIN-only tailor with a 10% commission', async ({ page }) => {
+  await signIn(page, 'owner');
+  await openAddForm(page);
+  await page.getByLabel('الاسم الكامل').fill('خياط بالرمز');
+  await pick(page, 'اختر الدور...', /خياط/);
+  await pick(page, 'اختر الفرع...', /الفرع الرئيسي/);
+  await page.getByPlaceholder('+966500000000').fill('0500000007');
+  await page.getByPlaceholder('****').fill('4826');
+  await page.getByRole('radio', { name: 'نسبة من الطلب' }).click();
+  await page.getByPlaceholder('0', { exact: true }).fill('10');
+  await page.getByRole('button', { name: 'تأكيد الإضافة' }).click();
+  await expect(page.getByRole('heading', { name: 'إضافة موظف جديد' })).toBeHidden({ timeout: 20_000 });
+
+  const { data: staff } = await db().from('staff').select('uid, email, role, pin_hash, commission_type, commission_value').eq('tenant_id', SHOP.tenantId).eq('name', 'خياط بالرمز');
+  expect(staff, 'one staff row').toHaveLength(1);
+  expect(staff![0]).toMatchObject({ uid: null, email: null, role: 'tailor', commission_type: 'percentage' });
+  expect(Number(staff![0].commission_value)).toBe(10);
+  expect(staff![0].pin_hash, 'the PIN is kept, hashed').toBeTruthy();
+});
