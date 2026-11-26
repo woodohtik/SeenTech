@@ -13,6 +13,8 @@ import { useGarmentComponents } from './cutting/useGarmentComponents';
 import { defaultComponentsFor, garmentTypesOf, isComponentsDue, type CuttingComponent } from '../utils/garmentComponents';
 import { saveGarmentComponentDefaults } from '../services/garmentComponentsService';
 import { OrderReadyPrompt, type ReadyOrder } from './orders/OrderReadyPrompt';
+import { customerTotalDue, orderBadgeDue } from '../utils/orderDues';
+import { isBackwardMove } from '../utils/stageMoves';
 import { createPortal } from 'react-dom';
 import { useSearchParams } from 'react-router-dom';
 import { useRealtimeSync } from '../hooks/useRealtimeSync';
@@ -852,6 +854,15 @@ export default function Orders({ tenantId }: { tenantId: string }) {
       setCancelReason('');
       setCancelTarget(order);
       return;
+    }
+
+    // Back to an earlier stage: asked first (seen-merchant-trial-test-2026-11-26.md, phase 3 item 6).
+    if (isBackwardMove(order.status, status, isLegacyVertical ? [] : workflowStages)) {
+      const ok = await confirm(t('orders.move_back_confirm', {
+        from: t(getOrderStatusDisplay(order.status, workflowStages).labelKey),
+        to: t(getOrderStatusDisplay(status, workflowStages).labelKey),
+      }));
+      if (!ok) return;
     }
 
     // Prevent delivery if there's a remaining balance
@@ -2382,7 +2393,10 @@ export default function Orders({ tenantId }: { tenantId: string }) {
         ) : (
           pagedOrders.map((order, index) => {
             const customerUnpaid = order.customerId ? (unpaidOrdersByCustomer.get(order.customerId) || []) : [];
-            const totalUnpaid = customerUnpaid.reduce((sum, o) => sum + (o.remainingAmount || 0), 0);
+            // The badge: this order's own remainder; the customer's whole debt opens from it
+            // (seen-merchant-trial-test-2026-11-26.md, phase 3 item 9).
+            const totalUnpaid = customerTotalDue(customerUnpaid);
+            const orderDue = orderBadgeDue(order);
             const statusDisplay = getOrderStatusDisplay(order.status, workflowStages);
 
             return (
@@ -2436,7 +2450,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                         </div>
                         
                         <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
-                          {totalUnpaid > 0 && (
+                          {orderDue > 0 && (
                             <button
                               type="button"
                               onClick={(e) => {
@@ -2449,9 +2463,10 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                                 setDueDetailsCustomer(matchingCustomer);
                               }}
                               className="flex items-center gap-1 bg-[var(--seen-danger-bg)] text-danger border border-danger/20 px-1.5 py-0.5 rounded-md text-sm font-black shrink-0 animate-pulse"
+                              title={t('orders.order_due_badge_title', { total: money(totalUnpaid) })}
                             >
                               <AlertCircle size={10} />
-                              {money(totalUnpaid)}
+                              {money(orderDue)}
                             </button>
                           )}
                           {order.isTest && (
@@ -2656,7 +2671,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                         <h3 className="text-xl font-black text-content">
                           {order.customerName}
                         </h3>
-                        {totalUnpaid > 0 && (
+                        {orderDue > 0 && (
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
@@ -2668,10 +2683,10 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                               setDueDetailsCustomer(matchingCustomer);
                             }}
                             className="flex items-center gap-1 bg-[var(--seen-danger-bg)] hover:bg-danger/20 text-danger border border-danger/20 px-2.5 py-1 rounded-full text-sm font-black transition-all animate-pulse"
-                            title={t('orders.customer_has_dues')}
+                            title={t('orders.order_due_badge_title', { total: money(totalUnpaid) })}
                           >
                             <AlertCircle size={14} className="text-danger" />
-                            <span>{money(totalUnpaid)}</span>
+                            <span>{money(orderDue)}</span>
                           </button>
                         )}
                         <span className="text-sm bg-surface-muted text-content-muted px-3 py-1 rounded-full font-black uppercase border border-border">

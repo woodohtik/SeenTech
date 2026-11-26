@@ -74,6 +74,8 @@ import { downloadInvoicePDF, shareOrDownloadInvoicePDF } from '../utils/pdfGener
 import { openWhatsApp, whatsappMessage } from '../utils/whatsapp';
 import { buildPosInvoiceData } from './pos/posInvoiceData';
 import { useSaleBranchName } from './pos/useSaleBranchName';
+import { isAutoPrintOn } from './pos/autoPrint';
+import { PieceQuantityInput } from './pos/PieceQuantityInput';
 import { useRealtimeSync } from '../hooks/useRealtimeSync';
 import { useRouter, useRefreshCounter } from '../hooks/useRouter';
 import { encodeOrderB2BNotes, encodeInvoiceExtendedNotes } from '../utils/b2bHelper';
@@ -1614,7 +1616,8 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
         toastSuccess(t('pos.tax_invoice_issued'));
       }
 
-      if (isAutoPrintEnabled && !zatcaRejected) {
+      // Read now: the setting may have changed in Settings since the POS opened.
+      if (isAutoPrintOn() && !zatcaRejected) {
         flushSync(() => {
           // ensure state is flushed before printing
         });
@@ -1873,7 +1876,7 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
                     ) : (
                     <div className="flex items-center gap-2 bg-surface-muted border border-border rounded-lg p-1">
                       <button onClick={() => updateQuantity(item.id!, -1)} aria-label={t('pos.decrease_quantity')} className="w-11 h-11 flex items-center justify-center hover:bg-surface-muted rounded transition-colors">-</button>
-                      <span className="w-6 text-center font-bold text-content">{item.quantity}</span>
+                      <PieceQuantityInput value={item.quantity} label={t('pos.quantity_label')} onCommit={(n) => updateQuantity(item.id!, n - item.quantity)} />
                       <button onClick={() => updateQuantity(item.id!, 1)} aria-label={t('pos.increase_quantity')} className="w-11 h-11 flex items-center justify-center hover:bg-surface-muted rounded transition-colors">+</button>
                     </div>
                     )}

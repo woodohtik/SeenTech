@@ -49,7 +49,11 @@ export function SmartSelect({
 }: SmartSelectProps) {
   const { t, dir } = useDirection();
   const [query, setQuery] = useState('');
-  const resolvedPlaceholder = placeholder ?? t('common.select');
+  // An option with an empty value ("choose a customer...") is the hint, not a
+  // choice: in the searchable list it was the input's text, so typing a name
+  // was added after it (seen-merchant-trial-test-2026-11-26.md, phase 3 item 8).
+  const emptyOption = options.find((opt) => String(opt.value) === '');
+  const resolvedPlaceholder = placeholder ?? emptyOption?.label ?? t('common.select');
 
   const selectedOption = options.find((opt) => String(opt.value) === String(value)) || null;
 
@@ -138,7 +142,7 @@ export function SmartSelect({
             <Combobox.Input
               id={id}
               className={cn(buttonClasses, StartIcon && (dir === 'rtl' ? 'pr-10' : 'pl-10'))}
-              displayValue={(opt: SelectOption) => opt?.label || ''}
+              displayValue={(opt: SelectOption) => (opt && String(opt.value) !== '' ? opt.label : '')}
               onChange={(event) => setQuery(event.target.value)}
               placeholder={resolvedPlaceholder}
             />
