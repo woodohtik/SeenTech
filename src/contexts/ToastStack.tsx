@@ -31,7 +31,8 @@ export interface ToastStackProps {
 }
 
 // P4 (UX-09): end-4/end-6 follow the reading direction; a phone of 320px fits.
-export const TOAST_STACK_CLASS = 'fixed bottom-6 end-4 sm:end-6 z-[9999] flex flex-col gap-3 pointer-events-none';
+// bottom-24: above the assistant button, which sits in the same corner (seen-merchant-trial-test-2026-11-26.md, phase 4).
+export const TOAST_STACK_CLASS = 'fixed bottom-24 end-4 sm:end-6 z-[9999] flex flex-col gap-3 pointer-events-none';
 
 const icons = {
   success: <CheckCircle2 className="text-success" size={20} />,

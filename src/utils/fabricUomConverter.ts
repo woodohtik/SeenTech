@@ -132,7 +132,8 @@ export function formatSmartStockDisplay(
   // in yards too ("3 طاقة و 12 ياردة"); the stored balance is still meters.
   const inYards = contentUnit === 'yard' && baseUnitKey === 'meter';
   const smallKey = inYards ? 'yard' : baseUnitKey;
-  const toSmall = (m: number) => (inYards ? metersToContent(m, 'yard') : m);
+  // Two decimals at most on screen (seen-merchant-trial-test-2026-11-26.md: "54.864").
+  const toSmall = (m: number) => safeRound(inYards ? metersToContent(m, 'yard') : m, 2);
 
   if (roundedQty === 0) {
     return i18n.t('units.zero_meters', { lng: locale, defaultValue: '0 m' });

@@ -86,7 +86,8 @@ export default function SeenAIFab({ mode, open: isOpen, onOpenChange, expanded, 
           title={t('ai.launcher')}
           // Icon only, at every width (founder, 2026-11-20); the name stays
           // for screen readers and as the hover tooltip.
-          className="w-14 h-14 inline-flex items-center justify-center rounded-[12px] bg-brand text-white shadow-[0_2px_8px_rgba(14,42,66,.08),0_1px_2px_rgba(14,42,66,.06)] hover:bg-brand/90"
+          // Smaller on a phone, where it sat over cards and lists (phase 4).
+          className="w-12 h-12 lg:w-14 lg:h-14 inline-flex items-center justify-center rounded-[12px] bg-brand text-white shadow-[0_2px_8px_rgba(14,42,66,.08),0_1px_2px_rgba(14,42,66,.06)] hover:bg-brand/90"
         >
           <AssistantMark size={26} />
         </button>

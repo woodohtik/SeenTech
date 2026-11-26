@@ -1,3 +1,6 @@
+import { PurchaseVatBreakdown } from './procurement/PurchaseVatBreakdown';
+import { resolveTaxSettings } from '../utils/taxSettings';
+import { formatStockQty } from '../utils/stockTotals';
 import React, { useState, useEffect } from 'react';
 import { Plus, Package, CheckCircle2, Clock, Trash2, X, Search, Eye, Filter, ArrowLeftRight, Check, AlertCircle, RotateCcw, Printer } from 'lucide-react';
 import { supabase } from '../lib/supabase/client';
@@ -46,7 +49,18 @@ export default function PurchaseOrders({
   defaultTypeFilter?: 'all' | 'purchase' | 'return',
   onRefresh?: () => void
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  // The shop's VAT rate, for the input VAT on an order (phase 3 item 4); null when not registered.
+  const [shopVatRate, setShopVatRate] = useState<number | null>(null);
+  useEffect(() => {
+    let alive = true;
+    supabase.from('tenants').select('*').eq('id', tenantId).maybeSingle().then(({ data }) => {
+      if (!alive || !data) return;
+      const tax = resolveTaxSettings(data);
+      setShopVatRate(tax.enabled ? tax.vatRate : null);
+    });
+    return () => { alive = false; };
+  }, [tenantId]);
   const { dir, isRtl } = useDirection();
   const { error: toastError, success: toastSuccess } = useToast();
   const { confirm } = useConfirm();
@@ -306,7 +320,9 @@ export default function PurchaseOrders({
     try {
       const totalAmount = items.reduce((sum, item) => sum + item.total, 0);
       const prefix = modalType === 'purchase' ? 'PO' : 'RET';
-      const orderNumber = `${prefix}-${Date.now()}`;
+      // Only says purchase or return: the server gives the shop's next number
+      // (PO-0001...; seen-merchant-trial-test-2026-11-26.md, phase 3 item 5).
+      const orderNumber = `${prefix}-`;
 
       // One atomic, idempotent RPC (seen-deep-technical-audit.md High #9) --
       // was: INSERT purchase_orders then a disconnected second INSERT
@@ -339,6 +355,7 @@ export default function PurchaseOrders({
 
       if (poError) throw poError;
       if (!rpcResult?.purchase_order_id) throw new Error(t('procurement.failed_to_create_po', 'فشل إنشاء الطلب'));
+      const savedNumber: string = rpcResult.po_number || orderNumber;
 
       // handleConfirmOrder shows its own success toast when isConfirmImmediately
       // -- showing "created as draft" here too was misleading on that path.
@@ -352,7 +369,7 @@ export default function PurchaseOrders({
         id: rpcResult.purchase_order_id,
         supplierId: selectedSupplier,
         supplierName: foundSupplier?.name || t('procurement.supplier_name_fallback'),
-        po_number: orderNumber,
+        po_number: savedNumber,
         total_amount: rpcResult.total_amount,
         totalAmount: rpcResult.total_amount,
         paidAmount: 0,
@@ -467,7 +484,12 @@ export default function PurchaseOrders({
       : inventory
     )
       .filter(i => modalType !== 'return' || !itemVariantsByItem[i.id]?.length)
-      .map(i => ({ value: i.id, label: t('procurement.item_option_label', { name: i.name, unit: i.unit, quantity: i.quantity }) })),
+      // The live stock, in the shop's words and two decimals at most (phase 3 items 2-3).
+      .map(i => ({ value: i.id, label: t('procurement.item_option_label', {
+        name: i.name,
+        unit: t(`inventory.unit_${i.unit}`, i.unit),
+        quantity: `${formatStockQty((i as any).availableQty ?? 0, i18n.language)} ${t(`inventory.unit_${(i as any).base_unit || 'piece'}`)}`,
+      }) })),
     ...(modalType === 'purchase'
       ? [{ value: ADD_NEW_ITEM_VALUE, label: t('procurement.add_new_item_option', '+ إضافة منتج جديد') }]
       : []),
@@ -568,7 +590,7 @@ export default function PurchaseOrders({
               setModalType('purchase');
               setIsModalOpen(true);
             }}
-            className="flex-1 main-640:flex-initial bg-brand text-white px-5 py-3 rounded-2xl font-black text-sm flex items-center justify-center gap-2 hover:bg-brand/95 transition-all shadow-lg shadow-brand/10 active:scale-95 duration-100"
+            className="flex-1 main-640:flex-initial bg-brand text-white px-5 py-3 rounded-2xl font-black text-sm whitespace-nowrap flex items-center justify-center gap-2 hover:bg-brand/95 transition-all shadow-lg shadow-brand/10 active:scale-95 duration-100"
           >
             <Plus size={18} />
             <span>{t('procurement.create_po', 'إنشاء أمر شراء')}</span>
@@ -578,7 +600,7 @@ export default function PurchaseOrders({
               setModalType('return');
               setIsModalOpen(true);
             }}
-            className="flex-1 main-640:flex-initial bg-danger text-white px-5 py-3 rounded-2xl font-black text-sm flex items-center justify-center gap-2 hover:bg-danger/95 transition-all shadow-lg shadow-danger/10 active:scale-95 duration-100"
+            className="flex-1 main-640:flex-initial bg-danger text-white px-5 py-3 rounded-2xl font-black text-sm whitespace-nowrap flex items-center justify-center gap-2 hover:bg-danger/95 transition-all shadow-lg shadow-danger/10 active:scale-95 duration-100"
           >
             <Plus size={18} />
             <span>{t('procurement.create_return_order', 'أمر إرجاع بضاعة')}</span>
@@ -599,11 +621,11 @@ export default function PurchaseOrders({
         />
 
         {/* Type Filter Buttons */}
-        <div className="bg-surface rounded-2xl p-1 border border-border flex items-center">
+        <div className="bg-surface rounded-2xl p-1 border border-border flex items-center gap-1">
           <button
             onClick={() => setTypeFilter('all')}
             className={cn(
-              "flex-1 text-center py-2 text-sm font-black rounded-xl transition-all",
+              "flex-1 text-center px-3 py-2 text-sm font-black rounded-xl transition-all whitespace-nowrap",
               typeFilter === 'all' ? "bg-brand/10 text-brand font-extrabold" : "text-content-muted hover:text-content"
             )}
           >
@@ -612,7 +634,7 @@ export default function PurchaseOrders({
           <button
             onClick={() => setTypeFilter('purchase')}
             className={cn(
-              "flex-1 text-center py-2 text-sm font-black rounded-xl transition-all",
+              "flex-1 text-center px-3 py-2 text-sm font-black rounded-xl transition-all whitespace-nowrap",
               typeFilter === 'purchase' ? "bg-brand text-white font-extrabold shadow" : "text-content-muted hover:text-content"
             )}
           >
@@ -621,7 +643,7 @@ export default function PurchaseOrders({
           <button
             onClick={() => setTypeFilter('return')}
             className={cn(
-              "flex-1 text-center py-2 text-sm font-black rounded-xl transition-all",
+              "flex-1 text-center px-3 py-2 text-sm font-black rounded-xl transition-all whitespace-nowrap",
               typeFilter === 'return' ? "bg-danger text-white font-extrabold shadow" : "text-content-muted hover:text-content"
             )}
           >
@@ -630,11 +652,11 @@ export default function PurchaseOrders({
         </div>
 
         {/* Status Filter Buttons */}
-        <div className="bg-surface rounded-2xl p-1 border border-border flex items-center">
+        <div className="bg-surface rounded-2xl p-1 border border-border flex items-center gap-1">
           <button
             onClick={() => setStatusFilter('all')}
             className={cn(
-              "flex-1 text-center py-2 text-sm font-black rounded-xl transition-all",
+              "flex-1 text-center px-3 py-2 text-sm font-black rounded-xl transition-all whitespace-nowrap",
               statusFilter === 'all' ? "bg-brand/10 text-brand" : "text-content-muted hover:text-content"
             )}
           >
@@ -643,7 +665,7 @@ export default function PurchaseOrders({
           <button
             onClick={() => setStatusFilter('draft')}
             className={cn(
-              "flex-1 text-center py-2 text-sm font-black rounded-xl transition-all",
+              "flex-1 text-center px-3 py-2 text-sm font-black rounded-xl transition-all whitespace-nowrap",
               statusFilter === 'draft' ? "bg-surface-muted text-content" : "text-content-muted hover:text-content"
             )}
           >
@@ -652,7 +674,7 @@ export default function PurchaseOrders({
           <button
             onClick={() => setStatusFilter('confirmed')}
             className={cn(
-              "flex-1 text-center py-2 text-sm font-black rounded-xl transition-all",
+              "flex-1 text-center px-3 py-2 text-sm font-black rounded-xl transition-all whitespace-nowrap",
               statusFilter === 'confirmed' ? "bg-[var(--seen-success-bg)] text-success" : "text-content-muted hover:text-content"
             )}
           >
@@ -910,7 +932,7 @@ export default function PurchaseOrders({
                         {(selectedOrder.items || []).map((item, index) => (
                           <tr key={index} className="hover:bg-surface-muted/20">
                             <td className="p-3 text-sm font-bold text-content">{item.name}</td>
-                            <td className="p-3 text-sm font-bold text-content">{item.quantity} {item.unit}</td>
+                            <td className="p-3 text-sm font-bold text-content">{formatStockQty(Number(item.quantity) || 0, i18n.language)} {t(`inventory.unit_${item.unit}`, item.unit)}</td>
                             <td className="p-3 text-sm font-bold text-content"><PriceDisplay amount={item.pricePerUnit} /></td>
                             <td className="p-3 text-sm font-black text-brand"><PriceDisplay amount={item.total} /></td>
                           </tr>
@@ -925,6 +947,7 @@ export default function PurchaseOrders({
             <div className="p-6 border-t border-border bg-surface-muted/40 flex flex-col main-640:flex-row justify-between items-center gap-4">
               <div className="text-lg font-bold text-content">
                 {t('procurement.total_po_amount', 'إجمالي قيمة السند')}: <span className="text-brand font-black text-2xl mr-2"><PriceDisplay amount={selectedOrder.totalAmount} /></span>
+                <PurchaseVatBreakdown total={Number(selectedOrder.totalAmount) || 0} vatRate={shopVatRate} />
               </div>
               <div className="flex gap-3 w-full main-640:w-auto">
                 <button
@@ -1064,7 +1087,10 @@ export default function PurchaseOrders({
                       placeholder="0"
                       value={quantity || ''}
                       onChange={(e) => setQuantity(Number(e.target.value))}
-                      className="w-full px-4 py-2 bg-surface border border-border rounded-xl outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand text-content font-bold text-sm"
+                      inputMode="decimal"
+                      dir="ltr"
+                      // No spinner arrows: the figure hid behind them (phase 4).
+                      className="w-full px-4 py-2 bg-surface border border-border rounded-xl outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand text-content font-bold text-sm [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                     />
                   </div>
                   <div className="space-y-2">
@@ -1076,8 +1102,10 @@ export default function PurchaseOrders({
                       onChange={(e) => setPricePerUnit(Number(e.target.value))}
                       readOnly={modalType === 'return'}
                       title={modalType === 'return' ? t('procurement.return_price_locked', 'السعر مقفل على سعر الشراء الفعلي ولا يمكن تعديله') : undefined}
+                      inputMode="decimal"
+                      dir="ltr"
                       className={cn(
-                        "w-full px-4 py-2 bg-surface border border-border rounded-xl outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand text-content font-bold text-sm",
+                        "w-full px-4 py-2 bg-surface border border-border rounded-xl outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand text-content font-bold text-sm [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none",
                         modalType === 'return' && "bg-surface-muted cursor-not-allowed opacity-80"
                       )}
                     />
@@ -1335,6 +1363,7 @@ export default function PurchaseOrders({
             <div className="p-6 border-t border-border bg-surface-muted/50 flex flex-col main-640:flex-row justify-between items-center gap-4">
               <div className="text-lg font-bold text-content">
                 {t('procurement.total_list', 'إجمالي القائمة')}: <span className="text-brand font-black"><PriceDisplay amount={items.reduce((sum, item) => sum + item.total, 0)} /></span>
+                <PurchaseVatBreakdown total={items.reduce((sum, item) => sum + item.total, 0)} vatRate={shopVatRate} />
               </div>
               <div className="flex gap-3 w-full main-640:w-auto">
                 <button

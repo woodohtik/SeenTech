@@ -1,0 +1,83 @@
+-- Rollback of 20270119000000_purchase_order_numbers.sql: create_purchase_order
+-- as it was (the browser's number). Orders numbered PO-0001... keep them.
+CREATE OR REPLACE FUNCTION public.create_purchase_order(p_operation_id uuid, p_header jsonb, p_items jsonb)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+DECLARE
+  v_tenant    uuid;
+  v_staff     uuid;
+  v_po_id     uuid := p_operation_id;
+  v_op_key    text;
+  v_existing  jsonb;
+  v_item      jsonb;
+  v_total     numeric := 0;
+BEGIN
+  IF p_operation_id IS NULL THEN
+    RAISE EXCEPTION 'operation_id مطلوب لمنع تكرار إنشاء السند' USING ERRCODE = '22023';
+  END IF;
+
+  v_tenant := public.app_current_tenant_id();
+  IF v_tenant IS NULL THEN
+    RAISE EXCEPTION 'forbidden' USING ERRCODE = '42501';
+  END IF;
+
+  v_op_key := 'create_po:' || p_operation_id::text;
+
+  SELECT result INTO v_existing
+    FROM public.stock_operations
+   WHERE operation_id = v_op_key AND tenant_id = v_tenant;
+  IF v_existing IS NOT NULL THEN
+    RETURN v_existing || jsonb_build_object('replayed', true);
+  END IF;
+
+  IF p_items IS NULL OR jsonb_array_length(p_items) = 0 THEN
+    RAISE EXCEPTION 'لا يمكن إنشاء سند شراء بلا عناصر' USING ERRCODE = '22023';
+  END IF;
+
+  v_staff := public.app_current_staff_id();
+
+  SELECT COALESCE(SUM((i->>'total')::numeric), 0) INTO v_total
+    FROM jsonb_array_elements(p_items) i;
+
+  INSERT INTO public.purchase_orders (
+    id, tenant_id, branch_id, supplier_id, po_number, total_amount,
+    paid_amount, status, order_date, notes, created_by, created_at, updated_at
+  ) VALUES (
+    v_po_id, v_tenant,
+    NULLIF(p_header->>'branch_id', '')::uuid,
+    (p_header->>'supplier_id')::uuid,
+    p_header->>'po_number',
+    v_total, 0, 'draft', now(),
+    p_header->>'notes', v_staff, now(), now()
+  );
+
+  FOR v_item IN SELECT * FROM jsonb_array_elements(p_items) LOOP
+    INSERT INTO public.purchase_order_items (
+      tenant_id, purchase_order_id, item_id, variant_id, name, quantity, unit,
+      conversion_rate, base_quantity, price_per_unit, total
+    ) VALUES (
+      v_tenant, v_po_id,
+      NULLIF(v_item->>'item_id', '')::uuid,
+      NULLIF(v_item->>'variant_id', '')::uuid,
+      v_item->>'name',
+      (v_item->>'quantity')::numeric,
+      (v_item->>'unit')::inventory_unit,
+      (v_item->>'conversion_rate')::numeric,
+      (v_item->>'base_quantity')::numeric,
+      (v_item->>'price_per_unit')::numeric,
+      (v_item->>'total')::numeric
+    );
+  END LOOP;
+
+  INSERT INTO public.stock_operations (operation_id, tenant_id, kind, result)
+  VALUES (v_op_key, v_tenant, 'create_purchase_order',
+          jsonb_build_object('purchase_order_id', v_po_id, 'total_amount', v_total));
+
+  RETURN jsonb_build_object('purchase_order_id', v_po_id, 'total_amount', v_total, 'replayed', false);
+END $function$;
+
+DROP FUNCTION IF EXISTS public.next_document_number(uuid, text);
+DROP TABLE IF EXISTS public.document_counters;

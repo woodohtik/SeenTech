@@ -448,23 +448,25 @@ export default function ProductFormFields({
             </label>
             <div className="grid grid-cols-3 gap-2">
               {[
-                { id: "inclusive", label: t("inventory.tax_inclusive"), desc: "VAT Inclusive (15%)" },
-                { id: "exclusive", label: t("inventory.tax_exclusive"), desc: "VAT Exclusive (+15%)" },
-                { id: "exempt", label: t("inventory.tax_exempt"), desc: "VAT Exempt (0%)" },
+                // The hint in the shop's language, and the card grows with it: the
+                // English line ran out of its 52px box (seen-merchant-trial-test-2026-11-26.md, phase 4).
+                { id: "inclusive", label: t("inventory.tax_inclusive"), desc: t("inventory.tax_inclusive_hint") },
+                { id: "exclusive", label: t("inventory.tax_exclusive"), desc: t("inventory.tax_exclusive_hint") },
+                { id: "exempt", label: t("inventory.tax_exempt"), desc: t("inventory.tax_exempt_hint") },
               ].map((tax) => (
                 <button
                   key={tax.id}
                   type="button"
                   onClick={() => setFormData({ ...formData, taxType: tax.id as any })}
                   className={cn(
-                    "flex flex-col items-center justify-center p-2 rounded-xl border-2 transition-all text-center h-[52px]",
+                    "flex flex-col items-center justify-center gap-0.5 p-2 rounded-xl border-2 transition-all text-center min-h-[52px] min-w-0 break-words",
                     formData.taxType === tax.id
                       ? "bg-brand/10 border-brand text-brand"
                       : "bg-surface border-transparent text-content-muted hover:bg-surface-muted"
                   )}
                 >
                   <span className="text-sm font-black leading-tight">{tax.label}</span>
-                  <span className="text-sm font-bold opacity-70 leading-none">{tax.desc}</span>
+                  <span className="text-sm font-bold opacity-70 leading-tight">{tax.desc}</span>
                 </button>
               ))}
             </div>
@@ -502,6 +504,7 @@ export default function ProductFormFields({
                 onChange={(e) => setFormData({ ...formData, openingBalance: e.target.value === "" ? 0 : Number(e.target.value) })}
                 className="w-full px-5 py-3 bg-surface border border-border rounded-xl font-semibold text-content text-right outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand"
               />
+              <p className="text-sm text-content-muted mx-1">{t("inventory.initial_stock_hint")}</p>
             </div>
           )}
         </div>

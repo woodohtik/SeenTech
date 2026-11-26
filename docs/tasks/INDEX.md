@@ -24,7 +24,7 @@
 | الملف | الحالة | آخر commit | في الإنتاج | ملاحظة |
 | --- | --- | --- | --- | --- |
 | `seen-stability-guardrails-task.md` | **قيد التنفيذ** | `ci/golden` | لا (staging) | المراحل 2–6 منتهية. المسارات الذهبية: 2 من 10 تمر في CI (الدخول؛ الوردية والبيع والفاتورة)، والباقي معلّق لصالح مهمة التاجر التجريبي. حماية `main` وربط Vercel بالفحص على المؤسس |
-| `seen-merchant-trial-test-2026-11-26.md` | **قيد التنفيذ**: المرحلتان 1 و2 منتهيتان على staging، و3 و4 لم تبدآ | `51578b3` | لا (staging) | 3 migrations للإنتاج: `20270116` (خياط بلا بريد)، `20270117` (مكوّنات الثوب)، `20270118` (قالب «طلبك جاهز»). المسار الذهبي 3 (إضافة موظف) يمر في CI |
+| `seen-merchant-trial-test-2026-11-26.md` | **المراحل 1–4 منتهية**: 1–2 في الإنتاج، 3–4 على staging | `1b7dd2e`+ | 1–2 نعم، 3–4 لا | المرحلة 3: 4 migrations للإنتاج (`20270119`، `20270120`، `20270120000001`، `20270121`)؛ postcheck `scripts/release/merchant-trial-phase3-postcheck.sql`. المرحلة 4 بلا migrations؛ لقطات قبل/بعد: `docs/reviews/merchant-trial-phase4/index.html` |
 | `seen-sentry-setup-task.md` | منتهي (ما تبقى خطوات المؤسس) | `52f947c` | نعم | التنبيهات، و2FA، وDPA، ونص سياسة الخصوصية: بانتظار المؤسس |
 | `seen-blog-cta-to-signup-task.md` | منتهي | `4c17443` | نعم | |
 | `seen-cutting-fabric-pos-orders-fix-task.md` | منتهي | `0db3424` | نعم (مع الهجرة) | |

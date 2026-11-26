@@ -13,6 +13,8 @@ import { useGarmentComponents } from './cutting/useGarmentComponents';
 import { defaultComponentsFor, garmentTypesOf, isComponentsDue, type CuttingComponent } from '../utils/garmentComponents';
 import { saveGarmentComponentDefaults } from '../services/garmentComponentsService';
 import { OrderReadyPrompt, type ReadyOrder } from './orders/OrderReadyPrompt';
+import { customerTotalDue, orderBadgeDue } from '../utils/orderDues';
+import { isBackwardMove } from '../utils/stageMoves';
 import { createPortal } from 'react-dom';
 import { useSearchParams } from 'react-router-dom';
 import { useRealtimeSync } from '../hooks/useRealtimeSync';
@@ -146,7 +148,10 @@ const OrderStepper = ({ currentStatus, stages }: { currentStatus: string; stages
       {/* overflow-x-auto also clips vertically: the padding keeps the active
           stage's ring and scale inside the scroller instead of cut off. */}
       <div ref={scrollRef} className="overflow-x-auto pt-3 pb-1">
-      <div className="relative flex justify-between items-start min-w-[600px] px-4">
+      {/* Each stage its own width, labels on two lines if need be, and room at
+          both ends past the edge fades: "جاهز للاستلام" read "جاه…"
+          (seen-merchant-trial-test-2026-11-26.md, phase 4). */}
+      <div className="relative flex justify-between items-start gap-2 px-8 w-max min-w-full">
         {/* Progress Line */}
         <div className="absolute top-5 right-10 left-10 h-0.5 bg-surface-muted -z-0" />
         <div
@@ -161,7 +166,7 @@ const OrderStepper = ({ currentStatus, stages }: { currentStatus: string; stages
           const isActive = idx === currentIdx;
 
           return (
-            <div key={status} ref={isActive ? activeStageRef : undefined} className="relative flex flex-col items-center gap-3 z-10">
+            <div key={status} ref={isActive ? activeStageRef : undefined} className="relative flex flex-col items-center gap-3 z-10 w-[5.5rem] shrink-0">
               <div className={cn(
                 "w-10 h-10 rounded-full flex items-center justify-center transition-all duration-500 border-4 border-surface shadow-sm",
                 isCompleted ? "bg-brand text-white" : "bg-surface-muted text-content-muted",
@@ -180,7 +185,7 @@ const OrderStepper = ({ currentStatus, stages }: { currentStatus: string; stages
               </div>
               <div className="flex flex-col items-center">
                 <span className={cn(
-                  "text-sm font-black text-center whitespace-nowrap px-2 py-1 rounded-lg transition-colors",
+                  "text-sm font-black text-center leading-tight px-1 py-1 rounded-lg transition-colors",
                   isActive ? "text-brand bg-brand/5" : isCompleted ? "text-brand" : "text-content-muted"
                 )}>
                   {t(config.labelKey)}
@@ -852,6 +857,15 @@ export default function Orders({ tenantId }: { tenantId: string }) {
       setCancelReason('');
       setCancelTarget(order);
       return;
+    }
+
+    // Back to an earlier stage: asked first (seen-merchant-trial-test-2026-11-26.md, phase 3 item 6).
+    if (isBackwardMove(order.status, status, isLegacyVertical ? [] : workflowStages)) {
+      const ok = await confirm(t('orders.move_back_confirm', {
+        from: t(getOrderStatusDisplay(order.status, workflowStages).labelKey),
+        to: t(getOrderStatusDisplay(status, workflowStages).labelKey),
+      }));
+      if (!ok) return;
     }
 
     // Prevent delivery if there's a remaining balance
@@ -2253,16 +2267,20 @@ export default function Orders({ tenantId }: { tenantId: string }) {
               XLSX.utils.book_append_sheet(workbook, worksheet, "Orders");
               XLSX.writeFile(workbook, `${t('common.orders')}_${new Date().toLocaleDateString(localeOf(i18n.language))}.xlsx`);
             }}
-            className="bg-[var(--seen-success-bg)] text-success px-6 py-3 rounded-2xl font-bold flex items-center gap-2 hover:bg-success/10 transition-all border border-success/10"
+            // Compact on a phone: the header and filters filled the whole first
+            // screen before the first order (seen-merchant-trial-test-2026-11-26.md, phase 4).
+            aria-label={t('orders.export_excel')}
+            title={t('orders.export_excel')}
+            className="bg-[var(--seen-success-bg)] text-success min-h-11 px-3 main-640:px-6 py-2.5 main-640:py-3 rounded-2xl font-bold flex items-center gap-2 hover:bg-success/10 transition-all border border-success/10"
           >
             <FileSpreadsheet size={20} />
-            <span>{t('orders.export_excel')}</span>
+            <span className="hidden main-640:inline">{t('orders.export_excel')}</span>
           </button>
-          <div id="tour-orders-tabs" data-tour="orders-tabs" className="flex bg-surface p-1 rounded-2xl border border-border shadow-sm">
+          <div id="tour-orders-tabs" data-tour="orders-tabs" className="flex flex-1 main-640:flex-none bg-surface p-1 rounded-2xl border border-border shadow-sm">
             <button
               onClick={() => setActiveTab('active')}
               className={cn(
-                "px-6 py-2 rounded-xl font-bold text-sm transition-all",
+                "flex-1 main-640:flex-none px-3 main-640:px-6 py-2 rounded-xl font-bold text-sm transition-all whitespace-nowrap",
                 activeTab === 'active' ? "bg-brand text-white shadow-lg shadow-brand/10" : "text-content-muted hover:bg-surface-muted"
               )}
             >
@@ -2271,7 +2289,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
             <button
               onClick={() => setActiveTab('completed')}
               className={cn(
-                "px-6 py-2 rounded-xl font-bold text-sm transition-all",
+                "flex-1 main-640:flex-none px-3 main-640:px-6 py-2 rounded-xl font-bold text-sm transition-all whitespace-nowrap",
                 activeTab === 'completed' ? "bg-brand text-white shadow-lg shadow-brand/10" : "text-content-muted hover:bg-surface-muted"
               )}
             >
@@ -2283,7 +2301,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
             id="tour-orders-new-btn"
             data-tour="orders-new-btn"
             onClick={() => handleOpenModal()}
-            className="bg-brand text-white px-6 py-3 rounded-2xl font-bold flex items-center gap-2 hover:bg-brand/90 transition-all shadow-lg shadow-brand/10"
+            className="w-full main-640:w-auto justify-center bg-brand text-white min-h-11 px-4 main-640:px-6 py-2.5 main-640:py-3 rounded-2xl font-bold flex items-center gap-2 hover:bg-brand/90 transition-all shadow-lg shadow-brand/10"
           >
             <Plus size={20} />
             <span>{t('orders.create_new_order')}</span>
@@ -2323,8 +2341,8 @@ export default function Orders({ tenantId }: { tenantId: string }) {
         {/* No card around the filters: they sit on the same line and at the
             same 48px height as the search box (founder, 2026-11-20). The
             padded card made this block 81px tall next to a 48px field. */}
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="flex items-center gap-2 min-w-[180px]">
+        <div className="flex flex-wrap items-center gap-2 main-640:gap-3">
+          <div className="flex items-center gap-2 flex-1 main-640:flex-none min-w-[140px] main-640:min-w-[180px]">
             <SmartSelect
               value={statusFilter}
               onChange={(val) => setStatusFilter(val)}
@@ -2382,7 +2400,10 @@ export default function Orders({ tenantId }: { tenantId: string }) {
         ) : (
           pagedOrders.map((order, index) => {
             const customerUnpaid = order.customerId ? (unpaidOrdersByCustomer.get(order.customerId) || []) : [];
-            const totalUnpaid = customerUnpaid.reduce((sum, o) => sum + (o.remainingAmount || 0), 0);
+            // The badge: this order's own remainder; the customer's whole debt opens from it
+            // (seen-merchant-trial-test-2026-11-26.md, phase 3 item 9).
+            const totalUnpaid = customerTotalDue(customerUnpaid);
+            const orderDue = orderBadgeDue(order);
             const statusDisplay = getOrderStatusDisplay(order.status, workflowStages);
 
             return (
@@ -2436,7 +2457,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                         </div>
                         
                         <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
-                          {totalUnpaid > 0 && (
+                          {orderDue > 0 && (
                             <button
                               type="button"
                               onClick={(e) => {
@@ -2449,9 +2470,10 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                                 setDueDetailsCustomer(matchingCustomer);
                               }}
                               className="flex items-center gap-1 bg-[var(--seen-danger-bg)] text-danger border border-danger/20 px-1.5 py-0.5 rounded-md text-sm font-black shrink-0 animate-pulse"
+                              title={t('orders.order_due_badge_title', { total: money(totalUnpaid) })}
                             >
                               <AlertCircle size={10} />
-                              {money(totalUnpaid)}
+                              {money(orderDue)}
                             </button>
                           )}
                           {order.isTest && (
@@ -2656,7 +2678,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                         <h3 className="text-xl font-black text-content">
                           {order.customerName}
                         </h3>
-                        {totalUnpaid > 0 && (
+                        {orderDue > 0 && (
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
@@ -2668,10 +2690,10 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                               setDueDetailsCustomer(matchingCustomer);
                             }}
                             className="flex items-center gap-1 bg-[var(--seen-danger-bg)] hover:bg-danger/20 text-danger border border-danger/20 px-2.5 py-1 rounded-full text-sm font-black transition-all animate-pulse"
-                            title={t('orders.customer_has_dues')}
+                            title={t('orders.order_due_badge_title', { total: money(totalUnpaid) })}
                           >
                             <AlertCircle size={14} className="text-danger" />
-                            <span>{money(totalUnpaid)}</span>
+                            <span>{money(orderDue)}</span>
                           </button>
                         )}
                         <span className="text-sm bg-surface-muted text-content-muted px-3 py-1 rounded-full font-black uppercase border border-border">
@@ -3074,12 +3096,8 @@ export default function Orders({ tenantId }: { tenantId: string }) {
         tenantId={tenantId}
         initialCustomerId={newOrderCustomerId}
         onCreated={handleOrderCreated}
-        topSlot={
-          <OrderStepper
-            currentStatus={isLegacyVertical || workflowStages.length === 0 ? 'measurements_taken' : workflowStages[0].stage_key}
-            stages={isLegacyVertical ? undefined : workflowStages}
-          />
-        }
+        // No stage bar while creating: a new order is always at its first stage,
+        // and the bar took 170px of a phone (seen-merchant-trial-test-2026-11-26.md, phase 4).
       />
     </div>
   );

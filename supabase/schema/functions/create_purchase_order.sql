@@ -16,6 +16,8 @@ DECLARE
   v_existing  jsonb;
   v_item      jsonb;
   v_total     numeric := 0;
+  v_prefix    text;
+  v_number    text;
 BEGIN
   IF p_operation_id IS NULL THEN
     RAISE EXCEPTION 'operation_id مطلوب لمنع تكرار إنشاء السند' USING ERRCODE = '22023';
@@ -44,6 +46,12 @@ BEGIN
   SELECT COALESCE(SUM((i->>'total')::numeric), 0) INTO v_total
     FROM jsonb_array_elements(p_items) i;
 
+  -- The shop's own sequence (seen-merchant-trial-test-2026-11-26.md, phase 3
+  -- item 5): PO-0001, PO-0002 ...; a purchase return (RET-) counts on its own.
+  -- The number the browser sends is only read for which of the two it is.
+  v_prefix := CASE WHEN upper(COALESCE(p_header->>'po_number', '')) LIKE 'RET%' THEN 'RET' ELSE 'PO' END;
+  v_number := v_prefix || '-' || lpad(public.next_document_number(v_tenant, 'purchase_order:' || v_prefix)::text, 4, '0');
+
   INSERT INTO public.purchase_orders (
     id, tenant_id, branch_id, supplier_id, po_number, total_amount,
     paid_amount, status, order_date, notes, created_by, created_at, updated_at
@@ -51,7 +59,7 @@ BEGIN
     v_po_id, v_tenant,
     NULLIF(p_header->>'branch_id', '')::uuid,
     (p_header->>'supplier_id')::uuid,
-    p_header->>'po_number',
+    v_number,
     v_total, 0, 'draft', now(),
     p_header->>'notes', v_staff, now(), now()
   );
@@ -76,7 +84,7 @@ BEGIN
 
   INSERT INTO public.stock_operations (operation_id, tenant_id, kind, result)
   VALUES (v_op_key, v_tenant, 'create_purchase_order',
-          jsonb_build_object('purchase_order_id', v_po_id, 'total_amount', v_total));
+          jsonb_build_object('purchase_order_id', v_po_id, 'total_amount', v_total, 'po_number', v_number));
 
-  RETURN jsonb_build_object('purchase_order_id', v_po_id, 'total_amount', v_total, 'replayed', false);
+  RETURN jsonb_build_object('purchase_order_id', v_po_id, 'total_amount', v_total, 'po_number', v_number, 'replayed', false);
 END $function$;

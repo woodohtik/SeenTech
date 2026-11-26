@@ -74,6 +74,8 @@ import { downloadInvoicePDF, shareOrDownloadInvoicePDF } from '../utils/pdfGener
 import { openWhatsApp, whatsappMessage } from '../utils/whatsapp';
 import { buildPosInvoiceData } from './pos/posInvoiceData';
 import { useSaleBranchName } from './pos/useSaleBranchName';
+import { isAutoPrintOn } from './pos/autoPrint';
+import { PieceQuantityInput } from './pos/PieceQuantityInput';
 import { useRealtimeSync } from '../hooks/useRealtimeSync';
 import { useRouter, useRefreshCounter } from '../hooks/useRouter';
 import { encodeOrderB2BNotes, encodeInvoiceExtendedNotes } from '../utils/b2bHelper';
@@ -1614,7 +1616,8 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
         toastSuccess(t('pos.tax_invoice_issued'));
       }
 
-      if (isAutoPrintEnabled && !zatcaRejected) {
+      // Read now: the setting may have changed in Settings since the POS opened.
+      if (isAutoPrintOn() && !zatcaRejected) {
         flushSync(() => {
           // ensure state is flushed before printing
         });
@@ -1851,7 +1854,8 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
                           {t('pos.type_ready_made')}
                         </span>
                       )}
-                      <span className="font-medium text-content line-clamp-1">
+                      {/* Two lines, not one ("أزرار.."), and the whole name on hover (phase 4). */}
+                      <span className="font-medium text-content line-clamp-2 min-w-0 break-words" title={item.type === 'custom' ? item.garmentType : item.name}>
                         {item.type === 'custom' ? item.garmentType : (i18n.language === 'en' && item.nameEn ? item.nameEn : item.name)}
                       </span>
                     </div>
@@ -1873,7 +1877,7 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
                     ) : (
                     <div className="flex items-center gap-2 bg-surface-muted border border-border rounded-lg p-1">
                       <button onClick={() => updateQuantity(item.id!, -1)} aria-label={t('pos.decrease_quantity')} className="w-11 h-11 flex items-center justify-center hover:bg-surface-muted rounded transition-colors">-</button>
-                      <span className="w-6 text-center font-bold text-content">{item.quantity}</span>
+                      <PieceQuantityInput value={item.quantity} label={t('pos.quantity_label')} onCommit={(n) => updateQuantity(item.id!, n - item.quantity)} />
                       <button onClick={() => updateQuantity(item.id!, 1)} aria-label={t('pos.increase_quantity')} className="w-11 h-11 flex items-center justify-center hover:bg-surface-muted rounded transition-colors">+</button>
                     </div>
                     )}
@@ -2159,11 +2163,13 @@ const invoiceData: InvoiceData | null = buildPosInvoiceData(completedOrder, {
               // shares the content with the cart, so the content's width said
               // five columns where the panel had room for three, and names
               // went one word a line (seen-responsive-layout-task.md Phase 3).
-              <AutoGrid min={128} className="w-full" style={{ ['--auto-grid-gap' as string]: '0.75rem' }}>
+              // 88px and a smaller gap: three cards to a phone row (the panel is
+              // ~300px there), not two of ~300px tall (seen-merchant-trial-test-2026-11-26.md, phase 4).
+              <AutoGrid min={88} className="w-full" style={{ ['--auto-grid-gap' as string]: '0.5rem' }}>
                 {ordersModuleOn && (
                 <button
                   onClick={() => setIsCustomOrderModalOpen(true)}
-                  className="flex flex-col items-center p-3.5 bg-brand/5 border border-brand/40 hover:border-brand rounded-xl transition-all duration-200 group active:scale-95 cursor-pointer text-center w-full"
+                  className="flex flex-col items-center p-2.5 main-640:p-3.5 bg-brand/5 border border-brand/40 hover:border-brand rounded-xl transition-all duration-200 group active:scale-95 cursor-pointer text-center w-full"
                 >
                   <div className="w-full aspect-square bg-brand/10 rounded-xl flex items-center justify-center mb-2.5 group-hover:scale-105 transition-transform overflow-hidden border border-brand/20">
                     <Scissors size={26} className="text-brand" />
@@ -2177,7 +2183,7 @@ const invoiceData: InvoiceData | null = buildPosInvoiceData(completedOrder, {
                   <button
                     key={item.id}
                     onClick={() => handleProductTileClick(item)}
-                    className="flex flex-col items-center p-3.5 bg-surface border border-border/70 hover:border-brand/50 rounded-xl transition-all duration-200 group active:scale-95 cursor-pointer text-center w-full"
+                    className="flex flex-col items-center p-2.5 main-640:p-3.5 bg-surface border border-border/70 hover:border-brand/50 rounded-xl transition-all duration-200 group active:scale-95 cursor-pointer text-center w-full"
                   >
                     <div className="w-full aspect-square bg-surface-muted/60 rounded-xl flex items-center justify-center mb-2.5 group-hover:scale-105 transition-transform overflow-hidden border border-border/40">
                       {item.mainImage ? (

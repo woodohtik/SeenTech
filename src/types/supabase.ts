@@ -88,7 +88,8 @@ export type StockMovementType =
     | 'transfer_out'
     | 'reconciliation'
     | 'adjustment'
-    | 'sale';
+    | 'sale'
+    | 'opening_balance';
 
 export type ShiftStatus          = 'open' | 'closed';
 export type ShiftEntryType       = 'payout' | 'deposit';

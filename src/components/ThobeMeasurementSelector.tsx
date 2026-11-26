@@ -141,7 +141,16 @@ export default function ThobeMeasurementSelector({
   const placeStrip = (input: HTMLElement) => {
     const card = input.closest('[id^="thobe-field-"]');
     const bottom = card?.getBoundingClientRect().bottom ?? 0;
-    setStripAbove(typeof window !== 'undefined' && window.innerHeight > 0 && window.innerHeight - bottom < 72);
+    if (typeof window === 'undefined' || window.innerHeight <= 0) return setStripAbove(false);
+    // The room below ends at the window, or sooner at the edge of the form
+    // that scrolls it (a modal): the strip went under that edge for the last
+    // measurement (seen-merchant-trial-test-2026-11-26.md, phase 4).
+    let limit = window.innerHeight;
+    for (let el = card?.parentElement; el; el = el.parentElement) {
+      const oy = window.getComputedStyle(el).overflowY;
+      if (oy === 'auto' || oy === 'scroll' || oy === 'hidden') { limit = Math.min(limit, el.getBoundingClientRect().bottom); break; }
+    }
+    setStripAbove(limit - bottom < 72);
   };
   // A note grows to its text, up to two lines.
   const fitNote = (el: HTMLTextAreaElement | null) => {

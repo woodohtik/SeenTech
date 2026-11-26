@@ -24,3 +24,37 @@ test('an empty picker shows its translated prompt', () => {
   render(<DatePicker value="" onChange={() => {}} />);
   expect(screen.getByText('common.date_picker.select_date')).toBeTruthy();
 });
+
+// seen-merchant-trial-test-2026-11-26.md, phase 3 item 6.
+import { fireEvent } from '@testing-library/react';
+
+test('in Arabic the right arrow goes back a month and the left one forward', () => {
+  lang.value = 'ar';
+  render(<DatePicker value="2026-11-22" onChange={() => {}} />);
+  fireEvent.click(screen.getByRole('button', { name: /2026|22/ }));
+  const prev = screen.getByRole('button', { name: 'common.date_picker.previous_month' });
+  const next = screen.getByRole('button', { name: 'common.date_picker.next_month' });
+  // In a right-to-left row the first button sits on the right.
+  expect(prev.compareDocumentPosition(next) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+});
+
+test('a delivery date cannot be in the past', () => {
+  lang.value = 'en';
+  const onChange = vi.fn();
+  render(<DatePicker value="2026-11-22" onChange={onChange} minDate="2026-11-20" />);
+  fireEvent.click(screen.getByRole('button', { name: /2026|22/ }));
+  const past = screen.getAllByRole('button', { name: '19' })[0];
+  expect((past as HTMLButtonElement).disabled).toBe(true);
+  fireEvent.click(past);
+  expect(onChange).not.toHaveBeenCalled();
+  fireEvent.click(screen.getAllByRole('button', { name: '21' })[0]);
+  expect(onChange).toHaveBeenCalledWith('2026-11-21');
+});
+
+test('in Arabic the weekdays are one letter each, so they do not run together', () => {
+  lang.value = 'ar';
+  render(<DatePicker value="2026-11-22" onChange={() => {}} />);
+  fireEvent.click(screen.getByRole('button', { name: /2026|22/ }));
+  expect(screen.getByText('خ')).toBeTruthy();
+  expect(screen.queryByText('الخميس')).toBeNull();
+});

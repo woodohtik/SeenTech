@@ -74,11 +74,13 @@ export default function SubscriptionExpiryBanner({ tenantId }: { tenantId: strin
   return (
     <div
       role="status"
-      className={`mx-4 md:mx-8 mt-4 flex flex-wrap items-center gap-3 rounded-2xl border-2 p-3 text-sm font-bold ${urgent ? 'border-danger/50 bg-danger/10 text-danger' : 'border-warning/50 bg-warning/10 text-content'}`}
+      // Slimmer, and in the page's flow (it scrolls away): it took ~60px above
+      // every screen (seen-merchant-trial-test-2026-11-26.md, phase 4).
+      className={`mx-4 md:mx-8 mt-3 flex flex-wrap items-center gap-2 rounded-xl border px-3 py-1.5 text-sm font-bold ${urgent ? 'border-danger/50 bg-danger/10 text-danger' : 'border-warning/50 bg-warning/10 text-content'}`}
     >
       <AlertTriangle size={18} aria-hidden="true" className="shrink-0" />
       <span className="flex-1 min-w-0">{text}</span>
-      <Link to="/settings?tab=billing" className="rounded-xl bg-brand px-3 py-1.5 text-sm font-black text-white">
+      <Link to="/settings?tab=billing" className="rounded-lg bg-brand px-3 py-1 text-sm font-black text-white">
         {t('subscription.expiry_banner_action')}
       </Link>
     </div>

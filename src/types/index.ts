@@ -432,7 +432,7 @@ export interface StockLedger {
   id: string;
   itemId: string;
   branchId: string;
-  type: 'addition' | 'deduction' | 'transfer_in' | 'transfer_out' | 'reconciliation' | 'adjustment' | 'sale';
+  type: 'addition' | 'deduction' | 'transfer_in' | 'transfer_out' | 'reconciliation' | 'adjustment' | 'sale' | 'opening_balance';
   previousQuantity: number;
   newQuantity: number;
   change: number;

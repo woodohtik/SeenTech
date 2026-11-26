@@ -1,3 +1,5 @@
+import { PriceDisplay } from '../PriceDisplay';
+import { openingBaseQuantity } from '../../utils/openingBalance';
 import React, { useState, useEffect, useMemo } from "react";
 import { AutoGrid } from '../ui/AutoGrid';
 import { StatCard } from '../ui/StatCard';
@@ -848,9 +850,9 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
                           <span className="text-sm font-black text-content-muted uppercase">
                             {t("inventory.price_per_unit")}
                           </span>
+                          {/* The riyal as everywhere else, not "SAR" (seen-merchant-trial-test-2026-11-26.md, phase 4). */}
                           <p className="text-sm font-black text-content">
-                            {item.pricePerUnit}{" "}
-                            <span className="text-sm">SAR</span>
+                            <PriceDisplay amount={Number(item.pricePerUnit) || 0} />
                           </p>
                         </div>
                         <div className="flex flex-col gap-0.5 border-l border-border/50 pl-2 main-640:pl-4 rtl:pr-2 rtl:pl-0 main-640:rtl:pr-4 rtl:border-l-0 rtl:border-r">
@@ -1994,6 +1996,15 @@ const AddItemModal = ({ onClose, tenantId, branches }: any) => {
         });
       }
 
+      // The opening quantity, as a stock movement "opening balance" (once per item).
+      const openingQty = openingBaseQuantity(Number(formData.openingBalance) || 0, formData as any);
+      if (openingQty > 0 && mainBranch) {
+        const { error: openingError } = await supabase.rpc('record_opening_balance', {
+          p_item_id: item.id, p_branch_id: mainBranch.id, p_quantity: openingQty,
+        });
+        if (openingError) toastError(t('inventory.opening_balance_not_saved'));
+      }
+
       router.refresh();
 
       if (productMode === "advanced" && variantRowsToSave.length > 0) {
@@ -2107,7 +2118,8 @@ const AddItemModal = ({ onClose, tenantId, branches }: any) => {
             categoryPicker={categoryPicker}
             suppliersList={suppliersList}
             handleError={handleError}
-            showOpeningBalance={false}
+            // seen-merchant-trial-test-2026-11-26.md, phase 3 item 1: stock on hand today.
+            showOpeningBalance
             applyCategoryUnitDefaults
           />
 
@@ -3912,6 +3924,8 @@ const EditItemModal = ({ onClose, tenantId, item, branches }: any) => {
             categoryPicker={categoryPicker}
             suppliersList={suppliersList}
             handleError={handleError}
+            // Once, when the item is added; later changes go through the stock count.
+            showOpeningBalance={false}
           />
 
           <ProductVariantsSection tenantId={tenantId} itemId={item.id} branches={branches} baseSku={item.sku} />

@@ -14,9 +14,17 @@ interface DatePickerProps {
   placeholder?: string;
   /** Extra classes for the trigger button, e.g. to match a neighbouring field. */
   triggerClassName?: string;
+  /** The earliest date that can be chosen (YYYY-MM-DD), e.g. today for a delivery date. */
+  minDate?: string;
 }
 
-export function DatePicker({ value, onChange, id, className, placeholder, triggerClassName }: DatePickerProps) {
+/** Today on this device, as YYYY-MM-DD (the picker's own format). */
+export function todayYmd(): string {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+export function DatePicker({ value, onChange, id, className, placeholder, triggerClassName, minDate }: DatePickerProps) {
   const { t, i18n } = useTranslation();
   // seen-readiness-fixes-task.md P4 (UX-07): Urdu is right-to-left too, and
   // the names of months and days come from the language, not two fixed lists.
@@ -56,7 +64,11 @@ export function DatePicker({ value, onChange, id, className, placeholder, trigge
     new Intl.DateTimeFormat(locale, { month: 'long', timeZone: 'UTC' }).format(new Date(Date.UTC(2026, m, 1))));
   // 2026-11-01 is a Sunday: the week starts on Sunday, as before.
   const weekDays = Array.from({ length: 7 }, (_, d) =>
-    new Intl.DateTimeFormat(locale, { weekday: 'short', timeZone: 'UTC' }).format(new Date(Date.UTC(2026, 10, 1 + d))));
+    // Arabic "short" names are whole words ("الخميسالجمعةالسبت" ran together in
+    // seven columns); its one-letter form is the usual calendar header
+    // (seen-merchant-trial-test-2026-11-26.md, phase 4). Urdu's one-letter form is
+    // Latin, so it keeps its names, cut to fit.
+    new Intl.DateTimeFormat(locale, { weekday: i18n.language.startsWith('ar') ? 'narrow' : 'short', timeZone: 'UTC' }).format(new Date(Date.UTC(2026, 10, 1 + d))));
 
   // Format selected date for display button
   const formatDisplayDate = (dateStr: string) => {
@@ -129,7 +141,9 @@ export function DatePicker({ value, onChange, id, className, placeholder, trigge
     setCurrentMonth(new Date(year, month + 1, 1));
   };
 
+  const isBeforeMin = (dateString: string) => !!minDate && dateString < minDate;
   const handleSelectDay = (dateString: string) => {
+    if (isBeforeMin(dateString)) return;
     onChange(dateString);
     setIsOpen(false);
   };
@@ -219,13 +233,15 @@ export function DatePicker({ value, onChange, id, className, placeholder, trigge
           >
             {/* Header Controls */}
             <div className="flex items-center justify-between mb-4">
+              {/* seen-merchant-trial-test-2026-11-26.md: the first button is always the
+                  previous month -- on the right in Arabic, its arrow pointing right. */}
               <button
                 type="button"
-                onClick={isRtl ? handleNextMonth : handlePrevMonth}
-                aria-label={t('common.date_picker.next_month')}
-                className="p-1.5 hover:bg-surface-muted rounded-xl text-content-muted hover:text-content transition-all outline-none focus-visible:ring-2 focus-visible:ring-brand"
+                onClick={handlePrevMonth}
+                aria-label={t('common.date_picker.previous_month')}
+                className="min-w-11 min-h-11 inline-flex items-center justify-center hover:bg-surface-muted rounded-xl text-content-muted hover:text-content transition-all outline-none focus-visible:ring-2 focus-visible:ring-brand"
               >
-                <ChevronRight size={16} />
+                {isRtl ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
               </button>
 
               <span className="text-sm font-black text-content uppercase">
@@ -234,11 +250,11 @@ export function DatePicker({ value, onChange, id, className, placeholder, trigge
 
               <button
                 type="button"
-                onClick={isRtl ? handlePrevMonth : handleNextMonth}
-                aria-label={t('common.date_picker.previous_month')}
-                className="p-1.5 hover:bg-surface-muted rounded-xl text-content-muted hover:text-content transition-all outline-none focus-visible:ring-2 focus-visible:ring-brand"
+                onClick={handleNextMonth}
+                aria-label={t('common.date_picker.next_month')}
+                className="min-w-11 min-h-11 inline-flex items-center justify-center hover:bg-surface-muted rounded-xl text-content-muted hover:text-content transition-all outline-none focus-visible:ring-2 focus-visible:ring-brand"
               >
-                <ChevronLeft size={16} />
+                {isRtl ? <ChevronLeft size={16} /> : <ChevronRight size={16} />}
               </button>
             </div>
 
@@ -247,7 +263,8 @@ export function DatePicker({ value, onChange, id, className, placeholder, trigge
               {weekDays.map((wd, index) => (
                 <span 
                   key={index} 
-                  className="text-sm font-black text-content-muted uppercase py-1"
+                  className="text-sm font-black text-content-muted py-1 truncate min-w-0"
+                  title={wd}
                 >
                   {wd}
                 </span>
@@ -259,11 +276,13 @@ export function DatePicker({ value, onChange, id, className, placeholder, trigge
               {daysArray.map((cell, idx) => {
                 const isSelected = cell.dateString === value;
                 const isTodayStr = cell.dateString === formatDateString(new Date());
+                const blocked = isBeforeMin(cell.dateString);
                 
                 return (
                   <button
                     key={idx}
                     type="button"
+                    disabled={blocked}
                     onClick={() => handleSelectDay(cell.dateString)}
                     aria-current={isTodayStr ? 'date' : undefined}
                     aria-selected={isSelected}
@@ -273,7 +292,8 @@ export function DatePicker({ value, onChange, id, className, placeholder, trigge
                         ? "text-content hover:bg-brand/10 hover:text-brand" 
                         : "text-content-muted/30 hover:bg-surface-muted",
                       isSelected && "bg-brand text-white font-black shadow-lg shadow-brand/20 hover:bg-brand hover:text-white",
-                      isTodayStr && !isSelected && "border-2 border-brand/20 text-brand font-black"
+                      isTodayStr && !isSelected && "border-2 border-brand/20 text-brand font-black",
+                      blocked && "opacity-30 cursor-not-allowed hover:bg-transparent hover:text-content-muted"
                     )}
                   >
                     {cell.day}

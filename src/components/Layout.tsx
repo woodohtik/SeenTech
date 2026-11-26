@@ -8,7 +8,6 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import {
   LogOut,
   ChevronLeft,
-  ChevronRight,
   Lock,
   Building2,
   ArrowRightLeft,
@@ -91,7 +90,6 @@ function LayoutShell({ children, role, tenantId, currentStaff, onLock, isLocked 
   const isRtl = isRtlLang(i18n.language);
   const { theme, setTheme } = useTheme();
   const { impersonationTenantId, setImpersonationTenantId, dbUser, logout } = useAuth();
-  const [isSettingsSubMenuOpen, setIsSettingsSubMenuOpen] = React.useState(location.pathname.startsWith('/settings'));
   const [tenantLogo, setTenantLogo] = React.useState<string | null>(null);
   const [tenantName, setTenantName] = React.useState<string>(t('common.tailor_system'));
   const [isLangOpen, setIsLangOpen] = React.useState(false);
@@ -101,7 +99,7 @@ function LayoutShell({ children, role, tenantId, currentStaff, onLock, isLocked 
   // seen-responsive-layout-task.md Phase 1: the sidebar's fold and the
   // assistant's place are one decision (lib/shellLayout.ts), by the window's
   // width; the content measures itself (data-main on <html>).
-  const { shell, setSidebar, openSidebarForNow, endSidebarForNow, assistantOpen, setAssistantOpen, toggleExpanded } = useShellLayout({
+  const { shell, setSidebar, endSidebarForNow, assistantOpen, setAssistantOpen, toggleExpanded } = useShellLayout({
     hasSidebar: layoutMode === 'sidebar',
     // The person's choice is kept per shop and employee, once both are known.
     owner: tenantId && currentStaff?.id ? `${tenantId}_${currentStaff.id}` : null,
@@ -111,14 +109,8 @@ function LayoutShell({ children, role, tenantId, currentStaff, onLock, isLocked 
   const mainRef = useMeasuredSteps<HTMLElement>();
 
   React.useEffect(() => {
-    if (location.pathname.startsWith('/settings')) {
-      if (!isCollapsed) {
-        setIsSettingsSubMenuOpen(true);
-      }
-    } else {
-      // Leaving Settings: a sidebar opened only to show its menu folds back.
-      endSidebarForNow();
-    }
+    // Leaving Settings: a sidebar opened only to show its menu folds back.
+    if (!location.pathname.startsWith('/settings')) endSidebarForNow();
   }, [location.pathname, isCollapsed, endSidebarForNow]);
 
   React.useEffect(() => {
@@ -229,31 +221,7 @@ function LayoutShell({ children, role, tenantId, currentStaff, onLock, isLocked 
     return true;
   });
 
-  const canEdit = hasPermission('settings.edit');
-  const canViewWhatsApp = hasPermission('settings.whatsapp');
   const canViewBilling = hasPermission('settings.billing');
-  const canViewNotifications = hasPermission('settings.notifications');
-
-  // seen-ux-fixes-batch-task.md: هذه القائمة كانت نسخة مستقلة ومكررة من
-  // TABS الفعلية في Settings.tsx، وانجرفت عنها بمرور الوقت -- فقدت تبويبي
-  // 'zatca' و'categories' بالكامل (موجودان وفعّالان في صفحة الإعدادات نفسها)
-  // رغم أنهما كانا موجودَين هناك طوال الوقت. أُعيد مزامنتها هنا يدوياً حتى
-  // تطابق Settings.tsx بالضبط (الأسماء، الأيقونات، وشروط الظهور).
-  const settingsSubTabs = [
-    { id: 'profile', label: t('settings_page.tabs.profile'), icon: 'store' as const, visible: true },
-    { id: 'tax', label: t('settings_page.tabs.tax'), icon: 'file-text' as const, visible: hasPermission('settings.tax') },
-    { id: 'zatca', label: t('settings_page.tabs.zatca'), icon: 'shield-check' as const, visible: hasPermission('settings.tax') },
-    { id: 'categories', label: t('settings_page.tabs.categories'), icon: 'hash' as const, visible: canEdit },
-    { id: 'branches', label: t('settings_page.tabs.branches'), icon: 'map-pin' as const, visible: hasPermission('branches.manage') },
-    { id: 'appearance', label: t('settings_page.tabs.appearance'), icon: 'palette' as const, visible: true },
-    { id: 'invoice', label: t('settings_page.tabs.invoice'), icon: 'file-text' as const, visible: true },
-    { id: 'printer', label: t('settings_page.tabs.printer'), icon: 'printer' as const, visible: true },
-    { id: 'notifications', label: t('settings_page.tabs.notifications'), icon: 'bell' as const, visible: canViewNotifications },
-    { id: 'whatsapp', label: t('settings_page.tabs.whatsapp'), icon: 'message-square' as const, visible: canViewWhatsApp },
-    { id: 'staff', label: t('settings_page.tabs.staff'), icon: 'shield' as const, visible: hasPermission('staff.manage') },
-    { id: 'billing', label: t('settings_page.tabs.billing'), icon: 'credit-card' as const, visible: canViewBilling },
-    { id: 'data', label: t('settings_page.tabs.data'), icon: 'database' as const, visible: currentStaff?.role === 'owner' || currentStaff?.role === 'super_admin' },
-  ].filter(t => t.visible);
 
   // Stable identities for the guided tour, so its internal memoization holds
   // instead of rebuilding the step list on every Layout render.
@@ -428,9 +396,6 @@ function LayoutShell({ children, role, tenantId, currentStaff, onLock, isLocked 
               else if (item.to === '/reports') tourId = 'tour-reports-nav';
               else if (item.to === '/settings') tourId = 'tour-settings-nav';
 
-              const isSettings = item.to === '/settings';
-              const isSettingsActive = location.pathname.startsWith('/settings');
-
               return (
                 <React.Fragment key={item.to}>
                   <NavLink
@@ -438,22 +403,10 @@ function LayoutShell({ children, role, tenantId, currentStaff, onLock, isLocked 
                     id={tourId}
                     data-tour={tourId ? tourId.replace('tour-', '') : undefined}
                     aria-label={isCollapsed && !isMobileMenuOpen ? item.label : undefined}
-                    onClick={(e) => {
+                    onClick={() => {
+                      // Settings has one navigation, its own tabs: the sidebar no longer
+                      // lists its sections a second time (seen-merchant-trial-test-2026-11-26.md, phase 4).
                       setIsMobileMenuOpen(false);
-                      if (isSettings) {
-                        if (isCollapsed) {
-                          // Open to show the Settings menu -- not the person choosing an open sidebar.
-                          openSidebarForNow();
-                          setIsSettingsSubMenuOpen(true);
-                        } else {
-                          if (isSettingsActive) {
-                            e.preventDefault();
-                            setIsSettingsSubMenuOpen(!isSettingsSubMenuOpen);
-                          } else {
-                            setIsSettingsSubMenuOpen(true);
-                          }
-                        }
-                      }
                     }}
                     className={({ isActive }) => cn(
                       "flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group relative",
@@ -467,13 +420,6 @@ function LayoutShell({ children, role, tenantId, currentStaff, onLock, isLocked 
                       <>
                         <Icon name={item.icon} className={cn("shrink-0", !isActive && "group-hover:scale-110 transition-transform")} />
                         {(!isCollapsed || isMobileMenuOpen) && <span className={cn("truncate flex-grow", isRtl ? "text-right" : "text-left")}>{item.label}</span>}
-                        {isSettings && (!isCollapsed || isMobileMenuOpen) && (
-                          isRtl ? (
-                            <ChevronLeft size={16} className={cn("transition-transform duration-200 shrink-0 mr-auto", (isSettingsActive && isSettingsSubMenuOpen) ? "-rotate-90" : "")} />
-                          ) : (
-                            <ChevronRight size={16} className={cn("transition-transform duration-200 shrink-0 ml-auto", (isSettingsActive && isSettingsSubMenuOpen) ? "rotate-90" : "")} />
-                          )
-                        )}
                         
                         {/* Tooltip for collapsed state */}
                         {isCollapsed && (
@@ -485,40 +431,6 @@ function LayoutShell({ children, role, tenantId, currentStaff, onLock, isLocked 
                     )}
                   </NavLink>
 
-                  {isSettings && isSettingsActive && isSettingsSubMenuOpen && (!isCollapsed || isMobileMenuOpen) && (
-                    <div 
-                      className={cn(
-                        "space-y-1 mt-1 mb-2 flex flex-col",
-                        isRtl 
-                          ? "mr-4 pr-3 border-r border-border/60 text-right" 
-                          : "ml-4 pl-3 border-l border-border/60 text-left"
-                      )}
-                    >
-                      {settingsSubTabs.filter((subTab) => subTab.visible).map((subTab) => {
-                        const searchParams = new URLSearchParams(location.search);
-                        const currentTabId = searchParams.get('tab') || 'profile';
-                        const isSubTabActive = currentTabId === subTab.id;
-                        
-                        return (
-                          <NavLink
-                            key={subTab.id}
-                            to={`/settings?tab=${subTab.id}`}
-                            onClick={() => setIsMobileMenuOpen(false)}
-                            className={cn(
-                              "flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-bold transition-all duration-150 w-full",
-                              isRtl ? "text-right" : "text-left",
-                              isSubTabActive 
-                                ? "bg-brand/5 text-brand font-black" 
-                                : "text-content-muted hover:bg-surface-muted hover:text-content"
-                            )}
-                          >
-                            <Icon name={subTab.icon} size={15} className="shrink-0" />
-                            <span className="truncate">{subTab.label}</span>
-                          </NavLink>
-                        );
-                      })}
-                    </div>
-                  )}
                 </React.Fragment>
               );
             })
@@ -731,7 +643,15 @@ function LayoutShell({ children, role, tenantId, currentStaff, onLock, isLocked 
           lg -- kept in sync with SeenAIFab.tsx's own internal positioning
           (right-6 below lg regardless of direction, RTL-aware only at lg+)
           so the crash-fallback position here never lands on top of it. */}
-      <div className={cn("fixed bottom-6 right-6 z-50", isRtl && "lg:left-6 lg:right-auto")}>
+      {/* On the sales page the cart takes the reading-end side at lg+: the
+          button goes to the other side, off the totals and the checkout
+          button (seen-merchant-trial-test-2026-11-26.md, phase 4). */}
+      <div className={cn(
+        "fixed bottom-6 right-6 z-50",
+        location.pathname.startsWith('/sales')
+          ? (isRtl ? "" : "lg:left-6 lg:right-auto")
+          : (isRtl && "lg:left-6 lg:right-auto")
+      )}>
         <ErrorBoundary variant="inline" inlineLabel={t('errors.assistant_unavailable')}>
           <React.Suspense fallback={null}>
           <SeenAIFab

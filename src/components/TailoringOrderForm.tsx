@@ -46,7 +46,7 @@ import { SmartSelect } from './ui/SmartSelect';
 import { QuickAddTailor } from './staff/QuickAddTailor';
 import { useCustomerStylePrefill, rememberCustomerStylePrefs } from './orders/useCustomerStylePrefill';
 import { applyStylePrefs } from '../utils/customerStylePrefs';
-import { DatePicker } from './ui/DatePicker';
+import { DatePicker, todayYmd } from './ui/DatePicker';
 import { VoiceMicButton } from './ui/VoiceMicButton';
 
 /**
@@ -899,6 +899,8 @@ function TailoringOrderFormBody({
                 <DatePicker
                   value={watch('deliveryDate' as any) || ''}
                   onChange={(val) => setValue('deliveryDate' as any, val, { shouldValidate: true, shouldDirty: true })}
+                  // No delivery date in the past (seen-merchant-trial-test-2026-11-26.md, phase 3 item 6).
+                  minDate={todayYmd()}
                 />
                 {errors.deliveryDate && <p className="text-sm text-danger font-bold">{String(errors.deliveryDate.message)}</p>}
               </div>

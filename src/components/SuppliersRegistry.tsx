@@ -108,15 +108,18 @@ export default function SuppliersRegistry({
 
       {/* Main Datatable & Mobile Cards */}
       <div className="hidden main-720:block overflow-x-auto">
-        <table className="w-full text-right border-collapse whitespace-nowrap text-sm">
+        {/* Column titles may wrap and are short; the long names stay as tooltips.
+            The table ran past its box at 1280 and cut the "statement" button
+            (seen-merchant-trial-test-2026-11-26.md, phase 4). */}
+        <table className="w-full text-right border-collapse text-sm [&_td]:whitespace-nowrap [&_td]:!px-3 [&_th]:!px-3">
           <thead>
             <tr className="bg-surface-muted text-sm font-black text-content-muted uppercase border-b border-border/50">
               <th className="p-4 text-right">{t('procurement.supplier_name_contact', 'اسم المورد والمسؤول')}</th>
-              <th className="p-4 text-center">{t('procurement.total_purchases', 'إجمالي المشتريات (دائن)')}</th>
-              <th className="p-4 text-center">{t('procurement.total_paid', 'إجمالي المبالغ المدفوعة (مدين)')}</th>
-              <th className="p-4 text-center">{t('procurement.outstanding_balance', 'الرصيد المتبقي المستحق (الذمة)')}</th>
-              <th className="p-4 text-center">{t('procurement.account_status', 'حالة الحساب')}</th>
-              <th className="p-4 text-center">{t('procurement.actions_and_inventory', 'إجراءات الحساب والجرد')}</th>
+              <th className="p-4 text-center"><span title={t('procurement.total_purchases', 'إجمالي المشتريات (دائن)')}>{t('procurement.col_total_purchases')}</span></th>
+              <th className="p-4 text-center"><span title={t('procurement.total_paid', 'إجمالي المبالغ المدفوعة (مدين)')}>{t('procurement.col_total_paid')}</span></th>
+              <th className="p-4 text-center"><span title={t('procurement.outstanding_balance', 'الرصيد المتبقي المستحق (الذمة)')}>{t('procurement.col_outstanding_balance')}</span></th>
+              <th className="p-4 text-center"><span title={t('procurement.account_status', 'حالة الحساب')}>{t('procurement.col_account_status')}</span></th>
+              <th className="p-4 text-center"><span title={t('procurement.actions_and_inventory', 'إجراءات الحساب والجرد')}>{t('procurement.col_actions_and_inventory')}</span></th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
@@ -198,7 +201,7 @@ export default function SuppliersRegistry({
                       </span>
                     ) : (
                       <span className="inline-flex items-center gap-1 bg-[var(--seen-warning-bg)] text-warning px-2.5 py-1 rounded-full text-sm font-black border border-warning/20 uppercase">
-                        <span>{t('procurement.status_partially_paid', 'قرض قيد السداد')}</span>
+                        <span>{t('procurement.status_partially_paid', 'مستحق للمورد')}</span>
                       </span>
                     )}
                   </td>
@@ -213,7 +216,7 @@ export default function SuppliersRegistry({
                         className="p-2 bg-surface-muted hover:bg-border text-content border border-border/80 hover:border-border rounded-xl text-sm font-black flex items-center gap-1.5 transition-all cursor-pointer"
                       >
                         <BookOpen size={13} className="text-danger" />
-                        <span>{t('procurement.statement_of_account', 'كشف الحساب (Ledger)')}</span>
+                        <span>{t('procurement.statement_of_account_short', 'كشف حساب')}</span>
                       </button>
 
                       {/* Cash out voucher */}
@@ -298,7 +301,7 @@ export default function SuppliersRegistry({
                     </span>
                   ) : (
                     <span className="inline-flex items-center gap-1 bg-[var(--seen-warning-bg)] text-warning px-2 py-0.5 rounded-full text-sm font-black border border-warning/20">
-                      <span>{t('procurement.status_partially_paid', 'قرض قيد السداد')}</span>
+                      <span>{t('procurement.status_partially_paid', 'مستحق للمورد')}</span>
                     </span>
                   )}
                 </div>

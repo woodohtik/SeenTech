@@ -1,6 +1,5 @@
 import React from 'react';
 import {
-  Check,
   Scissors,
   Shield,
   Feather,
@@ -57,6 +56,13 @@ const CUTTING_TYPES = [
   { id: 'emirati', labelKey: 'customers.cutting_emirati', icon: Scissors },
 ];
 
+// One look for every choice in the form, compact (three to a row on a phone):
+// the cards with a tick and the filled buttons were two styles side by side
+// (seen-merchant-trial-test-2026-11-26.md, phase 4).
+const OPTION_BASE = "flex flex-col items-center justify-center gap-1 min-h-11 px-2 py-2.5 rounded-xl border-2 font-bold text-sm text-center leading-tight transition-all";
+const OPTION_ON = "border-brand bg-brand text-white shadow-md shadow-brand/20";
+const OPTION_OFF = "border-border bg-surface text-content-muted hover:border-brand/30";
+
 export default function VisualMeasurements({ values, onChange, readOnly }: VisualMeasurementsProps) {
   const { t, dir } = useDirection();
   const Section = ({ title, field, options }: { title: string, field: string, options: any[] }) => (
@@ -65,7 +71,7 @@ export default function VisualMeasurements({ values, onChange, readOnly }: Visua
         <div className="w-1.5 h-4 bg-brand rounded-full" />
         {title}
       </h3>
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
         {options.map((opt) => {
           const isSelected = values[field as keyof typeof values] === opt.id;
           return (
@@ -75,22 +81,10 @@ export default function VisualMeasurements({ values, onChange, readOnly }: Visua
               disabled={readOnly}
               aria-pressed={isSelected}
               onClick={() => onChange(field, opt.id)}
-              className={cn(
-                "flex flex-col items-center justify-center p-4 rounded-2xl border-2 transition-all group relative overflow-hidden h-24",
-                isSelected 
-                  ? "border-brand bg-brand/5 text-brand shadow-sm shadow-brand/10" 
-                  : "border-border bg-surface text-content-muted hover:border-brand/30 hover:bg-brand/5"
-              )}
+              className={cn(OPTION_BASE, isSelected ? OPTION_ON : OPTION_OFF)}
             >
-              <div className={cn("mb-3 flex items-center justify-center transition-transform", isSelected && "scale-110 text-brand")}>
-                <opt.icon />
-              </div>
-              <span className="text-sm font-bold">{t(opt.labelKey)}</span>
-              {isSelected && (
-                <div className="absolute top-2 right-2">
-                  <Check size={14} className="text-brand" strokeWidth={3} />
-                </div>
-              )}
+              <opt.icon size={18} aria-hidden="true" />
+              <span>{t(opt.labelKey)}</span>
             </button>
           );
         })}
@@ -128,10 +122,10 @@ export default function VisualMeasurements({ values, onChange, readOnly }: Visua
                 aria-pressed={values.collarPadding === opt.id}
                 onClick={() => onChange('collarPadding', opt.id)}
                 className={cn(
-                  "flex-1 flex flex-col items-center gap-1 py-3 rounded-xl border-2 font-bold text-sm transition-all",
+                  OPTION_BASE, "flex-1",
                   values.collarPadding === opt.id
-                    ? "border-brand bg-brand text-white shadow-md shadow-brand/20"
-                    : "border-border bg-surface text-content-muted hover:border-brand/30"
+                    ? OPTION_ON
+                    : OPTION_OFF
                 )}
               >
                 <opt.icon size={18} />
@@ -159,10 +153,10 @@ export default function VisualMeasurements({ values, onChange, readOnly }: Visua
                 aria-pressed={values.closureType === opt.id}
                 onClick={() => onChange('closureType', opt.id)}
                 className={cn(
-                  "flex-1 py-3 rounded-xl border-2 font-bold text-sm transition-all",
+                  OPTION_BASE, "flex-1",
                   values.closureType === opt.id 
-                    ? "border-brand bg-brand text-white shadow-md shadow-brand/20" 
-                    : "border-border bg-surface text-content-muted hover:border-brand/30"
+                    ? OPTION_ON
+                    : OPTION_OFF
                 )}
               >
                 {t(opt.labelKey)}
@@ -189,10 +183,10 @@ export default function VisualMeasurements({ values, onChange, readOnly }: Visua
                 aria-pressed={values.closureVisibility === opt.id}
                 onClick={() => onChange('closureVisibility', opt.id)}
                 className={cn(
-                  "flex-1 py-3 rounded-xl border-2 font-bold text-sm transition-all",
+                  OPTION_BASE, "flex-1",
                   values.closureVisibility === opt.id 
-                    ? "border-brand bg-brand text-white shadow-md shadow-brand/20" 
-                    : "border-border bg-surface text-content-muted hover:border-brand/30"
+                    ? OPTION_ON
+                    : OPTION_OFF
                 )}
               >
                 {t(opt.labelKey)}

@@ -437,7 +437,7 @@ export default function Sales({ tenantId }: { tenantId: string }) {
                   activeSubTab === 'pos_main' ? "bg-brand text-white shadow-sm" : "bg-surface text-content-muted border border-border hover:border-brand/40 hover:text-content"
                 )}
               >
-                {t('sales.pos')}
+                {t('sales.new_sale')}
               </button>
               <button
                 onClick={() => setActiveSubTab('sales_record')}

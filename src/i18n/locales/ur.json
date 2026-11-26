@@ -1704,7 +1704,12 @@
     "add_success_with_variants": "پروڈکٹ اور {{count}} ویریئنٹس شامل ہو گئے",
     "bulk_import_branch_inventory_failed": "کچھ درآمد شدہ مصنوعات کا شاخ اسٹاک ترتیب نہیں ہو سکا -- انوینٹری اسکرین پر دستی طور پر دیکھیں",
     "item_added_success": "پروڈکٹ شامل ہو گئی",
-    "save_failed": "محفوظ نہیں ہو سکا"
+    "save_failed": "محفوظ نہیں ہو سکا",
+    "opening_balance_not_saved": "آئٹم شامل ہو گیا، مگر ابتدائی مقدار محفوظ نہیں ہوئی۔ اسے اسٹاک گنتی سے درج کریں۔",
+    "initial_stock_hint": "آج آپ کے پاس موجود، آئٹم کی اکائی میں۔ ایک بار ابتدائی بیلنس کے طور پر درج ہوتا ہے۔",
+    "tax_inclusive_hint": "15% قیمت میں شامل",
+    "tax_exclusive_hint": "+15% قیمت کے اوپر",
+    "tax_exempt_hint": "ٹیکس نہیں"
   },
   "invoice_print": {
     "address": "پتہ",
@@ -2170,7 +2175,7 @@
     "all_statuses": "تمام حالات",
     "amount_paid": "ادا شدہ رقم",
     "awaiting_tailoring": "سلائی کے انتظار میں",
-    "b2b_data_title": "(اختیاری)",
+    "b2b_data_title": "کمپنی کی تفصیلات (اختیاری)",
     "bolt": "بولٹ",
     "cancel": "منسوخ کریں",
     "cannot_deliver_unpaid": "پوری باقی رقم ادا ہونے سے پہلے آرڈر ڈیلیور نہیں کیا جا سکتا۔",
@@ -2418,7 +2423,9 @@
     "ready_prompt_body": "{{name}} کو بتائیں کہ آرڈر تیار ہے؟",
     "ready_prompt_send": "واٹس ایپ بھیجیں",
     "ready_prompt_later": "بعد میں",
-    "ready_prompt_no_phone": "گاہک کا موبائل نمبر نہیں ہے۔"
+    "ready_prompt_no_phone": "گاہک کا موبائل نمبر نہیں ہے۔",
+    "order_due_badge_title": "اس آرڈر کا باقی۔ گاہک کا کل بقایا: {{total}}",
+    "move_back_confirm": "آرڈر کو \"{{from}}\" سے \"{{to}}\" پر واپس کریں؟ پچھلا مرحلہ مکمل ہو چکا تھا۔"
   },
   "permissions": {
     "access_denied_desc": "غیر متعین",
@@ -3004,7 +3011,8 @@
     "attach_invoice_pdf": "انوائس PDF کے طور پر بھی منسلک کریں",
     "variants": {
       "add_to_cart": "کارٹ میں شامل کریں"
-    }
+    },
+    "quantity_label": "مقدار"
   },
   "printing": {
     "agent": {
@@ -3226,8 +3234,8 @@
     "filter_date_start": "تاریخ کے مطابق فلٹر:",
     "filter_payment": "ادائیگیاں (واؤچرز)",
     "filter_payments": "ادائیگی واؤچرز اور ادائیگیاں",
-    "filter_purchase": "خریداری (انوائسز)",
-    "filter_purchases": "خریداری کے لین دین (انوائسز میں بقایا)",
+    "filter_purchase": "خریداری",
+    "filter_purchases": "خریداری",
     "final_balance_due_supplier": "سپلائر کو واجب الادا حتمی بیلنس",
     "final_due_balance": "حتمی بقایا بیلنس",
     "financial_record": "مالی اندراج",
@@ -3402,7 +3410,7 @@
     "status_draft": "ڈرافٹ",
     "status_high_due": "زیادہ بقایا رقم",
     "status_paid_full": "مکمل طے شدہ",
-    "status_partially_paid": "قرض کی ادائیگی جاری ہے",
+    "status_partially_paid": "سپلائر کا واجب الادا",
     "status_pending": "زیر التوا",
     "sub_ledger": "ذیلی لیجر",
     "subsidiary_ledger": "ذیلی لیجر",
@@ -3458,7 +3466,15 @@
     "print_action": "پرنٹ",
     "bulk_import_opening_balance_note": "درآمد کے وقت ابتدائی بیلنس",
     "supplier_aggregates_failed": "کچھ سپلائرز کے کل خریداری / ادائیگی کا حساب نہیں ہو سکا -- ان کے اعداد درست نہ ہوں",
-    "supplier_aggregate_failed_tooltip": "اس عدد کا حساب نہیں ہو سکا -- یہ درست نہ ہو"
+    "supplier_aggregate_failed_tooltip": "اس عدد کا حساب نہیں ہو سکا -- یہ درست نہ ہو",
+    "extra_categories": "یہ بھی بیچتا ہے",
+    "net_before_vat": "ٹیکس سے پہلے",
+    "input_vat": "ان پٹ ٹیکس ({{rate}}%)",
+    "col_total_purchases": "خریداری",
+    "col_total_paid": "ادا شدہ",
+    "col_outstanding_balance": "سپلائر کا واجب",
+    "col_account_status": "حیثیت",
+    "col_actions_and_inventory": "اقدامات"
   },
   "public_invoice": {
     "digital_access": "انوائس تک ڈیجیٹل رسائی",
@@ -4253,7 +4269,8 @@
     "tax_invoices": "ٹیکس انوائسز",
     "title": "فروخت آپریشنز پینل",
     "unknown": "نامعلوم",
-    "cash_drawer_balance_failed": "کیش دراز کا بیلنس معلوم نہیں ہو سکا"
+    "cash_drawer_balance_failed": "کیش دراز کا بیلنس معلوم نہیں ہو سکا",
+    "new_sale": "نئی فروخت"
   },
   "sales_record": {
     "download_pdf": "پی ڈی ایف کے طور پر ڈاؤن لوڈ کریں",

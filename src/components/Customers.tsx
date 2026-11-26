@@ -1009,7 +1009,8 @@ export default function Customers({ tenantId }: CustomersProps) {
         </AnimatePresence>
 
         {/* Filter Chips Bar */}
-        <div className="flex overflow-x-auto pb-1.5 gap-2 scrollbar-hide select-none w-full items-center">
+        {/* The filters wrap from a tablet up instead of running off the edge ("بيانا…"). */}
+        <div className="flex overflow-x-auto main-640:overflow-visible main-640:flex-wrap pb-1.5 gap-2 scrollbar-hide select-none w-full items-center">
           {[
             { id: 'all', label: t('common.all'), icon: Users },
             { id: 'measurements', label: t('customers.filter_measurements'), icon: Ruler },
@@ -1040,15 +1041,17 @@ export default function Customers({ tenantId }: CustomersProps) {
         </div>
       </div>
 
-      {/* Customer Stats Summary Block */}
+      {/* Customer Stats Summary Block. Four in a row only when each card has room
+          for its title on one line: on a tablet "إجمالي / العملاء" broke
+          (seen-merchant-trial-test-2026-11-26.md, phase 4). */}
       {customers.length > 0 && (
-        <div className="grid grid-cols-2 main-720:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 main-1024:grid-cols-4 gap-3">
           <div className="flex items-center gap-3 p-4 bg-surface rounded-2xl border border-border/80 shadow-sm transition-all hover:border-brand/20">
             <div className="w-9 h-9 rounded-xl bg-brand/10 text-brand flex items-center justify-center shrink-0">
               <Users size={16} />
             </div>
             <div className="min-w-0">
-              <span className="block text-sm font-black text-content-muted uppercase leading-none">{t('dashboard.total_customers')}</span>
+              <span className="block text-sm font-black text-content-muted leading-tight truncate">{t('dashboard.total_customers')}</span>
               <span className="text-sm main-640:text-base font-black text-content mt-1 block">{customers.length}</span>
             </div>
           </div>
@@ -1058,7 +1061,7 @@ export default function Customers({ tenantId }: CustomersProps) {
               <SlidersHorizontal size={16} />
             </div>
             <div className="min-w-0">
-              <span className="block text-sm font-black text-content-muted uppercase leading-none">{t('customers.filter_results')}</span>
+              <span className="block text-sm font-black text-content-muted leading-tight truncate">{t('customers.filter_results')}</span>
               <span className="text-sm main-640:text-base font-black text-brand mt-1 block">{filteredCustomers.length}</span>
             </div>
           </div>
@@ -1068,7 +1071,7 @@ export default function Customers({ tenantId }: CustomersProps) {
               <ArrowDownLeft size={16} />
             </div>
             <div className="min-w-0">
-              <span className="block text-sm font-black text-content-muted uppercase leading-none">{t('customers.stat_debtors')}</span>
+              <span className="block text-sm font-black text-content-muted leading-tight truncate">{t('customers.stat_debtors')}</span>
               <span className="text-sm main-640:text-base font-black text-danger mt-1 block">
                 {customers.filter(c => (customerBalances[c.id] || 0) > 0).length}
               </span>
@@ -1080,7 +1083,7 @@ export default function Customers({ tenantId }: CustomersProps) {
               <ArrowUpRight size={16} />
             </div>
             <div className="min-w-0">
-              <span className="block text-sm font-black text-content-muted uppercase leading-none">{t('customers.stat_creditors')}</span>
+              <span className="block text-sm font-black text-content-muted leading-tight truncate">{t('customers.stat_creditors')}</span>
               <span className="text-sm main-640:text-base font-black text-success mt-1 block">
                 {customers.filter(c => (customerBalances[c.id] || 0) < 0).length}
               </span>
