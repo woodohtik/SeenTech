@@ -825,6 +825,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
       if (error) throw error;
       const patch = (o: Order) => (o.id === cancelTarget.id ? { ...o, status: 'cancelled' as any } : o);
       setOrders(prev => prev.map(patch));
+      setSelectedOrder(prev => (prev ? patch(prev) : prev));
       toastSuccess(Number(data?.refunded) > 0
         ? t('orders.cancel_done_refunded', { amount: Number(data.refunded).toFixed(2) })
         : t('orders.cancel_done'));
@@ -1008,6 +1009,9 @@ export default function Orders({ tenantId }: { tenantId: string }) {
         : o;
       setOrders(prev => prev.map(patch));
       setUnpaidOrders(prev => prev.map(patch));
+      // The open details window too: it kept showing the old stage after the
+      // move (found by golden path 5, seen-merchant-trial-test-2026-11-26.md).
+      setSelectedOrder(prev => (prev ? patch(prev) : prev));
       setCuttingPrompt(null);
 
       void notifyOrderStatusChange(id);
