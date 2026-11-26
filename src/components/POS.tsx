@@ -2163,9 +2163,9 @@ const invoiceData: InvoiceData | null = buildPosInvoiceData(completedOrder, {
               // shares the content with the cart, so the content's width said
               // five columns where the panel had room for three, and names
               // went one word a line (seen-responsive-layout-task.md Phase 3).
-              // 104px: three cards to a phone row, not two of ~300px each
-              // (seen-merchant-trial-test-2026-11-26.md, phase 4).
-              <AutoGrid min={104} className="w-full" style={{ ['--auto-grid-gap' as string]: '0.75rem' }}>
+              // 88px and a smaller gap: three cards to a phone row (the panel is
+              // ~300px there), not two of ~300px tall (seen-merchant-trial-test-2026-11-26.md, phase 4).
+              <AutoGrid min={88} className="w-full" style={{ ['--auto-grid-gap' as string]: '0.5rem' }}>
                 {ordersModuleOn && (
                 <button
                   onClick={() => setIsCustomOrderModalOpen(true)}

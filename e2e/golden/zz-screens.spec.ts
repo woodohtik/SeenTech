@@ -28,7 +28,7 @@ test.beforeAll(async () => {
   await sb.from('customers').update({ measurements: { length: 145, shoulder: 46, chest: 104, sleeve: 62, neck: 40, collarType: 'classic', pocketType: 'hidden', cuttingType: 'saudi', collarPadding: 'hard', closureType: 'buttons' } }).eq('id', CUSTOMER.id);
   const { error: orderError } = await sb.from('orders').upsert({
     id: ORDER_ID, tenant_id: SHOP.tenantId, customer_id: CUSTOMER.id, customer_name: CUSTOMER.name, order_number: 7,
-    delivery_date: new Date(Date.now() + 9 * 86400000).toISOString(), total_amount: 115, paid_amount: 50, remaining_amount: 65,
+    delivery_date: new Date(Date.now() + 9 * 86400000).toISOString(), total_amount: 115, paid_amount: 50,
     status: 'sewing', status_key: 'sewing', kind: 'tailoring', tracking_token: TRACK, branch_id: SHOP.branchId,
   });
   if (orderError) console.log(`[screens] order seed: ${orderError.message}`);

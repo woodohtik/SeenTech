@@ -621,11 +621,11 @@ export default function PurchaseOrders({
         />
 
         {/* Type Filter Buttons */}
-        <div className="bg-surface rounded-2xl p-1 border border-border flex items-center">
+        <div className="bg-surface rounded-2xl p-1 border border-border flex items-center gap-1">
           <button
             onClick={() => setTypeFilter('all')}
             className={cn(
-              "flex-1 text-center py-2 text-sm font-black rounded-xl transition-all",
+              "flex-1 text-center px-3 py-2 text-sm font-black rounded-xl transition-all whitespace-nowrap",
               typeFilter === 'all' ? "bg-brand/10 text-brand font-extrabold" : "text-content-muted hover:text-content"
             )}
           >
@@ -634,7 +634,7 @@ export default function PurchaseOrders({
           <button
             onClick={() => setTypeFilter('purchase')}
             className={cn(
-              "flex-1 text-center py-2 text-sm font-black rounded-xl transition-all",
+              "flex-1 text-center px-3 py-2 text-sm font-black rounded-xl transition-all whitespace-nowrap",
               typeFilter === 'purchase' ? "bg-brand text-white font-extrabold shadow" : "text-content-muted hover:text-content"
             )}
           >
@@ -643,7 +643,7 @@ export default function PurchaseOrders({
           <button
             onClick={() => setTypeFilter('return')}
             className={cn(
-              "flex-1 text-center py-2 text-sm font-black rounded-xl transition-all",
+              "flex-1 text-center px-3 py-2 text-sm font-black rounded-xl transition-all whitespace-nowrap",
               typeFilter === 'return' ? "bg-danger text-white font-extrabold shadow" : "text-content-muted hover:text-content"
             )}
           >
@@ -652,11 +652,11 @@ export default function PurchaseOrders({
         </div>
 
         {/* Status Filter Buttons */}
-        <div className="bg-surface rounded-2xl p-1 border border-border flex items-center">
+        <div className="bg-surface rounded-2xl p-1 border border-border flex items-center gap-1">
           <button
             onClick={() => setStatusFilter('all')}
             className={cn(
-              "flex-1 text-center py-2 text-sm font-black rounded-xl transition-all",
+              "flex-1 text-center px-3 py-2 text-sm font-black rounded-xl transition-all whitespace-nowrap",
               statusFilter === 'all' ? "bg-brand/10 text-brand" : "text-content-muted hover:text-content"
             )}
           >
@@ -665,7 +665,7 @@ export default function PurchaseOrders({
           <button
             onClick={() => setStatusFilter('draft')}
             className={cn(
-              "flex-1 text-center py-2 text-sm font-black rounded-xl transition-all",
+              "flex-1 text-center px-3 py-2 text-sm font-black rounded-xl transition-all whitespace-nowrap",
               statusFilter === 'draft' ? "bg-surface-muted text-content" : "text-content-muted hover:text-content"
             )}
           >
@@ -674,7 +674,7 @@ export default function PurchaseOrders({
           <button
             onClick={() => setStatusFilter('confirmed')}
             className={cn(
-              "flex-1 text-center py-2 text-sm font-black rounded-xl transition-all",
+              "flex-1 text-center px-3 py-2 text-sm font-black rounded-xl transition-all whitespace-nowrap",
               statusFilter === 'confirmed' ? "bg-[var(--seen-success-bg)] text-success" : "text-content-muted hover:text-content"
             )}
           >

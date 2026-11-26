@@ -111,7 +111,7 @@ export default function SuppliersRegistry({
         {/* Column titles may wrap and are short; the long names stay as tooltips.
             The table ran past its box at 1280 and cut the "statement" button
             (seen-merchant-trial-test-2026-11-26.md, phase 4). */}
-        <table className="w-full text-right border-collapse text-sm [&_td]:whitespace-nowrap">
+        <table className="w-full text-right border-collapse text-sm [&_td]:whitespace-nowrap [&_td]:!px-3 [&_th]:!px-3">
           <thead>
             <tr className="bg-surface-muted text-sm font-black text-content-muted uppercase border-b border-border/50">
               <th className="p-4 text-right">{t('procurement.supplier_name_contact', 'اسم المورد والمسؤول')}</th>
