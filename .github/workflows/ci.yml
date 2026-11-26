@@ -155,7 +155,7 @@ jobs:
 
       # A map of the screens the next paths walk through (temporary, while the paths are written).
       - name: Probe the next screens
-        if: always()
+        if: always() && startsWith(github.ref, 'refs/heads/ci/')
         env:
           GOLDEN_PROBE: '1'
           GOLDEN_SUPABASE_URL: ${{ env.API_URL }}
@@ -165,7 +165,7 @@ jobs:
       # seen-merchant-trial-test-2026-11-26.md, phase 4: the design table's screens
       # at 400/820/1280/1700, of the test shop (temporary, for the before/after).
       - name: Screens of the design table
-        if: always()
+        if: always() && startsWith(github.ref, 'refs/heads/ci/')
         env:
           GOLDEN_SCREENS: '1'
           GOLDEN_SCREENS_LABEL: ${{ github.sha }}
