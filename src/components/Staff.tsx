@@ -221,7 +221,7 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
 
   const filteredStaff = staffWithPerformance.filter(member => {
     const matchesSearch = member.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                         member.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         (member.email || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
                          member.phone?.includes(searchQuery);
     const matchesRole = roleFilter === 'all' || member.role === roleFilter;
     const matchesBranch = branchFilter === 'all' || member.branchId === branchFilter;

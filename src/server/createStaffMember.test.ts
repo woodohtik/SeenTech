@@ -68,3 +68,28 @@ test('missing name, email or password is a validation refusal', async () => {
   expect(await createStaffMember(m.d, { ...INPUT, name: ' ' }, REQUESTER)).toMatchObject({ ok: false, status: 400, kind: 'validation' });
   expect(m.createAccount).not.toHaveBeenCalled();
 });
+
+// Phase 2 item 1 (question 1's default): a PIN-only tailor -- no email, no
+// sign-in account; the commission is saved with them.
+test('a tailor with no email gets no sign-in account, only a staff row with their PIN and commission', async () => {
+  const m = deps();
+  const r = await createStaffMember(m.d, { ...INPUT, email: '', password: '', pinHash: 'pin-hash', commissionType: 'percentage', commissionValue: 10 }, REQUESTER);
+  expect(r).toEqual({ ok: true, uid: null, staffId: 'staff-1' });
+  expect(m.createAccount).not.toHaveBeenCalled();
+  expect(m.staffInsert).toHaveBeenCalledWith(expect.objectContaining({ uid: null, email: null, role: 'tailor', pin_hash: 'pin-hash', commission_type: 'percentage', commission_value: 10 }));
+});
+
+test('a PIN-only employee needs a PIN, and only a tailor may be one', async () => {
+  const noPin = deps();
+  expect(await createStaffMember(noPin.d, { ...INPUT, email: '', password: '', pinHash: null }, REQUESTER)).toMatchObject({ ok: false, status: 400, reason: 'pin_required' });
+  const cashier = deps();
+  expect(await createStaffMember(cashier.d, { ...INPUT, role: 'cashier', email: '', password: '', pinHash: 'h' }, REQUESTER)).toMatchObject({ ok: false, status: 400, reason: 'email_required' });
+  expect(noPin.staffInsert).not.toHaveBeenCalled();
+  expect(cashier.staffInsert).not.toHaveBeenCalled();
+});
+
+test('a bad commission is refused', async () => {
+  const m = deps();
+  expect(await createStaffMember(m.d, { ...INPUT, commissionType: 'percentage', commissionValue: 150 }, REQUESTER)).toMatchObject({ ok: false, status: 400, reason: 'commission_invalid' });
+  expect(await createStaffMember(m.d, { ...INPUT, commissionType: 'fixed_amount', commissionValue: -5 }, REQUESTER)).toMatchObject({ ok: false, status: 400, reason: 'commission_invalid' });
+});

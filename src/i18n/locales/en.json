@@ -2402,7 +2402,8 @@
     "invoice_not_found": "The original invoice of this order could not be found",
     "cutting_fabric_taken": "Taken at the sale: {{meters}} m",
     "cutting_fabric_taken_desc": "This thobe's cloth was taken from stock at the sale. Enter the real figure if it differs: only the difference moves in stock, nothing is taken twice.",
-    "cutting_fabric_skip": "Continue without a change"
+    "cutting_fabric_skip": "Continue without a change",
+    "add_tailor": "Add tailor"
   },
   "permissions": {
     "access_denied_desc": "Not specified",
@@ -5375,7 +5376,19 @@
     "tutorial_step3_title": "3. Complete Payment",
     "tutorial_title": "Quick Start Guide",
     "own_email_not_allowed": "This is your own email. Enter the new employee's email, not your account's.",
-    "no_permission_to_add": "You don't have permission to add employees. Ask the shop owner."
+    "no_permission_to_add": "You don't have permission to add employees. Ask the shop owner.",
+    "commission_title": "Tailor commission",
+    "commission_percentage": "Share of the order",
+    "commission_fixed": "Fixed amount per order",
+    "commission_value_percentage": "Share (%) of the order before VAT",
+    "commission_value_fixed": "Amount (SAR) per order",
+    "commission_hint": "The commission is due when the order is ready for pickup. You can change it later under Tailor commissions.",
+    "commission_invalid": "The commission is not valid: a share is between 0 and 100, and an amount cannot be negative.",
+    "email_required_for_role": "This role needs an email and password. Only a tailor can sign in with a PIN and no email.",
+    "pin_required_for_tailor": "A tailor with no email needs a 4-digit quick PIN.",
+    "email_optional_tailor_label": "Email (optional for a tailor)",
+    "password_optional_tailor_label": "Password (optional for a tailor)",
+    "tailor_pin_hint": "A tailor signs in with a PIN on the shop's device, so email and password are optional."
   },
   "subscription": {
     "account_email_label": "Account Email:",

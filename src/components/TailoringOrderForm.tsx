@@ -43,6 +43,7 @@ import { PriceDisplay } from './PriceDisplay';
 import VisualMeasurements from './VisualMeasurements';
 import ThobeMeasurementSelector from './ThobeMeasurementSelector';
 import { SmartSelect } from './ui/SmartSelect';
+import { QuickAddTailor } from './staff/QuickAddTailor';
 import { DatePicker } from './ui/DatePicker';
 import { VoiceMicButton } from './ui/VoiceMicButton';
 
@@ -438,6 +439,11 @@ function TailoringOrderFormBody({
   /** Real stock of the branch this order draws from, in meters, by fabric id. */
   const [branchStock, setBranchStock] = useState<Record<string, number> | null>(null);
   const [tailors, setTailors] = useState<{ id: string; name: string }[]>([]);
+  // After "+ add tailor": the list again, so the new one can be picked.
+  const reloadTailors = useCallback(async () => {
+    const { data } = await supabase.from('staff').select('id, name').eq('tenant_id', tenantId).eq('role', 'tailor').eq('status', 'active');
+    setTailors((data || []).map((s: any) => ({ id: s.id, name: s.name })));
+  }, [tenantId]);
   const [tax, setTax] = useState<TailoringTax>({ enabled: false, vatRatePercentage: 15, taxType: 'exclusive' });
   const [strategy, setStrategy] = useState<'centralized' | 'decentralized'>('centralized');
   const [isQuickAddOpen, setIsQuickAddOpen] = useState(false);
@@ -509,7 +515,7 @@ function TailoringOrderFormBody({
           // The shop's length categories (Phase 1): men's tailoring -> `fabric` only, as before.
           supabase.from('inventory_items').select('*').eq('tenant_id', tenantId)
             .or(`category.eq.fabric,category_key.in.(${lengthCategoryKeyList().join(',')})`),
-          supabase.from('staff').select('id, name, role, status').eq('tenant_id', tenantId).eq('role', 'tailor'),
+          supabase.from('staff').select('id, name, role, status').eq('tenant_id', tenantId).eq('role', 'tailor').eq('status', 'active'),
           supabase.from('tenants').select('*').eq('id', tenantId).maybeSingle(),
           supabase.from('branches').select('id').eq('tenant_id', tenantId).eq('is_main', true).maybeSingle(),
         ]);
@@ -884,7 +890,12 @@ function TailoringOrderFormBody({
 
               {/* One tailor per order: the commission trigger works at order level. */}
               <div className="space-y-2">
-                <label className={sectionLabelClass}>{tv('orders.assigned_tailor')}</label>
+                <div className="flex items-center justify-between gap-2">
+                  <label className={sectionLabelClass}>{tv('orders.assigned_tailor')}</label>
+                  {hasPermission('staff.create') && (
+                    <QuickAddTailor tenantId={tenantId} currentStaffEmail={currentStaff?.email} onAdded={reloadTailors} />
+                  )}
+                </div>
                 <SmartSelect
                   value={watch('assignedTailorId' as any) || ''}
                   onChange={(v) => setValue('assignedTailorId' as any, v, { shouldDirty: true })}

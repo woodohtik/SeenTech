@@ -2402,7 +2402,8 @@
     "invoice_not_found": "تعذر العثور على الفاتورة الأصلية لهذا الطلب",
     "cutting_fabric_taken": "انخصم عند البيع: {{meters}} م",
     "cutting_fabric_taken_desc": "هذا الثوب انخصم قماشه وقت البيع. اكتب الكمية الفعلية إذا اختلفت: الفرق فقط يتحرك في المخزون، ولا ينخصم شيء مرة ثانية.",
-    "cutting_fabric_skip": "متابعة بدون تغيير"
+    "cutting_fabric_skip": "متابعة بدون تغيير",
+    "add_tailor": "إضافة خياط"
   },
   "permissions": {
     "access_denied_desc": "غير محدد",
@@ -5470,7 +5471,19 @@
     "tutorial_step3_title": "3. إتمام الدفع",
     "tutorial_title": "دليل استخدام النظام السريع",
     "own_email_not_allowed": "هذا بريدك أنت. اكتب بريد الموظف الجديد، لا بريد حسابك.",
-    "no_permission_to_add": "ما عندك صلاحية إضافة موظفين. اطلبها من صاحب المحل."
+    "no_permission_to_add": "ما عندك صلاحية إضافة موظفين. اطلبها من صاحب المحل.",
+    "commission_title": "عمولة الخياط",
+    "commission_percentage": "نسبة من الطلب",
+    "commission_fixed": "مبلغ ثابت للطلب",
+    "commission_value_percentage": "النسبة (%) من قيمة الطلب قبل الضريبة",
+    "commission_value_fixed": "المبلغ (ر.س) لكل طلب",
+    "commission_hint": "تُحسب العمولة لما يصير الطلب «جاهز للاستلام». تقدر تغيّرها بعدين من «عمولات الخياطين».",
+    "commission_invalid": "العمولة غير صحيحة: النسبة بين 0 و 100، والمبلغ ما يكون بالسالب.",
+    "email_required_for_role": "البريد الإلكتروني وكلمة المرور مطلوبة لهذا الدور. الخياط وحده يقدر يدخل برمز PIN بدون بريد.",
+    "pin_required_for_tailor": "الخياط بدون بريد يحتاج رمز دخول سريع (PIN) من 4 أرقام.",
+    "email_optional_tailor_label": "البريد الإلكتروني (اختياري للخياط)",
+    "password_optional_tailor_label": "كلمة المرور (اختيارية للخياط)",
+    "tailor_pin_hint": "الخياط يدخل برمز PIN على جهاز المحل، فالبريد وكلمة المرور اختيارية له."
   },
   "subscription": {
     "account_email_label": "البريد الإلكتروني للقرصنة:",

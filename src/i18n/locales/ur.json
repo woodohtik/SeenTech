@@ -2402,7 +2402,8 @@
     "invoice_not_found": "اس آرڈر کی اصل انوائس نہیں مل سکی",
     "cutting_fabric_taken": "فروخت کے وقت کٹا: {{meters}} میٹر",
     "cutting_fabric_taken_desc": "اس تھوب کا کپڑا فروخت کے وقت اسٹاک سے کٹ گیا تھا۔ اصل مقدار مختلف ہو تو لکھیں: صرف فرق اسٹاک میں منتقل ہوگا، کچھ دوبارہ نہیں کٹے گا۔",
-    "cutting_fabric_skip": "بغیر تبدیلی کے جاری رکھیں"
+    "cutting_fabric_skip": "بغیر تبدیلی کے جاری رکھیں",
+    "add_tailor": "درزی شامل کریں"
   },
   "permissions": {
     "access_denied_desc": "غیر متعین",
@@ -5364,7 +5365,19 @@
     "tutorial_step3_title": "3. ادائیگی مکمل کریں",
     "tutorial_title": "سسٹم استعمال کی فوری گائیڈ",
     "own_email_not_allowed": "یہ آپ کی اپنی ای میل ہے۔ نئے ملازم کی ای میل لکھیں۔",
-    "no_permission_to_add": "آپ کو ملازم شامل کرنے کی اجازت نہیں۔ دکان کے مالک سے کہیں۔"
+    "no_permission_to_add": "آپ کو ملازم شامل کرنے کی اجازت نہیں۔ دکان کے مالک سے کہیں۔",
+    "commission_title": "درزی کا کمیشن",
+    "commission_percentage": "آرڈر کا حصہ",
+    "commission_fixed": "فی آرڈر مقررہ رقم",
+    "commission_value_percentage": "ٹیکس سے پہلے آرڈر کا حصہ (%)",
+    "commission_value_fixed": "فی آرڈر رقم (ریال)",
+    "commission_hint": "کمیشن اس وقت بنتا ہے جب آرڈر وصولی کے لیے تیار ہو۔ بعد میں \"درزیوں کے کمیشن\" سے بدل سکتے ہیں۔",
+    "commission_invalid": "کمیشن درست نہیں: حصہ 0 سے 100 کے درمیان، اور رقم منفی نہیں ہو سکتی۔",
+    "email_required_for_role": "اس کردار کے لیے ای میل اور پاس ورڈ ضروری ہیں۔ صرف درزی بغیر ای میل کے PIN سے داخل ہو سکتا ہے۔",
+    "pin_required_for_tailor": "بغیر ای میل کے درزی کو 4 ہندسوں کا PIN چاہیے۔",
+    "email_optional_tailor_label": "ای میل (درزی کے لیے اختیاری)",
+    "password_optional_tailor_label": "پاس ورڈ (درزی کے لیے اختیاری)",
+    "tailor_pin_hint": "درزی دکان کے آلے پر PIN سے داخل ہوتا ہے، اس لیے ای میل اور پاس ورڈ اختیاری ہیں۔"
   },
   "subscription": {
     "account_email_label": "اکاؤنٹ ای میل:",
