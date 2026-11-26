@@ -32,9 +32,8 @@ test.beforeAll(async () => {
     status: 'sewing', status_key: 'sewing', kind: 'tailoring', tracking_token: TRACK, branch_id: SHOP.branchId,
   });
   if (orderError) console.log(`[screens] order seed: ${orderError.message}`);
-  // PINs (plain 4 digits, by product decision): the lock screen needs one.
-  await sb.from('staff').update({ pin_hash: '1357' }).eq('id', STAFF.owner.staffId);
-  await sb.from('staff').update({ pin_hash: '2468' }).eq('id', STAFF.cashier.staffId);
+  // No PINs here: with one, an email sign-in lands on the PIN screen (golden path 10 covers it).
+  await sb.from('staff').update({ pin_hash: null }).in('id', [STAFF.owner.staffId, STAFF.cashier.staffId]);
 });
 
 async function shot(page: Page, width: number, name: string, act?: () => Promise<unknown>) {
@@ -108,11 +107,6 @@ for (const width of WIDTHS) {
         await page.getByRole('button', { name: 'إغلاق الوردية' }).first().click();
       });
       await closeModal(page);
-      await shot(page, width, '24-profile-menu', async () => {
-        await go(page, '/dashboard');
-        await page.getByRole('button', { name: /صاحب المحل/ }).first().click();
-      });
-      await shot(page, width, '25-lock', () => page.getByText('قفل الشاشة مؤقتاً').first().click());
     }
     if (width === 820) {
       await shot(page, width, '19-order-status-menu', async () => {
