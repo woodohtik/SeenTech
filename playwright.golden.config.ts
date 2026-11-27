@@ -12,7 +12,7 @@ import { defineConfig, devices } from '@playwright/test';
 export default defineConfig({
   // The screenshot/probe runs keep their own folder: a second Playwright run
   // empties test-results/ and the golden failure's screenshot went with it.
-  outputDir: process.env.GOLDEN_SCREENS || process.env.GOLDEN_PROBE ? 'test-results-probe' : 'test-results',
+  outputDir: process.env.GOLDEN_SCREENS || process.env.GOLDEN_PROBE || process.env.GOLDEN_LAYOUT ? 'test-results-probe' : 'test-results',
   testDir: './e2e/golden',
   fullyParallel: false,
   workers: 1,

@@ -125,6 +125,8 @@ export function verticalPath(shop: VerticalShop): void {
 
         await details.getByRole('button', { name: ready }).click();
         await page.getByRole('option', { name: delivered }).click();
+        // Paid in full: the app asks to confirm the delivery.
+        await page.getByRole('dialog', { name: 'تأكيد تسليم الطلب' }).getByRole('button', { name: 'تأكيد التسليم' }).click();
         await expect.poll(statusKey, { timeout: 20_000, message: 'delivered' }).toBe(deliveredKey);
       });
     }

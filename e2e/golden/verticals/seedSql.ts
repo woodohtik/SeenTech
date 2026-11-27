@@ -34,7 +34,7 @@ INSERT INTO public.branch_inventory (tenant_id, branch_id, item_id, quantity) VA
   (${q(s.tenantId)}, ${q(s.branchId)}, ${q(s.lengthItem.id)}, ${s.lengthItem.stock}),
   (${q(s.tenantId)}, ${q(s.branchId)}, ${q(s.pieceItem.id)}, ${s.pieceItem.stock});
 ${s.order ? `INSERT INTO public.orders (id, tenant_id, customer_id, customer_name, order_number, delivery_date, total_amount, paid_amount, status, status_key, kind, branch_id, created_by)
-  SELECT ${q(s.order.id)}, ${q(s.tenantId)}, ${q(s.customer.id)}, ${q(s.customer.name)}, ${s.order.number}, now() + interval '9 days', 115, 50,
+  SELECT ${q(s.order.id)}, ${q(s.tenantId)}, ${q(s.customer.id)}, ${q(s.customer.name)}, ${s.order.number}, now() + interval '9 days', 115, 115,
          (COALESCE(st.legacy_status::text, 'measurements_taken'))::public.order_status, ${q(s.order.firstStage)}, 'tailoring', ${q(s.branchId)}, ${q(s.ownerStaffId)}
     FROM (SELECT legacy_status FROM public.vertical_workflow_stages WHERE vertical_key = ${q(s.vertical)} AND stage_key = ${q(s.order.firstStage)}) st;` : ''}
 `).join('\n');
