@@ -39,7 +39,7 @@ test('a product with 4 variants: barcodes, a special price, the opening stock sh
 
   await page.getByRole('textbox', { name: /اسم المنتج/ }).fill(NAME);
   await page.getByRole('button', { name: 'توليد', exact: true }).click();
-  await expect(page.getByRole('textbox', { name: 'الباركود' })).toHaveValue(/^2\d{12}$/);
+  await expect(page.getByPlaceholder(/أو اضغط «توليد»/)).toHaveValue(/^2\d{12}$/);
   await page.getByRole('spinbutton', { name: /سعر الشراء/ }).fill('60');
   await page.getByRole('spinbutton', { name: /سعر البيع/ }).fill('200');
   await page.getByRole('spinbutton', { name: 'الرصيد الافتتاحي' }).fill('10');
