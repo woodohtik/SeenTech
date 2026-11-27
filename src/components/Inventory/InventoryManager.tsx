@@ -1,10 +1,11 @@
+import { useDialogBehavior } from '../ui/DialogFrame';
 import { VariantThumbs } from './VariantThumbs';
 import { VariantOpeningBalance, variantOpeningQuantities, type VariantOpeningState } from './VariantOpeningBalance';
 import { priceOverrideFor } from '../../utils/variantRows';
 import { generateInternalBarcode } from '../../lib/barcode';
 import { PriceDisplay } from '../PriceDisplay';
 import { openingBaseQuantity } from '../../utils/openingBalance';
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import { AutoGrid } from '../ui/AutoGrid';
 import { StatCard } from '../ui/StatCard';
 import { PageHeader } from '../ui/PageHeader';
@@ -2072,6 +2073,9 @@ const AddItemModal = ({ onClose, tenantId, branches }: any) => {
     }
   };
 
+  // seen-ui-responsive-alignment-audit-task.md, finding 03: a real dialog (focus, Esc, role).
+  const dialogRef = useRef<HTMLDivElement>(null);
+  useDialogBehavior(dialogRef, onClose);
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-2 main-640:p-4">
       <motion.div
@@ -2081,7 +2085,7 @@ const AddItemModal = ({ onClose, tenantId, branches }: any) => {
         className="absolute inset-0 bg-black/60 backdrop-blur-md"
         onClick={onClose}
       />
-      <motion.div
+      <motion.div ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby="dialog-title-1-702"
         initial={{ scale: 0.9, opacity: 0, y: 20 }}
         animate={{ scale: 1, opacity: 1, y: 0 }}
         exit={{ scale: 0.9, opacity: 0, y: 20 }}
@@ -2093,7 +2097,7 @@ const AddItemModal = ({ onClose, tenantId, branches }: any) => {
               <Plus size={20} className="main-640:size-6" />
             </div>
             <div>
-              <h2 className="text-lg main-640:text-2xl font-black text-content">
+              <h2 id="dialog-title-1-702" className="text-lg main-640:text-2xl font-black text-content">
                 {t("inventory.add_item")}
               </h2>
               <p className="text-sm text-content-muted font-bold uppercase">
@@ -2309,6 +2313,9 @@ const StockTransferModal = ({
     }
   };
 
+  // seen-ui-responsive-alignment-audit-task.md, finding 03: a real dialog (focus, Esc, role).
+  const dialogRef = useRef<HTMLDivElement>(null);
+  useDialogBehavior(dialogRef, onClose);
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-2 main-640:p-4">
       <motion.div
@@ -2318,7 +2325,7 @@ const StockTransferModal = ({
         className="absolute inset-0 bg-black/60 backdrop-blur-md"
         onClick={onClose}
       />
-      <motion.div
+      <motion.div ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby="dialog-title-2-702"
         initial={{ scale: 0.9, opacity: 0, y: 20 }}
         animate={{ scale: 1, opacity: 1, y: 0 }}
         exit={{ scale: 0.9, opacity: 0, y: 20 }}
@@ -2330,7 +2337,7 @@ const StockTransferModal = ({
               <ArrowRightLeft size={24} className="text-white" />
             </div>
             <div>
-              <h2 className="text-2xl font-black text-content">
+              <h2 id="dialog-title-2-702" className="text-2xl font-black text-content">
                 {t("inventory.transfer_stock")}
               </h2>
               <p className="text-sm text-content-muted font-bold uppercase">
@@ -2630,6 +2637,9 @@ const StockAdjustmentModal = ({ onClose, tenantId, item, branch: initialBranch, 
     }
   };
 
+  // seen-ui-responsive-alignment-audit-task.md, finding 03: a real dialog (focus, Esc, role).
+  const dialogRef = useRef<HTMLDivElement>(null);
+  useDialogBehavior(dialogRef, onClose);
   return (
     <div className="fixed inset-0 z-[110] flex items-center justify-center p-2 main-640:p-4">
       <motion.div
@@ -2639,7 +2649,7 @@ const StockAdjustmentModal = ({ onClose, tenantId, item, branch: initialBranch, 
         className="absolute inset-0 bg-black/60 backdrop-blur-md"
         onClick={onClose}
       />
-      <motion.div
+      <motion.div ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby="dialog-title-3-702"
         initial={{ scale: 0.9, opacity: 0, y: 20 }}
         animate={{ scale: 1, opacity: 1, y: 0 }}
         exit={{ scale: 0.9, opacity: 0, y: 20 }}
@@ -2651,7 +2661,7 @@ const StockAdjustmentModal = ({ onClose, tenantId, item, branch: initialBranch, 
               <History size={20} />
             </div>
             <div>
-              <h2 className="text-lg font-black text-content">
+              <h2 id="dialog-title-3-702" className="text-lg font-black text-content">
                 {t("inventory.adjust_stock")}
               </h2>
               <p className="text-sm text-content-muted font-bold uppercase">
@@ -2947,6 +2957,9 @@ const ManualConversionModal = ({ onClose, tenantId, item, branch: initialBranch,
     }
   };
 
+  // seen-ui-responsive-alignment-audit-task.md, finding 03: a real dialog (focus, Esc, role).
+  const dialogRef = useRef<HTMLDivElement>(null);
+  useDialogBehavior(dialogRef, onClose);
   return (
     <div className="fixed inset-0 z-[110] flex items-center justify-center p-2 main-640:p-4">
       <motion.div
@@ -2956,7 +2969,7 @@ const ManualConversionModal = ({ onClose, tenantId, item, branch: initialBranch,
         className="absolute inset-0 bg-black/60 backdrop-blur-md"
         onClick={onClose}
       />
-      <motion.div
+      <motion.div ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby="dialog-title-4-702"
         initial={{ scale: 0.9, opacity: 0, y: 20 }}
         animate={{ scale: 1, opacity: 1, y: 0 }}
         exit={{ scale: 0.9, opacity: 0, y: 20 }}
@@ -2974,7 +2987,7 @@ const ManualConversionModal = ({ onClose, tenantId, item, branch: initialBranch,
             <Scale size={32} />
           </div>
           <div>
-            <h3 className="text-xl font-black text-content">
+            <h3 id="dialog-title-4-702" className="text-xl font-black text-content">
               {t("inventory.manual_convert_action", "فك وتحويل يدوي للوحدات")}
             </h3>
             <p className="text-sm font-bold text-content-muted mt-1">
@@ -3916,6 +3929,9 @@ const EditItemModal = ({ onClose, tenantId, item, branches }: any) => {
     }
   };
 
+  // seen-ui-responsive-alignment-audit-task.md, finding 03: a real dialog (focus, Esc, role).
+  const dialogRef = useRef<HTMLDivElement>(null);
+  useDialogBehavior(dialogRef, onClose);
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-2 main-640:p-4">
       <motion.div
@@ -3925,7 +3941,7 @@ const EditItemModal = ({ onClose, tenantId, item, branches }: any) => {
         className="absolute inset-0 bg-black/60 backdrop-blur-md"
         onClick={onClose}
       />
-      <motion.div
+      <motion.div ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby="dialog-title-5-702"
         initial={{ scale: 0.9, opacity: 0, y: 20 }}
         animate={{ scale: 1, opacity: 1, y: 0 }}
         exit={{ scale: 0.9, opacity: 0, y: 20 }}
@@ -3937,7 +3953,7 @@ const EditItemModal = ({ onClose, tenantId, item, branches }: any) => {
               <Plus size={20} className="main-640:size-6" />
             </div>
             <div>
-              <h2 className="text-lg main-640:text-2xl font-black text-content">
+              <h2 id="dialog-title-5-702" className="text-lg main-640:text-2xl font-black text-content">
                 {t("common.edit")} : {item.name}
               </h2>
               <p className="text-sm text-content-muted font-bold uppercase">

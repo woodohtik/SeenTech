@@ -802,7 +802,8 @@ export default function Settings({ tenantId }: SettingsProps) {
                         ['defaultWidthCm', 'settings_page.fabric_estimate.default_width_cm'],
                         ['narrowWidthCm', 'settings_page.fabric_estimate.narrow_width_cm'],
                       ] as const).map(([field, labelKey]) => (
-                        <div key={field} className="space-y-1.5">
+                        // One row for the labels, one for the inputs (subgrid): a wrapped label no longer drops its input.
+                        <div key={field} className="grid grid-rows-subgrid row-span-2 gap-y-1.5">
                           <label htmlFor={`fabric-estimate-${field}`} className="block px-1 text-sm font-black text-content-muted">
                             {t(labelKey)}
                           </label>
@@ -816,7 +817,7 @@ export default function Settings({ tenantId }: SettingsProps) {
                             aria-invalid={!!(errors as any).fabricEstimate?.[field]}
                             {...register(`fabricEstimate.${field}` as const)}
                             className={cn(
-                              "w-full h-11 px-3 rounded-xl border border-border bg-surface text-sm font-bold text-content focus:outline-none focus:ring-2 focus:ring-brand/30",
+                              "w-full h-12 px-3 rounded-xl border border-border bg-surface text-sm font-bold text-content focus:outline-none focus:ring-2 focus:ring-brand/30",
                               (errors as any).fabricEstimate?.[field] && "border-danger ring-2 ring-danger/30"
                             )}
                           />

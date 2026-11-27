@@ -1,3 +1,4 @@
+import { DialogFrame } from './ui/DialogFrame';
 import { FormField } from './ui/FormField';
 import { usePoLinePrice } from './procurement/usePoLinePrice';
 import { PoLinePriceHint } from './procurement/PoLinePriceHint';
@@ -865,12 +866,11 @@ export default function PurchaseOrders({
 
       {/* Detail view / Confirmation modal */}
       {selectedOrder && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-end main-640:items-center justify-center z-50 overflow-y-auto p-0 main-640:p-4">
-          <div className="bg-surface rounded-t-3xl main-640:rounded-3xl shadow-2xl w-full max-w-3xl overflow-hidden border border-border flex flex-col max-h-[90vh] main-640:max-h-[85vh] animate-in fade-in zoom-in duration-150">
+        <DialogFrame onClose={() => setSelectedOrder(null)} labelledBy="po-detail-title" overlayClassName="flex items-end main-640:items-center justify-center overflow-y-auto p-0 main-640:p-4" panelClassName="bg-surface rounded-t-3xl main-640:rounded-3xl shadow-2xl w-full max-w-3xl overflow-hidden border border-border flex flex-col max-h-[90dvh] main-640:max-h-[85dvh] animate-in fade-in zoom-in duration-150">
             <div className="p-6 border-b border-border flex justify-between items-center bg-surface-muted/40">
               <div>
                 <div className="flex items-center gap-3">
-                  <h2 className="text-lg font-black text-content">{t('procurement.po_detail_title', 'عرض تفاصيل المستند')}</h2>
+                  <h2 id="po-detail-title" className="text-lg font-black text-content">{t('procurement.po_detail_title', 'عرض تفاصيل المستند')}</h2>
                   <span className={cn(
                     "text-sm font-black px-2.5 py-1 rounded-full",
                     (selectedOrder.orderType || (selectedOrder as any).order_type) === 'purchase' ? "bg-brand/15 text-brand" : "bg-[var(--seen-danger-bg)] text-danger"
@@ -880,8 +880,10 @@ export default function PurchaseOrders({
                 </div>
                 <p className="text-sm text-content-muted mt-1">{t('procurement.po_number', 'رقم السند')}: <span className="font-mono font-bold text-content">{selectedOrder.poNumber || (selectedOrder as any).po_number || selectedOrder.id}</span></p>
               </div>
-              <button 
-                onClick={() => setSelectedOrder(null)} 
+              <button
+                type="button"
+                aria-label={t('common.close')}
+                onClick={() => setSelectedOrder(null)}
                 className="text-content-muted hover:text-content p-2 hover:bg-surface rounded-full transition-all"
               >
                 <X size={24} />
@@ -1011,17 +1013,15 @@ export default function PurchaseOrders({
                 )}
               </div>
             </div>
-          </div>
-        </div>
+        </DialogFrame>
       )}
 
       {/* Create Order Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-end main-640:items-center justify-center z-50 overflow-y-auto p-0 main-640:p-4">
-          <div className="bg-surface rounded-t-3xl main-640:rounded-3xl shadow-2xl w-full max-w-2xl overflow-hidden border border-border flex flex-col max-h-[92vh] main-640:max-h-[90vh] animate-in fade-in zoom-in duration-150">
+        <DialogFrame onClose={() => { setIsModalOpen(false); setItems([]); setSelectedSupplier(''); }} labelledBy="po-new-title" overlayClassName="flex items-end main-640:items-center justify-center overflow-y-auto p-0 main-640:p-4" panelClassName="bg-surface rounded-t-3xl main-640:rounded-3xl shadow-2xl w-full max-w-2xl overflow-hidden border border-border flex flex-col max-h-[92dvh] main-640:max-h-[90dvh] animate-in fade-in zoom-in duration-150">
             <div className="p-6 border-b border-border flex justify-between items-center bg-surface-muted/50">
               <div>
-                <h2 className="text-xl font-black text-content">
+                <h2 id="po-new-title" className="text-xl font-black text-content">
                   {modalType === 'purchase' ? t('procurement.register_new_po', 'تسجيل أمر شراء جديد') : t('procurement.register_po_return', 'تسجيل مرتجع مشتريات')}
                 </h2>
                 <p className="text-sm text-content-muted mt-1">
@@ -1032,7 +1032,7 @@ export default function PurchaseOrders({
                 setIsModalOpen(false);
                 setItems([]);
                 setSelectedSupplier('');
-              }} className="text-content-muted hover:text-content p-2 hover:bg-surface rounded-full">
+              }} type="button" aria-label={t('common.close')} className="text-content-muted hover:text-content p-2 hover:bg-surface rounded-full">
                 <X size={24} />
               </button>
             </div>
@@ -1414,8 +1414,7 @@ export default function PurchaseOrders({
                 </button>
               </div>
             </div>
-          </div>
-        </div>
+        </DialogFrame>
       )}
     </div>
   );

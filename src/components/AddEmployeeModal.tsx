@@ -1,3 +1,4 @@
+import { useDialogBehavior } from './ui/DialogFrame';
 import React, { useEffect, useRef, useState } from 'react';
 import { motion } from 'motion/react';
 import { User, Mail, Smartphone, X, Store, Key } from 'lucide-react';
@@ -190,6 +191,10 @@ export default function AddEmployeeModal({
     }
   };
 
+  // seen-ui-responsive-alignment-audit-task.md, finding 03: a real dialog (focus, Esc, role).
+  const dialogRef = useRef<HTMLDivElement>(null);
+  useDialogBehavior(dialogRef, onClose, isOpen);
+
   if (!isOpen) return null;
 
   return (
@@ -201,14 +206,14 @@ export default function AddEmployeeModal({
         onClick={onClose}
         className="absolute inset-0 bg-black/50 backdrop-blur-sm"
       />
-      <motion.div 
+      <motion.div ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby="add-employee-title" 
         initial={{ opacity: 0, scale: 0.95, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 20 }}
         className="bg-surface rounded-3xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto relative z-10 border border-border"
       >
         <div className="p-6 border-b border-border flex justify-between items-center bg-surface-muted">
-          <h2 className="text-xl font-black text-content">{t('saas.add_member_new')}</h2>
+          <h2 id="add-employee-title" className="text-xl font-black text-content">{t('saas.add_member_new')}</h2>
           <button aria-label={t('common.close')} onClick={onClose} className="p-2 hover:bg-surface rounded-full transition-colors shadow-sm min-w-11 min-h-11 inline-flex items-center justify-center">
             <X size={24} className="text-content-muted" />
           </button>

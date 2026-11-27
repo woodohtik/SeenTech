@@ -1043,8 +1043,9 @@ export default function Reports({ tenantId }: { tenantId: string }) {
       />
 
       {/* Filters Bar */}
-      <div id="reports-filters-bar" className="bg-surface p-4 main-640:p-6 rounded-2xl border border-border shadow-sm flex flex-col main-1024:flex-row main-1024:items-center gap-4 main-640:gap-6">
-        <div className="relative w-full main-1024:flex-1">
+      {/* The filters wrap on a 1024-1280 page: the search keeps its own line until there is room for both (seen-ui-responsive-alignment-audit-task.md, layout guard). */}
+      <div id="reports-filters-bar" className="bg-surface p-4 main-640:p-6 rounded-2xl border border-border shadow-sm flex flex-col main-1280:flex-row main-1280:items-center gap-4 main-640:gap-6">
+        <div className="relative w-full main-1280:flex-1">
           <IconInput
             id="reports-search-input"
             type="text"
@@ -1102,7 +1103,7 @@ export default function Reports({ tenantId }: { tenantId: string }) {
           )}
         </div>
 
-        <div className="flex min-w-0 flex-col main-640:flex-row main-640:flex-wrap items-stretch main-640:items-center gap-3 w-full main-1024:w-auto">
+        <div className="flex min-w-0 flex-col main-640:flex-row main-640:flex-wrap items-stretch main-640:items-center gap-3 w-full main-1280:w-auto">
           {/* Start Date */}
           <div className="flex-1 main-640:flex-none min-w-[130px] main-900:min-w-[150px]">
             <DatePicker

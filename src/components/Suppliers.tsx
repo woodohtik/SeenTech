@@ -1,3 +1,4 @@
+import { DialogPanel } from './ui/DialogFrame';
 import React, { useState, useEffect, useMemo } from 'react';
 import { useDebouncedValue } from '../hooks/useDebouncedValue';
 import { motion } from 'motion/react';
@@ -691,13 +692,13 @@ export default function Suppliers({ tenantId }: { tenantId: string }) {
       {/* Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <motion.div 
+          <DialogPanel onClose={() => setIsModalOpen(false)} labelledBy="supplier-form-title" 
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             className="bg-surface rounded-3xl shadow-2xl w-full max-w-md overflow-hidden border border-border"
           >
             <div className="p-6 border-b border-border flex justify-between items-center bg-surface-muted">
-              <h2 className="text-xl font-bold text-content">
+              <h2 id="supplier-form-title" className="text-xl font-bold text-content">
                 {editingSupplier ? t('procurement.edit_supplier', 'تعديل مورد') : t('procurement.add_supplier_new', 'إضافة مورد جديد')}
               </h2>
               <button onClick={() => setIsModalOpen(false)} className="text-content-muted hover:text-content">
@@ -843,14 +844,14 @@ export default function Suppliers({ tenantId }: { tenantId: string }) {
                 {isSubmitting ? t('procurement.saving_loading', 'جاري الحفظ...') : (editingSupplier ? t('procurement.save_changes', 'حفظ التعديلات') : t('procurement.add_supplier', 'إضافة مورد'))}
               </button>
             </form>
-          </motion.div>
+          </DialogPanel>
         </div>
       )}
 
       {/* Detailed View Modal */}
       {selectedSupplierDetails && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 p-4">
-          <motion.div 
+          <DialogPanel onClose={() => setSelectedSupplierDetails(null)} labelledBy="supplier-details-title" 
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             className="bg-surface rounded-3xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden border border-border flex flex-col"
@@ -862,7 +863,7 @@ export default function Suppliers({ tenantId }: { tenantId: string }) {
                   <Users size={24} />
                 </div>
                 <div>
-                  <h2 className="text-xl font-black text-content">{selectedSupplierDetails.name}</h2>
+                  <h2 id="supplier-details-title" className="text-xl font-black text-content">{selectedSupplierDetails.name}</h2>
                   <p className="text-sm font-bold text-content-muted">{t('procurement.supplier_details_subtitle', 'تفاصيل المورد، المستحقات المالية، والمنتجات المطلوبة')}</p>
                 </div>
               </div>
@@ -1118,7 +1119,7 @@ export default function Suppliers({ tenantId }: { tenantId: string }) {
                 {t('procurement.close_window', 'إغلاق النافذة')}
               </button>
             </div>
-          </motion.div>
+          </DialogPanel>
         </div>
       )}
 
