@@ -725,7 +725,9 @@
     "type": "النوع",
     "copied": "تم النسخ",
     "build_number": "رقم النسخة",
-    "trn_placeholder": "15 رقم يبدأ وينتهي بـ 3"
+    "trn_placeholder": "15 رقم يبدأ وينتهي بـ 3",
+    "show_password": "إظهار كلمة المرور",
+    "hide_password": "إخفاء كلمة المرور"
   },
   "compliance": {
     "check_legal_name": "الاسم النظامي للمنشأة",
@@ -5415,7 +5417,8 @@
       "substep_tests": "اختبارات الامتثال",
       "substep_production": "طلب Production CSID",
       "refresh_status": "تحديث الحالة"
-    }
+    },
+    "section_label": "القسم"
   },
   "shift_closing": {
     "actual_cash_label": "صافي الكاش الفعلي بالدرج",

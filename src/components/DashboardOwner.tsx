@@ -1,3 +1,4 @@
+import { StatGrid } from './ui/StatGrid';
 import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { AutoGrid } from './ui/AutoGrid';
 import { StatBadge, StatCard, StatIcon } from './ui/StatCard';
@@ -1444,7 +1445,7 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
       )}
 
       {/* Number cards: columns of at least 200px, four at most (seen-responsive-layout-task.md Phase 2). */}
-      <AutoGrid min={200} maxColumns={4}>
+      <StatGrid>
         {visibleStatCards.map((stat) => (
           <StatCard
             key={stat.label}
@@ -1471,7 +1472,7 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
             ) : undefined}
           />
         ))}
-      </AutoGrid>
+      </StatGrid>
 
       <div className="grid grid-cols-1 main-900:grid-cols-3 gap-6 main-640:gap-8">
         {/* Revenue Chart */}

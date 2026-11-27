@@ -725,7 +725,9 @@
     "type": "Type",
     "copied": "Copied",
     "build_number": "Build",
-    "trn_placeholder": "15 digits, starting and ending with 3"
+    "trn_placeholder": "15 digits, starting and ending with 3",
+    "show_password": "Show password",
+    "hide_password": "Hide password"
   },
   "compliance": {
     "check_legal_name": "Legal Name of the Business",
@@ -5320,7 +5322,8 @@
       "substep_tests": "Compliance tests",
       "substep_production": "Production CSID request",
       "refresh_status": "Refresh the status"
-    }
+    },
+    "section_label": "Section"
   },
   "shift_closing": {
     "actual_cash_label": "Actual Cash in Drawer",

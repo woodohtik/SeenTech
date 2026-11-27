@@ -1052,7 +1052,7 @@ export default function Customers({ tenantId }: CustomersProps) {
               <Users size={16} />
             </div>
             <div className="min-w-0">
-              <span className="block text-sm font-black text-content-muted leading-tight truncate">{t('dashboard.total_customers')}</span>
+              <span className="block text-sm font-black text-content-muted leading-tight line-clamp-2">{t('dashboard.total_customers')}</span>
               <span className="text-sm main-640:text-base font-black text-content mt-1 block">{customers.length}</span>
             </div>
           </div>
@@ -1062,7 +1062,7 @@ export default function Customers({ tenantId }: CustomersProps) {
               <SlidersHorizontal size={16} />
             </div>
             <div className="min-w-0">
-              <span className="block text-sm font-black text-content-muted leading-tight truncate">{t('customers.filter_results')}</span>
+              <span className="block text-sm font-black text-content-muted leading-tight line-clamp-2">{t('customers.filter_results')}</span>
               <span className="text-sm main-640:text-base font-black text-brand mt-1 block">{filteredCustomers.length}</span>
             </div>
           </div>
@@ -1072,7 +1072,7 @@ export default function Customers({ tenantId }: CustomersProps) {
               <ArrowDownLeft size={16} />
             </div>
             <div className="min-w-0">
-              <span className="block text-sm font-black text-content-muted leading-tight truncate">{t('customers.stat_debtors')}</span>
+              <span className="block text-sm font-black text-content-muted leading-tight line-clamp-2">{t('customers.stat_debtors')}</span>
               <span className="text-sm main-640:text-base font-black text-danger mt-1 block">
                 {customers.filter(c => (customerBalances[c.id] || 0) > 0).length}
               </span>
@@ -1084,7 +1084,7 @@ export default function Customers({ tenantId }: CustomersProps) {
               <ArrowUpRight size={16} />
             </div>
             <div className="min-w-0">
-              <span className="block text-sm font-black text-content-muted leading-tight truncate">{t('customers.stat_creditors')}</span>
+              <span className="block text-sm font-black text-content-muted leading-tight line-clamp-2">{t('customers.stat_creditors')}</span>
               <span className="text-sm main-640:text-base font-black text-success mt-1 block">
                 {customers.filter(c => (customerBalances[c.id] || 0) < 0).length}
               </span>

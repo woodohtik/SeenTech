@@ -1,3 +1,4 @@
+import { SmartSelect } from './ui/SmartSelect';
 import React, { useState, useEffect, useRef } from 'react';
 import BuildStamp from './BuildStamp';
 import { FormGrid } from './ui/FormGrid';
@@ -587,8 +588,19 @@ export default function Settings({ tenantId }: SettingsProps) {
         subtitle={t('settings_page.subtitle', 'تخصيص تجربة متجرك وإدارة اشتراكك')}
       />
 
+      {/* Under 900px of the page: one menu «القسم: …» instead of 11 chips that ran
+          off the edge (seen-ui-responsive-alignment-audit-task.md, finding 12). */}
+      <div className="main-900:hidden">
+        <SmartSelect
+          id="settings-section"
+          value={activeTab}
+          onChange={(v) => setActiveTab(v as typeof activeTab)}
+          options={TABS.filter(tab => tab.visible).map(tab => ({ value: tab.id, label: `${t('settings_page.section_label')}: ${tab.label}` }))}
+        />
+      </div>
+
       {/* Horizontal Scrollable Tabs Selector */}
-      <div className="relative -mx-3 px-3 main-640:mx-0 main-640:px-0">
+      <div className="relative hidden main-900:block">
         <div className="pointer-events-none absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-surface to-transparent z-10" />
         <div className="pointer-events-none absolute inset-y-0 left-0 w-8 bg-gradient-to-r from-surface to-transparent z-10" />
         <div ref={tabsContainerRef} className="flex gap-2 overflow-x-auto pb-3 pt-1 scrollbar-none">
@@ -729,7 +741,7 @@ export default function Settings({ tenantId }: SettingsProps) {
                       <button
                         type="button"
                         onClick={() => setIsLocationPickerOpen(true)}
-                        className="text-sm font-bold text-brand hover:text-brand/80 transition-colors flex items-center gap-1.5 px-1"
+                        className="text-sm font-bold text-brand hover:text-brand/80 transition-colors flex items-center gap-1.5 px-1 min-h-11 -my-3"
                       >
                         <MapPin size={13} />
                         {t('settings_page.profile.pick_on_map', 'تحديد على الخريطة')}

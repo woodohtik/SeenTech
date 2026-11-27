@@ -1,7 +1,7 @@
+import { StatGrid } from './ui/StatGrid';
 import { countByPhase, isActiveOrder, isCompletedOrder, isDeliveredOrder } from '../utils/reportPhases';
 import { finishedStageKeys, getOrderPhase } from '../utils/orderStage';
 import React, { useState, useEffect, useMemo } from 'react';
-import { AutoGrid } from './ui/AutoGrid';
 import { StatCard } from './ui/StatCard';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase/client';
@@ -1190,7 +1190,7 @@ export default function Reports({ tenantId }: { tenantId: string }) {
           {activeTab === 'general' && (
             // StatCard on an AutoGrid (seen-responsive-layout-task.md Phase 3): the
             // amounts used to be cut ("truncate") inside a fixed four-column row.
-            <AutoGrid id="reports-general-grid" min={200} maxColumns={4}>
+            <StatGrid id="reports-general-grid">
               {[
                 { label: t('dashboard.total_revenue'), value: financialStats.totalRevenue, icon: DollarSign, color: 'text-success', bg: 'bg-success/10', isCurrency: true },
                 { label: t('dashboard.admin.total_sales'), value: financialStats.totalSales, icon: TrendingUp, color: 'text-brand', bg: 'bg-brand/10', isCurrency: true },
@@ -1206,7 +1206,7 @@ export default function Reports({ tenantId }: { tenantId: string }) {
                     : stat.value.toLocaleString(locale)}
                 />
               ))}
-            </AutoGrid>
+            </StatGrid>
           )}
 
           {activeTab === 'financial' && (

@@ -1,3 +1,4 @@
+import { StatGrid } from '../ui/StatGrid';
 import { useDialogBehavior } from '../ui/DialogFrame';
 import { VariantThumbs } from './VariantThumbs';
 import { VariantOpeningBalance, variantOpeningQuantities, type VariantOpeningState } from './VariantOpeningBalance';
@@ -6,7 +7,6 @@ import { generateInternalBarcode } from '../../lib/barcode';
 import { PriceDisplay } from '../PriceDisplay';
 import { openingBaseQuantity } from '../../utils/openingBalance';
 import React, { useState, useEffect, useMemo, useRef } from "react";
-import { AutoGrid } from '../ui/AutoGrid';
 import { StatCard } from '../ui/StatCard';
 import { PageHeader } from '../ui/PageHeader';
 import {
@@ -615,9 +615,9 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
 
       {activeTab === "inventory" && (
         <>
-          {/* Stats Overview: StatCard on an AutoGrid (seen-responsive-layout-task.md Phase 3) --
+          {/* Stats Overview: StatCard on a StatGrid: two compact columns on a phone (seen-ui-responsive-alignment-audit-task.md, finding 07) --
               two tiny columns at 360px cut every label to "…". */}
-          <AutoGrid min={160} maxColumns={4}>
+          <StatGrid>
             {[
               { label: t("inventory.total_items"), value: items.length, icon: Layers, tone: "bg-brand/10 text-brand" },
               { label: t("inventory.warehouses"), value: branches.filter((b) => b.type === "warehouse").length, icon: Warehouse, tone: "bg-[var(--seen-success-bg)] text-success" },
@@ -631,7 +631,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
                 icon={<span aria-hidden="true" className={cn("flex h-12 w-12 items-center justify-center rounded-[12px]", stat.tone)}><stat.icon size={24} /></span>}
               />
             ))}
-          </AutoGrid>
+          </StatGrid>
 
           {/* Filters */}
           <div className="bg-surface p-3 main-640:p-4 rounded-2xl border border-border shadow-sm flex flex-col main-640:flex-row gap-3 main-640:gap-4">

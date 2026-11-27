@@ -725,7 +725,9 @@
     "type": "قسم",
     "copied": "کاپی ہو گیا",
     "build_number": "ورژن نمبر",
-    "trn_placeholder": "15 ہندسے، شروع اور آخر میں 3"
+    "trn_placeholder": "15 ہندسے، شروع اور آخر میں 3",
+    "show_password": "پاس ورڈ دکھائیں",
+    "hide_password": "پاس ورڈ چھپائیں"
   },
   "compliance": {
     "check_legal_name": "کاروبار کا قانونی نام",
@@ -5309,7 +5311,8 @@
       "substep_tests": "تعمیل کے ٹیسٹ",
       "substep_production": "Production CSID کی درخواست",
       "refresh_status": "حالت تازہ کریں"
-    }
+    },
+    "section_label": "حصہ"
   },
   "shift_closing": {
     "actual_cash_label": "دراز میں اصل نقد رقم",
