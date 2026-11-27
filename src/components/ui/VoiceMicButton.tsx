@@ -48,7 +48,7 @@ export function VoiceMicButton({ onResult, ariaLabel, className, iconSize = 18 }
       type="button"
       onClick={isListening ? stop : start}
       aria-label={ariaLabel ?? t('common.voice_input', 'إدخال صوتي')}
-      className={cn('cursor-pointer transition-colors', className, isListening && 'text-brand animate-pulse')}
+      className={cn('cursor-pointer transition-colors p-[13px] -m-[13px] rounded-full', className, isListening && 'text-brand animate-pulse')}
     >
       <Mic size={iconSize} />
     </button>

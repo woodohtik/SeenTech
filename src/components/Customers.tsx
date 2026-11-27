@@ -1898,7 +1898,7 @@ export default function Customers({ tenantId }: CustomersProps) {
                         setValue('trn' as any, val, { shouldValidate: true });
                       }}
                       dir="ltr"
-                      placeholder="300000000000003"
+                      placeholder={t('common.trn_placeholder')}
                       error={errors.trn?.message as string | undefined}
                     />
                   </div>

@@ -150,7 +150,7 @@ export default function SuppliersRegistry({
                           {supplier.phone && (
                             <>
                               <span className="text-content-muted">|</span>
-                              <span className="font-mono">{supplier.phone}</span>
+                              <bdi dir="ltr" className="font-mono">{supplier.phone}</bdi>
                             </>
                           )}
                         </span>
@@ -286,7 +286,7 @@ export default function SuppliersRegistry({
                     <h3 className="font-extrabold text-content text-sm truncate">{supplier.name}</h3>
                     <p className="text-sm text-content-muted font-bold mt-0.5 truncate">
                       {supplier.contactPerson && `${t('procurement.contact_person', 'الشخص المسؤول')}: ${supplier.contactPerson}`}
-                      {supplier.phone && ` | ${supplier.phone}`}
+                      {supplier.phone && <> | <bdi dir="ltr">{supplier.phone}</bdi></>}
                     </p>
                   </div>
                 </div>

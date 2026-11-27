@@ -3281,7 +3281,7 @@ const invoiceData: InvoiceData | null = buildPosInvoiceData(completedOrder, {
                 <label className="block text-sm font-bold text-content mb-2">{t('pos.trn_label_clean')} <span className="text-danger">*</span></label>
                 <IconInput
                   type="text"
-                  placeholder="300000000000003"
+                  placeholder={t('common.trn_placeholder')}
                   value={b2bData.trn}
                   onChange={e => setB2bData({...b2bData, trn: e.target.value})}
                 />

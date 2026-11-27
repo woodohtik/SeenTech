@@ -100,7 +100,10 @@ function measure(width: number) {
 
   let small = 0; let under44 = 0; const smallNames: string[] = [];
   for (const t of [...root.querySelectorAll('button,a[href],[role=button],input[type=checkbox],input[type=radio]')].filter(vis)) {
-    const r = t.getBoundingClientRect();
+    // A checkbox's tap area is its label; a 1px element is visually hidden (the skip link until focused).
+    const box = (t.matches('input[type=checkbox],input[type=radio]') && t.closest('label')) || t;
+    const r = box.getBoundingClientRect();
+    if (r.width <= 1 && r.height <= 1) continue;
     if (r.width < 24 || r.height < 24) { small += 1; if (smallNames.length < 6) smallNames.push(`«${label(t)}» ${Math.round(r.width)}x${Math.round(r.height)}`); }
     else if (width <= 1024 && (r.width < 44 || r.height < 44)) under44 += 1;
   }

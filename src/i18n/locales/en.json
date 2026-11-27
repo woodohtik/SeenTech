@@ -724,7 +724,8 @@
     "to": "To",
     "type": "Type",
     "copied": "Copied",
-    "build_number": "Build"
+    "build_number": "Build",
+    "trn_placeholder": "15 digits, starting and ending with 3"
   },
   "compliance": {
     "check_legal_name": "Legal Name of the Business",

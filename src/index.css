@@ -210,6 +210,10 @@ h1, h2, h3, h4, h5, h6 {
 .dark .bg-\[var\(--seen-success-bg\)\].text-success { color: #34D399; }
 .dark .bg-\[var\(--seen-warning-bg\)\].text-warning { color: #FBBF24; }
 .dark .bg-\[var\(--seen-danger-bg\)\].text-danger { color: #F87171; }
+/* seen-ui-responsive-alignment-audit-task.md, finding 17: danger text on a light
+   danger tint was 4.49:1 (needs 4.5) -- a little darker there; dark mode keeps its red. */
+.text-danger-strong { color: color-mix(in oklab, var(--danger) 82%, black); }
+.dark .text-danger-strong { color: #F87171; }
 
 /* seen-readiness-fixes-task.md P4 (UX-10): in dark mode white on the bright
    warning / success colours is ~2:1 -- text on those solid backgrounds is dark. */

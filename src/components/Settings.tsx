@@ -688,8 +688,12 @@ export default function Settings({ tenantId }: SettingsProps) {
                         <label htmlFor="settings-profile-phone" className="text-sm font-black text-content-muted">{t('settings_page.profile.phone', 'رقم التواصل الموحد')}</label>
                         <HelpCircle size={14} className="text-content-muted/80 cursor-help" />
                       </div>
-                      <IconInput id="settings-profile-phone" 
-                        type="text" 
+                      {/* A phone number reads left to right (+966... was shown reversed); the phone keypad on mobiles. */}
+                      <IconInput id="settings-profile-phone"
+                        type="tel"
+                        inputMode="tel"
+                        dir="ltr"
+                        autoComplete="tel"
                         {...register('phone')}
                         placeholder="05XXXXXXXX / 9200XXXXX"
                         startIcon={Phone}
@@ -981,7 +985,7 @@ export default function Settings({ tenantId }: SettingsProps) {
                           <IconInput
                             type="text"
                             maxLength={15}
-                            placeholder="300000000000003"
+                            placeholder={t('common.trn_placeholder')}
                             required
                             label={t('settings_page.tax.trn', 'الرقم الضريبي (TRN - 15 خانة)')}
                             {...register('taxSettings.trn')}

@@ -1724,7 +1724,7 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
                   title: t('dashboard.all_orders', 'جميع الطلبات'), 
                   data: r.orders.map(o => ({ id: o.id, [t('common.customers')]: o.customerName, [t('common.amount')]: o.totalAmount, [t('common.date')]: formatDate(o.orderDate), [t('common.status')]: o.status }))
                 }))}
-                className="text-brand text-sm font-bold hover:underline"
+                className="text-brand text-sm font-bold hover:underline inline-flex items-center min-h-11 px-2 -mx-2 -my-3"
               >
                 {t('dashboard.view_all')}
               </button>

@@ -1,3 +1,4 @@
+import { useDialogBehavior } from './ui/DialogFrame';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useUnsavedWork } from '../lib/unsavedWork';
 import { createPortal } from 'react-dom';
@@ -365,7 +366,7 @@ function QuickAddCustomerModal({
             </div>
             <div className="space-y-2">
               <label htmlFor="quick-customer-trn" className="text-sm font-bold text-content-muted">{t('orders.company_trn_label')} <span className="opacity-70 text-sm">{t('common.optional')}</span></label>
-              <input id="quick-customer-trn" type="text" {...register('trn' as any)} className={inputClass} dir="ltr" placeholder="300000000000003" />
+              <input id="quick-customer-trn" type="text" {...register('trn' as any)} className={inputClass} dir="ltr" placeholder={t('common.trn_placeholder')} />
               {errors.trn && <p className="text-sm text-danger font-bold">{String(errors.trn.message)}</p>}
             </div>
           </div>
@@ -781,6 +782,9 @@ function TailoringOrderFormBody({
   const unitText = (unit: ContentUnit) => t(unit === 'yard' ? 'inventory.unit_yard' : 'inventory.unit_meter');
   const paidAmount = Number(watch('paidAmount' as any) || 0);
   const images: string[] = watch('images' as any) || [];
+  // seen-ui-responsive-alignment-audit-task.md, finding 03: focus into the form, Esc, focus back.
+  const dialogRef = useRef<HTMLDivElement>(null);
+  useDialogBehavior(dialogRef, onClose);
 
   return (
     <div className="fixed inset-0 z-[100] flex items-end main-900:items-center justify-center main-900:p-4 overflow-hidden">
@@ -792,6 +796,7 @@ function TailoringOrderFormBody({
         className="absolute inset-0 bg-black/50 backdrop-blur-sm"
       />
       <motion.div
+        ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-label={t('orders.create_new_order')}
@@ -1289,7 +1294,8 @@ function TailoringOrderFormBody({
                   />
                   <div className="flex justify-between text-sm font-bold pt-1">
                     <span className="text-white/80">{t('orders.remaining_label')}</span>
-                    <span className="bg-danger px-2 py-0.5 rounded-lg"><PriceDisplay amount={totals.total - paidAmount} /></span>
+                    {/* Red only when something is owed: a zero is not an error (audit finding 14). */}
+                    <span className={cn("px-2 py-0.5 rounded-lg", totals.total - paidAmount > 0.005 ? "bg-danger" : "bg-white/15")}><PriceDisplay amount={totals.total - paidAmount} /></span>
                   </div>
                 </div>
               </div>

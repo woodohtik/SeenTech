@@ -724,7 +724,8 @@
     "to": "تک",
     "type": "قسم",
     "copied": "کاپی ہو گیا",
-    "build_number": "ورژن نمبر"
+    "build_number": "ورژن نمبر",
+    "trn_placeholder": "15 ہندسے، شروع اور آخر میں 3"
   },
   "compliance": {
     "check_legal_name": "کاروبار کا قانونی نام",

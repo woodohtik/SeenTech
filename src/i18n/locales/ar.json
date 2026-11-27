@@ -724,7 +724,8 @@
     "to": "إلى",
     "type": "النوع",
     "copied": "تم النسخ",
-    "build_number": "رقم النسخة"
+    "build_number": "رقم النسخة",
+    "trn_placeholder": "15 رقم يبدأ وينتهي بـ 3"
   },
   "compliance": {
     "check_legal_name": "الاسم النظامي للمنشأة",

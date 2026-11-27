@@ -688,7 +688,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
                       <h4
                         className={cn(
                           "text-sm font-black",
-                          isLowStockOnly ? "text-white" : "text-danger",
+                          isLowStockOnly ? "text-white" : "text-danger-strong",
                         )}
                       >
                         {isLowStockOnly
