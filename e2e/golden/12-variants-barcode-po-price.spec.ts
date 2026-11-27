@@ -103,7 +103,7 @@ test("a purchase order starts at the product's cost, and confirming a new price 
   await page.getByRole('button', { name: 'إنشاء أمر شراء' }).first().click();
   await page.getByRole('button', { name: 'اختر المورد المسؤول...' }).click();
   await page.getByRole('option', { name: SUPPLIER.name }).click();
-  await page.getByRole('button', { name: 'اختر صنف المخزن...' }).click();
+  await page.getByRole('button', { name: 'الصنف', exact: true }).click();
   await page.getByRole('option', { name: new RegExp(NAME) }).first().click();
   await page.getByRole('button', { name: /اختر السمة/ }).click();
   await page.getByRole('option').first().click();

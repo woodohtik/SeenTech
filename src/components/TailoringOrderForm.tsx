@@ -875,7 +875,7 @@ function TailoringOrderFormBody({
             {/* Customer, delivery, tailor */}
             <div className="grid grid-cols-1 main-720:grid-cols-3 gap-4">
               <div className="space-y-2">
-                <label className={sectionLabelClass}>{t('common.customer')}</label>
+                <div className="flex items-center h-6"><label className={sectionLabelClass}>{t('common.customer')}</label></div>
                 <div className="flex items-center gap-2">
                   <div className="flex-1 min-w-0" aria-invalid={!!errors.customerId}>
                     <Controller
@@ -912,7 +912,7 @@ function TailoringOrderFormBody({
               </div>
 
               <div className="space-y-2" aria-invalid={!!errors.deliveryDate}>
-                <label className={sectionLabelClass}>{t('orders.expected_delivery_date')}</label>
+                <div className="flex items-center h-6"><label className={sectionLabelClass}>{t('orders.expected_delivery_date')}</label></div>
                 <DatePicker
                   value={watch('deliveryDate' as any) || ''}
                   onChange={(val) => setValue('deliveryDate' as any, val, { shouldValidate: true, shouldDirty: true })}

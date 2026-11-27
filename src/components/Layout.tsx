@@ -1,3 +1,4 @@
+import { useDialogOpen } from '../hooks/useDialogOpen';
 import React from 'react';
 import { SkipLink } from './ui/SkipLink';
 import { useMeasuredSteps, useShellLayout } from '../hooks/useShellLayout';
@@ -99,6 +100,7 @@ function LayoutShell({ children, role, tenantId, currentStaff, onLock, isLocked 
   // seen-responsive-layout-task.md Phase 1: the sidebar's fold and the
   // assistant's place are one decision (lib/shellLayout.ts), by the window's
   // width; the content measures itself (data-main on <html>).
+  const dialogOpen = useDialogOpen();
   const { shell, setSidebar, endSidebarForNow, assistantOpen, setAssistantOpen, toggleExpanded } = useShellLayout({
     hasSidebar: layoutMode === 'sidebar',
     // The person's choice is kept per shop and employee, once both are known.
@@ -646,8 +648,11 @@ function LayoutShell({ children, role, tenantId, currentStaff, onLock, isLocked 
       {/* On the sales page the cart takes the reading-end side at lg+: the
           button goes to the other side, off the totals and the checkout
           button (seen-merchant-trial-test-2026-11-26.md, phase 4). */}
-      <div className={cn(
+      {/* Hidden while any window is open: it covered their save buttons on
+          phones (seen-ui-responsive-alignment-audit-task.md, finding 01). */}
+      <div data-ai-fab className={cn(
         "fixed bottom-6 right-6 z-50",
+        dialogOpen && !assistantOpen && "hidden",
         location.pathname.startsWith('/sales')
           ? (isRtl ? "" : "lg:left-6 lg:right-auto")
           : (isRtl && "lg:left-6 lg:right-auto")
