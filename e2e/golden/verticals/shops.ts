@@ -45,7 +45,7 @@ export const VERTICAL_SHOPS: VerticalShop[] = [
   {
     vertical: 'fabric_store', tenantId: id(4, '1'), branchId: id(4, 'b1'), ownerStaffId: id(4, 'c1'),
     ownerEmail: 'owner-fabric@golden.test', name: 'محل أقمشة الاختبار',
-    customer: { id: id(4, 'e1'), name: 'خياط الاختبار', phone: '0504444441' },
+    customer: { id: id(4, 'e1'), name: 'عميل الأقمشة', phone: '0504444441' },
     lengthItem: { id: id(4, 'f1'), name: 'كتان الاختبار', categoryKey: 'linen', price: 25, stock: 60 },
     pieceItem: { id: id(4, 'f2'), name: 'مقص الاختبار', categoryKey: 'accessories', price: 40, stock: 10 },
     forbiddenWords: ['ثوب', 'خياط', 'تفصيل', 'مقاسات الثوب'],

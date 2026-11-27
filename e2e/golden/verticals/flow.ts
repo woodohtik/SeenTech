@@ -17,13 +17,23 @@ const go = async (page: Page, url: string) => {
   await page.waitForTimeout(2500);
 };
 
+/**
+ * A word as a word: «خياط» or «الخياط», not inside «خياطة» (sewing -- a
+ * fabric store's own «إكسسوارات خياطة» is right for it).
+ */
+export function findWord(text: string, word: string): number {
+  const re = new RegExp(`(^|[^\u0600-\u06FF])(و?(?:ال|بال|لل|كال)?)${word}(?=$|[^\u0600-\u06FF])`, 'u');
+  const m = re.exec(text);
+  return m ? m.index + m[1].length : -1;
+}
+
 /** The words on screen (the visible text, not the code). */
 const screenText = (page: Page) => page.locator('body').innerText();
 
 async function stageLabel(vertical: string, stageKey: string): Promise<string> {
-  const { data, error } = await db().from('vertical_workflow_stages').select('name_ar').eq('vertical_key', vertical).eq('stage_key', stageKey).single();
+  const { data, error } = await db().from('vertical_workflow_stages').select('label_ar').eq('vertical_key', vertical).eq('stage_key', stageKey).single();
   if (error || !data) throw new Error(`stage ${vertical}/${stageKey}: ${error?.message}`);
-  return data.name_ar as string;
+  return data.label_ar as string;
 }
 
 async function stageOfPhase(vertical: string, phase: string): Promise<string> {
@@ -44,7 +54,7 @@ export function verticalPath(shop: VerticalShop): void {
         await go(page, route);
         const text = await screenText(page);
         for (const word of shop.forbiddenWords) {
-          const at = text.indexOf(word);
+          const at = findWord(text, word);
           if (at >= 0) found.push(`${route}: «${word}» in «${text.slice(Math.max(0, at - 25), at + word.length + 25).replace(/\s+/g, ' ')}»`);
         }
       }
