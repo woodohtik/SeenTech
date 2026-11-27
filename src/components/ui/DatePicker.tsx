@@ -167,6 +167,8 @@ export function DatePicker({ value, onChange, id, className, placeholder, trigge
         aria-haspopup="dialog"
         aria-expanded={isOpen}
         aria-label={formatDisplayDate(value)}
+        // seen-ui-responsive-alignment-audit-task.md, phase 1: a field like the others (the layout guard measures it).
+        data-field-control
         onClick={() => {
           setIsOpen(!isOpen);
           // Set current view month to the parsed value month when opening
@@ -178,7 +180,7 @@ export function DatePicker({ value, onChange, id, className, placeholder, trigge
           }
         }}
         className={cn(
-          "flex items-center gap-2.5 w-full bg-surface-muted/50 hover:bg-surface-muted/80 border border-border rounded-2xl px-4 h-12 text-sm font-bold text-content transition-all shadow-inner shadow-black/5 outline-none cursor-pointer text-right justify-between",
+          "flex items-center gap-2.5 w-full bg-surface hover:border-brand/40 border border-border rounded-[var(--radius-md)] px-4 h-12 text-sm font-semibold text-content transition-all shadow-sm outline-none cursor-pointer text-right justify-between focus-visible:ring-2 focus-visible:ring-brand/20 focus-visible:border-brand",
           triggerClassName,
           isOpen && "border-brand/40 bg-surface"
         )}

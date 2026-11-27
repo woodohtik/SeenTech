@@ -83,7 +83,8 @@ const EXTERNAL_FABRIC = 'custom';
 const inputClass =
   "w-full bg-surface border border-border rounded-xl p-3 text-sm font-semibold text-content outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand";
 const smallLabelClass = "text-sm text-content-muted font-bold uppercase";
-const sectionLabelClass = "text-sm font-black text-content-muted uppercase";
+// 16px, no uppercase (DESIGN.md §2, §7); one line high, so a row's fields line up.
+const sectionLabelClass = "text-base font-bold text-content leading-6";
 
 export default function TailoringOrderForm(props: TailoringOrderFormProps) {
   if (typeof document === 'undefined') return null;
@@ -923,7 +924,7 @@ function TailoringOrderFormBody({
 
               {/* One tailor per order: the commission trigger works at order level. */}
               <div className="space-y-2">
-                <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center justify-between gap-2 h-6">
                   <label className={sectionLabelClass}>{tv('orders.assigned_tailor')}</label>
                   {hasPermission('staff.create') && (
                     <QuickAddTailor tenantId={tenantId} currentStaffEmail={currentStaff?.email} onAdded={reloadTailors} />

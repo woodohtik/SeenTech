@@ -108,7 +108,7 @@ test("a purchase order starts at the product's cost, and confirming a new price 
   await page.getByRole('button', { name: /اختر السمة/ }).click();
   await page.getByRole('option').first().click();
 
-  const price = page.getByRole('spinbutton', { name: '0.00' });
+  const price = page.getByRole('spinbutton', { name: 'السعر / وحدة' });
   await expect(price, "the product's purchase price").toHaveValue('60');
   await price.fill('65');
   await expect(page.getByTestId('po-price-hint')).toContainText('60.00');

@@ -3521,7 +3521,8 @@
     "cost_above_selling": "The new purchase price is above the selling price.",
     "per_meter": "a metre",
     "per_piece": "a piece",
-    "cost_not_updated_note": "The order is confirmed, but the product's price was not updated: that needs permission to edit stock."
+    "cost_not_updated_note": "The order is confirmed, but the product's price was not updated: that needs permission to edit stock.",
+    "item_label": "Item"
   },
   "public_invoice": {
     "digital_access": "Digital Invoice Access",

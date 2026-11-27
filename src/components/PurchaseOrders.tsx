@@ -1,3 +1,4 @@
+import { FormField } from './ui/FormField';
 import { usePoLinePrice } from './procurement/usePoLinePrice';
 import { PoLinePriceHint } from './procurement/PoLinePriceHint';
 import { generateInternalBarcode } from '../lib/barcode';
@@ -1049,9 +1050,12 @@ export default function PurchaseOrders({
 
               <div className="bg-surface-muted/40 p-4 rounded-2xl border border-border space-y-4">
                 <h3 className="font-bold text-sm text-content">{t('procurement.add_items_to_invoice', 'إضافة أصناف لقائمة الفاتورة')}</h3>
-                <div className="grid grid-cols-1 main-720:grid-cols-4 gap-4">
-                  <div className="main-720:col-span-2">
+                {/* seen-ui-responsive-alignment-audit-task.md, phase 1: item / quantity / price line up (FormField subgrid). */}
+                <div className="grid grid-cols-1 main-720:grid-cols-4 gap-x-4 gap-y-4">
+                  <FormField className="main-720:col-span-2" id="po-item" label={t('procurement.item_label')}>
+                    {(fieldId) => (<div>
                     <SmartSelect
+                      id={fieldId}
                       value={selectedItem}
                       onChange={(val) => {
                         if (val === ADD_NEW_ITEM_VALUE) {
@@ -1092,13 +1096,12 @@ export default function PurchaseOrders({
                         />
                       </div>
                     )}
-                  </div>
-                  <div className="space-y-2">
-                    <label className="block text-sm font-black text-content-muted uppercase">
-                      {t('procurement.quantity', 'الكمية')}
-                      {selectedInvItem && ` (${t(`inventory.unit_${selectedInvItem.unit}`, selectedInvItem.unit)})`}
-                    </label>
+                    </div>)}
+                  </FormField>
+                  <FormField id="po-quantity" label={<>{t('procurement.quantity', 'الكمية')}{selectedInvItem && ` (${t(`inventory.unit_${selectedInvItem.unit}`, selectedInvItem.unit)})`}</>}>
+                    {(fieldId) => (
                     <input
+                      id={fieldId}
                       type="number"
                       placeholder="0"
                       value={quantity || ''}
@@ -1106,12 +1109,14 @@ export default function PurchaseOrders({
                       inputMode="decimal"
                       dir="ltr"
                       // No spinner arrows: the figure hid behind them (phase 4).
-                      className="w-full px-4 py-2 bg-surface border border-border rounded-xl outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand text-content font-bold text-sm [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                      className="w-full h-12 px-4 bg-surface border border-border rounded-xl outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand text-content font-bold text-sm [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                     />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="block text-sm font-black text-content-muted uppercase">{t('procurement.price_per_unit_short', 'السعر / وحدة')}</label>
+                    )}
+                  </FormField>
+                  <FormField id="po-price" label={t('procurement.price_per_unit_short', 'السعر / وحدة')}>
+                    {(fieldId) => (<div className="space-y-2">
                     <input
+                      id={fieldId}
                       type="number"
                       placeholder="0.00"
                       value={pricePerUnit || ''}
@@ -1121,7 +1126,7 @@ export default function PurchaseOrders({
                       inputMode="decimal"
                       dir="ltr"
                       className={cn(
-                        "w-full px-4 py-2 bg-surface border border-border rounded-xl outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand text-content font-bold text-sm [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none",
+                        "w-full h-12 px-4 bg-surface border border-border rounded-xl outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand text-content font-bold text-sm [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none",
                         modalType === 'return' && "bg-surface-muted cursor-not-allowed opacity-80"
                       )}
                     />
@@ -1135,7 +1140,8 @@ export default function PurchaseOrders({
                         aboveSellingPrice={linePrice.aboveSellingPrice}
                       />
                     )}
-                  </div>
+                    </div>)}
+                  </FormField>
                 </div>
 
                 {lineIsRoll && modalType === 'purchase' && (

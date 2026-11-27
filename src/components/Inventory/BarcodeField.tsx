@@ -37,7 +37,7 @@ export function BarcodeField({ id, value, onChange }: { id: string; value: strin
           placeholder={t('inventory.barcode_placeholder')}
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className="flex-1 min-w-0 px-5 py-3 bg-surface border border-border rounded-xl font-semibold text-content outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand"
+          className="flex-1 min-w-0 h-12 px-5 bg-surface border border-border rounded-xl font-semibold text-content outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand"
         />
         <button type="button" onClick={() => void generate()} disabled={busy}
           className="shrink-0 min-h-11 inline-flex items-center gap-2 px-4 rounded-xl border border-border bg-surface text-content font-bold text-sm hover:border-brand disabled:opacity-50">
