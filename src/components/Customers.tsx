@@ -1,3 +1,4 @@
+import { DialogDiv } from './ui/DialogFrame';
 import React, { useState, useEffect, useMemo } from 'react';
 import { useUnsavedWork } from '../lib/unsavedWork';
 import { useDebouncedValue } from '../hooks/useDebouncedValue';
@@ -1798,7 +1799,7 @@ export default function Customers({ tenantId }: CustomersProps) {
       {/* Modals */}
       <AnimatePresence>
         {isModalOpen && (
-          <div role="dialog" aria-modal="true" className="fixed inset-0 z-[150] flex items-end main-640:items-center justify-center p-0 main-640:p-4 bg-black/50 backdrop-blur-sm overflow-y-auto">
+          <DialogDiv onClose={() => setIsModalOpen(false)} aria-labelledby="customer-form-title" className="fixed inset-0 z-[150] flex items-end main-640:items-center justify-center p-0 main-640:p-4 bg-black/50 backdrop-blur-sm overflow-y-auto">
             <motion.div
               initial={{ scale: 0.95, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
@@ -1810,7 +1811,7 @@ export default function Customers({ tenantId }: CustomersProps) {
               <form onSubmit={handleSubmit(onSubmit, onInvalidSubmit)} className="flex flex-col flex-1 max-h-[90vh] overflow-hidden">
                 {/* Header (Fixed) */}
                 <div className="sticky top-0 z-10 flex items-center justify-between p-4 main-640:p-6 border-b border-[var(--border)] bg-[var(--surface)] shrink-0 bg-brand/5">
-                  <h3 className="text-base main-640:text-lg main-900:text-xl font-black text-content">
+                  <h3 id="customer-form-title" className="text-base main-640:text-lg main-900:text-xl font-black text-content">
                     {editingCustomer ? t('customers.edit_customer') : t('pos.add_new_customer')}
                   </h3>
                   <button type="button" onClick={() => setIsModalOpen(false)} className="p-2 hover:bg-surface-muted rounded-full transition-colors text-content-muted">
@@ -1991,7 +1992,7 @@ export default function Customers({ tenantId }: CustomersProps) {
                 </div>
               </form>
             </motion.div>
-          </div>
+          </DialogDiv>
         )}
       </AnimatePresence>
 

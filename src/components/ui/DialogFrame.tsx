@@ -124,3 +124,14 @@ export function DialogPanel({ onClose, labelledBy, children, ...rest }: HTMLMoti
     </motion.div>
   );
 }
+
+/** A window's outer div that is the dialog itself (role, aria-modal, the behaviour). */
+export function DialogDiv({ onClose, children, ...rest }: React.HTMLAttributes<HTMLDivElement> & { onClose: () => void }) {
+  const ref = useRef<HTMLDivElement>(null);
+  useDialogBehavior(ref, onClose);
+  return (
+    <div ref={ref} role="dialog" aria-modal="true" tabIndex={-1} {...rest}>
+      {children}
+    </div>
+  );
+}

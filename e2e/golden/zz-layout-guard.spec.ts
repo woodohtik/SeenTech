@@ -72,6 +72,16 @@ function measure(width: number) {
       const r = b.getBoundingClientRect();
       const x = r.left + r.width / 2; const y = r.top + r.height / 2;
       if (x < 0 || y < 0 || x > window.innerWidth || y > window.innerHeight) continue;
+      // Scrolled out of its scrolling panel: not visible, not covered.
+      let clipped = false;
+      for (let n = b.parentElement; n && n !== document.body; n = n.parentElement) {
+        const st = getComputedStyle(n);
+        if (/(auto|scroll|hidden)/.test(st.overflowY + st.overflowX)) {
+          const pr = n.getBoundingClientRect();
+          if (y < pr.top || y > pr.bottom || x < pr.left || x > pr.right) { clipped = true; break; }
+        }
+      }
+      if (clipped) continue;
       const hit = document.elementFromPoint(x, y);
       if (hit && !b.contains(hit) && !root.contains(hit)) out.push({ level: 'fail', check: 'covered-button', detail: `«${label(b)}» under ${hit.tagName}.${(hit as HTMLElement).className?.toString().slice(0, 40)}` });
     }
