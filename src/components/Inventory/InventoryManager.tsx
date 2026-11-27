@@ -1,3 +1,7 @@
+import { VariantThumbs } from './VariantThumbs';
+import { VariantOpeningBalance, variantOpeningQuantities, type VariantOpeningState } from './VariantOpeningBalance';
+import { priceOverrideFor } from '../../utils/variantRows';
+import { generateInternalBarcode } from '../../lib/barcode';
 import { PriceDisplay } from '../PriceDisplay';
 import { openingBaseQuantity } from '../../utils/openingBalance';
 import React, { useState, useEffect, useMemo } from "react";
@@ -805,6 +809,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
                                 {tenantVariantsByItem[item.id].length} {t("inventory.variants.badge_suffix", "سمات")}
                               </span>
                             )}
+                            <VariantThumbs variants={tenantVariantsByItem[item.id]} />
                           </p>
                           <p className="text-sm font-bold text-content-muted uppercase">
                             SKU: {item.sku || "N/A"}
@@ -1182,6 +1187,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
                                       {tenantVariantsByItem[item.id].length} {t("inventory.variants.badge_suffix", "سمات")}
                                     </span>
                                   )}
+                                  <VariantThumbs variants={tenantVariantsByItem[item.id]} />
                                 </p>
                                 <p className="text-sm font-bold text-content-muted uppercase">
                                   SKU: {item.sku || "N/A"}
@@ -1766,6 +1772,9 @@ const AddItemModal = ({ onClose, tenantId, branches }: any) => {
   // "save product, then go find Edit" step.
   const [productMode, setProductMode] = useState<"simple" | "advanced">("simple");
   const [pendingVariantRows, setPendingVariantRows] = useState<GeneratedRow[]>([]);
+  // seen-product-variants-barcode-po-price-task.md, phase 3: how the opening
+  // balance goes on the variants -- the same for each (default) or shared.
+  const [variantOpening, setVariantOpening] = useState<VariantOpeningState>({ mode: 'same', pinned: {} });
   const isAddItem = true;
   const [formData, setFormData] = useState({
     name: "",
@@ -1937,7 +1946,8 @@ const AddItemModal = ({ onClose, tenantId, branches }: any) => {
         price_per_unit: formData.pricePerUnit,
         description: encodeInventoryDescription(formData.costPrice, formData.taxType, formData.description),
         sku: sanitizedSku,
-        barcode: formData.barcode || Math.random().toString().substring(2, 12),
+        // An EAN-13 the shop does not use yet (lib/barcode.ts), not ten random digits.
+        barcode: formData.barcode?.trim() || await generateInternalBarcode(),
         quantity: defaultQty,
         images: formData.mainImage ? [{ url: formData.mainImage }] : [],
         collar_type:
@@ -1996,9 +2006,12 @@ const AddItemModal = ({ onClose, tenantId, branches }: any) => {
         });
       }
 
-      // The opening quantity, as a stock movement "opening balance" (once per item).
+      // The opening quantity, as a stock movement "opening balance" (once per
+      // item). A product with variants gets it per variant, below, after the
+      // variants exist -- not on the product, where the POS could not sell it.
       const openingQty = openingBaseQuantity(Number(formData.openingBalance) || 0, formData as any);
-      if (openingQty > 0 && mainBranch) {
+      const openingOnVariants = productMode === "advanced" && variantRowsToSave.length > 0;
+      if (openingQty > 0 && mainBranch && !openingOnVariants) {
         const { error: openingError } = await supabase.rpc('record_opening_balance', {
           p_item_id: item.id, p_branch_id: mainBranch.id, p_quantity: openingQty,
         });
@@ -2009,19 +2022,33 @@ const AddItemModal = ({ onClose, tenantId, branches }: any) => {
 
       if (productMode === "advanced" && variantRowsToSave.length > 0) {
         let savedCount = 0;
-        for (const row of variantRowsToSave) {
+        const openingEach = variantOpeningQuantities(
+          variantRowsToSave, Number(formData.openingBalance) || 0, !["meter", "yard"].includes(formData.unit), variantOpening,
+        );
+        // In order: the product, then each variant, then that variant's opening balance.
+        for (const [index, row] of variantRowsToSave.entries()) {
           try {
-            await createVariant({
+            const variant = await createVariant({
               tenantId,
               itemId: item.id,
               name: row.name,
               options: row.options,
               sku: row.sku.trim(),
-              barcode: row.barcode.trim() || undefined,
-              priceAdjustment: Number(row.priceAdjustment) || 0,
+              // Every variant gets its own barcode, generated (no field for it).
+              barcode: await generateInternalBarcode(),
+              priceAdjustment: 0,
+              priceOverride: priceOverrideFor(row, Number(formData.pricePerUnit) || 0),
+              imageUrl: row.imageUrl || undefined,
               branches,
             });
             savedCount += 1;
+            const qty = openingBaseQuantity(openingEach[index] || 0, formData as any);
+            if (qty > 0 && mainBranch) {
+              const { error: openingError } = await supabase.rpc('record_opening_balance', {
+                p_item_id: item.id, p_branch_id: mainBranch.id, p_quantity: qty, p_variant_id: variant.id,
+              });
+              if (openingError) toastError(t('inventory.variant_opening.not_saved', { name: row.name }));
+            }
           } catch (variantError) {
             handleError(variantError, t("inventory.variants.bulk_add_partial_failure", "تمت إضافة المنتج، لكن تعذّرت إضافة بعض السمات"));
           }
@@ -2121,11 +2148,24 @@ const AddItemModal = ({ onClose, tenantId, branches }: any) => {
             // seen-merchant-trial-test-2026-11-26.md, phase 3 item 1: stock on hand today.
             showOpeningBalance
             applyCategoryUnitDefaults
+            openingBalanceExtra={productMode === "advanced" && pendingVariantRows.length > 0 ? (
+              <VariantOpeningBalance
+                rows={pendingVariantRows}
+                total={Number(formData.openingBalance) || 0}
+                wholeUnits={!["meter", "yard"].includes(formData.unit)}
+                unitLabel={t(`inventory.units.${formData.unit}`, formData.unit)}
+                value={variantOpening}
+                onChange={setVariantOpening}
+              />
+            ) : null}
           />
 
           {productMode === "advanced" && (
             <VariantAttributeBuilder
               baseSku={formData.sku}
+              basePrice={Number(formData.pricePerUnit) || 0}
+              tenantId={tenantId}
+              hasOpeningBalance={(Number(formData.openingBalance) || 0) > 0}
               onCancel={() => {
                 setProductMode("simple");
                 setPendingVariantRows([]);
@@ -3928,7 +3968,7 @@ const EditItemModal = ({ onClose, tenantId, item, branches }: any) => {
             showOpeningBalance={false}
           />
 
-          <ProductVariantsSection tenantId={tenantId} itemId={item.id} branches={branches} baseSku={item.sku} />
+          <ProductVariantsSection tenantId={tenantId} itemId={item.id} branches={branches} baseSku={item.sku} basePrice={Number(item.pricePerUnit) || 0} />
 
           <div className="sticky bottom-0 bg-surface -mx-4 main-640:-mx-8 -mb-4 main-640:-mb-8 px-4 main-640:px-8 pb-4 main-640:pb-8 flex flex-col main-640:flex-row main-640:justify-end gap-3 main-640:gap-4 pt-6 border-t border-border">
             <button aria-label={t('common.close')}

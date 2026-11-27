@@ -1,3 +1,4 @@
+import { effectiveVariantPrice } from '../utils/variantRows';
 import { ThermalInvoice, StandardInvoice, InvoiceData } from "./printing/InvoiceReceipt";
 import { useUnsavedWork } from '../lib/unsavedWork';
 import { contentReached } from '../lib/shellLayout';
@@ -501,6 +502,8 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
             sku: row.sku,
             barcode: row.barcode || undefined,
             priceAdjustment: Number(row.price_adjustment) || 0,
+            priceOverride: row.price_override == null ? null : Number(row.price_override),
+            imageUrl: row.image_url || undefined,
             updatedAt: row.updated_at,
           };
           (byItem[row.item_id] ||= []).push(variant);
@@ -1078,9 +1081,10 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
         variantId: variant?.id,
         name: displayName,
         nameEn: item.nameEn,
-        price: item.pricePerUnit + (variant?.priceAdjustment || 0),
+        // A variant's own price, or the product's (as create_pos_sale prices it).
+        price: variant ? effectiveVariantPrice(item.pricePerUnit, variant) : item.pricePerUnit,
         taxType: item.taxType || 'exclusive',
-        image: item.mainImage || item.images?.[0] || '',
+        image: variant?.imageUrl || item.mainImage || item.images?.[0] || '',
         quantity: isLength ? firstLengthQuantity(availableStock) : 1,
         ...(isLength ? { isLength: true, conversionRate: Number(item.conversionRate) || 0, lengthUnit: 'meter' as LengthUnit } : {}),
       } as OrderItem];

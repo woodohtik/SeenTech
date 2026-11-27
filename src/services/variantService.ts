@@ -23,6 +23,8 @@ function mapVariantRow(row: any): ProductVariant {
     sku: row.sku,
     barcode: row.barcode || undefined,
     priceAdjustment: Number(row.price_adjustment) || 0,
+    priceOverride: row.price_override == null ? null : Number(row.price_override),
+    imageUrl: row.image_url || undefined,
     updatedAt: row.updated_at,
   };
 }
@@ -93,6 +95,9 @@ export interface CreateVariantInput {
   sku: string;
   barcode?: string;
   priceAdjustment: number;
+  /** null = follows the product's price. */
+  priceOverride?: number | null;
+  imageUrl?: string;
   branches: Branch[];
 }
 
@@ -116,6 +121,8 @@ export async function createVariant(input: CreateVariantInput): Promise<ProductV
       sku: input.sku,
       barcode: input.barcode || null,
       price_adjustment: input.priceAdjustment || 0,
+      price_override: input.priceOverride ?? null,
+      image_url: input.imageUrl || null,
     })
     .select()
     .single();
@@ -137,7 +144,7 @@ export async function createVariant(input: CreateVariantInput): Promise<ProductV
 
 export async function updateVariant(
   variantId: string,
-  patch: Partial<Pick<CreateVariantInput, 'name' | 'options' | 'sku' | 'barcode' | 'priceAdjustment'>>
+  patch: Partial<Pick<CreateVariantInput, 'name' | 'options' | 'sku' | 'barcode' | 'priceAdjustment' | 'priceOverride' | 'imageUrl'>>
 ): Promise<void> {
   const update: Record<string, any> = {};
   if (patch.name !== undefined) update.name = patch.name;
@@ -145,6 +152,8 @@ export async function updateVariant(
   if (patch.sku !== undefined) update.sku = patch.sku;
   if (patch.barcode !== undefined) update.barcode = patch.barcode || null;
   if (patch.priceAdjustment !== undefined) update.price_adjustment = patch.priceAdjustment;
+  if (patch.priceOverride !== undefined) update.price_override = patch.priceOverride;
+  if (patch.imageUrl !== undefined) update.image_url = patch.imageUrl || null;
   update.updated_at = new Date().toISOString();
 
   const { error } = await supabase.from('inventory_variants').update(update).eq('id', variantId);

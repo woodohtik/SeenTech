@@ -1,3 +1,6 @@
+import { usePoLinePrice } from './procurement/usePoLinePrice';
+import { PoLinePriceHint } from './procurement/PoLinePriceHint';
+import { generateInternalBarcode } from '../lib/barcode';
 import { PurchaseVatBreakdown } from './procurement/PurchaseVatBreakdown';
 import { resolveTaxSettings } from '../utils/taxSettings';
 import { formatStockQty } from '../utils/stockTotals';
@@ -62,7 +65,7 @@ export default function PurchaseOrders({
     return () => { alive = false; };
   }, [tenantId]);
   const { dir, isRtl } = useDirection();
-  const { error: toastError, success: toastSuccess } = useToast();
+  const { error: toastError, success: toastSuccess, info: toastInfo } = useToast();
   const { confirm } = useConfirm();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -168,7 +171,7 @@ export default function PurchaseOrders({
           price_per_unit: newItemSellingPrice,
           description: encodeInventoryDescription(newItemCostPrice, 'exclusive', ''),
           sku,
-          barcode: Math.random().toString().substring(2, 12),
+          barcode: await generateInternalBarcode(),
           quantity: 0,
           show_in_pos: true,
           opening_balance: 0,
@@ -286,6 +289,12 @@ export default function PurchaseOrders({
     ? contentToMeters(lineRollContent, lineContentUnit)
     : Number(selectedInvItem?.conversionRate || selectedInvItem?.conversion_rate || 1);
   const lineRateInvalid = lineIsRoll && !(lineRollContent > 0);
+  // The line's price starts at the product's purchase price; a different one
+  // can update the product when the order is confirmed.
+  const linePrice = usePoLinePrice({
+    item: selectedInvItem, rate: lineRate, isPurchase: modalType === 'purchase',
+    price: pricePerUnit, setPrice: setPricePerUnit,
+  });
 
   const handleAddItem = () => {
     const invItem = inventory.find(i => i.id === selectedItem);
@@ -304,7 +313,8 @@ export default function PurchaseOrders({
       conversionRate: rate,
       baseQuantity: safeRound(quantity * rate, 4),
       pricePerUnit,
-      total: quantity * pricePerUnit
+      total: quantity * pricePerUnit,
+      updateItemCost: linePrice.updateItemCost,
     };
 
     setItems([...items, newItem]);
@@ -349,7 +359,8 @@ export default function PurchaseOrders({
           conversion_rate: item.conversionRate,
           base_quantity: item.baseQuantity,
           price_per_unit: item.pricePerUnit,
-          total: item.total
+          total: item.total,
+          update_item_cost: modalType === 'purchase' && !!item.updateItemCost,
         })),
       });
 
@@ -439,10 +450,15 @@ export default function PurchaseOrders({
       // idempotency المستخدَمة سابقاً (po:<order_id>:item:<item_id> للمخزون،
       // order.id لرصيد المورد) فيستأنف بأمان أي تأكيد قديم بالنمط السابق
       // انقطع منتصف الطريق دون تكرار أي أثر سبق تطبيقه.
-      const { error: confirmErr } = await supabase.rpc('confirm_purchase_order', {
+      const { data: confirmed, error: confirmErr } = await supabase.rpc('confirm_purchase_order', {
         p_order_id: order.id,
       });
       if (confirmErr) throw confirmErr;
+      // A ticked "update the product's price" needs inventory.edit; without
+      // it the order still goes through and the price stays.
+      if (Number((confirmed as any)?.cost_not_updated) > 0) {
+        toastInfo(t('procurement.cost_not_updated_note'));
+      }
 
       toastSuccess(finalOrderType === 'return' ? t('procurement.return_confirmed_success') : t('procurement.po_confirmed_success'));
       setSelectedOrder(null);
@@ -1099,7 +1115,7 @@ export default function PurchaseOrders({
                       type="number"
                       placeholder="0.00"
                       value={pricePerUnit || ''}
-                      onChange={(e) => setPricePerUnit(Number(e.target.value))}
+                      onChange={(e) => { setPricePerUnit(Number(e.target.value)); linePrice.markTouched(); }}
                       readOnly={modalType === 'return'}
                       title={modalType === 'return' ? t('procurement.return_price_locked', 'السعر مقفل على سعر الشراء الفعلي ولا يمكن تعديله') : undefined}
                       inputMode="decimal"
@@ -1109,6 +1125,16 @@ export default function PurchaseOrders({
                         modalType === 'return' && "bg-surface-muted cursor-not-allowed opacity-80"
                       )}
                     />
+                    {linePrice.changed && (
+                      <PoLinePriceHint
+                        currentCost={linePrice.costPerBase}
+                        newCost={linePrice.newCost}
+                        perUnit={t(['meter', 'yard', 'roll', 'bolt'].includes(selectedInvItem?.unit) ? 'procurement.per_meter' : 'procurement.per_piece')}
+                        checked={linePrice.updateCost}
+                        onChange={linePrice.setUpdateCost}
+                        aboveSellingPrice={linePrice.aboveSellingPrice}
+                      />
+                    )}
                   </div>
                 </div>
 

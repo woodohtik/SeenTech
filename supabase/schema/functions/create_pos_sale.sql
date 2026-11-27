@@ -25,6 +25,7 @@ DECLARE
   v_effective_price     numeric;
   v_catalog_price       numeric;
   v_variant_adjustment  numeric;
+  v_variant_override    numeric;
   v_conflicts           int := 0;
   v_prev_hash           text;
   v_invoice_hash        text;
@@ -149,8 +150,12 @@ BEGIN
       END IF;
 
       v_variant_adjustment := 0;
+      v_variant_override := NULL;
       IF v_variant_id IS NOT NULL THEN
-        SELECT price_adjustment INTO v_variant_adjustment
+        -- seen-product-variants-barcode-po-price-task.md: a variant's own
+        -- price (price_override) when it has one; otherwise it follows the
+        -- product's price (plus its old adjustment, kept for compatibility).
+        SELECT price_adjustment, price_override INTO v_variant_adjustment, v_variant_override
           FROM public.inventory_variants
          WHERE id = v_variant_id AND item_id = v_item_id AND tenant_id = v_tenant;
         IF v_variant_adjustment IS NULL THEN
@@ -158,7 +163,7 @@ BEGIN
         END IF;
       END IF;
 
-      v_effective_price := v_catalog_price + COALESCE(v_variant_adjustment, 0);
+      v_effective_price := COALESCE(v_variant_override, v_catalog_price + COALESCE(v_variant_adjustment, 0));
     ELSE
       -- true bespoke line: no catalog item_id at all, the tailor's own
       -- quoted price is authoritative, just validated non-negative.

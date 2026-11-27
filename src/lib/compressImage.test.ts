@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, expect, it, vi } from 'vitest';
-import { compressForOrder, OrderImageError, ORDER_IMAGE_STEPS } from './compressImage';
+import { compressForOrder, compressForVariant, OrderImageError, ORDER_IMAGE_STEPS, VARIANT_IMAGE_TARGET_BYTES } from './compressImage';
 
 // seen-order-images-upload-task.md, phase 2: the smallest file that stays
 // clear -- 1600px, WebP, 0.8 down to a floor of 0.6 / 1280px; never below.
@@ -59,5 +59,29 @@ describe('compressForOrder', () => {
     const text = new File([new Uint8Array([0x3c, 0x73, 0x76, 0x67])], 'x.svg', { type: 'image/svg+xml' });
     await expect(compressForOrder(text, { compress, supportsWebp: () => true })).rejects.toBeInstanceOf(OrderImageError);
     expect(compress).not.toHaveBeenCalled();
+  });
+});
+
+// seen-product-variants-barcode-po-price-task.md, phase 2: a variant's photo
+// is a small square in the POS -- 800px WebP, at most 150 KB, always.
+describe('compressForVariant', () => {
+  it('800px WebP, the first step that reaches 150 KB', async () => {
+    const compress = vi.fn().mockResolvedValueOnce(blobOf(90));
+    const out = await compressForVariant(photo(), { compress, supportsWebp: () => true });
+    expect(out.size).toBe(90 * 1024);
+    expect(compress.mock.calls[0][1]).toMatchObject({ maxWidthOrHeight: 800, fileType: 'image/webp' });
+  });
+
+  it('never over 150 KB: when the steps do not get there, the library is asked for 150 KB', async () => {
+    const compress = vi.fn().mockImplementation(async (_f, o) => (o.alwaysKeepResolution ? blobOf(400) : blobOf(140)));
+    const out = await compressForVariant(photo(), { compress, supportsWebp: () => true });
+    expect(out.size).toBeLessThanOrEqual(VARIANT_IMAGE_TARGET_BYTES);
+    const last = compress.mock.calls.at(-1)![1];
+    expect(last.maxSizeMB).toBeLessThanOrEqual(150 / 1024);
+  });
+
+  it('HEIC is refused like an order photo', async () => {
+    await expect(compressForVariant(photo(1000, 'a.heic', 'image/heic'), { compress: vi.fn(), supportsWebp: () => true }))
+      .rejects.toBeInstanceOf(OrderImageError);
   });
 });

@@ -69,6 +69,16 @@ for (const width of WIDTHS) {
     await closeModal(page);
     await shot(page, width, '05-inventory', () => go(page, '/inventory'));
     await shot(page, width, '06-add-item', () => page.getByRole('button', { name: 'إضافة منتج' }).first().click());
+    // seen-product-variants-barcode-po-price-task.md: the advanced form, with variant rows and the opening stock table.
+    await shot(page, width, '06b-add-item-variants', async () => {
+      await page.getByRole('button', { name: 'منتج متقدم (له سمات)' }).click();
+      await page.getByPlaceholder(/اسم السمة/).first().fill('اللون');
+      const value = page.getByPlaceholder(/قيمة/).first();
+      await value.fill('أبيض'); await value.press('Enter');
+      await value.fill('أسود'); await value.press('Enter');
+      await page.getByRole('button', { name: 'توليد المتغيّرات' }).click();
+      await page.getByRole('spinbutton', { name: 'الرصيد الافتتاحي' }).fill('10');
+    });
     await closeModal(page);
     await shot(page, width, '07-settings', () => go(page, '/settings'));
     await shot(page, width, '08-staff', () => go(page, '/settings?tab=staff'));

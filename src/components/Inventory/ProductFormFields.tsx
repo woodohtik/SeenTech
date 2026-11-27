@@ -1,3 +1,4 @@
+import { BarcodeField } from './BarcodeField';
 import React from "react";
 import { useTranslation } from "react-i18next";
 import { motion, AnimatePresence } from "motion/react";
@@ -71,6 +72,8 @@ interface ProductFormFieldsProps {
    * حيث لا يزال يمثّل تعديلاً يدوياً شرعياً لرصيد موجود فعلاً.
    */
   showOpeningBalance?: boolean;
+  /** Shown under the opening balance (a product with variants: how it goes on them). */
+  openingBalanceExtra?: React.ReactNode;
   /** Add form only: picking a category resets the unit to that category default (roll / piece). */
   applyCategoryUnitDefaults?: boolean;
 }
@@ -86,6 +89,7 @@ export default function ProductFormFields({
   suppliersList,
   handleError,
   showOpeningBalance = true,
+  openingBalanceExtra = null,
   applyCategoryUnitDefaults = false,
 }: ProductFormFieldsProps) {
   const { t } = useTranslation();
@@ -505,6 +509,7 @@ export default function ProductFormFields({
                 className="w-full px-5 py-3 bg-surface border border-border rounded-xl font-semibold text-content text-right outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand"
               />
               <p className="text-sm text-content-muted mx-1">{t("inventory.initial_stock_hint")}</p>
+              {openingBalanceExtra}
             </div>
           )}
         </div>
@@ -528,12 +533,10 @@ export default function ProductFormFields({
             <label htmlFor={`${idPrefix}-barcode`} className="text-sm font-black text-content-muted uppercase mx-1 block">
               {t("inventory.barcode")}
             </label>
-            <input
+            <BarcodeField
               id={`${idPrefix}-barcode`}
-              placeholder="Barcode (Auto)"
-              value={formData.barcode}
-              onChange={(e) => setFormData({ ...formData, barcode: e.target.value })}
-              className="w-full px-5 py-3 bg-surface border border-border rounded-xl font-semibold text-content text-right outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand"
+              value={formData.barcode || ""}
+              onChange={(barcode) => setFormData({ ...formData, barcode })}
             />
           </div>
         </div>

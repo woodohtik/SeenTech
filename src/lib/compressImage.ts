@@ -91,3 +91,42 @@ export async function compressForOrder(file: File, deps: CompressDeps = defaultD
   if (!last) throw new OrderImageError('compress_failed');
   return last;
 }
+
+/**
+ * A variant's photo (seen-product-variants-barcode-po-price-task.md, phase
+ * 2): a small square in the POS and the stock list -- 800px WebP, never more
+ * than 150 KB. The same checks as an order photo (size, HEIC, real image).
+ */
+export const VARIANT_IMAGE_TARGET_BYTES = 150 * 1024;
+export const VARIANT_IMAGE_STEPS: ReadonlyArray<{ side: number; quality: number }> = [
+  { side: 800, quality: 0.8 },
+  { side: 800, quality: 0.7 },
+  { side: 720, quality: 0.65 },
+];
+
+export async function compressForVariant(file: File, deps: CompressDeps = defaultDeps): Promise<Blob> {
+  if (file.size > ORDER_IMAGE_MAX_INPUT_BYTES) throw new OrderImageError('too_large');
+  if (isHeic(file)) throw new OrderImageError('heic');
+  if (!(await isAllowedImageFile(file))) throw new OrderImageError('not_image');
+
+  const fileType = deps.supportsWebp() ? 'image/webp' : 'image/jpeg';
+  try {
+    for (const step of VARIANT_IMAGE_STEPS) {
+      const out = await deps.compress(file, {
+        maxWidthOrHeight: step.side, initialQuality: step.quality, maxSizeMB: 10,
+        fileType, useWebWorker: true, alwaysKeepResolution: true,
+      });
+      if (out.size <= VARIANT_IMAGE_TARGET_BYTES) return out;
+    }
+    // A busy pattern can stay big: let the library shrink it to the limit.
+    const out = await deps.compress(file, {
+      maxWidthOrHeight: 800, initialQuality: 0.6, maxSizeMB: (VARIANT_IMAGE_TARGET_BYTES - 4 * 1024) / (1024 * 1024),
+      fileType, useWebWorker: true, alwaysKeepResolution: false,
+    });
+    if (out.size > VARIANT_IMAGE_TARGET_BYTES) throw new OrderImageError('compress_failed');
+    return out;
+  } catch (e) {
+    if (e instanceof OrderImageError) throw e;
+    throw new OrderImageError('compress_failed');
+  }
+}

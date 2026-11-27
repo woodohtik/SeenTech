@@ -1,7 +1,9 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ArrowRight, X } from "lucide-react";
 import { generateVariantCombinations, type AttributeDraft } from "../../utils/variantCombinations";
+import { applyImageToSameValue, colorAttributeName, followProductPrice } from "../../utils/variantRows";
+import { VariantImagePicker } from "./VariantImagePicker";
 
 /**
  * seen-ux-fixes-batch-task.md item 10 -- the attribute-driven variant
@@ -23,8 +25,15 @@ export interface GeneratedRow {
   name: string;
   options: Record<string, string>;
   sku: string;
-  barcode: string;
-  priceAdjustment: string;
+  /**
+   * seen-product-variants-barcode-po-price-task.md: the variant's price --
+   * starts as the product's and follows it until changed by hand
+   * (priceTouched), then it is the variant's own ("special price"). No
+   * barcode field: every variant gets one generated when saved.
+   */
+  price: string;
+  priceTouched: boolean;
+  imageUrl: string;
 }
 
 interface VariantAttributeBuilderProps {
@@ -35,6 +44,12 @@ interface VariantAttributeBuilderProps {
   /** When provided, shows a "Save all" button; must persist the rows (e.g. one createVariant call per row) and return which succeeded/failed. Omit for draft mode (no immediate persistence, no button). */
   onSaveAll?: (rows: GeneratedRow[]) => Promise<{ succeeded: GeneratedRow[]; failed: GeneratedRow[] }>;
   onSaved?: () => void;
+  /** The product's selling price -- the rows' starting price, followed until a row is changed. */
+  basePrice?: number;
+  /** For the variant photos' folder; without it no photo square is shown. */
+  tenantId?: string;
+  /** The product has an opening balance being entered, so "starts at zero" is not true. */
+  hasOpeningBalance?: boolean;
 }
 
 let attrIdCounter = 0;
@@ -52,7 +67,7 @@ const attributeNamePlaceholder = (index: number) =>
 const attributeValuePlaceholder = (index: number) =>
   ATTRIBUTE_VALUE_EXAMPLES[index] ? `قيمة، مثلاً: ${ATTRIBUTE_VALUE_EXAMPLES[index]}` : "قيمة";
 
-export default function VariantAttributeBuilder({ baseSku, onCancel, onRowsChange, onSaveAll, onSaved }: VariantAttributeBuilderProps) {
+export default function VariantAttributeBuilder({ baseSku, onCancel, onRowsChange, onSaveAll, onSaved, basePrice = 0, tenantId, hasOpeningBalance = false }: VariantAttributeBuilderProps) {
   const { t } = useTranslation();
   const [step, setStep] = useState<"attributes" | "rows">("attributes");
   const [attributeDrafts, setAttributeDrafts] = useState<(AttributeDraft & { id: string })[]>([EMPTY_ATTRIBUTE()]);
@@ -103,10 +118,37 @@ export default function VariantAttributeBuilder({ baseSku, onCancel, onRowsChang
         // which is exactly what caused "رمز SKU مطلوب" surprising someone
         // who never typed a base SKU in the first place.
         sku: baseSku ? `${baseSku}-${index + 1}` : generateFallbackSku(),
-        barcode: "",
-        priceAdjustment: "0",
+        price: String(Number(basePrice) || 0),
+        priceTouched: false,
+        imageUrl: "",
       }))
     );
+  };
+
+  // The product's price changed above: rows not changed by hand follow it.
+  useEffect(() => {
+    if (rows.length === 0) return;
+    const next = followProductPrice(rows, basePrice);
+    if (next.some((r, i) => r !== rows[i])) setRowsAndNotify(next);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [basePrice]);
+
+  const photoAttribute = colorAttributeName(attributeDrafts);
+  const setRowPrice = (key: string, price: string) => {
+    setDraftConfirmed(false);
+    setRowsAndNotify(rows.map((r) => (r.key === key ? { ...r, price, priceTouched: true } : r)));
+  };
+  const resetRowPrice = (key: string) => {
+    setDraftConfirmed(false);
+    setRowsAndNotify(rows.map((r) => (r.key === key ? { ...r, price: String(Number(basePrice) || 0), priceTouched: false } : r)));
+  };
+  const setRowImage = (key: string, imageUrl: string) => {
+    setDraftConfirmed(false);
+    setRowsAndNotify(rows.map((r) => (r.key === key ? { ...r, imageUrl } : r)));
+  };
+  const shareRowImage = (key: string) => {
+    if (!photoAttribute) return;
+    setRowsAndNotify(applyImageToSameValue(rows, key, photoAttribute));
   };
 
   const updateRow = (key: string, field: keyof GeneratedRow, value: string) => {
@@ -261,7 +303,17 @@ export default function VariantAttributeBuilder({ baseSku, onCancel, onRowsChang
           {rows.map((row) => (
             <div key={row.key} className="p-3 rounded-lg bg-surface border border-border space-y-2">
               <div className="flex items-center justify-between gap-2">
-                <span className="font-bold text-content text-sm">{row.name}</span>
+                <div className="flex items-center gap-2 min-w-0 flex-wrap">
+                  {tenantId && (
+                    <VariantImagePicker tenantId={tenantId} value={row.imageUrl} label={row.name} onChange={(url) => setRowImage(row.key, url)} />
+                  )}
+                  <span className="font-bold text-content text-sm">{row.name}</span>
+                  {row.imageUrl && photoAttribute && row.options[photoAttribute] && rows.length > 1 && (
+                    <button type="button" onClick={() => shareRowImage(row.key)} className="min-h-11 px-2 text-sm font-bold text-brand hover:underline">
+                      {t("inventory.variants.same_photo_for", { value: row.options[photoAttribute] })}
+                    </button>
+                  )}
+                </div>
                 <button
                   type="button"
                   onClick={() => removeRow(row.key)}
@@ -271,7 +323,7 @@ export default function VariantAttributeBuilder({ baseSku, onCancel, onRowsChang
                   <X size={14} />
                 </button>
               </div>
-              <div className="grid grid-cols-1 main-640:grid-cols-3 gap-2">
+              <div className="grid grid-cols-1 main-640:grid-cols-2 gap-2">
                 <div className="space-y-1">
                   <label className="text-sm font-black text-content-muted uppercase px-1">SKU</label>
                   <input
@@ -282,29 +334,35 @@ export default function VariantAttributeBuilder({ baseSku, onCancel, onRowsChang
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-sm font-black text-content-muted uppercase px-1">{t("inventory.barcode", "الباركود")}</label>
+                  <div className="flex items-center justify-between gap-2 px-1">
+                    <label htmlFor={`variant-price-${row.key}`} className="text-sm font-black text-content-muted">{t("inventory.variants.price")}</label>
+                    {row.priceTouched && Number(row.price) !== Number(basePrice) && (
+                      <span className="text-sm font-bold text-brand">{t("inventory.variants.special_price")}</span>
+                    )}
+                  </div>
                   <input
-                    value={row.barcode}
-                    onChange={(e) => updateRow(row.key, "barcode", e.target.value)}
-                    onKeyDown={blockEnterSubmit}
-                    className="w-full px-2.5 py-2 bg-surface-muted border border-border rounded-lg text-sm font-semibold text-content text-right outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-sm font-black text-content-muted uppercase px-1">{t("inventory.variants.price_adjustment", "فرق السعر")}</label>
-                  <input
+                    id={`variant-price-${row.key}`}
                     type="number"
+                    min="0"
                     step="0.01"
-                    value={row.priceAdjustment}
-                    onChange={(e) => updateRow(row.key, "priceAdjustment", e.target.value)}
+                    inputMode="decimal"
+                    value={row.price}
+                    onChange={(e) => setRowPrice(row.key, e.target.value)}
                     onKeyDown={blockEnterSubmit}
                     className="w-full px-2.5 py-2 bg-surface-muted border border-border rounded-lg text-sm font-semibold text-content text-right outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand"
                   />
+                  {row.priceTouched && Number(row.price) !== Number(basePrice) && (
+                    <button type="button" onClick={() => resetRowPrice(row.key)} className="min-h-11 px-1 text-sm font-bold text-content-muted hover:text-brand">
+                      {t("inventory.variants.back_to_product_price")}
+                    </button>
+                  )}
                 </div>
               </div>
-              <p className="text-sm text-content-muted px-1">
-                {t("inventory.variants.stock_via_po_hint", "المخزون يُضاف لاحقاً عبر أمر شراء -- هذه السمة تُنشأ برصيد صفر.")}
-              </p>
+              {!hasOpeningBalance && (
+                <p className="text-sm text-content-muted px-1">
+                  {t("inventory.variants.stock_via_po_hint", "المخزون يُضاف لاحقاً عبر أمر شراء -- هذه السمة تُنشأ برصيد صفر.")}
+                </p>
+              )}
             </div>
           ))}
 

@@ -1699,7 +1699,13 @@
       "save_all": "سب محفوظ کریں",
       "confirm_rows": "ہو گیا ✓",
       "po_return_not_supported": "ویریئنٹس والی مصنوعات کی واپسی ابھی دستیاب نہیں -- ان کا اسٹاک انوینٹری اسکرین سے دستی طور پر درست کریں۔",
-      "select_variant_placeholder": "ویریئنٹ منتخب کریں (رنگ / سائز)..."
+      "select_variant_placeholder": "ویریئنٹ منتخب کریں (رنگ / سائز)...",
+      "price": "قیمت",
+      "special_price": "خاص قیمت",
+      "back_to_product_price": "پروڈکٹ کی قیمت پر واپس",
+      "photo": "ویریئنٹ کی تصویر",
+      "photo_for": "{{name}} کی تصویر",
+      "same_photo_for": "ہر «{{value}}» کے لیے یہی تصویر"
     },
     "add_success_with_variants": "پروڈکٹ اور {{count}} ویریئنٹس شامل ہو گئے",
     "bulk_import_branch_inventory_failed": "کچھ درآمد شدہ مصنوعات کا شاخ اسٹاک ترتیب نہیں ہو سکا -- انوینٹری اسکرین پر دستی طور پر دیکھیں",
@@ -1709,7 +1715,22 @@
     "initial_stock_hint": "آج آپ کے پاس موجود، آئٹم کی اکائی میں۔ ایک بار ابتدائی بیلنس کے طور پر درج ہوتا ہے۔",
     "tax_inclusive_hint": "15% قیمت میں شامل",
     "tax_exclusive_hint": "+15% قیمت کے اوپر",
-    "tax_exempt_hint": "ٹیکس نہیں"
+    "tax_exempt_hint": "ٹیکس نہیں",
+    "barcode_generate": "بنائیں",
+    "barcode_placeholder": "فیکٹری کا بارکوڈ اسکین کریں، یا «بنائیں» دبائیں",
+    "barcode_generate_failed": "بارکوڈ نہیں بن سکا۔ دوبارہ کوشش کریں۔",
+    "barcode_preview": "بارکوڈ کا پیش منظر",
+    "barcode_taken": "یہ بارکوڈ دکان کی کسی اور چیز کا ہے۔",
+    "variant_opening": {
+      "same": "ہر ویریئنٹ کا یہی اسٹاک",
+      "split": "ویریئنٹس میں تقسیم کریں",
+      "variant": "ویریئنٹ",
+      "quantity": "اسٹاک ({{unit}})",
+      "quantity_for": "{{name}} کا اسٹاک",
+      "set_by_hand": "ہاتھ سے بدلا گیا",
+      "total": "کل",
+      "not_saved": "ویریئنٹ «{{name}}» شامل ہو گیا لیکن اس کا ابتدائی اسٹاک محفوظ نہیں ہوا۔ اسٹاک گنتی سے شامل کریں۔"
+    }
   },
   "invoice_print": {
     "address": "پتہ",
@@ -3494,7 +3515,13 @@
     "col_total_paid": "ادا شدہ",
     "col_outstanding_balance": "سپلائر کا واجب",
     "col_account_status": "حیثیت",
-    "col_actions_and_inventory": "اقدامات"
+    "col_actions_and_inventory": "اقدامات",
+    "cost_change": "پروڈکٹ کی موجودہ قیمت {{from}} ← نئی {{to}} ریال {{unit}}",
+    "update_product_cost": "آرڈر کی تصدیق پر پروڈکٹ کی قیمت اپڈیٹ کریں",
+    "cost_above_selling": "نئی خرید قیمت فروخت کی قیمت سے زیادہ ہے۔",
+    "per_meter": "فی میٹر",
+    "per_piece": "فی عدد",
+    "cost_not_updated_note": "آرڈر کی تصدیق ہو گئی، لیکن پروڈکٹ کی قیمت اپڈیٹ نہیں ہوئی: اس کے لیے اسٹاک میں ترمیم کی اجازت چاہیے۔"
   },
   "public_invoice": {
     "digital_access": "انوائس تک ڈیجیٹل رسائی",

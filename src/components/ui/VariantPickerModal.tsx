@@ -1,3 +1,4 @@
+import { effectiveVariantPrice } from "../../utils/variantRows";
 import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Check } from "lucide-react";
@@ -74,7 +75,14 @@ export default function VariantPickerModal({ isOpen, onClose, item, variants, va
                   : "border-border bg-surface text-content hover:border-brand/30 hover:bg-brand/5"
               )}
             >
+              {variant.imageUrl && (
+                <img src={variant.imageUrl} alt="" loading="lazy" className="w-14 h-14 rounded-lg object-cover mb-2 border border-border" />
+              )}
               <span className="text-sm font-black">{variant.name}</span>
+              {/* seen-product-variants-barcode-po-price-task.md: the variant's own price. */}
+              <span className="text-sm font-bold text-content mt-0.5" dir="ltr">
+                {effectiveVariantPrice(item.pricePerUnit, variant).toFixed(2)}
+              </span>
               <span className={cn("text-sm font-bold mt-1", isOut ? "text-danger" : "text-content-muted")}>
                 {isOut ? t("pos.out_of_stock", "غير متوفر") : `${t("inventory.available", "المتاح")}: ${stock}`}
               </span>
