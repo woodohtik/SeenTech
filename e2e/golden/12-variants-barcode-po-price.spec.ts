@@ -31,7 +31,11 @@ test('a product with 4 variants: barcodes, a special price, the opening stock sh
   await page.getByRole('button', { name: 'منتج متقدم (له سمات)' }).click();
   const categoryField = page.locator('div', { has: page.locator('label', { hasText: /^التصنيف$/ }) }).last();
   await categoryField.getByRole('button').first().click();
-  await page.getByRole('option', { name: 'أزياء جاهزة' }).click();
+  // The test shop has no categories yet: add one, as a merchant would (pieces, not length).
+  await page.getByRole('option', { name: 'إضافة فئة جديدة' }).click();
+  await page.getByPlaceholder('اسم الفئة الجديدة').fill('أزياء جاهزة');
+  await page.getByPlaceholder('اسم الفئة الجديدة').press('Enter');
+  await expect(categoryField.getByRole('button').first()).toHaveText(/أزياء جاهزة/, { timeout: 15_000 });
 
   await page.getByRole('textbox', { name: /اسم المنتج/ }).fill(NAME);
   await page.getByRole('button', { name: 'توليد', exact: true }).click();
