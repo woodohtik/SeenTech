@@ -1,3 +1,5 @@
+import { countByPhase, isActiveOrder, isCompletedOrder, isDeliveredOrder } from '../utils/reportPhases';
+import { finishedStageKeys, getOrderPhase } from '../utils/orderStage';
 import React, { useState, useEffect, useMemo } from 'react';
 import { AutoGrid } from './ui/AutoGrid';
 import { StatCard } from './ui/StatCard';
@@ -106,7 +108,7 @@ export default function Reports({ tenantId }: { tenantId: string }) {
   const { t, dir, locale } = useDirection();
   const { currentStaff } = useStaff();
   const { hasPermission, loading: permsLoading } = usePermissions(currentStaff);
-  const { modules: verticalModules } = useVerticalConfig();
+  const { modules: verticalModules, workflowStages } = useVerticalConfig();
   const ordersModuleOn = isOrdersModuleOn(verticalModules);
   const tv = useVerticalTerms();
   const { success: toastSuccess, error: toastError, warning: toastWarning } = useToast();
@@ -615,39 +617,38 @@ export default function Reports({ tenantId }: { tenantId: string }) {
 
   // Order Stats
   const orderStats = useMemo(() => {
-    const statusCounts = filteredOrders.reduce((acc: any, o) => {
-      acc[o.status] = (acc[o.status] || 0) + 1;
-      return acc;
-    }, {});
+    // By the stage's phase, whatever the vertical calls it (seen-open-verticals-task.md, phase 0).
+    const phaseCounts = countByPhase(filteredOrders as any[], workflowStages);
 
     const statusChartData = [
-      { name: t('inventory.status_pending'), value: statusCounts['pending'] || 0, key: 'pending' },
-      { name: t('reports.status_in_workshop'), value: (statusCounts['cutting'] || 0) + (statusCounts['sewing'] || 0), key: 'processing' },
-      { name: t('dashboard.ready'), value: statusCounts['ready'] || 0, key: 'ready' },
-      { name: t('common.delivered'), value: statusCounts['delivered'] || 0, key: 'delivered' },
-      { name: t('common.status_cancelled'), value: statusCounts['cancelled'] || 0, key: 'cancelled' },
+      { name: t('inventory.status_pending'), value: phaseCounts.received, key: 'received' },
+      { name: t('reports.status_in_workshop'), value: phaseCounts.in_progress, key: 'in_progress' },
+      { name: t('dashboard.ready'), value: phaseCounts.ready, key: 'ready' },
+      { name: t('common.delivered'), value: phaseCounts.delivered, key: 'delivered' },
+      { name: t('common.status_cancelled'), value: phaseCounts.cancelled, key: 'cancelled' },
     ];
 
     // Delayed Orders (Simplified: orders older than 7 days and not delivered)
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
     const delayedOrders = filteredOrders.filter(o => 
-      !['delivered', 'cancelled'].includes(o.status) && 
+      !['delivered', 'cancelled'].includes(getOrderPhase(o as any, workflowStages)) && 
       new Date(o.orderDate) < sevenDaysAgo
     );
 
     // Average Completion Time
-    const completedOrders = filteredOrders.filter(o => o.status === 'delivered');
+    const completedOrders = filteredOrders.filter(o => isDeliveredOrder(o as any, workflowStages));
+    const deliveredKeys = new Set([...finishedStageKeys(workflowStages)].filter((k) => k === 'delivered' || workflowStages.some((st) => st.stage_key === k && st.phase === 'delivered')));
     let totalDays = 0;
     completedOrders.forEach(o => {
       const start = new Date(o.orderDate);
-      const end = new Date(o.history.find(h => h.status === 'delivered')?.updatedAt || o.orderDate);
+      const end = new Date(o.history.find(h => deliveredKeys.has(String(h.status)))?.updatedAt || o.orderDate);
       totalDays += (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24);
     });
     const avgTime = completedOrders.length > 0 ? (totalDays / completedOrders.length).toFixed(1) : '0';
 
     return { statusChartData, delayedCount: delayedOrders.length, delayedOrders, avgTime };
-  }, [filteredOrders, t]);
+  }, [filteredOrders, t, workflowStages]);
 
   // Filtered Inventory
   const filteredInventory = useMemo(() => {
@@ -670,7 +671,7 @@ export default function Reports({ tenantId }: { tenantId: string }) {
     const performance = staff.map(s => {
       const staffOrders = nonCancelledOrders.filter(o => o.createdBy === s.id);
       const totalSales = staffOrders.reduce((sum, o) => sum + (o.totalAmount || 0), 0);
-      const completedItems = staffOrders.filter(o => o.status === 'delivered').length;
+      const completedItems = staffOrders.filter(o => isDeliveredOrder(o as any, workflowStages)).length;
 
       return {
         name: s.name,
@@ -681,7 +682,7 @@ export default function Reports({ tenantId }: { tenantId: string }) {
     }).sort((a, b) => b.sales - a.sales);
 
     return { performance };
-  }, [staff, nonCancelledOrders]);
+  }, [staff, nonCancelledOrders, workflowStages]);
 
   // Detailed Employee Performance
   const staffWithPerformance = useMemo(() => {
@@ -691,8 +692,8 @@ export default function Reports({ tenantId }: { tenantId: string }) {
       const ordersToCount = assignedOrders.length > 0 ? assignedOrders : staffOrders;
 
       const totalHandled = ordersToCount.length;
-      const completed = ordersToCount.filter(o => o.status === 'delivered' || o.status === 'ready').length;
-      const active = ordersToCount.filter(o => o.status !== 'delivered' && o.status !== 'ready' && o.status !== 'cancelled').length;
+      const completed = ordersToCount.filter(o => isCompletedOrder(o as any, workflowStages)).length;
+      const active = ordersToCount.filter(o => isActiveOrder(o as any, workflowStages)).length;
       const rate = totalHandled > 0 ? Math.round((completed / totalHandled) * 100) : 0;
       const roleName = roles.find(r => r.roleKey === s.role || r.id === s.role)?.name || s.role;
 
@@ -706,7 +707,7 @@ export default function Reports({ tenantId }: { tenantId: string }) {
         ordersToCount
       };
     }).sort((a, b) => b.completed - a.completed);
-  }, [staff, filteredOrders, roles]);
+  }, [staff, filteredOrders, roles, workflowStages]);
 
   // Customer Behavior
   const customerStats = useMemo(() => {
@@ -1395,10 +1396,7 @@ export default function Reports({ tenantId }: { tenantId: string }) {
                         cursor="pointer"
                         onClick={(data) => setDrillDown({
                           title: t('reports.drilldown_orders_title', { name: data.name }),
-                          data: filteredOrders.filter(o => {
-                            if (data.key === 'processing') return ['cutting', 'sewing'].includes(o.status);
-                            return o.status === data.key;
-                          }),
+                          data: filteredOrders.filter(o => getOrderPhase(o as any, workflowStages) === data.key),
                           columns: [
                             { key: 'id', label: t('dashboard.cashier.col_order_number') },
                             { key: 'customerName', label: t('common.customer') },

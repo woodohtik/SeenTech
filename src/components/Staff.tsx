@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useVerticalConfig } from '../hooks/useVerticalConfig';
+import { isActiveOrder, isCompletedOrder } from '../utils/reportPhases';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Users, 
@@ -76,6 +78,8 @@ interface StaffProps {
 
 export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps) {
   const { t, i18n } = useTranslation();
+  // Performance counts by the stage's phase (seen-open-verticals-task.md, phase 0).
+  const { workflowStages } = useVerticalConfig();
   const isRtl = isRtlLang(i18n.language);
   const { user: currentAuthUser } = useAuth();
 
@@ -213,8 +217,8 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
       ...member,
       performance: {
         totalHandled: memberOrders.length,
-        completed: memberOrders.filter(o => o.status === 'delivered' || o.status === 'ready').length,
-        active: memberOrders.filter(o => o.status !== 'delivered' && o.status !== 'ready' && o.status !== 'cancelled').length
+        completed: memberOrders.filter(o => isCompletedOrder(o as any, workflowStages)).length,
+        active: memberOrders.filter(o => isActiveOrder(o as any, workflowStages)).length
       }
     };
   });
