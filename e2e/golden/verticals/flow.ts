@@ -120,7 +120,7 @@ export function verticalPath(shop: VerticalShop): void {
         await expect.poll(statusKey, { timeout: 20_000, message: 'ready' }).toBe(readyKey);
         // "Tell the customer it's ready?" -- not now; then back to the order.
         const readyPrompt = page.getByRole('dialog', { name: 'الطلب جاهز' });
-        if (await readyPrompt.isVisible({ timeout: 5_000 }).catch(() => false)) await page.keyboard.press('Escape');
+        if (await readyPrompt.isVisible({ timeout: 5_000 }).catch(() => false)) await readyPrompt.getByRole('button', { name: 'إغلاق' }).click();
         if (!(await details.isVisible().catch(() => false))) await page.getByRole('button', { name: 'التفاصيل' }).first().click();
 
         await details.getByRole('button', { name: ready }).click();
