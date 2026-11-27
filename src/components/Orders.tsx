@@ -2751,7 +2751,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                            order.paymentMethod === 'cash_on_delivery' ? t('common.payment_methods.cash_on_delivery') : t('common.payment_methods.cash')}
                         </span>
                         <div className="w-1 h-1 bg-border rounded-full hidden main-640:block" />
-                        <span className="font-black text-brand text-lg">
+                        <span className="font-black text-brand text-lg tabular-nums">
                           {money(order.totalAmount)}
                         </span>
                       </div>
@@ -2815,7 +2815,8 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                           }
                         }}
                         className={cn(
-                          "px-4 py-2.5 rounded-2xl text-sm font-black flex items-center gap-3 transition-all shadow-sm relative z-30",
+                          // One width for every stage, so each row's buttons start at the same place (audit finding 11).
+                          "w-44 justify-between px-4 py-2.5 rounded-2xl text-sm font-black flex items-center gap-3 transition-all shadow-sm relative z-30",
                           statusDisplay.bgColor,
                           statusDisplay.color,
                           order.status === 'delivered' ? "cursor-not-allowed opacity-80" : "hover:shadow-lg hover:shadow-brand/5 border border-brand/10 cursor-pointer"
