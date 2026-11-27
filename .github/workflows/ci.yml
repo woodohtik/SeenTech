@@ -173,6 +173,23 @@ jobs:
           GOLDEN_SERVICE_ROLE_KEY: ${{ env.SERVICE_ROLE_KEY }}
         run: npx playwright test -c playwright.golden.config.ts zz-screens || true
 
+      # seen-ui-responsive-alignment-audit-task.md, phase 0: the layout guard,
+      # report-only until phases 1-2 are green (then GOLDEN_LAYOUT_STRICT, on every branch).
+      - name: Layout guard
+        if: always() && startsWith(github.ref, 'refs/heads/ci/')
+        env:
+          GOLDEN_LAYOUT: '1'
+          GOLDEN_SUPABASE_URL: ${{ env.API_URL }}
+          GOLDEN_SERVICE_ROLE_KEY: ${{ env.SERVICE_ROLE_KEY }}
+        run: npx playwright test -c playwright.golden.config.ts zz-layout-guard || true
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: golden-layout
+          path: golden-layout/
+          retention-days: 14
+
       - uses: actions/upload-artifact@v4
         if: always()
         with:
