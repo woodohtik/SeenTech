@@ -243,7 +243,7 @@ function LayoutShell({ children, role, tenantId, currentStaff, onLock, isLocked 
     <div
       // The page gives room to the assistant only when it is docked. Padding
       // alone moves, briefly, and not at all for people who asked for less motion.
-      className={cn("flex min-h-[100dvh] bg-surface-muted font-sans overflow-hidden w-full transition-[padding] duration-200 motion-reduce:transition-none", isLocked && "blur-xl select-none pointer-events-none scale-98")}
+      className={cn("flex min-h-[100dvh] bg-surface-muted font-sans overflow-x-clip w-full transition-[padding] duration-200 motion-reduce:transition-none", isLocked && "blur-xl select-none pointer-events-none scale-98")}
       data-assistant={shell.assistant}
       style={{
         height: impersonationTenantId ? `calc(100dvh - ${IMPERSONATION_BANNER_HEIGHT}px)` : '100dvh',
@@ -445,7 +445,10 @@ function LayoutShell({ children, role, tenantId, currentStaff, onLock, isLocked 
       )}
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col overflow-hidden relative">
+      {/* overflow-x-clip, not -hidden: "hidden" made this column (and <main>) scroll boxes of their own,
+          so on a phone the page never scrolled -- the address bar stayed, a tap on the status bar did not
+          go to the top (seen-ui-responsive-alignment-audit-task.md, finding 06). */}
+      <div className="flex-1 flex flex-col overflow-x-clip relative min-w-0">
         {/* Mobile Header (Fixed Top Bar) */}
         {layoutMode === 'sidebar' && (
           <header
@@ -586,7 +589,7 @@ function LayoutShell({ children, role, tenantId, currentStaff, onLock, isLocked 
           tabIndex={-1}
           id="tour-dashboard-container"
           data-tour="dashboard-container"
-          className="flex-1 overflow-x-hidden flex flex-col outline-none focus-visible:shadow-none p-4 main-640:p-8 pb-[calc(5.5rem+env(safe-area-inset-bottom))] lg:pb-0"
+          className="flex-1 overflow-x-clip flex flex-col outline-none focus-visible:shadow-none p-4 main-640:p-8 pb-[calc(5.5rem+env(safe-area-inset-bottom))] lg:pb-0"
         >
           {layoutMode === 'grid' && location.pathname === '/' ? (
             <div className="max-w-7xl mx-auto space-y-12 py-8 flex-1">

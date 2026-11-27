@@ -107,7 +107,7 @@ export default function SuppliersRegistry({
       </div>
 
       {/* Main Datatable & Mobile Cards */}
-      <div className="hidden main-720:block overflow-x-auto">
+      <div className="hidden main-900:block overflow-x-auto">
         {/* Column titles may wrap and are short; the long names stay as tooltips.
             The table ran past its box at 1280 and cut the "statement" button
             (seen-merchant-trial-test-2026-11-26.md, phase 4). */}
@@ -263,7 +263,7 @@ export default function SuppliersRegistry({
       </div>
 
       {/* Mobile Card Layout */}
-      <div className="block main-720:hidden p-4 space-y-4">
+      <div className="block main-900:hidden p-4 space-y-4">
         {suppliers.map((supplier) => {
           const supaId = supplier.id;
           const { totalPurchases = 0, totalPaid = 0 } = aggregates[supaId] || {
@@ -283,7 +283,7 @@ export default function SuppliersRegistry({
                     <Building size={16} />
                   </div>
                   <div className="min-w-0">
-                    <h3 className="font-extrabold text-content text-sm truncate">{supplier.name}</h3>
+                    <h3 className="font-extrabold text-content text-sm line-clamp-2 break-words">{supplier.name}</h3>
                     <p className="text-sm text-content-muted font-bold mt-0.5 truncate">
                       {supplier.contactPerson && `${t('procurement.contact_person', 'الشخص المسؤول')}: ${supplier.contactPerson}`}
                       {supplier.phone && <> | <bdi dir="ltr">{supplier.phone}</bdi></>}
@@ -308,7 +308,8 @@ export default function SuppliersRegistry({
               </div>
 
               {/* Balances grid */}
-              <div className="grid grid-cols-3 gap-2 bg-surface p-2.5 rounded-xl border border-border/40 text-center">
+              {/* Two lines on a phone (purchases | paid, then the balance) -- three columns touched (audit finding 08). */}
+              <div className="grid grid-cols-2 main-640:grid-cols-3 gap-2 bg-surface p-2.5 rounded-xl border border-border/40 text-center">
                 <div className="flex flex-col gap-0.5">
                   <span className="text-sm text-content-muted font-bold">{t('procurement.purchases_label', 'المشتريات')}</span>
                   <span
@@ -325,7 +326,7 @@ export default function SuppliersRegistry({
                     <PriceDisplay amount={totalPaid} />
                   </span>
                 </div>
-                <div className="flex flex-col gap-0.5 border-r border-border">
+                <div className="flex flex-col gap-0.5 col-span-2 main-640:col-span-1 border-t pt-1.5 main-640:border-t-0 main-640:pt-0 main-640:border-r border-border">
                   <span className="text-sm text-content-muted font-bold">{t('procurement.due_balance_label', 'الرصيد المستحق')}</span>
                   <span className={cn(
                     "font-mono font-black text-sm",

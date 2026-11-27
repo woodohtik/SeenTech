@@ -60,6 +60,13 @@ function measure(width: number) {
     out.push({ level: 'fail', check: 'horizontal-scroll', detail: `${document.documentElement.scrollWidth} > ${window.innerWidth}` });
   }
 
+  // Who scrolls (finding 06): the page itself, not <main>, on a long screen.
+  const main = document.querySelector('main');
+  const pageScrolls = document.documentElement.scrollHeight > window.innerHeight + 1;
+  if (main && !pageScrolls && main.scrollHeight > main.clientHeight + 1) {
+    out.push({ level: 'warn', check: 'scroll-in-main', detail: `main ${main.scrollHeight}/${main.clientHeight}, page ${document.documentElement.scrollHeight}/${window.innerHeight}` });
+  }
+
   // Scope to the open dialog, if one is open (else the page behind it counts).
   const overlays = [...document.querySelectorAll('[role=dialog],[aria-modal=true],.fixed.inset-0')].filter(vis);
   const top = overlays[overlays.length - 1] as HTMLElement | undefined;
