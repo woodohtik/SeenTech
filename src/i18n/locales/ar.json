@@ -6170,5 +6170,34 @@
   "support_consent": {
     "fetch_requests_failed": "تعذّر تحميل طلبات صلاحية الدعم",
     "respond_failed": "تعذّر تسجيل ردّك على طلب صلاحية الدعم — حاول مرة أخرى"
+  },
+  "appointments": {
+    "title": "المواعيد",
+    "none": "لا مواعيد لهذا الطلب بعد.",
+    "add": "موعد جديد",
+    "book": "احجز الموعد",
+    "booked": "تم حجز الموعد",
+    "kind_label": "نوع الموعد",
+    "when": "الوقت",
+    "notes": "ملاحظة",
+    "remind": "ذكّر العميل بالواتساب",
+    "mark_done": "تم",
+    "cancel": "إلغاء الموعد",
+    "fittings_count": "{{count}} بروفة",
+    "reminder": "تذكير يا {{name}}: {{kind}} يوم {{date}} الساعة {{time}}. ننتظرك.",
+    "kind": {
+      "fitting": "بروفة",
+      "measurement_visit": "زيارة قياس",
+      "pickup": "استلام",
+      "delivery": "توصيل",
+      "installation": "تركيب",
+      "other": "موعد"
+    },
+    "status": {
+      "scheduled": "محجوز",
+      "done": "تم",
+      "cancelled": "ملغي",
+      "no_show": "لم يحضر"
+    }
   }
 }

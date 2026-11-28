@@ -1,4 +1,5 @@
 "use client";
+import { OrderAppointments } from './orders/OrderAppointments';
 import { sortByOccasion } from '../utils/orderOccasion';
 import { OccasionBadges } from './orders/OccasionBadges';
 import { canSeeMeasurements } from '../utils/measurementPrivacy';
@@ -1725,6 +1726,11 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                 </div>
               )}
             </section>
+
+            {/* Appointments: fittings, visits, installation (seen-open-verticals-task.md, wave 1). */}
+            {(vertical === 'womens_tailoring' || vertical === 'furniture') && (
+              <OrderAppointments order={order as any} vertical={vertical} canEdit={canEdit || canCreate} customerPhone={orderPhone(order)} />
+            )}
 
             {/* Payment Status Card */}
             <section className={cn(

@@ -6075,5 +6075,34 @@
   "support_consent": {
     "fetch_requests_failed": "سپورٹ رسائی کی درخواستیں لوڈ نہیں ہو سکیں",
     "respond_failed": "سپورٹ رسائی کی درخواست پر آپ کا جواب درج نہیں ہو سکا -- دوبارہ کوشش کریں"
+  },
+  "appointments": {
+    "title": "ملاقاتیں",
+    "none": "اس آرڈر کی کوئی ملاقات نہیں۔",
+    "add": "نئی ملاقات",
+    "book": "ملاقات بک کریں",
+    "booked": "ملاقات بک ہو گئی",
+    "kind_label": "قسم",
+    "when": "وقت",
+    "notes": "نوٹ",
+    "remind": "واٹس ایپ پر یاد دلائیں",
+    "mark_done": "ہو گیا",
+    "cancel": "ملاقات منسوخ کریں",
+    "fittings_count": "{{count}} فٹنگ",
+    "reminder": "یاد دہانی {{name}}: {{kind}} {{date}} کو {{time}} بجے۔",
+    "kind": {
+      "fitting": "فٹنگ",
+      "measurement_visit": "ناپ کا دورہ",
+      "pickup": "وصولی",
+      "delivery": "ترسیل",
+      "installation": "تنصیب",
+      "other": "ملاقات"
+    },
+    "status": {
+      "scheduled": "بک",
+      "done": "ہو گیا",
+      "cancelled": "منسوخ",
+      "no_show": "نہیں آئے"
+    }
   }
 }

@@ -6075,5 +6075,34 @@
   "support_consent": {
     "fetch_requests_failed": "Support access requests could not be loaded",
     "respond_failed": "Your answer to the support access request could not be recorded -- try again"
+  },
+  "appointments": {
+    "title": "Appointments",
+    "none": "No appointments for this order yet.",
+    "add": "New appointment",
+    "book": "Book it",
+    "booked": "Appointment booked",
+    "kind_label": "Kind",
+    "when": "When",
+    "notes": "Note",
+    "remind": "Remind the customer on WhatsApp",
+    "mark_done": "Done",
+    "cancel": "Cancel the appointment",
+    "fittings_count": "{{count}} fittings",
+    "reminder": "A reminder, {{name}}: your {{kind}} on {{date}} at {{time}}. See you then.",
+    "kind": {
+      "fitting": "fitting",
+      "measurement_visit": "measurement visit",
+      "pickup": "pickup",
+      "delivery": "delivery",
+      "installation": "installation",
+      "other": "appointment"
+    },
+    "status": {
+      "scheduled": "Booked",
+      "done": "Done",
+      "cancelled": "Cancelled",
+      "no_show": "No-show"
+    }
   }
 }
