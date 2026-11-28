@@ -33,8 +33,8 @@ SELECT is(
     WHERE (public.app_effective_permissions(s.id) ->> d.permission_key)::boolean IS DISTINCT FROM d.allowed),
   0::bigint, r || ': every key equals its default')
 FROM unnest(ARRAY['admin','manager','branch_manager','accountant','warehouse_manager','cashier']) AS r;
-SELECT is((SELECT count(*) FROM jsonb_object_keys(public.app_effective_permissions('e0000000-0000-4000-8000-000000000107'))), 50::bigint,
-          'a role''s map names all 50 keys');
+SELECT is((SELECT count(*) FROM jsonb_object_keys(public.app_effective_permissions('e0000000-0000-4000-8000-000000000107'))), 51::bigint,
+          'a role''s map names all 51 keys (customers.view_measurements, 20270124000000)');
 
 -- 8. The owner: every key.
 SELECT ok(NOT EXISTS (SELECT 1 FROM jsonb_each(public.app_effective_permissions('e0000000-0000-4000-8000-000000000101')) e WHERE e.value <> 'true'::jsonb),
