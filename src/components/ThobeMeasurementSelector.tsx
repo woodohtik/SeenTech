@@ -227,6 +227,9 @@ export default function ThobeMeasurementSelector({
     className: "cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand",
     role: "button",
     tabIndex: -1,
+    // A shortcut on the drawing to its field in the list beside it (48px): the
+    // equivalent control of WCAG 2.5.8, so a thin line here may stay thin.
+    'data-equivalent-target': 'true',
     'aria-label': ZONE_KEYS[zone].filter((key) => readOnly || isShown(key)).map((key) => t(measurementLabelKey(key))).join(' / ')
       || ZONE_KEYS[zone].map((key) => t(measurementLabelKey(key))).join(' / '),
     onClick: () => handleZoneClick(zone),

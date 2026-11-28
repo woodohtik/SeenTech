@@ -1959,7 +1959,7 @@ export default function Customers({ tenantId }: CustomersProps) {
                     type="checkbox"
                     id="isTest"
                     {...register('isTest')}
-                    className="w-5 h-5 text-brand border-border rounded focus:ring-brand"
+                    className="w-6 h-6 text-brand border-border rounded focus:ring-brand"
                   />
                   <label htmlFor="isTest" className="text-sm font-bold text-warning flex items-center gap-2">
                     <Zap size={16} />

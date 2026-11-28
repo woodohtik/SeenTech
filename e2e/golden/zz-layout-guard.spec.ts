@@ -121,6 +121,8 @@ function measure(width: number) {
     const box = (t.matches('input[type=checkbox],input[type=radio]') && t.closest('label')) || t;
     const r = box.getBoundingClientRect();
     if (r.width <= 1 && r.height <= 1) continue;
+    // WCAG 2.5.8's exception: the same action has a full-size control on the page (the measurement drawing's zones).
+    if (t.closest('[data-equivalent-target]')) continue;
     if (r.width < 24 || r.height < 24) { small += 1; if (smallNames.length < 6) smallNames.push(`«${label(t)}» ${Math.round(r.width)}x${Math.round(r.height)}`); }
     else if (width <= 1024 && (r.width < 44 || r.height < 44)) under44 += 1;
   }
