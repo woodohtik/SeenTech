@@ -1,3 +1,4 @@
+import { useVerticalConfig } from '../hooks/useVerticalConfig';
 import React, { useState, useEffect } from 'react';
 import { useMeasurementUnit } from '../hooks/useMeasurementUnit';
 import { measurementRows } from '../constants/measurementFields';
@@ -33,6 +34,7 @@ const PAGE_SIZE = 20;
 export default function SalesRecord({ tenantId, shiftId, filterStatus }: { tenantId: string, shiftId?: string, filterStatus?: string }) {
   const measurementUnit = useMeasurementUnit(tenantId);
   const { t, i18n } = useTranslation();
+  const { capabilities } = useVerticalConfig();
   const isRtl = isRtlLang(i18n.language);
   const { error: toastError } = useToast();
 
@@ -530,7 +532,7 @@ export default function SalesRecord({ tenantId, shiftId, filterStatus }: { tenan
                 // The line's measurements as on the first print (the order line's
                 // snapshot); shown when the shop's layout prints measurements.
                 measurements: item.type === 'custom' && item.measurements
-                  ? measurementRows(item.measurements).filter((row) => row.value > 0).map((row) => ({
+                  ? measurementRows(item.measurements, false, capabilities.body_measurements === 'womens' ? 'womens' : 'thobe').filter((row) => row.value > 0).map((row) => ({
                       label: t(row.labelKey),
                       value: measurementText(row.value, measurementUnit, t(unitLabelKey(measurementUnit))),
                     }))

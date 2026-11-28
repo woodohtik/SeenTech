@@ -107,11 +107,12 @@ function buildInvoiceMeasurements(
   item: { type?: string },
   customer: Customer | null,
   t: (key: string) => string,
-  measurementUnit: MeasurementUnit
+  measurementUnit: MeasurementUnit,
+  set: 'thobe' | 'womens' = 'thobe'
 ): { label: string; value: string | number }[] | undefined {
   if (item.type !== 'custom' || !customer?.measurements) return undefined;
   // The customer's receipt: values only, never the tailor's notes.
-  const list = measurementRows(customer.measurements).filter((row) => row.value > 0).map((row) => ({
+  const list = measurementRows(customer.measurements, false, set).filter((row) => row.value > 0).map((row) => ({
     label: t(row.labelKey),
     value: measurementText(row.value, measurementUnit, t(unitLabelKey(measurementUnit))),
   }));
@@ -1582,7 +1583,7 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
            // actually configured (ProductFormFields.tsx lets a product be
            // exclusive or exempt too).
            taxType: item.taxType,
-           measurements: hasBodyMeasurements ? buildInvoiceMeasurements(item, selectedCustomer, t, measurementUnit) : undefined
+           measurements: hasBodyMeasurements ? buildInvoiceMeasurements(item, selectedCustomer, t, measurementUnit, capabilities.body_measurements === 'womens' ? 'womens' : 'thobe') : undefined
          })),
          qrCode: qrCodeBase64,
          issuedAt: timestamp,

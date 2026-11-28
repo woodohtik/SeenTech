@@ -1,3 +1,4 @@
+import { MeasurementSelector } from './measurements/MeasurementSelector';
 import { useDialogBehavior } from './ui/DialogFrame';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useUnsavedWork } from '../lib/unsavedWork';
@@ -249,6 +250,7 @@ function QuickAddCustomerModal({
   onAdded: (customer: Customer) => void;
 }) {
   const { t, i18n } = useTranslation();
+  const { capabilities } = useVerticalConfig();
   const { error: toastError, success: toastSuccess } = useToast();
   const measurementUnit = useMeasurementUnit(tenantId);
   const fabricEstimateSettings = useFabricEstimateSettings(tenantId);
@@ -371,7 +373,7 @@ function QuickAddCustomerModal({
             </div>
           </div>
 
-          <ThobeMeasurementSelector
+          <MeasurementSelector set={capabilities.body_measurements}
             values={(measurements as Measurements) || {}}
             onChange={(next) => {
               Object.entries(next).forEach(([key, value]) => setValue(`measurements.${key}` as any, value));
@@ -990,7 +992,7 @@ function TailoringOrderFormBody({
 
                 {!isEditingMeasurements ? (
                   <div className="grid grid-cols-3 main-640:grid-cols-5 gap-2">
-                    {measurementRows(selectedCustomer.measurements, true).map((row) => (
+                    {measurementRows(selectedCustomer.measurements, true, (capabilities.body_measurements === 'womens' ? 'womens' : 'thobe')).map((row) => (
                       <div key={row.key} className="bg-surface p-2 rounded-xl border border-brand/10 text-center">
                         <p className="text-sm leading-5 text-content-muted font-bold break-words">{t(row.labelKey)}</p>
                         <p className="text-sm font-black text-brand">
@@ -1004,7 +1006,7 @@ function TailoringOrderFormBody({
                   </div>
                 ) : (
                   <div className="space-y-3">
-                    <ThobeMeasurementSelector
+                    <MeasurementSelector set={capabilities.body_measurements}
                       values={tempMeasurements}
                       onChange={setTempMeasurements}
                       measurementUnit={measurementUnit}

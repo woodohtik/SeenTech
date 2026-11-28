@@ -16,6 +16,7 @@
  * المكوّنين.
  */
 
+import { MeasurementSelector } from '../measurements/MeasurementSelector';
 import PublicLanguageSwitch from './PublicLanguageSwitch';
 import { useUnsavedWork } from '../../lib/unsavedWork';
 import { useEffect, useState } from 'react';
@@ -36,6 +37,8 @@ interface MeasurementsFormResponse {
   shop_logo_url: string | null;
   measurement_unit: MeasurementUnit;
   measurements: Measurements;
+  /** The shop's measurement set (thobe / womens), seen-open-verticals-task.md wave 1. */
+  measurement_set?: string | null;
 }
 
 // ThobeMeasurementSelector (reused unchanged, per spec) renders a <Branding>
@@ -68,6 +71,7 @@ export default function CustomerMeasurementsForm({ token }: { token: string }) {
   const [shopName, setShopName] = useState('');
   const [shopLogoUrl, setShopLogoUrl] = useState<string | null>(null);
   const [measurementUnit, setMeasurementUnit] = useState<MeasurementUnit>('inch');
+  const [measurementSet, setMeasurementSet] = useState<string>('thobe');
   const [measurements, setMeasurements] = useState<Measurements>({});
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -96,6 +100,7 @@ export default function CustomerMeasurementsForm({ token }: { token: string }) {
           setShopName(data.shop_name);
           setShopLogoUrl(data.shop_logo_url);
           setMeasurementUnit(data.measurement_unit);
+          setMeasurementSet(data.measurement_set ?? 'thobe');
           setMeasurements(data.measurements || {});
         }
       } catch {
@@ -179,7 +184,7 @@ export default function CustomerMeasurementsForm({ token }: { token: string }) {
                   setTouched(true);
                 }}
               />
-              <ThobeMeasurementSelector
+              <MeasurementSelector set={measurementSet}
                 values={measurements}
                 onChange={(next) => {
                   setMeasurements(next);

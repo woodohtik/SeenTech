@@ -2110,7 +2110,29 @@
     "field_note_too_long": "نوٹ {{max}} حروف سے لمبا ہے۔ اسے مختصر کریں۔",
     "field_note_invalid": "پیمائش کے نوٹس درست نہیں۔",
     "title": "پیمائشیں",
-    "field_note_optional": "نوٹ (اختیاری)"
+    "field_note_optional": "نوٹ (اختیاری)",
+    "part_label_womens": {
+      "length": "پوری لمبائی",
+      "shoulder": "کندھا",
+      "chest": "سینہ (گولائی)",
+      "waist": "کمر",
+      "hips": "کولہے",
+      "sleeve": "آستین کی لمبائی",
+      "sleeveTopWidth": "آستین کی اوپری چوڑائی",
+      "handWidth": "کلائی کی چوڑائی",
+      "neck": "گردن (گولائی)",
+      "bottomWidth": "نیچے کی چوڑائی",
+      "underBust": "سینے کے نیچے",
+      "backLength": "پیٹھ کی لمبائی",
+      "backWidth": "پیٹھ کی چوڑائی",
+      "bustPointLength": "سینے کا پوائنٹ (ڈارٹ)",
+      "sideLength": "پہلو کی لمبائی",
+      "frontWaistLength": "سامنے کمر کی لمبائی"
+    },
+    "womens_figure": "خواتین کے ناپ کا خاکہ",
+    "womens_advanced": "مزید ناپ",
+    "womens_hide_advanced": "مزید ناپ چھپائیں",
+    "field_note_placeholder_short": "نوٹ"
   },
   "onboarding": {
     "categories": {

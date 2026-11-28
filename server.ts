@@ -673,7 +673,7 @@ app.get("/api/public/measurements/:token", asyncHandler(async (req, res) => {
 
   const { data: customerData } = await supabaseAdmin
     .from('customers')
-    .select('name, measurements, measurements_token_expires_at, tenant:tenants(name, logo_url, measurement_unit, status, trashed_at, subscription_status, subscription_end_date, trial_ends_at)')
+    .select('name, measurements, measurements_token_expires_at, tenant:tenants(name, logo_url, measurement_unit, vertical, status, trashed_at, subscription_status, subscription_end_date, trial_ends_at)')
     .eq('measurements_token', measurementsTokenDigest(token))
     .maybeSingle();
 
@@ -696,9 +696,14 @@ app.get("/api/public/measurements/:token", asyncHandler(async (req, res) => {
     return res.status(410).json({ error: 'Link unavailable' });
   }
 
+  // The shop's measurement set, from its vertical (seen-open-verticals-task.md, wave 1).
+  const { data: verticalRow } = await supabaseAdmin.from('verticals').select('capabilities').eq('key', tenantData?.vertical || 'mens_tailoring').maybeSingle();
+  const measurementSet = (verticalRow?.capabilities as { body_measurements?: string | null } | null)?.body_measurements ?? 'thobe';
+
   res.json({
     customer_name: customerData.name,
     shop_name: tenantData?.name || '',
+    measurement_set: measurementSet,
     shop_logo_url: tenantData?.logo_url || null,
     measurement_unit: isValidMeasurementUnit(tenantData?.measurement_unit) ? tenantData.measurement_unit : 'inch',
     // The tailor's notes (fieldNotes) are for the staff only: never sent to

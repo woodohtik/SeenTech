@@ -382,7 +382,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
   const workCardMeasurements = (order: Order): WorkCardMeasurement[] => {
     if (measurementSetFor(capabilities.body_measurements).length === 0) return [];
     const unitLabel = t(unitLabelKey(measurementUnit));
-    return measurementRows(orderMeasurements(order)).map((row) => ({
+    return measurementRows(orderMeasurements(order), false, (capabilities.body_measurements === 'womens' ? 'womens' : 'thobe')).map((row) => ({
       key: row.key,
       label: t(row.labelKey),
       value: row.value > 0 ? measurementText(row.value, measurementUnit, unitLabel) : '-',
@@ -1878,7 +1878,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                 </h3>
                 <div className="bg-brand/5 p-6 rounded-3xl border border-brand/10">
                   <div className="grid grid-cols-3 gap-4">
-                    {measurementRows(orderMeasurements(order)).map((row) => ({ label: t(row.labelKey), value: row.value, note: row.note })).map((m, i) => {
+                    {measurementRows(orderMeasurements(order), false, (capabilities.body_measurements === 'womens' ? 'womens' : 'thobe')).map((row) => ({ label: t(row.labelKey), value: row.value, note: row.note })).map((m, i) => {
                       const displayValue = typeof m.value === 'number' ? formatMeasurement(m.value, measurementUnit) : m.value;
                       return (
                         <div key={i} className="text-center">

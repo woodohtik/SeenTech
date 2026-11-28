@@ -149,13 +149,70 @@ export const hasAdvancedValues = (measurements: unknown): boolean => {
  * on a women's or furniture order.
  */
 export type MeasurementSetKey = 'thobe' | 'womens';
-export const MEASUREMENT_SETS: Readonly<Record<MeasurementSetKey, readonly MeasurementField[]>> = {
+
+/**
+ * Women's tailoring (seen-open-verticals-task.md, wave 1, question 2's
+ * default): ten basic measurements, six behind "advanced", each with a note
+ * and Enter to the next -- like the thobe. Keys a thobe also has keep its
+ * stored name (one customer's `chest` is one value), with women's labels
+ * (measurements.part_label_womens.*); six are women's only.
+ */
+export type WomensOnlyMeasurementKey = 'underBust' | 'backLength' | 'backWidth' | 'bustPointLength' | 'sideLength' | 'frontWaistLength';
+export type WomensMeasurementKey =
+  | 'length' | 'shoulder' | 'chest' | 'waist' | 'hips' | 'sleeve' | 'sleeveTopWidth' | 'handWidth' | 'neck' | 'bottomWidth'
+  | WomensOnlyMeasurementKey;
+
+/** What every measurement set has (the thobe's fields add their drawing's place). */
+export interface SetField {
+  key: string;
+  tier: 'basic' | 'advanced';
+  slot: number;
+  column: 'start' | 'end';
+  maxCm: number;
+}
+
+export interface WomensMeasurementField extends SetField {
+  key: WomensMeasurementKey;
+  /** Where its number sits on the dress drawing (0-100 of its width / height). */
+  at: { x: number; y: number };
+}
+
+export const WOMENS_MEASUREMENT_FIELDS: readonly WomensMeasurementField[] = [
+  // The ten basic ones: 1-5 in the reading start column, 6-10 in the other.
+  { key: 'length', tier: 'basic', slot: 1, column: 'start', maxCm: 300, at: { x: 50, y: 92 } },
+  { key: 'shoulder', tier: 'basic', slot: 2, column: 'start', maxCm: 80, at: { x: 50, y: 14 } },
+  { key: 'chest', tier: 'basic', slot: 3, column: 'start', maxCm: 200, at: { x: 50, y: 27 } },
+  { key: 'waist', tier: 'basic', slot: 4, column: 'start', maxCm: 200, at: { x: 50, y: 40 } },
+  { key: 'hips', tier: 'basic', slot: 5, column: 'start', maxCm: 200, at: { x: 50, y: 52 } },
+  { key: 'sleeve', tier: 'basic', slot: 6, column: 'end', maxCm: 100, at: { x: 15, y: 40 } },
+  { key: 'sleeveTopWidth', tier: 'basic', slot: 7, column: 'end', maxCm: 80, at: { x: 22, y: 22 } },
+  { key: 'handWidth', tier: 'basic', slot: 8, column: 'end', maxCm: 60, at: { x: 9, y: 58 } },
+  { key: 'neck', tier: 'basic', slot: 9, column: 'end', maxCm: 70, at: { x: 50, y: 6 } },
+  { key: 'bottomWidth', tier: 'basic', slot: 10, column: 'end', maxCm: 200, at: { x: 50, y: 98 } },
+  // The six advanced ones: 11-13, then 14-16.
+  { key: 'underBust', tier: 'advanced', slot: 11, column: 'start', maxCm: 200, at: { x: 50, y: 33 } },
+  { key: 'backLength', tier: 'advanced', slot: 12, column: 'start', maxCm: 100, at: { x: 64, y: 26 } },
+  { key: 'backWidth', tier: 'advanced', slot: 13, column: 'start', maxCm: 80, at: { x: 64, y: 18 } },
+  { key: 'bustPointLength', tier: 'advanced', slot: 14, column: 'end', maxCm: 60, at: { x: 38, y: 24 } },
+  { key: 'sideLength', tier: 'advanced', slot: 15, column: 'end', maxCm: 150, at: { x: 72, y: 60 } },
+  { key: 'frontWaistLength', tier: 'advanced', slot: 16, column: 'end', maxCm: 100, at: { x: 38, y: 36 } },
+];
+
+export const WOMENS_ONLY_MEASUREMENT_KEYS: readonly WomensOnlyMeasurementKey[] =
+  ['underBust', 'backLength', 'backWidth', 'bustPointLength', 'sideLength', 'frontWaistLength'];
+
+/** One column's women's fields of one tier, in slot order. */
+export function womensFieldsInColumn(column: 'start' | 'end', tier: 'basic' | 'advanced'): WomensMeasurementKey[] {
+  return WOMENS_MEASUREMENT_FIELDS.filter((f) => f.column === column && f.tier === tier).slice().sort((a, b) => a.slot - b.slot).map((f) => f.key);
+}
+
+export const MEASUREMENT_SETS: Readonly<Record<MeasurementSetKey, readonly SetField[]>> = {
   thobe: MEASUREMENT_FIELDS,
-  womens: [],
+  womens: WOMENS_MEASUREMENT_FIELDS,
 };
 
-/** The measurement fields of a shop's activity; empty when it takes none (or its set is not approved yet). */
-export function measurementSetFor(bodyMeasurements: string | null | undefined): readonly MeasurementField[] {
+/** The measurement fields of a shop's activity; empty when it takes none. */
+export function measurementSetFor(bodyMeasurements: string | null | undefined): readonly SetField[] {
   if (!bodyMeasurements) return [];
   return MEASUREMENT_SETS[bodyMeasurements as MeasurementSetKey] ?? [];
 }
@@ -166,19 +223,23 @@ export const LEGACY_MEASUREMENT_FIELDS: readonly { key: LegacyMeasurementKey; ma
 
 export const LEGACY_MEASUREMENT_KEYS: readonly LegacyMeasurementKey[] = LEGACY_MEASUREMENT_FIELDS.map((f) => f.key);
 
-/** Every numeric key a stored measurements object may carry. */
-export const ALL_NUMERIC_MEASUREMENT_KEYS: readonly (MeasurementKey | LegacyMeasurementKey)[] = [
+/** Every numeric key a stored measurements object may carry (any set). */
+export const ALL_NUMERIC_MEASUREMENT_KEYS: readonly (MeasurementKey | LegacyMeasurementKey | WomensOnlyMeasurementKey)[] = [
   ...MEASUREMENT_KEYS,
   ...LEGACY_MEASUREMENT_KEYS,
+  ...WOMENS_ONLY_MEASUREMENT_KEYS,
 ];
 
-export const measurementLabelKey = (key: MeasurementKey | LegacyMeasurementKey): string =>
-  `measurements.part_label.${key}`;
+/** The thobe's rows: its sixteen, then the legacy ones -- exactly as before the women's set. */
+const THOBE_ROW_KEYS: readonly (MeasurementKey | LegacyMeasurementKey)[] = [...MEASUREMENT_KEYS, ...LEGACY_MEASUREMENT_KEYS];
+
+export const measurementLabelKey = (key: string, set: MeasurementSetKey = 'thobe'): string =>
+  set === 'womens' ? `measurements.part_label_womens.${key}` : `measurements.part_label.${key}`;
 
 export const measurementHintKey = (key: MeasurementKey): string => `measurements.part_hint.${key}`;
 
 export interface MeasurementRow {
-  key: MeasurementKey | LegacyMeasurementKey;
+  key: MeasurementKey | LegacyMeasurementKey | WomensOnlyMeasurementKey;
   labelKey: string;
   /** Stored value in cm. */
   value: number;
@@ -191,16 +252,18 @@ export interface MeasurementRow {
  * and export. `includeEmpty` keeps the sixteen approved ones even when unset
  * (value 0); legacy values come last and only when present.
  */
-export function measurementRows(measurements: unknown, includeEmpty = false): MeasurementRow[] {
+export function measurementRows(measurements: unknown, includeEmpty = false, set: MeasurementSetKey = 'thobe'): MeasurementRow[] {
   const source = (measurements && typeof measurements === 'object' ? measurements : {}) as Record<string, unknown>;
   const rows: MeasurementRow[] = [];
-  for (const key of ALL_NUMERIC_MEASUREMENT_KEYS) {
+  // A women's shop: its sixteen in slot order, with its labels. Otherwise the thobe's rows, unchanged.
+  const keys: readonly string[] = set === 'womens' ? WOMENS_MEASUREMENT_FIELDS.map((f) => f.key) : THOBE_ROW_KEYS;
+  for (const key of keys) {
     const raw = Number(source[key]);
     const value = Number.isFinite(raw) && raw > 0 ? raw : 0;
-    const isLegacy = (LEGACY_MEASUREMENT_KEYS as readonly string[]).includes(key);
-    const note = fieldNoteOf(source, key);
+    const isLegacy = set !== 'womens' && (LEGACY_MEASUREMENT_KEYS as readonly string[]).includes(key);
+    const note = fieldNoteOf(source, key as MeasurementKey);
     if (value > 0 || note || (includeEmpty && !isLegacy)) {
-      rows.push({ key, labelKey: measurementLabelKey(key), value, note });
+      rows.push({ key: key as MeasurementRow['key'], labelKey: measurementLabelKey(key, set), value, note });
     }
   }
   return rows;

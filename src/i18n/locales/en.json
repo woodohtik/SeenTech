@@ -2110,7 +2110,29 @@
     "field_note_too_long": "A note is longer than {{max}} characters. Shorten it.",
     "field_note_invalid": "The measurement notes are not valid.",
     "title": "Measurements",
-    "field_note_optional": "Note (optional)"
+    "field_note_optional": "Note (optional)",
+    "part_label_womens": {
+      "length": "Full length",
+      "shoulder": "Shoulder",
+      "chest": "Bust (round)",
+      "waist": "Waist",
+      "hips": "Hips",
+      "sleeve": "Sleeve length",
+      "sleeveTopWidth": "Upper sleeve width",
+      "handWidth": "Wrist width",
+      "neck": "Neck (round)",
+      "bottomWidth": "Hem width",
+      "underBust": "Under bust",
+      "backLength": "Back length",
+      "backWidth": "Back width",
+      "bustPointLength": "Bust point (dart)",
+      "sideLength": "Side length",
+      "frontWaistLength": "Front waist length"
+    },
+    "womens_figure": "Women's measurement drawing",
+    "womens_advanced": "Advanced measurements",
+    "womens_hide_advanced": "Hide advanced measurements",
+    "field_note_placeholder_short": "Note"
   },
   "onboarding": {
     "categories": {

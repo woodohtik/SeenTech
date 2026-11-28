@@ -6,7 +6,7 @@ import { MEASUREMENT_FIELDS, MEASUREMENT_SETS, measurementSetFor } from './measu
 describe('measurement sets', () => {
   test('the thobe set is the 16 fields, in the founder\'s order', () => {
     expect(MEASUREMENT_SETS.thobe).toBe(MEASUREMENT_FIELDS);
-    expect(MEASUREMENT_SETS.thobe.map((f) => [f.key, f.side, f.zone, f.maxCm, f.tier])).toEqual([
+    expect(MEASUREMENT_FIELDS.map((f) => [f.key, f.side, f.zone, f.maxCm, f.tier])).toEqual([
       ['length', 'right', 'length', 300, 'basic'],
       ['shoulder', 'right', 'shoulder', 100, 'basic'],
       ['sleeve', 'left', 'sleeve', 150, 'basic'],
@@ -26,10 +26,10 @@ describe('measurement sets', () => {
     ]);
   });
 
-  test("a shop's set from its activity: thobe for men's tailoring; none (section hidden) otherwise", () => {
+  test("a shop's set from its activity: thobe, women's; none (section hidden) otherwise", () => {
     expect(measurementSetFor('thobe')).toHaveLength(16);
-    // The women's list waits for the founder's approval (task file question 4).
-    expect(measurementSetFor('womens')).toHaveLength(0);
+    // The women's list: seen-open-verticals-task.md question 2's default (womensMeasurements.test.ts).
+    expect(measurementSetFor('womens')).toHaveLength(16);
     expect(measurementSetFor(null)).toHaveLength(0);
     expect(measurementSetFor(undefined)).toHaveLength(0);
     expect(measurementSetFor('unknown')).toHaveLength(0);

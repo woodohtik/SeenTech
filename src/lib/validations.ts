@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { MEASUREMENT_FIELDS, LEGACY_MEASUREMENT_FIELDS, FIELD_NOTE_MAX, validateFieldNotes, type MeasurementKey, type LegacyMeasurementKey } from '../constants/measurementFields';
+import { MEASUREMENT_FIELDS, LEGACY_MEASUREMENT_FIELDS, WOMENS_MEASUREMENT_FIELDS, WOMENS_ONLY_MEASUREMENT_KEYS, FIELD_NOTE_MAX, validateFieldNotes, type MeasurementKey, type LegacyMeasurementKey, type WomensOnlyMeasurementKey } from '../constants/measurementFields';
 import i18n from '../i18n/config';
 import { formatSaudiPhone } from '../utils/phoneUtils';
 
@@ -13,8 +13,13 @@ const phoneField = z.string().transform((val) => formatSaudiPhone(val)).pipe(
 );
 
 const numericMeasurementShape = Object.fromEntries(
-  [...MEASUREMENT_FIELDS, ...LEGACY_MEASUREMENT_FIELDS].map((f) => [f.key, z.coerce.number().min(0).max(f.maxCm).optional()])
-) as Record<MeasurementKey | LegacyMeasurementKey, z.ZodOptional<z.ZodNumber>>;
+  [
+    ...MEASUREMENT_FIELDS,
+    ...LEGACY_MEASUREMENT_FIELDS,
+    // The women's-only ones (seen-open-verticals-task.md, wave 1); the shared keys keep the thobe's bounds.
+    ...WOMENS_MEASUREMENT_FIELDS.filter((f) => (WOMENS_ONLY_MEASUREMENT_KEYS as readonly string[]).includes(f.key)),
+  ].map((f) => [f.key, z.coerce.number().min(0).max(f.maxCm).optional()])
+) as Record<MeasurementKey | LegacyMeasurementKey | WomensOnlyMeasurementKey, z.ZodOptional<z.ZodNumber>>;
 
 export const customerSchema = z.object({
   name: z.string().min(2, t('validation.min_length', { count: 2 })).max(100, t('validation.max_length', { count: 100 })),

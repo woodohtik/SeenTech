@@ -1,3 +1,4 @@
+import { MeasurementSelector } from './measurements/MeasurementSelector';
 import { DialogDiv } from './ui/DialogFrame';
 import React, { useState, useEffect, useMemo } from 'react';
 import { useUnsavedWork } from '../lib/unsavedWork';
@@ -5,7 +6,7 @@ import { useDebouncedValue } from '../hooks/useDebouncedValue';
 import { useMeasurementUnit } from '../hooks/useMeasurementUnit';
 import { useFabricEstimateSettings } from '../hooks/useFabricEstimateSettings';
 import { formatMeasurement, unitLabelKey, type MeasurementUnit } from '../utils/measurementUnits';
-import { MEASUREMENT_KEYS, measurementLabelKey, measurementRows, measurementSetFor } from '../constants/measurementFields';
+import { MEASUREMENT_KEYS, measurementLabelKey, measurementRows, measurementSetFor, WOMENS_MEASUREMENT_FIELDS } from '../constants/measurementFields';
 import { useVerticalConfig } from '../hooks/useVerticalConfig';
 import { useVerticalTerms } from '../hooks/useVerticalTerms';
 import { useNavigate } from 'react-router-dom';
@@ -610,6 +611,9 @@ export default function Customers({ tenantId }: CustomersProps) {
     }
 
     try {
+      // The shop's own measurement list and names (a women's shop: its sixteen).
+      const exportSet = verticalCapabilities.body_measurements === 'womens' ? 'womens' as const : 'thobe' as const;
+      const exportMeasurementKeys: readonly string[] = exportSet === 'womens' ? WOMENS_MEASUREMENT_FIELDS.map((f) => f.key) : MEASUREMENT_KEYS;
       const formatMeasurementCell = (value: unknown): string =>
         typeof value === 'number' && value > 0 ? `${formatMeasurement(value, measurementUnit)} ${t(unitLabelKey(measurementUnit))}` : '-';
 
@@ -631,12 +635,12 @@ export default function Customers({ tenantId }: CustomersProps) {
           [t('onboarding.fields.city')]: c.styles?.city || c.city || '-',
           [t('procurement.address')]: c.styles?.address || c.address || '-',
           // One column per approved measurement, in list order.
-          ...Object.fromEntries(MEASUREMENT_KEYS.map((key) => [
-            t('customers.export_col_measurement', { label: t(measurementLabelKey(key)) }),
-            formatMeasurementCell(c.measurements?.[key]),
+          ...Object.fromEntries(exportMeasurementKeys.map((key) => [
+            t('customers.export_col_measurement', { label: t(measurementLabelKey(key, exportSet)) }),
+            formatMeasurementCell((c.measurements as Record<string, unknown> | undefined)?.[key]),
           ])),
           // The tailor's notes on the measurements, in one column.
-          [t('measurements.notes_title')]: measurementRows(c.measurements).filter((row) => row.note)
+          [t('measurements.notes_title')]: measurementRows(c.measurements, false, exportSet).filter((row) => row.note)
             .map((row) => `${t(row.labelKey)}: ${row.note}`).join('؛ ') || '-',
           [t('common.notes')]: c.notes || '-',
           [t('saas.tenants.registration_date')]: c.createdAt ? new Date(c.createdAt).toLocaleDateString(localeOf(i18n.language)) : '-'
@@ -659,7 +663,7 @@ export default function Customers({ tenantId }: CustomersProps) {
         { wch: 20 }, // Balance status
         { wch: 15 }, // City
         { wch: 25 }, // Address
-        ...MEASUREMENT_KEYS.map(() => ({ wch: 16 })), // Measurements
+        ...exportMeasurementKeys.map(() => ({ wch: 16 })), // Measurements
         { wch: 25 }, // Notes
         { wch: 15 }, // Date
       ];
@@ -1926,7 +1930,7 @@ export default function Customers({ tenantId }: CustomersProps) {
                     <div className="w-1.5 h-4 bg-brand rounded-full" />
                     {t('customers.interactive_measurement_selector')}
                   </h3>
-                  <ThobeMeasurementSelector
+                  <MeasurementSelector set={verticalCapabilities.body_measurements}
                     values={(watchMeasurements as Measurements) || {}}
                     onChange={(newMeasurements) => {
                       Object.entries(newMeasurements).forEach(([key, value]) => {
@@ -2190,7 +2194,7 @@ const CustomerDetailsModal = ({
           {/* Garment Blueprint Section */}
           <DetailSection title={t('customers.garment_blueprint')} icon={Scissors}>
             <div className="bg-surface-muted/30 rounded-2xl p-2 main-640:p-4 border border-border pointer-events-none overflow-x-auto scrollbar-hide">
-              <ThobeMeasurementSelector
+              <MeasurementSelector set={verticalCapabilities.body_measurements}
                 values={(customer.measurements as Measurements) || {}}
                 onChange={() => {}} // Read-only in details view
                 readOnly={true}

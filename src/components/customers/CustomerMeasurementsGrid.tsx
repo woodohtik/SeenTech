@@ -1,7 +1,8 @@
 import React from 'react';
 import { Ruler } from 'lucide-react';
 import { useDirection } from '../../lib/direction';
-import { measurementRows } from '../../constants/measurementFields';
+import { measurementRows, type MeasurementSetKey } from '../../constants/measurementFields';
+import { useVerticalConfig } from '../../hooks/useVerticalConfig';
 import { formatMeasurement, unitLabelKey, type MeasurementUnit } from '../../utils/measurementUnits';
 
 /**
@@ -9,14 +10,15 @@ import { formatMeasurement, unitLabelKey, type MeasurementUnit } from '../../uti
  * item 4): the filled ones as cards; the empty ones gathered on one line
  * ("not filled: ...") instead of a card each reading "- inch".
  */
-export function splitMeasurements(measurements: unknown) {
-  const all = measurementRows(measurements, true);
+export function splitMeasurements(measurements: unknown, set: MeasurementSetKey = 'thobe') {
+  const all = measurementRows(measurements, true, set);
   return { filled: all.filter((r) => r.value > 0 || r.note), empty: all.filter((r) => !(r.value > 0) && !r.note) };
 }
 
 export function CustomerMeasurementsGrid({ measurements, unit }: { measurements: unknown; unit: MeasurementUnit }) {
   const { t } = useDirection();
-  const { filled, empty } = splitMeasurements(measurements);
+  const { capabilities } = useVerticalConfig();
+  const { filled, empty } = splitMeasurements(measurements, capabilities.body_measurements === 'womens' ? 'womens' : 'thobe');
   return (
     <div className="space-y-3">
       {filled.length > 0 ? (

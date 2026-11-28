@@ -2110,7 +2110,29 @@
     "field_note_too_long": "الملاحظة أطول من {{max}} حرفاً. اختصرها.",
     "field_note_invalid": "ملاحظات المقاسات غير صحيحة.",
     "title": "المقاسات",
-    "field_note_optional": "ملاحظة (اختياري)"
+    "field_note_optional": "ملاحظة (اختياري)",
+    "part_label_womens": {
+      "length": "الطول الكلي",
+      "shoulder": "الكتف",
+      "chest": "الصدر (دوران)",
+      "waist": "الخصر",
+      "hips": "الأرداف (الورك)",
+      "sleeve": "طول الكم",
+      "sleeveTopWidth": "وسع الكم أعلى",
+      "handWidth": "وسع المعصم",
+      "neck": "الرقبة (دوران)",
+      "bottomWidth": "وسع الأسفل",
+      "underBust": "تحت الصدر",
+      "backLength": "طول الظهر",
+      "backWidth": "عرض الظهر",
+      "bustPointLength": "طول الصدر (البنسة)",
+      "sideLength": "طول الجنب",
+      "frontWaistLength": "طول الخصر الأمامي"
+    },
+    "womens_figure": "رسم المقاسات النسائية",
+    "womens_advanced": "مقاسات متقدمة",
+    "womens_hide_advanced": "إخفاء المقاسات المتقدمة",
+    "field_note_placeholder_short": "ملاحظة"
   },
   "onboarding": {
     "categories": {
