@@ -5349,7 +5349,14 @@
       "substep_production": "Production CSID request",
       "refresh_status": "Refresh the status"
     },
-    "section_label": "Section"
+    "section_label": "Section",
+    "pos_length_step": {
+      "title": "Length step at the POS",
+      "desc": "How much one \"+\" press adds at the POS for items sold by the metre.",
+      "saved": "Step saved",
+      "cm": "cm",
+      "m": "m"
+    }
   },
   "shift_closing": {
     "actual_cash_label": "Actual Cash in Drawer",

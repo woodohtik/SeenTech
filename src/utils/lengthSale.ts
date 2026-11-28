@@ -11,6 +11,16 @@ import { METERS_PER_YARD } from './fabricUomConverter';
 /** The ± step and the smallest sale, in metres. */
 export const LENGTH_STEP_METERS = 0.25;
 
+/**
+ * The steps a fabric store may choose for ± (seen-open-verticals-task.md,
+ * wave 1): tenants.pos_length_step; anything else is a quarter metre.
+ */
+export const LENGTH_STEPS: readonly number[] = [0.05, 0.1, 0.25, 0.5, 1];
+export function normalizeLengthStep(value: unknown): number {
+  const n = Number(value);
+  return LENGTH_STEPS.includes(n) ? n : LENGTH_STEP_METERS;
+}
+
 export type LengthUnit = 'meter' | 'yard' | 'roll';
 
 /** Metres rounded to the centimetre. */

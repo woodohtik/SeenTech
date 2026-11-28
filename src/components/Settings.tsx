@@ -1,3 +1,4 @@
+import { PosLengthStepSetting } from './settings/PosLengthStepSetting';
 import { SmartSelect } from './ui/SmartSelect';
 import React, { useState, useEffect, useRef } from 'react';
 import BuildStamp from './BuildStamp';
@@ -806,6 +807,13 @@ export default function Settings({ tenantId }: SettingsProps) {
                   </FormGrid>
 
                   {/* The fabric estimate is the thobe formula: only for an activity that uses it (Phase 6). */}
+                  {/* A shop that sells by length sets its POS ± step (seen-open-verticals-task.md, wave 1). */}
+                  {verticalCapabilities.sells_by_length && (
+                    <div className="pt-5 border-t border-border">
+                      <PosLengthStepSetting tenantId={tenantId} />
+                    </div>
+                  )}
+
                   {estimatesFabric && (
                   <div className="pt-5 border-t border-border space-y-3">
                     <div className="px-1">

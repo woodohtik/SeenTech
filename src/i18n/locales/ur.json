@@ -5338,7 +5338,14 @@
       "substep_production": "Production CSID کی درخواست",
       "refresh_status": "حالت تازہ کریں"
     },
-    "section_label": "حصہ"
+    "section_label": "حصہ",
+    "pos_length_step": {
+      "title": "لمبائی کا قدم",
+      "desc": "پوائنٹ آف سیل میں میٹر سے بکنے والی چیزوں کے لیے «+» کتنا بڑھائے۔",
+      "saved": "قدم محفوظ ہو گیا",
+      "cm": "سینٹی میٹر",
+      "m": "میٹر"
+    }
   },
   "shift_closing": {
     "actual_cash_label": "دراز میں اصل نقد رقم",

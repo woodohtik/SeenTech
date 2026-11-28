@@ -1,3 +1,4 @@
+import { usePosLengthStep } from '../hooks/usePosLengthStep';
 import { effectiveVariantPrice } from '../utils/variantRows';
 import { ThermalInvoice, StandardInvoice, InvoiceData } from "./printing/InvoiceReceipt";
 import { useUnsavedWork } from '../lib/unsavedWork';
@@ -92,7 +93,7 @@ import { measurementRows, measurementSetFor } from '../constants/measurementFiel
 import { isLengthItem } from '../utils/itemUnits';
 import { isOrdersModuleOn } from '../services/verticalService';
 import { useVerticalTerms } from '../hooks/useVerticalTerms';
-import { LENGTH_STEP_METERS, firstLengthQuantity, roundMeters, stepMeters, toMeters, type LengthUnit } from '../utils/lengthSale';
+import { firstLengthQuantity, roundMeters, stepMeters, toMeters, type LengthUnit } from '../utils/lengthSale';
 import LengthQuantityControl from './pos/LengthQuantityControl';
 import { useVerticalConfig } from '../hooks/useVerticalConfig';
 import { useTenantCategoryPicker } from '../hooks/useTenantCategoryPicker';
@@ -960,6 +961,8 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
   ordersModuleOnRef.current = ordersModuleOn;
   // Measurements print only for an activity that takes them (Phase 4).
   const hasBodyMeasurements = measurementSetFor(capabilities.body_measurements).length > 0;
+  // The shop's ± step for lengths (seen-open-verticals-task.md, wave 1); a quarter metre by default.
+  const [lengthStep] = usePosLengthStep(tenantId);
   const posCategorySeed = useMemo(
     () =>
       isLegacyVertical
@@ -1060,7 +1063,7 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
     // seen-verticals-readiness-task.md): the quantity is metres, a quarter
     // metre at a time; stock is kept in metres too.
     const isLength = isLengthItem(item as any);
-    const addStep = isLength ? LENGTH_STEP_METERS : 1;
+    const addStep = isLength ? lengthStep : 1;
 
     if (availableStock <= 0) {
       toastError(t('pos.out_of_stock'), `${displayName} (${t('inventory.available')}: 0)`);
@@ -1184,7 +1187,7 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
     setCart(prev => prev.map(i => {
       if (i.id === id) {
         const newQuantity = (i as any).isLength
-          ? stepMeters(i.quantity, delta > 0 ? 1 : -1)
+          ? stepMeters(i.quantity, delta > 0 ? 1 : -1, lengthStep)
           : Math.max(1, i.quantity + delta);
         if (i.type === 'ready_made' && i.itemId) {
           const availableStock = i.variantId ? (variantStock[i.variantId] || 0) : (branchStock[i.itemId] || 0);

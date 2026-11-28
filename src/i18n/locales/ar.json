@@ -5444,7 +5444,14 @@
       "substep_production": "طلب Production CSID",
       "refresh_status": "تحديث الحالة"
     },
-    "section_label": "القسم"
+    "section_label": "القسم",
+    "pos_length_step": {
+      "title": "خطوة البيع بالطول",
+      "desc": "كم تزيد ضغطة «+» في نقطة البيع للأصناف اللي تنباع بالمتر.",
+      "saved": "تم حفظ الخطوة",
+      "cm": "سم",
+      "m": "م"
+    }
   },
   "shift_closing": {
     "actual_cash_label": "صافي الكاش الفعلي بالدرج",

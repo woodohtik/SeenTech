@@ -47,10 +47,12 @@ export default function LengthQuantityControl({
           inputMode="decimal"
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
+          // Typing 2.75 replaces the length, not adds to it (seen-open-verticals-task.md, wave 1).
+          onFocus={(e) => e.currentTarget.select()}
           onBlur={() => commit()}
           onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
           aria-label={t('pos.length_quantity', 'الكمية')}
-          className="w-14 text-center font-bold text-content bg-transparent outline-none"
+          className="w-20 h-11 text-center text-lg font-bold text-content bg-surface rounded outline-none focus:ring-2 focus:ring-brand/30 tabular-nums"
           dir="ltr"
         />
         <button type="button" onClick={() => onStep(1)} aria-label={t('pos.increase_quantity')} className="w-11 h-11 flex items-center justify-center hover:bg-surface rounded transition-colors">+</button>

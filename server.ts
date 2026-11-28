@@ -1575,6 +1575,20 @@ app.get("/api/tenant/settings", authenticate, requirePermission('settings.view')
   }
 });
 
+// seen-open-verticals-task.md, wave 1: a fabric store's POS step for lengths --
+// its own route, because /api/tenant/settings rewrites every field of the shop.
+app.post("/api/tenant/pos-length-step", authenticate, requirePermission('settings.edit'), asyncHandler(async (req: any, res) => {
+  const tenantId = req.user?.tenantId;
+  if (!tenantId) return res.status(401).json({ error: 'Unauthorized: No tenant ID found' });
+  const { supabaseAdmin } = await import("./src/server/supabase-admin.ts");
+  const { savePosLengthStep } = await import("./src/server/posLengthStep.ts");
+  const result = await savePosLengthStep({
+    update: async (id, patch) => supabaseAdmin.from('tenants').update(patch).eq('id', id),
+  }, tenantId, req.body?.step);
+  if (!result.ok) return res.status(result.error === 'invalid_step' ? 400 : 500).json({ error: result.error === 'invalid_step' ? 'خطوة الطول غير صالحة' : 'تعذّر الحفظ' });
+  res.json({ step: result.step });
+}));
+
 app.post("/api/tenant/settings", authenticate, requirePermission('settings.edit'), async (req: any, res) => {
   try {
     const tenantId = req.user?.tenantId;
