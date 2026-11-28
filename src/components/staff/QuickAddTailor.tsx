@@ -30,7 +30,7 @@ export function QuickAddTailor({ tenantId, onAdded, currentStaffEmail }: { tenan
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="inline-flex items-center gap-1 text-sm font-bold text-brand hover:underline min-h-11 px-1"
+        className="relative inline-flex items-center gap-1 h-6 px-1 text-sm font-bold text-brand hover:underline after:absolute after:-inset-[10px] after:content-['']"
       >
         <Plus size={16} aria-hidden="true" />
         {t('orders.add_tailor')}

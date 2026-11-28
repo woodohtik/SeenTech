@@ -1,0 +1,1563 @@
+[
+  {
+    "width": 360,
+    "screen": "dashboard",
+    "level": "fail",
+    "check": "target-under-24",
+    "detail": "2: «تخطٍّ إلى المحتوى» 1x1, «عرض الكل» 64x22"
+  },
+  {
+    "width": 360,
+    "screen": "dashboard",
+    "level": "warn",
+    "check": "target-under-44",
+    "detail": "9"
+  },
+  {
+    "width": 360,
+    "screen": "sales",
+    "level": "fail",
+    "check": "target-under-24",
+    "detail": "1: «تخطٍّ إلى المحتوى» 1x1"
+  },
+  {
+    "width": 360,
+    "screen": "sales",
+    "level": "warn",
+    "check": "target-under-44",
+    "detail": "8"
+  },
+  {
+    "width": 360,
+    "screen": "orders",
+    "level": "fail",
+    "check": "target-under-24",
+    "detail": "7: «تخطٍّ إلى المحتوى» 1x1, «إدخال صوتي» 18x18, «مسح الباركود» 18x18, «65.00» 83x21, «345.00» 91x21, «287.50» 87x21"
+  },
+  {
+    "width": 360,
+    "screen": "orders",
+    "level": "warn",
+    "check": "target-under-44",
+    "detail": "24"
+  },
+  {
+    "width": 360,
+    "screen": "customers",
+    "level": "fail",
+    "check": "target-under-24",
+    "detail": "2: «تخطٍّ إلى المحتوى» 1x1, «إدخال صوتي» 18x18"
+  },
+  {
+    "width": 360,
+    "screen": "customers",
+    "level": "warn",
+    "check": "target-under-44",
+    "detail": "9"
+  },
+  {
+    "width": 360,
+    "screen": "customers",
+    "level": "warn",
+    "check": "cut-text",
+    "detail": "4: «إجمالي العملاء» «نتائج التصفية» «عليهم مديونيات» «مدين:762.50»"
+  },
+  {
+    "width": 360,
+    "screen": "inventory",
+    "level": "fail",
+    "check": "target-under-24",
+    "detail": "7: «تخطٍّ إلى المحتوى» 1x1, «إدخال صوتي» 20x20, «اختر...» 20x20, «اختر...» 20x20, «اختر...» 20x20, «اختر...» 20x20"
+  },
+  {
+    "width": 360,
+    "screen": "inventory",
+    "level": "warn",
+    "check": "target-under-44",
+    "detail": "18"
+  },
+  {
+    "width": 360,
+    "screen": "suppliers",
+    "level": "fail",
+    "check": "target-under-24",
+    "detail": "1: «تخطٍّ إلى المحتوى» 1x1"
+  },
+  {
+    "width": 360,
+    "screen": "suppliers",
+    "level": "warn",
+    "check": "target-under-44",
+    "detail": "14"
+  },
+  {
+    "width": 360,
+    "screen": "suppliers",
+    "level": "warn",
+    "check": "cut-text",
+    "detail": "6: «مؤسسة الحرير للأقمشة» «| 0500000077» «مورد السمات» «| 0500000067» «مؤسسة الحرير للأقمشة» «| 0500000066»"
+  },
+  {
+    "width": 360,
+    "screen": "reports",
+    "level": "fail",
+    "check": "target-under-24",
+    "detail": "1: «تخطٍّ إلى المحتوى» 1x1"
+  },
+  {
+    "width": 360,
+    "screen": "reports",
+    "level": "warn",
+    "check": "target-under-44",
+    "detail": "13"
+  },
+  {
+    "width": 360,
+    "screen": "settings",
+    "level": "fail",
+    "check": "target-under-24",
+    "detail": "2: «تخطٍّ إلى المحتوى» 1x1, «تحديد على الخريطة» 141x22"
+  },
+  {
+    "width": 360,
+    "screen": "settings",
+    "level": "warn",
+    "check": "target-under-44",
+    "detail": "2"
+  },
+  {
+    "width": 360,
+    "screen": "referral",
+    "level": "fail",
+    "check": "target-under-24",
+    "detail": "1: «تخطٍّ إلى المحتوى» 1x1"
+  },
+  {
+    "width": 360,
+    "screen": "referral",
+    "level": "warn",
+    "check": "target-under-44",
+    "detail": "3"
+  },
+  {
+    "width": 360,
+    "screen": "modal-new-po",
+    "level": "fail",
+    "check": "dialog-role",
+    "detail": "no role=dialog + aria-modal=true"
+  },
+  {
+    "width": 360,
+    "screen": "modal-new-po",
+    "level": "fail",
+    "check": "dialog-focus",
+    "detail": "focus on BUTTON"
+  },
+  {
+    "width": 360,
+    "screen": "modal-new-po",
+    "level": "warn",
+    "check": "target-under-44",
+    "detail": "1"
+  },
+  {
+    "width": 360,
+    "screen": "modal-new-order",
+    "level": "fail",
+    "check": "dialog-focus",
+    "detail": "focus on BUTTON"
+  },
+  {
+    "width": 360,
+    "screen": "modal-new-order",
+    "level": "fail",
+    "check": "target-under-24",
+    "detail": "2: «إدخال صوتي» 18x18, «INPUT» 20x20"
+  },
+  {
+    "width": 360,
+    "screen": "modal-new-order",
+    "level": "warn",
+    "check": "target-under-44",
+    "detail": "4"
+  },
+  {
+    "width": 360,
+    "screen": "modal-new-order",
+    "level": "warn",
+    "check": "cut-text",
+    "detail": "2: «INPUT» «INPUT»"
+  },
+  {
+    "width": 360,
+    "screen": "modal-add-product",
+    "level": "fail",
+    "check": "dialog-role",
+    "detail": "no role=dialog + aria-modal=true"
+  },
+  {
+    "width": 360,
+    "screen": "modal-add-product",
+    "level": "fail",
+    "check": "dialog-focus",
+    "detail": "focus on BUTTON"
+  },
+  {
+    "width": 360,
+    "screen": "modal-add-product",
+    "level": "fail",
+    "check": "field-height",
+    "detail": "not 48: {\"50\":3}"
+  },
+  {
+    "width": 360,
+    "screen": "modal-add-product",
+    "level": "fail",
+    "check": "target-under-24",
+    "detail": "1: «إدخال صوتي» 18x18"
+  },
+  {
+    "width": 360,
+    "screen": "modal-add-product",
+    "level": "warn",
+    "check": "target-under-44",
+    "detail": "4"
+  },
+  {
+    "width": 360,
+    "screen": "modal-add-customer",
+    "level": "fail",
+    "check": "dialog-focus",
+    "detail": "focus on BUTTON"
+  },
+  {
+    "width": 360,
+    "screen": "modal-add-customer",
+    "level": "fail",
+    "check": "target-under-24",
+    "detail": "15: «إدخال صوتي» 20x20, «الكتف» 41x12, «وسع الرقبة سادة» 18x11, «وسع الوسط» 57x16, «وسع أسفل» 77x15, «كفة أسفل» 78x8"
+  },
+  {
+    "width": 360,
+    "screen": "modal-add-customer",
+    "level": "warn",
+    "check": "target-under-44",
+    "detail": "6"
+  },
+  {
+    "width": 360,
+    "screen": "modal-add-customer",
+    "level": "warn",
+    "check": "cut-text",
+    "detail": "1: «أدخل المقاسات بدقة للمراجعة الفورية»"
+  },
+  {
+    "width": 360,
+    "screen": "modal-add-supplier",
+    "level": "fail",
+    "check": "dialog-role",
+    "detail": "no role=dialog + aria-modal=true"
+  },
+  {
+    "width": 360,
+    "screen": "modal-add-supplier",
+    "level": "fail",
+    "check": "dialog-focus",
+    "detail": "focus on BUTTON"
+  },
+  {
+    "width": 360,
+    "screen": "modal-add-supplier",
+    "level": "warn",
+    "check": "target-under-44",
+    "detail": "1"
+  },
+  {
+    "width": 360,
+    "screen": "modal-add-staff",
+    "level": "fail",
+    "check": "dialog-role",
+    "detail": "no role=dialog + aria-modal=true"
+  },
+  {
+    "width": 360,
+    "screen": "modal-add-staff",
+    "level": "fail",
+    "check": "dialog-focus",
+    "detail": "focus on BUTTON"
+  },
+  {
+    "width": 360,
+    "screen": "modal-add-staff",
+    "level": "fail",
+    "check": "target-under-24",
+    "detail": "2: «إدخال صوتي» 20x20, «BUTTON» 20x20"
+  },
+  {
+    "width": 360,
+    "screen": "modal-add-staff",
+    "level": "warn",
+    "check": "target-under-44",
+    "detail": "1"
+  },
+  {
+    "width": 390,
+    "screen": "dashboard",
+    "level": "fail",
+    "check": "target-under-24",
+    "detail": "2: «تخطٍّ إلى المحتوى» 1x1, «عرض الكل» 64x22"
+  },
+  {
+    "width": 390,
+    "screen": "dashboard",
+    "level": "warn",
+    "check": "target-under-44",
+    "detail": "9"
+  },
+  {
+    "width": 390,
+    "screen": "sales",
+    "level": "fail",
+    "check": "target-under-24",
+    "detail": "1: «تخطٍّ إلى المحتوى» 1x1"
+  },
+  {
+    "width": 390,
+    "screen": "sales",
+    "level": "warn",
+    "check": "target-under-44",
+    "detail": "8"
+  },
+  {
+    "width": 390,
+    "screen": "orders",
+    "level": "fail",
+    "check": "target-under-24",
+    "detail": "7: «تخطٍّ إلى المحتوى» 1x1, «إدخال صوتي» 18x18, «مسح الباركود» 18x18, «65.00» 83x21, «345.00» 91x21, «287.50» 87x21"
+  },
+  {
+    "width": 390,
+    "screen": "orders",
+    "level": "warn",
+    "check": "target-under-44",
+    "detail": "24"
+  },
+  {
+    "width": 390,
+    "screen": "customers",
+    "level": "fail",
+    "check": "target-under-24",
+    "detail": "2: «تخطٍّ إلى المحتوى» 1x1, «إدخال صوتي» 18x18"
+  },
+  {
+    "width": 390,
+    "screen": "customers",
+    "level": "warn",
+    "check": "target-under-44",
+    "detail": "9"
+  },
+  {
+    "width": 390,
+    "screen": "customers",
+    "level": "warn",
+    "check": "cut-text",
+    "detail": "2: «إجمالي العملاء» «عليهم مديونيات»"
+  },
+  {
+    "width": 390,
+    "screen": "inventory",
+    "level": "fail",
+    "check": "target-under-24",
+    "detail": "7: «تخطٍّ إلى المحتوى» 1x1, «إدخال صوتي» 20x20, «اختر...» 20x20, «اختر...» 20x20, «اختر...» 20x20, «اختر...» 20x20"
+  },
+  {
+    "width": 390,
+    "screen": "inventory",
+    "level": "warn",
+    "check": "target-under-44",
+    "detail": "18"
+  },
+  {
+    "width": 390,
+    "screen": "suppliers",
+    "level": "fail",
+    "check": "target-under-24",
+    "detail": "1: «تخطٍّ إلى المحتوى» 1x1"
+  },
+  {
+    "width": 390,
+    "screen": "suppliers",
+    "level": "warn",
+    "check": "target-under-44",
+    "detail": "14"
+  },
+  {
+    "width": 390,
+    "screen": "suppliers",
+    "level": "warn",
+    "check": "cut-text",
+    "detail": "4: «مؤسسة الحرير للأقمشة» «مورد السمات» «| 0500000067» «مؤسسة الحرير للأقمشة»"
+  },
+  {
+    "width": 390,
+    "screen": "reports",
+    "level": "fail",
+    "check": "target-under-24",
+    "detail": "1: «تخطٍّ إلى المحتوى» 1x1"
+  },
+  {
+    "width": 390,
+    "screen": "reports",
+    "level": "warn",
+    "check": "target-under-44",
+    "detail": "13"
+  },
+  {
+    "width": 390,
+    "screen": "settings",
+    "level": "fail",
+    "check": "target-under-24",
+    "detail": "2: «تخطٍّ إلى المحتوى» 1x1, «تحديد على الخريطة» 141x22"
+  },
+  {
+    "width": 390,
+    "screen": "settings",
+    "level": "warn",
+    "check": "target-under-44",
+    "detail": "2"
+  },
+  {
+    "width": 390,
+    "screen": "referral",
+    "level": "fail",
+    "check": "target-under-24",
+    "detail": "1: «تخطٍّ إلى المحتوى» 1x1"
+  },
+  {
+    "width": 390,
+    "screen": "referral",
+    "level": "warn",
+    "check": "target-under-44",
+    "detail": "3"
+  },
+  {
+    "width": 390,
+    "screen": "modal-new-po",
+    "level": "fail",
+    "check": "dialog-role",
+    "detail": "no role=dialog + aria-modal=true"
+  },
+  {
+    "width": 390,
+    "screen": "modal-new-po",
+    "level": "fail",
+    "check": "dialog-focus",
+    "detail": "focus on BUTTON"
+  },
+  {
+    "width": 390,
+    "screen": "modal-new-po",
+    "level": "warn",
+    "check": "target-under-44",
+    "detail": "1"
+  },
+  {
+    "width": 390,
+    "screen": "modal-new-order",
+    "level": "fail",
+    "check": "dialog-focus",
+    "detail": "focus on BUTTON"
+  },
+  {
+    "width": 390,
+    "screen": "modal-new-order",
+    "level": "fail",
+    "check": "target-under-24",
+    "detail": "2: «إدخال صوتي» 18x18, «INPUT» 20x20"
+  },
+  {
+    "width": 390,
+    "screen": "modal-new-order",
+    "level": "warn",
+    "check": "target-under-44",
+    "detail": "4"
+  },
+  {
+    "width": 390,
+    "screen": "modal-new-order",
+    "level": "warn",
+    "check": "cut-text",
+    "detail": "2: «INPUT» «INPUT»"
+  },
+  {
+    "width": 390,
+    "screen": "modal-add-product",
+    "level": "fail",
+    "check": "dialog-role",
+    "detail": "no role=dialog + aria-modal=true"
+  },
+  {
+    "width": 390,
+    "screen": "modal-add-product",
+    "level": "fail",
+    "check": "dialog-focus",
+    "detail": "focus on BUTTON"
+  },
+  {
+    "width": 390,
+    "screen": "modal-add-product",
+    "level": "fail",
+    "check": "field-height",
+    "detail": "not 48: {\"50\":3}"
+  },
+  {
+    "width": 390,
+    "screen": "modal-add-product",
+    "level": "fail",
+    "check": "target-under-24",
+    "detail": "1: «إدخال صوتي» 18x18"
+  },
+  {
+    "width": 390,
+    "screen": "modal-add-product",
+    "level": "warn",
+    "check": "target-under-44",
+    "detail": "4"
+  },
+  {
+    "width": 390,
+    "screen": "modal-add-customer",
+    "level": "fail",
+    "check": "dialog-focus",
+    "detail": "focus on BUTTON"
+  },
+  {
+    "width": 390,
+    "screen": "modal-add-customer",
+    "level": "fail",
+    "check": "target-under-24",
+    "detail": "15: «إدخال صوتي» 20x20, «الكتف» 47x14, «وسع الرقبة سادة» 21x12, «وسع الوسط» 66x18, «وسع أسفل» 87x17, «كفة أسفل» 89x9"
+  },
+  {
+    "width": 390,
+    "screen": "modal-add-customer",
+    "level": "warn",
+    "check": "target-under-44",
+    "detail": "6"
+  },
+  {
+    "width": 390,
+    "screen": "modal-add-customer",
+    "level": "warn",
+    "check": "cut-text",
+    "detail": "1: «أدخل المقاسات بدقة للمراجعة الفورية»"
+  },
+  {
+    "width": 390,
+    "screen": "modal-add-supplier",
+    "level": "fail",
+    "check": "dialog-role",
+    "detail": "no role=dialog + aria-modal=true"
+  },
+  {
+    "width": 390,
+    "screen": "modal-add-supplier",
+    "level": "fail",
+    "check": "dialog-focus",
+    "detail": "focus on BUTTON"
+  },
+  {
+    "width": 390,
+    "screen": "modal-add-supplier",
+    "level": "warn",
+    "check": "target-under-44",
+    "detail": "1"
+  },
+  {
+    "width": 390,
+    "screen": "modal-add-staff",
+    "level": "fail",
+    "check": "dialog-role",
+    "detail": "no role=dialog + aria-modal=true"
+  },
+  {
+    "width": 390,
+    "screen": "modal-add-staff",
+    "level": "fail",
+    "check": "dialog-focus",
+    "detail": "focus on BUTTON"
+  },
+  {
+    "width": 390,
+    "screen": "modal-add-staff",
+    "level": "fail",
+    "check": "target-under-24",
+    "detail": "2: «إدخال صوتي» 20x20, «BUTTON» 20x20"
+  },
+  {
+    "width": 390,
+    "screen": "modal-add-staff",
+    "level": "warn",
+    "check": "target-under-44",
+    "detail": "1"
+  },
+  {
+    "width": 820,
+    "screen": "dashboard",
+    "level": "fail",
+    "check": "target-under-24",
+    "detail": "2: «تخطٍّ إلى المحتوى» 1x1, «عرض الكل» 64x22"
+  },
+  {
+    "width": 820,
+    "screen": "dashboard",
+    "level": "warn",
+    "check": "target-under-44",
+    "detail": "7"
+  },
+  {
+    "width": 820,
+    "screen": "sales",
+    "level": "fail",
+    "check": "target-under-24",
+    "detail": "1: «تخطٍّ إلى المحتوى» 1x1"
+  },
+  {
+    "width": 820,
+    "screen": "sales",
+    "level": "warn",
+    "check": "target-under-44",
+    "detail": "13"
+  },
+  {
+    "width": 820,
+    "screen": "orders",
+    "level": "fail",
+    "check": "target-under-24",
+    "detail": "7: «تخطٍّ إلى المحتوى» 1x1, «إدخال صوتي» 18x18, «مسح الباركود» 18x18, «65.00» 83x21, «345.00» 91x21, «287.50» 87x21"
+  },
+  {
+    "width": 820,
+    "screen": "orders",
+    "level": "warn",
+    "check": "target-under-44",
+    "detail": "24"
+  },
+  {
+    "width": 820,
+    "screen": "customers",
+    "level": "fail",
+    "check": "target-under-24",
+    "detail": "2: «تخطٍّ إلى المحتوى» 1x1, «إدخال صوتي» 18x18"
+  },
+  {
+    "width": 820,
+    "screen": "customers",
+    "level": "warn",
+    "check": "target-under-44",
+    "detail": "9"
+  },
+  {
+    "width": 820,
+    "screen": "inventory",
+    "level": "fail",
+    "check": "target-under-24",
+    "detail": "7: «تخطٍّ إلى المحتوى» 1x1, «إدخال صوتي» 20x20, «اختر...» 20x20, «اختر...» 20x20, «اختر...» 20x20, «اختر...» 20x20"
+  },
+  {
+    "width": 820,
+    "screen": "inventory",
+    "level": "warn",
+    "check": "target-under-44",
+    "detail": "8"
+  },
+  {
+    "width": 820,
+    "screen": "suppliers",
+    "level": "fail",
+    "check": "target-under-24",
+    "detail": "1: «تخطٍّ إلى المحتوى» 1x1"
+  },
+  {
+    "width": 820,
+    "screen": "suppliers",
+    "level": "warn",
+    "check": "target-under-44",
+    "detail": "22"
+  },
+  {
+    "width": 820,
+    "screen": "reports",
+    "level": "fail",
+    "check": "target-under-24",
+    "detail": "1: «تخطٍّ إلى المحتوى» 1x1"
+  },
+  {
+    "width": 820,
+    "screen": "reports",
+    "level": "warn",
+    "check": "target-under-44",
+    "detail": "2"
+  },
+  {
+    "width": 820,
+    "screen": "settings",
+    "level": "fail",
+    "check": "misaligned-row",
+    "detail": "22px: «INPUT»@1166 «INPUT»@1166 «INPUT»@1188"
+  },
+  {
+    "width": 820,
+    "screen": "settings",
+    "level": "fail",
+    "check": "target-under-24",
+    "detail": "2: «تخطٍّ إلى المحتوى» 1x1, «تحديد على الخريطة» 141x22"
+  },
+  {
+    "width": 820,
+    "screen": "settings",
+    "level": "warn",
+    "check": "target-under-44",
+    "detail": "2"
+  },
+  {
+    "width": 820,
+    "screen": "referral",
+    "level": "fail",
+    "check": "target-under-24",
+    "detail": "1: «تخطٍّ إلى المحتوى» 1x1"
+  },
+  {
+    "width": 820,
+    "screen": "referral",
+    "level": "warn",
+    "check": "target-under-44",
+    "detail": "3"
+  },
+  {
+    "width": 820,
+    "screen": "modal-new-po",
+    "level": "fail",
+    "check": "dialog-role",
+    "detail": "no role=dialog + aria-modal=true"
+  },
+  {
+    "width": 820,
+    "screen": "modal-new-po",
+    "level": "fail",
+    "check": "dialog-focus",
+    "detail": "focus on BUTTON"
+  },
+  {
+    "width": 820,
+    "screen": "modal-new-po",
+    "level": "warn",
+    "check": "target-under-44",
+    "detail": "1"
+  },
+  {
+    "width": 820,
+    "screen": "modal-new-order",
+    "level": "fail",
+    "check": "dialog-focus",
+    "detail": "focus on BUTTON"
+  },
+  {
+    "width": 820,
+    "screen": "modal-new-order",
+    "level": "fail",
+    "check": "target-under-24",
+    "detail": "2: «إدخال صوتي» 18x18, «INPUT» 20x20"
+  },
+  {
+    "width": 820,
+    "screen": "modal-new-order",
+    "level": "warn",
+    "check": "target-under-44",
+    "detail": "2"
+  },
+  {
+    "width": 820,
+    "screen": "modal-new-order",
+    "level": "warn",
+    "check": "cut-text",
+    "detail": "2: «INPUT» «INPUT»"
+  },
+  {
+    "width": 820,
+    "screen": "modal-add-product",
+    "level": "fail",
+    "check": "dialog-role",
+    "detail": "no role=dialog + aria-modal=true"
+  },
+  {
+    "width": 820,
+    "screen": "modal-add-product",
+    "level": "fail",
+    "check": "dialog-focus",
+    "detail": "focus on BUTTON"
+  },
+  {
+    "width": 820,
+    "screen": "modal-add-product",
+    "level": "fail",
+    "check": "misaligned-row",
+    "detail": "22px: «0.00»@1361 «0.00»@1339"
+  },
+  {
+    "width": 820,
+    "screen": "modal-add-product",
+    "level": "fail",
+    "check": "field-height",
+    "detail": "not 48: {\"50\":3}"
+  },
+  {
+    "width": 820,
+    "screen": "modal-add-product",
+    "level": "fail",
+    "check": "target-under-24",
+    "detail": "1: «إدخال صوتي» 18x18"
+  },
+  {
+    "width": 820,
+    "screen": "modal-add-product",
+    "level": "warn",
+    "check": "target-under-44",
+    "detail": "5"
+  },
+  {
+    "width": 820,
+    "screen": "modal-add-customer",
+    "level": "fail",
+    "check": "dialog-focus",
+    "detail": "focus on BUTTON"
+  },
+  {
+    "width": 820,
+    "screen": "modal-add-customer",
+    "level": "fail",
+    "check": "target-under-24",
+    "detail": "13: «إدخال صوتي» 20x20, «الكتف» 66x19, «وسع الرقبة سادة» 29x17, «وسع أسفل» 122x24, «كفة أسفل» 124x13, «المفصل» 120x19"
+  },
+  {
+    "width": 820,
+    "screen": "modal-add-customer",
+    "level": "warn",
+    "check": "target-under-44",
+    "detail": "5"
+  },
+  {
+    "width": 820,
+    "screen": "modal-add-supplier",
+    "level": "fail",
+    "check": "dialog-role",
+    "detail": "no role=dialog + aria-modal=true"
+  },
+  {
+    "width": 820,
+    "screen": "modal-add-supplier",
+    "level": "fail",
+    "check": "dialog-focus",
+    "detail": "focus on BUTTON"
+  },
+  {
+    "width": 820,
+    "screen": "modal-add-supplier",
+    "level": "warn",
+    "check": "target-under-44",
+    "detail": "1"
+  },
+  {
+    "width": 820,
+    "screen": "modal-add-staff",
+    "level": "fail",
+    "check": "dialog-role",
+    "detail": "no role=dialog + aria-modal=true"
+  },
+  {
+    "width": 820,
+    "screen": "modal-add-staff",
+    "level": "fail",
+    "check": "dialog-focus",
+    "detail": "focus on BUTTON"
+  },
+  {
+    "width": 820,
+    "screen": "modal-add-staff",
+    "level": "fail",
+    "check": "target-under-24",
+    "detail": "2: «إدخال صوتي» 20x20, «BUTTON» 20x20"
+  },
+  {
+    "width": 820,
+    "screen": "modal-add-staff",
+    "level": "warn",
+    "check": "target-under-44",
+    "detail": "1"
+  },
+  {
+    "width": 1024,
+    "screen": "dashboard",
+    "level": "fail",
+    "check": "target-under-24",
+    "detail": "2: «تخطٍّ إلى المحتوى» 1x1, «عرض الكل» 64x22"
+  },
+  {
+    "width": 1024,
+    "screen": "dashboard",
+    "level": "warn",
+    "check": "target-under-44",
+    "detail": "7"
+  },
+  {
+    "width": 1024,
+    "screen": "sales",
+    "level": "fail",
+    "check": "target-under-24",
+    "detail": "1: «تخطٍّ إلى المحتوى» 1x1"
+  },
+  {
+    "width": 1024,
+    "screen": "sales",
+    "level": "warn",
+    "check": "target-under-44",
+    "detail": "13"
+  },
+  {
+    "width": 1024,
+    "screen": "orders",
+    "level": "fail",
+    "check": "target-under-24",
+    "detail": "3: «تخطٍّ إلى المحتوى» 1x1, «إدخال صوتي» 18x18, «مسح الباركود» 18x18"
+  },
+  {
+    "width": 1024,
+    "screen": "orders",
+    "level": "warn",
+    "check": "target-under-44",
+    "detail": "24"
+  },
+  {
+    "width": 1024,
+    "screen": "customers",
+    "level": "fail",
+    "check": "target-under-24",
+    "detail": "2: «تخطٍّ إلى المحتوى» 1x1, «إدخال صوتي» 18x18"
+  },
+  {
+    "width": 1024,
+    "screen": "customers",
+    "level": "warn",
+    "check": "target-under-44",
+    "detail": "10"
+  },
+  {
+    "width": 1024,
+    "screen": "inventory",
+    "level": "fail",
+    "check": "target-under-24",
+    "detail": "8: «تخطٍّ إلى المحتوى» 1x1, «إدخال صوتي» 20x20, «اختر...» 20x20, «اختر...» 20x20, «اختر...» 20x20, «اختر...» 20x20"
+  },
+  {
+    "width": 1024,
+    "screen": "inventory",
+    "level": "warn",
+    "check": "target-under-44",
+    "detail": "17"
+  },
+  {
+    "width": 1024,
+    "screen": "suppliers",
+    "level": "fail",
+    "check": "target-under-24",
+    "detail": "1: «تخطٍّ إلى المحتوى» 1x1"
+  },
+  {
+    "width": 1024,
+    "screen": "suppliers",
+    "level": "warn",
+    "check": "target-under-44",
+    "detail": "22"
+  },
+  {
+    "width": 1024,
+    "screen": "reports",
+    "level": "fail",
+    "check": "target-under-24",
+    "detail": "1: «تخطٍّ إلى المحتوى» 1x1"
+  },
+  {
+    "width": 1024,
+    "screen": "reports",
+    "level": "warn",
+    "check": "target-under-44",
+    "detail": "2"
+  },
+  {
+    "width": 1024,
+    "screen": "settings",
+    "level": "fail",
+    "check": "misaligned-row",
+    "detail": "22px: «INPUT»@1118 «INPUT»@1118 «INPUT»@1140"
+  },
+  {
+    "width": 1024,
+    "screen": "settings",
+    "level": "fail",
+    "check": "target-under-24",
+    "detail": "2: «تخطٍّ إلى المحتوى» 1x1, «تحديد على الخريطة» 141x22"
+  },
+  {
+    "width": 1024,
+    "screen": "settings",
+    "level": "warn",
+    "check": "target-under-44",
+    "detail": "2"
+  },
+  {
+    "width": 1024,
+    "screen": "referral",
+    "level": "fail",
+    "check": "target-under-24",
+    "detail": "1: «تخطٍّ إلى المحتوى» 1x1"
+  },
+  {
+    "width": 1024,
+    "screen": "referral",
+    "level": "warn",
+    "check": "target-under-44",
+    "detail": "3"
+  },
+  {
+    "width": 1024,
+    "screen": "modal-new-po",
+    "level": "fail",
+    "check": "dialog-role",
+    "detail": "no role=dialog + aria-modal=true"
+  },
+  {
+    "width": 1024,
+    "screen": "modal-new-po",
+    "level": "fail",
+    "check": "dialog-focus",
+    "detail": "focus on BUTTON"
+  },
+  {
+    "width": 1024,
+    "screen": "modal-new-po",
+    "level": "warn",
+    "check": "target-under-44",
+    "detail": "1"
+  },
+  {
+    "width": 1024,
+    "screen": "modal-new-order",
+    "level": "fail",
+    "check": "dialog-focus",
+    "detail": "focus on BUTTON"
+  },
+  {
+    "width": 1024,
+    "screen": "modal-new-order",
+    "level": "fail",
+    "check": "target-under-24",
+    "detail": "2: «إدخال صوتي» 18x18, «INPUT» 20x20"
+  },
+  {
+    "width": 1024,
+    "screen": "modal-new-order",
+    "level": "warn",
+    "check": "target-under-44",
+    "detail": "2"
+  },
+  {
+    "width": 1024,
+    "screen": "modal-new-order",
+    "level": "warn",
+    "check": "cut-text",
+    "detail": "2: «INPUT» «INPUT»"
+  },
+  {
+    "width": 1024,
+    "screen": "modal-add-product",
+    "level": "fail",
+    "check": "dialog-role",
+    "detail": "no role=dialog + aria-modal=true"
+  },
+  {
+    "width": 1024,
+    "screen": "modal-add-product",
+    "level": "fail",
+    "check": "dialog-focus",
+    "detail": "focus on BUTTON"
+  },
+  {
+    "width": 1024,
+    "screen": "modal-add-product",
+    "level": "fail",
+    "check": "misaligned-row",
+    "detail": "22px: «0.00»@1341 «0.00»@1318"
+  },
+  {
+    "width": 1024,
+    "screen": "modal-add-product",
+    "level": "fail",
+    "check": "field-height",
+    "detail": "not 48: {\"50\":3}"
+  },
+  {
+    "width": 1024,
+    "screen": "modal-add-product",
+    "level": "fail",
+    "check": "target-under-24",
+    "detail": "1: «إدخال صوتي» 18x18"
+  },
+  {
+    "width": 1024,
+    "screen": "modal-add-product",
+    "level": "warn",
+    "check": "target-under-44",
+    "detail": "5"
+  },
+  {
+    "width": 1024,
+    "screen": "modal-add-customer",
+    "level": "fail",
+    "check": "dialog-focus",
+    "detail": "focus on BUTTON"
+  },
+  {
+    "width": 1024,
+    "screen": "modal-add-customer",
+    "level": "fail",
+    "check": "target-under-24",
+    "detail": "12: «إدخال صوتي» 20x20, «الكتف» 80x23, «وسع الرقبة سادة» 35x21, «كفة أسفل» 150x16, «المفصل» 145x24, «عرض الكبك» 190x10"
+  },
+  {
+    "width": 1024,
+    "screen": "modal-add-customer",
+    "level": "warn",
+    "check": "target-under-44",
+    "detail": "6"
+  },
+  {
+    "width": 1024,
+    "screen": "modal-add-supplier",
+    "level": "fail",
+    "check": "dialog-role",
+    "detail": "no role=dialog + aria-modal=true"
+  },
+  {
+    "width": 1024,
+    "screen": "modal-add-supplier",
+    "level": "fail",
+    "check": "dialog-focus",
+    "detail": "focus on BUTTON"
+  },
+  {
+    "width": 1024,
+    "screen": "modal-add-supplier",
+    "level": "warn",
+    "check": "target-under-44",
+    "detail": "1"
+  },
+  {
+    "width": 1024,
+    "screen": "modal-add-staff",
+    "level": "fail",
+    "check": "dialog-role",
+    "detail": "no role=dialog + aria-modal=true"
+  },
+  {
+    "width": 1024,
+    "screen": "modal-add-staff",
+    "level": "fail",
+    "check": "dialog-focus",
+    "detail": "focus on BUTTON"
+  },
+  {
+    "width": 1024,
+    "screen": "modal-add-staff",
+    "level": "fail",
+    "check": "target-under-24",
+    "detail": "2: «إدخال صوتي» 20x20, «BUTTON» 20x20"
+  },
+  {
+    "width": 1024,
+    "screen": "modal-add-staff",
+    "level": "warn",
+    "check": "target-under-44",
+    "detail": "1"
+  },
+  {
+    "width": 1280,
+    "screen": "dashboard",
+    "level": "fail",
+    "check": "target-under-24",
+    "detail": "2: «تخطٍّ إلى المحتوى» 1x1, «عرض الكل» 64x22"
+  },
+  {
+    "width": 1280,
+    "screen": "sales",
+    "level": "fail",
+    "check": "target-under-24",
+    "detail": "1: «تخطٍّ إلى المحتوى» 1x1"
+  },
+  {
+    "width": 1280,
+    "screen": "orders",
+    "level": "fail",
+    "check": "target-under-24",
+    "detail": "3: «تخطٍّ إلى المحتوى» 1x1, «إدخال صوتي» 18x18, «مسح الباركود» 18x18"
+  },
+  {
+    "width": 1280,
+    "screen": "customers",
+    "level": "fail",
+    "check": "target-under-24",
+    "detail": "2: «تخطٍّ إلى المحتوى» 1x1, «إدخال صوتي» 18x18"
+  },
+  {
+    "width": 1280,
+    "screen": "inventory",
+    "level": "fail",
+    "check": "target-under-24",
+    "detail": "8: «تخطٍّ إلى المحتوى» 1x1, «إدخال صوتي» 20x20, «اختر...» 20x20, «اختر...» 20x20, «اختر...» 20x20, «اختر...» 20x20"
+  },
+  {
+    "width": 1280,
+    "screen": "suppliers",
+    "level": "fail",
+    "check": "target-under-24",
+    "detail": "1: «تخطٍّ إلى المحتوى» 1x1"
+  },
+  {
+    "width": 1280,
+    "screen": "reports",
+    "level": "fail",
+    "check": "target-under-24",
+    "detail": "1: «تخطٍّ إلى المحتوى» 1x1"
+  },
+  {
+    "width": 1280,
+    "screen": "settings",
+    "level": "fail",
+    "check": "misaligned-row",
+    "detail": "22px: «INPUT»@1095 «INPUT»@1095 «INPUT»@1118"
+  },
+  {
+    "width": 1280,
+    "screen": "settings",
+    "level": "fail",
+    "check": "target-under-24",
+    "detail": "2: «تخطٍّ إلى المحتوى» 1x1, «تحديد على الخريطة» 141x22"
+  },
+  {
+    "width": 1280,
+    "screen": "referral",
+    "level": "fail",
+    "check": "target-under-24",
+    "detail": "1: «تخطٍّ إلى المحتوى» 1x1"
+  },
+  {
+    "width": 1280,
+    "screen": "modal-new-po",
+    "level": "fail",
+    "check": "dialog-role",
+    "detail": "no role=dialog + aria-modal=true"
+  },
+  {
+    "width": 1280,
+    "screen": "modal-new-po",
+    "level": "fail",
+    "check": "dialog-focus",
+    "detail": "focus on BUTTON"
+  },
+  {
+    "width": 1280,
+    "screen": "modal-new-order",
+    "level": "fail",
+    "check": "dialog-focus",
+    "detail": "focus on BUTTON"
+  },
+  {
+    "width": 1280,
+    "screen": "modal-new-order",
+    "level": "fail",
+    "check": "target-under-24",
+    "detail": "2: «إدخال صوتي» 18x18, «INPUT» 20x20"
+  },
+  {
+    "width": 1280,
+    "screen": "modal-new-order",
+    "level": "warn",
+    "check": "cut-text",
+    "detail": "2: «INPUT» «INPUT»"
+  },
+  {
+    "width": 1280,
+    "screen": "modal-add-product",
+    "level": "fail",
+    "check": "dialog-role",
+    "detail": "no role=dialog + aria-modal=true"
+  },
+  {
+    "width": 1280,
+    "screen": "modal-add-product",
+    "level": "fail",
+    "check": "dialog-focus",
+    "detail": "focus on BUTTON"
+  },
+  {
+    "width": 1280,
+    "screen": "modal-add-product",
+    "level": "fail",
+    "check": "misaligned-row",
+    "detail": "22px: «0.00»@1342 «0.00»@1320"
+  },
+  {
+    "width": 1280,
+    "screen": "modal-add-product",
+    "level": "fail",
+    "check": "field-height",
+    "detail": "not 48: {\"50\":3}"
+  },
+  {
+    "width": 1280,
+    "screen": "modal-add-product",
+    "level": "fail",
+    "check": "target-under-24",
+    "detail": "1: «إدخال صوتي» 18x18"
+  },
+  {
+    "width": 1280,
+    "screen": "modal-add-customer",
+    "level": "fail",
+    "check": "dialog-focus",
+    "detail": "focus on BUTTON"
+  },
+  {
+    "width": 1280,
+    "screen": "modal-add-customer",
+    "level": "fail",
+    "check": "target-under-24",
+    "detail": "7: «إدخال صوتي» 20x20, «عرض الكبك» 319x17, «وسع اليد» 297x20, «الطول» 17x588, «Powered BySeen» 121x22, «إدخال صوتي» 18x18"
+  },
+  {
+    "width": 1280,
+    "screen": "modal-add-supplier",
+    "level": "fail",
+    "check": "dialog-role",
+    "detail": "no role=dialog + aria-modal=true"
+  },
+  {
+    "width": 1280,
+    "screen": "modal-add-supplier",
+    "level": "fail",
+    "check": "dialog-focus",
+    "detail": "focus on BUTTON"
+  },
+  {
+    "width": 1280,
+    "screen": "modal-add-staff",
+    "level": "fail",
+    "check": "dialog-role",
+    "detail": "no role=dialog + aria-modal=true"
+  },
+  {
+    "width": 1280,
+    "screen": "modal-add-staff",
+    "level": "fail",
+    "check": "dialog-focus",
+    "detail": "focus on BUTTON"
+  },
+  {
+    "width": 1280,
+    "screen": "modal-add-staff",
+    "level": "fail",
+    "check": "target-under-24",
+    "detail": "2: «إدخال صوتي» 20x20, «BUTTON» 20x20"
+  },
+  {
+    "width": 1440,
+    "screen": "dashboard",
+    "level": "fail",
+    "check": "target-under-24",
+    "detail": "2: «تخطٍّ إلى المحتوى» 1x1, «عرض الكل» 64x22"
+  },
+  {
+    "width": 1440,
+    "screen": "sales",
+    "level": "fail",
+    "check": "target-under-24",
+    "detail": "1: «تخطٍّ إلى المحتوى» 1x1"
+  },
+  {
+    "width": 1440,
+    "screen": "orders",
+    "level": "fail",
+    "check": "target-under-24",
+    "detail": "3: «تخطٍّ إلى المحتوى» 1x1, «إدخال صوتي» 18x18, «مسح الباركود» 18x18"
+  },
+  {
+    "width": 1440,
+    "screen": "customers",
+    "level": "fail",
+    "check": "target-under-24",
+    "detail": "2: «تخطٍّ إلى المحتوى» 1x1, «إدخال صوتي» 18x18"
+  },
+  {
+    "width": 1440,
+    "screen": "inventory",
+    "level": "fail",
+    "check": "target-under-24",
+    "detail": "8: «تخطٍّ إلى المحتوى» 1x1, «إدخال صوتي» 20x20, «اختر...» 20x20, «اختر...» 20x20, «اختر...» 20x20, «اختر...» 20x20"
+  },
+  {
+    "width": 1440,
+    "screen": "suppliers",
+    "level": "fail",
+    "check": "target-under-24",
+    "detail": "1: «تخطٍّ إلى المحتوى» 1x1"
+  },
+  {
+    "width": 1440,
+    "screen": "reports",
+    "level": "fail",
+    "check": "target-under-24",
+    "detail": "1: «تخطٍّ إلى المحتوى» 1x1"
+  },
+  {
+    "width": 1440,
+    "screen": "settings",
+    "level": "fail",
+    "check": "target-under-24",
+    "detail": "2: «تخطٍّ إلى المحتوى» 1x1, «تحديد على الخريطة» 141x22"
+  },
+  {
+    "width": 1440,
+    "screen": "referral",
+    "level": "fail",
+    "check": "target-under-24",
+    "detail": "1: «تخطٍّ إلى المحتوى» 1x1"
+  },
+  {
+    "width": 1440,
+    "screen": "modal-new-po",
+    "level": "fail",
+    "check": "dialog-role",
+    "detail": "no role=dialog + aria-modal=true"
+  },
+  {
+    "width": 1440,
+    "screen": "modal-new-po",
+    "level": "fail",
+    "check": "dialog-focus",
+    "detail": "focus on BUTTON"
+  },
+  {
+    "width": 1440,
+    "screen": "modal-new-order",
+    "level": "fail",
+    "check": "dialog-focus",
+    "detail": "focus on BUTTON"
+  },
+  {
+    "width": 1440,
+    "screen": "modal-new-order",
+    "level": "fail",
+    "check": "target-under-24",
+    "detail": "2: «إدخال صوتي» 18x18, «INPUT» 20x20"
+  },
+  {
+    "width": 1440,
+    "screen": "modal-new-order",
+    "level": "warn",
+    "check": "cut-text",
+    "detail": "2: «INPUT» «INPUT»"
+  },
+  {
+    "width": 1440,
+    "screen": "modal-add-product",
+    "level": "fail",
+    "check": "dialog-role",
+    "detail": "no role=dialog + aria-modal=true"
+  },
+  {
+    "width": 1440,
+    "screen": "modal-add-product",
+    "level": "fail",
+    "check": "dialog-focus",
+    "detail": "focus on BUTTON"
+  },
+  {
+    "width": 1440,
+    "screen": "modal-add-product",
+    "level": "fail",
+    "check": "misaligned-row",
+    "detail": "22px: «0.00»@1347 «0.00»@1325"
+  },
+  {
+    "width": 1440,
+    "screen": "modal-add-product",
+    "level": "fail",
+    "check": "field-height",
+    "detail": "not 48: {\"50\":3}"
+  },
+  {
+    "width": 1440,
+    "screen": "modal-add-product",
+    "level": "fail",
+    "check": "target-under-24",
+    "detail": "1: «إدخال صوتي» 18x18"
+  },
+  {
+    "width": 1440,
+    "screen": "modal-add-customer",
+    "level": "fail",
+    "check": "dialog-focus",
+    "detail": "focus on BUTTON"
+  },
+  {
+    "width": 1440,
+    "screen": "modal-add-customer",
+    "level": "fail",
+    "check": "target-under-24",
+    "detail": "7: «إدخال صوتي» 20x20, «عرض الكبك» 319x17, «وسع اليد» 297x20, «الطول» 17x588, «Powered BySeen» 121x22, «إدخال صوتي» 18x18"
+  },
+  {
+    "width": 1440,
+    "screen": "modal-add-supplier",
+    "level": "fail",
+    "check": "dialog-role",
+    "detail": "no role=dialog + aria-modal=true"
+  },
+  {
+    "width": 1440,
+    "screen": "modal-add-supplier",
+    "level": "fail",
+    "check": "dialog-focus",
+    "detail": "focus on BUTTON"
+  },
+  {
+    "width": 1440,
+    "screen": "modal-add-staff",
+    "level": "fail",
+    "check": "dialog-role",
+    "detail": "no role=dialog + aria-modal=true"
+  },
+  {
+    "width": 1440,
+    "screen": "modal-add-staff",
+    "level": "fail",
+    "check": "dialog-focus",
+    "detail": "focus on BUTTON"
+  },
+  {
+    "width": 1440,
+    "screen": "modal-add-staff",
+    "level": "fail",
+    "check": "target-under-24",
+    "detail": "2: «إدخال صوتي» 20x20, «BUTTON» 20x20"
+  }
+]

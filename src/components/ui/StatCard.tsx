@@ -51,7 +51,7 @@ export function StatCard({ label, value, wrapValue, icon, badge, footer, onClick
       <div className="mt-auto w-full min-w-0">
         <p className="m-0 line-clamp-2 text-base font-medium leading-[1.5] text-content-muted">{label}</p>
         <p className={cn(
-          'm-0 mt-1 font-heading text-[clamp(1.375rem,11cqi,1.75rem)] font-bold leading-[1.25] text-content tabular-nums',
+          'm-0 mt-1 font-heading text-[clamp(1.125rem,11cqi,1.75rem)] font-bold leading-[1.25] text-content tabular-nums',
           wrapValue ? 'text-balance [overflow-wrap:normal] [word-break:keep-all]' : 'whitespace-nowrap',
         )}>
           {value}

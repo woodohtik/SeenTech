@@ -62,6 +62,10 @@ const CUTTING_TYPES = [
 const OPTION_BASE = "flex flex-col items-center justify-center gap-1 min-h-11 px-2 py-2.5 rounded-xl border-2 font-bold text-sm text-center leading-tight transition-all";
 const OPTION_ON = "border-brand bg-brand text-white shadow-md shadow-brand/20";
 const OPTION_OFF = "border-border bg-surface text-content-muted hover:border-brand/30";
+// seen-ui-responsive-alignment-audit-task.md, phase 1: padding / closure /
+// visibility share one row -- the options with an icon (hard, soft) set the
+// height for all of them, so the row lines up.
+const ROW_OPTION = "flex-1 min-h-14";
 
 export default function VisualMeasurements({ values, onChange, readOnly }: VisualMeasurementsProps) {
   const { t, dir } = useDirection();
@@ -122,7 +126,7 @@ export default function VisualMeasurements({ values, onChange, readOnly }: Visua
                 aria-pressed={values.collarPadding === opt.id}
                 onClick={() => onChange('collarPadding', opt.id)}
                 className={cn(
-                  OPTION_BASE, "flex-1",
+                  OPTION_BASE, ROW_OPTION,
                   values.collarPadding === opt.id
                     ? OPTION_ON
                     : OPTION_OFF
@@ -153,7 +157,7 @@ export default function VisualMeasurements({ values, onChange, readOnly }: Visua
                 aria-pressed={values.closureType === opt.id}
                 onClick={() => onChange('closureType', opt.id)}
                 className={cn(
-                  OPTION_BASE, "flex-1",
+                  OPTION_BASE, ROW_OPTION,
                   values.closureType === opt.id 
                     ? OPTION_ON
                     : OPTION_OFF
@@ -183,7 +187,7 @@ export default function VisualMeasurements({ values, onChange, readOnly }: Visua
                 aria-pressed={values.closureVisibility === opt.id}
                 onClick={() => onChange('closureVisibility', opt.id)}
                 className={cn(
-                  OPTION_BASE, "flex-1",
+                  OPTION_BASE, ROW_OPTION,
                   values.closureVisibility === opt.id 
                     ? OPTION_ON
                     : OPTION_OFF

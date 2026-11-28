@@ -35,14 +35,14 @@ export function DateTimeDisplay({
     md: 'text-sm'
   }[size];
 
+  // seen-ui-responsive-alignment-audit-task.md (phase 3, orders): the time is
+  // plain text -- not a box that looked like a disabled field -- in the
+  // interface's font (ص/م were set in a monospace), each part in a <bdi> so
+  // «03:56 ص» keeps its order next to the date.
   return (
-    <span className={`font-mono inline-flex ${inline ? 'items-center gap-1.5' : 'flex-col main-640:flex-row main-640:items-center gap-1 main-640:gap-1.5'} whitespace-nowrap ${sizeClasses} ${className}`} dir="ltr">
-      <span className="font-semibold text-content">{dateStr}</span>
-      {showTime && (
-        <span className="text-sm text-content-muted font-medium bg-surface-muted/80 px-1.5 py-0.5 rounded border border-border/50">
-          {timeStr}
-        </span>
-      )}
+    <span className={`inline-flex ${inline ? 'items-center gap-1.5' : 'flex-wrap items-center gap-x-1.5'} tabular-nums whitespace-nowrap ${sizeClasses} ${className}`}>
+      <bdi dir="ltr" className="font-semibold text-content">{dateStr}</bdi>
+      {showTime && <bdi className="text-content-muted font-medium">{timeStr}</bdi>}
     </span>
   );
 }

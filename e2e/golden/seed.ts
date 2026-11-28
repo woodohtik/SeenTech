@@ -12,6 +12,8 @@
 import { execFileSync } from 'node:child_process';
 import { db } from './db';
 import { CUSTOMER, FABRIC, PRODUCT, SHOP, STAFF, TEST_PASSWORD } from './fixtures';
+import { VERTICAL_SHOPS } from './verticals/shops';
+import { verticalShopsSql } from './verticals/seedSql';
 
 const q = (v: string | number | boolean | null) =>
   v === null ? 'NULL' : typeof v === 'string' ? `'${v.replace(/'/g, "''")}'` : String(v);
@@ -40,6 +42,13 @@ async function main() {
     uid[key] = created.user.id;
   }
   const keys = Object.keys(STAFF) as Array<keyof typeof STAFF>;
+  // seen-open-verticals-task.md, phase 0: an owner for each vertical's test shop.
+  const ownerUid: Record<string, string> = {};
+  for (const shop of VERTICAL_SHOPS) {
+    const { data: created, error } = await sb.auth.admin.createUser({ email: shop.ownerEmail, password: TEST_PASSWORD, email_confirm: true, user_metadata: { full_name: 'المالك' } });
+    if (error || !created.user) throw new Error(`user ${shop.ownerEmail}: ${JSON.stringify(error)}`);
+    ownerUid[shop.ownerEmail] = created.user.id;
+  }
 
   // One transaction.
   runSql(`
@@ -63,6 +72,7 @@ INSERT INTO public.inventory_items (id, tenant_id, name, sku, category, category
 INSERT INTO public.branch_inventory (tenant_id, branch_id, item_id, quantity) VALUES
   (${q(SHOP.tenantId)}, ${q(SHOP.branchId)}, ${q(FABRIC.id)}, ${FABRIC.stock}),
   (${q(SHOP.tenantId)}, ${q(SHOP.branchId)}, ${q(PRODUCT.id)}, ${PRODUCT.stock});
+${verticalShopsSql(ownerUid)}
 END
 $seed$;
 `);
@@ -70,6 +80,9 @@ $seed$;
   // The seed is checked, not assumed.
   const { data: staff, error } = await sb.from('staff').select('id').eq('tenant_id', SHOP.tenantId);
   if (error || staff?.length !== keys.length) throw new Error(`seed did not take: ${JSON.stringify(error ?? staff)}`);
+  const { data: vshops } = await sb.from('tenants').select('id').in('id', VERTICAL_SHOPS.map((v) => v.tenantId));
+  if (vshops?.length !== VERTICAL_SHOPS.length) throw new Error(`vertical shops did not take: ${vshops?.length}`);
+  console.log(`seeded ${VERTICAL_SHOPS.length} vertical test shops`);
   console.log(`seeded ${SHOP.name}: ${keys.length} staff, 1 customer, ${FABRIC.stock} m of ${FABRIC.name}, ${PRODUCT.stock} × ${PRODUCT.name}`);
 }
 

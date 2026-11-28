@@ -7,6 +7,7 @@
  * see actingSession.ts) -- so a route and an RPC can never disagree.
  * The owner and the platform admin pass, as with app_has_permission.
  */
+import { userErrorBody } from '../userErrors';
 import type { NextFunction, Response } from 'express';
 import type { AuthRequest } from './authMiddleware.ts';
 
@@ -38,7 +39,9 @@ export function requirePermission(keys: string | string[], opts: { anyOf?: boole
     try {
       const results = await Promise.all(list.map((k) => hasPermission(req, k, opts.load)));
       const ok = opts.anyOf ? results.some(Boolean) : results.every(Boolean);
-      if (!ok) return res.status(403).json({ error: 'forbidden', permission: list.join(opts.anyOf ? '|' : '+') });
+      // The app's own terms (a code and a kind the screens put in a sentence),
+      // with the permission it lacked; "forbidden" stays as the reason.
+      if (!ok) return res.status(403).json({ ...userErrorBody(req, 'permission', 'forbidden'), permission: list.join(opts.anyOf ? '|' : '+') });
       return next();
     } catch {
       return res.status(500).json({ error: 'permission_check_failed' });

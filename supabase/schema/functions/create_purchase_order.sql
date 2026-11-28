@@ -67,7 +67,7 @@ BEGIN
   FOR v_item IN SELECT * FROM jsonb_array_elements(p_items) LOOP
     INSERT INTO public.purchase_order_items (
       tenant_id, purchase_order_id, item_id, variant_id, name, quantity, unit,
-      conversion_rate, base_quantity, price_per_unit, total
+      conversion_rate, base_quantity, price_per_unit, total, update_item_cost
     ) VALUES (
       v_tenant, v_po_id,
       NULLIF(v_item->>'item_id', '')::uuid,
@@ -78,7 +78,8 @@ BEGIN
       (v_item->>'conversion_rate')::numeric,
       (v_item->>'base_quantity')::numeric,
       (v_item->>'price_per_unit')::numeric,
-      (v_item->>'total')::numeric
+      (v_item->>'total')::numeric,
+      COALESCE((v_item->>'update_item_cost')::boolean, false)
     );
   END LOOP;
 

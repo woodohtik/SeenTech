@@ -141,6 +141,7 @@ export function SmartSelect({
             )}
             <Combobox.Input
               id={id}
+              data-field-control
               className={cn(buttonClasses, StartIcon && (dir === 'rtl' ? 'pr-10' : 'pl-10'))}
               displayValue={(opt: SelectOption) => (opt && String(opt.value) !== '' ? opt.label : '')}
               onChange={(event) => setQuery(event.target.value)}
@@ -223,7 +224,7 @@ export function SmartSelect({
       {labelNode}
       <Listbox value={value} onChange={onChange} disabled={disabled} name={name}>
         <div className="relative group">
-          <Listbox.Button id={id} className={cn(buttonClasses, StartIcon && (dir === 'rtl' ? 'pr-10' : 'pl-10'))}>
+          <Listbox.Button id={id} data-field-control className={cn(buttonClasses, StartIcon && (dir === 'rtl' ? 'pr-10' : 'pl-10'))}>
             {StartIcon && (
               <StartIcon className={cn(
                 "absolute h-4 w-4 text-content-muted pointer-events-none group-hover:text-brand transition-colors",

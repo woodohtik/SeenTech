@@ -724,7 +724,10 @@
     "to": "To",
     "type": "Type",
     "copied": "Copied",
-    "build_number": "Build"
+    "build_number": "Build",
+    "trn_placeholder": "15 digits, starting and ending with 3",
+    "show_password": "Show password",
+    "hide_password": "Hide password"
   },
   "compliance": {
     "check_legal_name": "Legal Name of the Business",
@@ -1699,7 +1702,13 @@
       "save_all": "Save all",
       "confirm_rows": "Done ✓",
       "po_return_not_supported": "Returns of products with variants are not supported yet -- adjust their stock by hand from the inventory screen.",
-      "select_variant_placeholder": "Choose the variant (colour / size)..."
+      "select_variant_placeholder": "Choose the variant (colour / size)...",
+      "price": "Price",
+      "special_price": "Special price",
+      "back_to_product_price": "Back to the product's price",
+      "photo": "Variant photo",
+      "photo_for": "Photo of {{name}}",
+      "same_photo_for": "Same photo for every \"{{value}}\""
     },
     "add_success_with_variants": "The product and {{count}} variants were added",
     "bulk_import_branch_inventory_failed": "Branch stock could not be set up for some imported products -- check them by hand on the inventory screen",
@@ -1709,7 +1718,22 @@
     "initial_stock_hint": "What you have today, in the item's unit. Recorded once, as the opening balance.",
     "tax_inclusive_hint": "15% in the price",
     "tax_exclusive_hint": "+15% on top",
-    "tax_exempt_hint": "No VAT"
+    "tax_exempt_hint": "No VAT",
+    "barcode_generate": "Generate",
+    "barcode_placeholder": "Scan the maker's barcode, or press Generate",
+    "barcode_generate_failed": "A barcode could not be generated. Try again.",
+    "barcode_preview": "Barcode preview",
+    "barcode_taken": "This barcode is used by another item in the shop.",
+    "variant_opening": {
+      "same": "The same for each variant",
+      "split": "Share among the variants",
+      "variant": "Variant",
+      "quantity": "Stock ({{unit}})",
+      "quantity_for": "Stock of {{name}}",
+      "set_by_hand": "set by hand",
+      "total": "Total",
+      "not_saved": "Variant \"{{name}}\" was added but its opening stock was not saved. Add it from a stock take."
+    }
   },
   "invoice_print": {
     "address": "Address",
@@ -2232,7 +2256,6 @@
     "general_notes": "General Notes",
     "grand_total": "Grand Total",
     "illustration_images": "Illustration Images / Designs",
-    "image_url_placeholder": "Image URL...",
     "in_tailoring": "In Tailoring",
     "invoice": "Invoice",
     "item_type": "Item Type",
@@ -2425,7 +2448,28 @@
     "ready_prompt_later": "Later",
     "ready_prompt_no_phone": "The customer has no mobile number.",
     "order_due_badge_title": "Left on this order. The customer's whole balance: {{total}}",
-    "move_back_confirm": "Move the order back from \"{{from}}\" to \"{{to}}\"? The earlier stage was done."
+    "move_back_confirm": "Move the order back from \"{{from}}\" to \"{{to}}\"? The earlier stage was done.",
+    "images": {
+      "take_photo": "Take photo",
+      "from_gallery": "From gallery/files",
+      "hint": "Up to {{max}} photos. You can drag them here or paste them.",
+      "offline": "Uploading photos needs the internet; you can add them later by editing the order.",
+      "too_many": "An order holds {{max}} photos at most.",
+      "uploading": "Uploading",
+      "retry": "Retry",
+      "remove": "Remove photo",
+      "size_kb": "{{kb}} KB",
+      "waiting_upload": "Uploading photos…",
+      "error_too_large": "The photo is too large (over 25 MB).",
+      "error_heic": "HEIC photos cannot be opened here. Take it with the camera, or convert it to JPEG.",
+      "error_not_image": "This file is not an image.",
+      "error_compress_failed": "The photo could not be prepared.",
+      "error_upload": "The photo did not upload. Try again.",
+      "open": "Open photo",
+      "close": "Close",
+      "next": "Next photo",
+      "prev": "Previous photo"
+    }
   },
   "permissions": {
     "access_denied_desc": "Not specified",
@@ -3474,7 +3518,14 @@
     "col_total_paid": "Paid",
     "col_outstanding_balance": "Due to supplier",
     "col_account_status": "Status",
-    "col_actions_and_inventory": "Actions"
+    "col_actions_and_inventory": "Actions",
+    "cost_change": "The product's price is {{from}} → the new one {{to}} SAR {{unit}}",
+    "update_product_cost": "Update the product's price when the order is confirmed",
+    "cost_above_selling": "The new purchase price is above the selling price.",
+    "per_meter": "a metre",
+    "per_piece": "a piece",
+    "cost_not_updated_note": "The order is confirmed, but the product's price was not updated: that needs permission to edit stock.",
+    "item_label": "Item"
   },
   "public_invoice": {
     "digital_access": "Digital Invoice Access",
@@ -5271,7 +5322,8 @@
       "substep_tests": "Compliance tests",
       "substep_production": "Production CSID request",
       "refresh_status": "Refresh the status"
-    }
+    },
+    "section_label": "Section"
   },
   "shift_closing": {
     "actual_cash_label": "Actual Cash in Drawer",

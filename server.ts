@@ -1930,6 +1930,20 @@ app.post("/api/assistant-feedback", authenticate, async (req: any, res) => {
 
 // The super admin's view of the ratings: the latest 100 (optionally only
 // "not useful"), with the shop's name, and the last 30 days' totals.
+// seen-order-images-upload-task.md, phase 5: a shop deleted for good, or its
+// data wiped, leaves no order photos behind (the bucket's own rules keep a
+// browser to its own shop, so this runs with the service role).
+app.delete("/api/super-admin/tenants/:tenantId/order-images", authenticate, authorize(['super_admin']), async (req: any, res) => {
+  try {
+    const { supabaseAdmin } = await import("./src/server/supabase-admin.ts");
+    const { removeTenantOrderImages } = await import("./src/server/orderImagesCleanup.ts");
+    const removed = await removeTenantOrderImages(supabaseAdmin.storage.from('order-images') as any, String(req.params.tenantId));
+    res.json({ ok: true, removed });
+  } catch (err: any) {
+    internalError(res, "Error removing a shop's order images:", err);
+  }
+});
+
 app.get("/api/super-admin/assistant-feedback", authenticate, authorize(['super_admin']), async (req: any, res) => {
   try {
     const { supabaseAdmin } = await import("./src/server/supabase-admin.ts");

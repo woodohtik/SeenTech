@@ -18,6 +18,13 @@ DECLARE
   v_item_delta      numeric;
   v_balance_delta   numeric;
   v_new_balance     numeric;
+  v_cost            numeric;
+  v_old_cost        numeric;
+  v_desc            text;
+  v_meta            jsonb;
+  v_can_edit_cost   boolean;
+  v_cost_updated    int := 0;
+  v_cost_skipped    int := 0;
 BEGIN
   v_tenant := public.app_current_tenant_id();
   IF v_tenant IS NULL THEN
@@ -52,10 +59,53 @@ BEGIN
     RAISE EXCEPTION 'لا يوجد فرع لتسجيل حركة المخزون عليه' USING ERRCODE = '22023';
   END IF;
 
+  v_can_edit_cost := coalesce(app_has_permission('inventory.edit'), false);
+
   FOR v_item IN
     SELECT * FROM public.purchase_order_items WHERE purchase_order_id = p_order_id
   LOOP
     CONTINUE WHEN v_item.item_id IS NULL;
+
+    -- seen-product-variants-barcode-po-price-task.md, phase 4: a purchase
+    -- line marked "update the product's price" sets the product's cost --
+    -- per base unit (a roll's price / its metres), in the description
+    -- metadata where the app keeps it. Never from a return; only with
+    -- inventory.edit (otherwise the order still goes through, counted in
+    -- cost_not_updated). The selling price is never touched.
+    IF v_order_type = 'purchase' AND v_item.update_item_cost THEN
+      IF NOT v_can_edit_cost THEN
+        v_cost_skipped := v_cost_skipped + 1;
+      ELSE
+        v_cost := round(v_item.price_per_unit / NULLIF(COALESCE(v_item.conversion_rate, 1), 0), 4);
+        SELECT description INTO v_desc FROM public.inventory_items
+         WHERE id = v_item.item_id AND tenant_id = v_tenant FOR UPDATE;
+        v_meta := NULL;
+        IF left(COALESCE(v_desc, ''), 23) = '__INVENTORY_METADATA__:' THEN
+          BEGIN
+            v_meta := substring(v_desc from 24)::jsonb;
+          EXCEPTION WHEN others THEN
+            v_meta := NULL;
+          END;
+        END IF;
+        IF v_meta IS NULL THEN
+          v_meta := jsonb_build_object('costPrice', 0, 'taxType', 'exclusive', 'originalDescription', COALESCE(v_desc, ''));
+        END IF;
+        v_old_cost := COALESCE((v_meta ->> 'costPrice')::numeric, 0);
+        IF v_cost IS NOT NULL AND v_cost >= 0 AND v_cost <> v_old_cost THEN
+          UPDATE public.inventory_items
+             SET description = '__INVENTORY_METADATA__:' || jsonb_set(v_meta, '{costPrice}', to_jsonb(v_cost))::text,
+                 updated_at = now()
+           WHERE id = v_item.item_id AND tenant_id = v_tenant;
+          INSERT INTO public.audit_logs (tenant_id, action, type, details, metadata)
+          VALUES (v_tenant, 'inventory.cost_from_purchase_order', 'system',
+                  'تحديث سعر الشراء من أمر الشراء ' || COALESCE(NULLIF(v_order.po_number, ''), p_order_id::text),
+                  jsonb_build_object('item_id', v_item.item_id, 'from', v_old_cost, 'to', v_cost,
+                                     'purchase_order_id', p_order_id, 'po_number', v_order.po_number,
+                                     'staff_id', public.app_current_staff_id()));
+          v_cost_updated := v_cost_updated + 1;
+        END IF;
+      END IF;
+    END IF;
 
     v_item_delta := COALESCE(v_item.base_quantity, v_item.quantity, 0);
     IF v_order_type = 'return' THEN v_item_delta := -v_item_delta; END IF;
@@ -102,5 +152,6 @@ BEGIN
      SET status = v_target_status, received_date = now(), updated_at = now()
    WHERE id = p_order_id;
 
-  RETURN jsonb_build_object('purchase_order_id', p_order_id, 'status', v_target_status, 'replayed', false);
+  RETURN jsonb_build_object('purchase_order_id', p_order_id, 'status', v_target_status, 'replayed', false,
+                            'cost_updated', v_cost_updated, 'cost_not_updated', v_cost_skipped);
 END $function$;

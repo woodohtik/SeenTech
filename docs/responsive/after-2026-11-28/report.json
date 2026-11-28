@@ -1,0 +1,506 @@
+[
+  {
+    "width": 360,
+    "screen": "dashboard",
+    "level": "warn",
+    "check": "target-under-44",
+    "detail": "9"
+  },
+  {
+    "width": 360,
+    "screen": "dashboard",
+    "level": "warn",
+    "check": "cut-text",
+    "detail": "1: «كامل القراءات»"
+  },
+  {
+    "width": 360,
+    "screen": "sales",
+    "level": "warn",
+    "check": "target-under-44",
+    "detail": "8"
+  },
+  {
+    "width": 360,
+    "screen": "orders",
+    "level": "warn",
+    "check": "target-under-44",
+    "detail": "28"
+  },
+  {
+    "width": 360,
+    "screen": "customers",
+    "level": "warn",
+    "check": "target-under-44",
+    "detail": "9"
+  },
+  {
+    "width": 360,
+    "screen": "customers",
+    "level": "warn",
+    "check": "cut-text",
+    "detail": "1: «مدين:762.50»"
+  },
+  {
+    "width": 360,
+    "screen": "inventory",
+    "level": "warn",
+    "check": "target-under-44",
+    "detail": "19"
+  },
+  {
+    "width": 360,
+    "screen": "suppliers",
+    "level": "warn",
+    "check": "target-under-44",
+    "detail": "14"
+  },
+  {
+    "width": 360,
+    "screen": "suppliers",
+    "level": "warn",
+    "check": "cut-text",
+    "detail": "3: «| 0500000077» «| 0500000067» «| 0500000066»"
+  },
+  {
+    "width": 360,
+    "screen": "reports",
+    "level": "warn",
+    "check": "target-under-44",
+    "detail": "13"
+  },
+  {
+    "width": 360,
+    "screen": "settings",
+    "level": "warn",
+    "check": "target-under-44",
+    "detail": "2"
+  },
+  {
+    "width": 360,
+    "screen": "referral",
+    "level": "warn",
+    "check": "target-under-44",
+    "detail": "3"
+  },
+  {
+    "width": 360,
+    "screen": "modal-new-po",
+    "level": "warn",
+    "check": "target-under-44",
+    "detail": "1"
+  },
+  {
+    "width": 360,
+    "screen": "modal-new-order",
+    "level": "warn",
+    "check": "target-under-44",
+    "detail": "5"
+  },
+  {
+    "width": 360,
+    "screen": "modal-new-order",
+    "level": "warn",
+    "check": "cut-text",
+    "detail": "2: «INPUT» «INPUT»"
+  },
+  {
+    "width": 360,
+    "screen": "modal-add-product",
+    "level": "warn",
+    "check": "target-under-44",
+    "detail": "4"
+  },
+  {
+    "width": 360,
+    "screen": "modal-add-customer",
+    "level": "warn",
+    "check": "target-under-44",
+    "detail": "8"
+  },
+  {
+    "width": 360,
+    "screen": "modal-add-customer",
+    "level": "warn",
+    "check": "cut-text",
+    "detail": "1: «أدخل المقاسات بدقة للمراجعة الفورية»"
+  },
+  {
+    "width": 360,
+    "screen": "modal-add-supplier",
+    "level": "warn",
+    "check": "target-under-44",
+    "detail": "1"
+  },
+  {
+    "width": 360,
+    "screen": "modal-add-staff",
+    "level": "warn",
+    "check": "target-under-44",
+    "detail": "3"
+  },
+  {
+    "width": 390,
+    "screen": "dashboard",
+    "level": "warn",
+    "check": "target-under-44",
+    "detail": "9"
+  },
+  {
+    "width": 390,
+    "screen": "sales",
+    "level": "warn",
+    "check": "target-under-44",
+    "detail": "8"
+  },
+  {
+    "width": 390,
+    "screen": "orders",
+    "level": "warn",
+    "check": "target-under-44",
+    "detail": "28"
+  },
+  {
+    "width": 390,
+    "screen": "customers",
+    "level": "warn",
+    "check": "target-under-44",
+    "detail": "9"
+  },
+  {
+    "width": 390,
+    "screen": "inventory",
+    "level": "warn",
+    "check": "target-under-44",
+    "detail": "19"
+  },
+  {
+    "width": 390,
+    "screen": "suppliers",
+    "level": "warn",
+    "check": "target-under-44",
+    "detail": "14"
+  },
+  {
+    "width": 390,
+    "screen": "suppliers",
+    "level": "warn",
+    "check": "cut-text",
+    "detail": "1: «| 0500000067»"
+  },
+  {
+    "width": 390,
+    "screen": "reports",
+    "level": "warn",
+    "check": "target-under-44",
+    "detail": "13"
+  },
+  {
+    "width": 390,
+    "screen": "settings",
+    "level": "warn",
+    "check": "target-under-44",
+    "detail": "2"
+  },
+  {
+    "width": 390,
+    "screen": "referral",
+    "level": "warn",
+    "check": "target-under-44",
+    "detail": "3"
+  },
+  {
+    "width": 390,
+    "screen": "modal-new-po",
+    "level": "warn",
+    "check": "target-under-44",
+    "detail": "1"
+  },
+  {
+    "width": 390,
+    "screen": "modal-new-order",
+    "level": "warn",
+    "check": "target-under-44",
+    "detail": "5"
+  },
+  {
+    "width": 390,
+    "screen": "modal-new-order",
+    "level": "warn",
+    "check": "cut-text",
+    "detail": "2: «INPUT» «INPUT»"
+  },
+  {
+    "width": 390,
+    "screen": "modal-add-product",
+    "level": "warn",
+    "check": "target-under-44",
+    "detail": "4"
+  },
+  {
+    "width": 390,
+    "screen": "modal-add-customer",
+    "level": "warn",
+    "check": "target-under-44",
+    "detail": "8"
+  },
+  {
+    "width": 390,
+    "screen": "modal-add-customer",
+    "level": "warn",
+    "check": "cut-text",
+    "detail": "1: «أدخل المقاسات بدقة للمراجعة الفورية»"
+  },
+  {
+    "width": 390,
+    "screen": "modal-add-supplier",
+    "level": "warn",
+    "check": "target-under-44",
+    "detail": "1"
+  },
+  {
+    "width": 390,
+    "screen": "modal-add-staff",
+    "level": "warn",
+    "check": "target-under-44",
+    "detail": "3"
+  },
+  {
+    "width": 820,
+    "screen": "dashboard",
+    "level": "warn",
+    "check": "target-under-44",
+    "detail": "7"
+  },
+  {
+    "width": 820,
+    "screen": "sales",
+    "level": "warn",
+    "check": "target-under-44",
+    "detail": "13"
+  },
+  {
+    "width": 820,
+    "screen": "orders",
+    "level": "warn",
+    "check": "target-under-44",
+    "detail": "28"
+  },
+  {
+    "width": 820,
+    "screen": "customers",
+    "level": "warn",
+    "check": "target-under-44",
+    "detail": "9"
+  },
+  {
+    "width": 820,
+    "screen": "inventory",
+    "level": "warn",
+    "check": "target-under-44",
+    "detail": "9"
+  },
+  {
+    "width": 820,
+    "screen": "suppliers",
+    "level": "warn",
+    "check": "target-under-44",
+    "detail": "16"
+  },
+  {
+    "width": 820,
+    "screen": "reports",
+    "level": "warn",
+    "check": "target-under-44",
+    "detail": "2"
+  },
+  {
+    "width": 820,
+    "screen": "settings",
+    "level": "warn",
+    "check": "target-under-44",
+    "detail": "2"
+  },
+  {
+    "width": 820,
+    "screen": "referral",
+    "level": "warn",
+    "check": "target-under-44",
+    "detail": "3"
+  },
+  {
+    "width": 820,
+    "screen": "modal-new-po",
+    "level": "warn",
+    "check": "target-under-44",
+    "detail": "1"
+  },
+  {
+    "width": 820,
+    "screen": "modal-new-order",
+    "level": "warn",
+    "check": "target-under-44",
+    "detail": "3"
+  },
+  {
+    "width": 820,
+    "screen": "modal-new-order",
+    "level": "warn",
+    "check": "cut-text",
+    "detail": "2: «INPUT» «INPUT»"
+  },
+  {
+    "width": 820,
+    "screen": "modal-add-product",
+    "level": "warn",
+    "check": "target-under-44",
+    "detail": "5"
+  },
+  {
+    "width": 820,
+    "screen": "modal-add-customer",
+    "level": "warn",
+    "check": "target-under-44",
+    "detail": "6"
+  },
+  {
+    "width": 820,
+    "screen": "modal-add-supplier",
+    "level": "warn",
+    "check": "target-under-44",
+    "detail": "1"
+  },
+  {
+    "width": 820,
+    "screen": "modal-add-staff",
+    "level": "warn",
+    "check": "target-under-44",
+    "detail": "3"
+  },
+  {
+    "width": 1024,
+    "screen": "dashboard",
+    "level": "warn",
+    "check": "target-under-44",
+    "detail": "7"
+  },
+  {
+    "width": 1024,
+    "screen": "sales",
+    "level": "warn",
+    "check": "target-under-44",
+    "detail": "13"
+  },
+  {
+    "width": 1024,
+    "screen": "orders",
+    "level": "warn",
+    "check": "target-under-44",
+    "detail": "24"
+  },
+  {
+    "width": 1024,
+    "screen": "customers",
+    "level": "warn",
+    "check": "target-under-44",
+    "detail": "10"
+  },
+  {
+    "width": 1024,
+    "screen": "inventory",
+    "level": "warn",
+    "check": "target-under-44",
+    "detail": "18"
+  },
+  {
+    "width": 1024,
+    "screen": "suppliers",
+    "level": "warn",
+    "check": "target-under-44",
+    "detail": "22"
+  },
+  {
+    "width": 1024,
+    "screen": "reports",
+    "level": "warn",
+    "check": "target-under-44",
+    "detail": "2"
+  },
+  {
+    "width": 1024,
+    "screen": "settings",
+    "level": "warn",
+    "check": "target-under-44",
+    "detail": "2"
+  },
+  {
+    "width": 1024,
+    "screen": "referral",
+    "level": "warn",
+    "check": "target-under-44",
+    "detail": "3"
+  },
+  {
+    "width": 1024,
+    "screen": "modal-new-po",
+    "level": "warn",
+    "check": "target-under-44",
+    "detail": "1"
+  },
+  {
+    "width": 1024,
+    "screen": "modal-new-order",
+    "level": "warn",
+    "check": "target-under-44",
+    "detail": "3"
+  },
+  {
+    "width": 1024,
+    "screen": "modal-new-order",
+    "level": "warn",
+    "check": "cut-text",
+    "detail": "2: «INPUT» «INPUT»"
+  },
+  {
+    "width": 1024,
+    "screen": "modal-add-product",
+    "level": "warn",
+    "check": "target-under-44",
+    "detail": "5"
+  },
+  {
+    "width": 1024,
+    "screen": "modal-add-customer",
+    "level": "warn",
+    "check": "target-under-44",
+    "detail": "6"
+  },
+  {
+    "width": 1024,
+    "screen": "modal-add-supplier",
+    "level": "warn",
+    "check": "target-under-44",
+    "detail": "1"
+  },
+  {
+    "width": 1024,
+    "screen": "modal-add-staff",
+    "level": "warn",
+    "check": "target-under-44",
+    "detail": "3"
+  },
+  {
+    "width": 1280,
+    "screen": "modal-new-order",
+    "level": "warn",
+    "check": "cut-text",
+    "detail": "2: «INPUT» «INPUT»"
+  },
+  {
+    "width": 1440,
+    "screen": "modal-new-order",
+    "level": "warn",
+    "check": "cut-text",
+    "detail": "2: «INPUT» «INPUT»"
+  }
+]

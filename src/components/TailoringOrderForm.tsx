@@ -1,3 +1,4 @@
+import { useDialogBehavior } from './ui/DialogFrame';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useUnsavedWork } from '../lib/unsavedWork';
 import { createPortal } from 'react-dom';
@@ -44,6 +45,8 @@ import VisualMeasurements from './VisualMeasurements';
 import ThobeMeasurementSelector from './ThobeMeasurementSelector';
 import { SmartSelect } from './ui/SmartSelect';
 import { QuickAddTailor } from './staff/QuickAddTailor';
+import { OrderImagesField } from './orders/OrderImagesField';
+import { deleteOrderImage } from '../lib/orderImages';
 import { useCustomerStylePrefill, rememberCustomerStylePrefs } from './orders/useCustomerStylePrefill';
 import { applyStylePrefs } from '../utils/customerStylePrefs';
 import { DatePicker, todayYmd } from './ui/DatePicker';
@@ -81,7 +84,8 @@ const EXTERNAL_FABRIC = 'custom';
 const inputClass =
   "w-full bg-surface border border-border rounded-xl p-3 text-sm font-semibold text-content outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand";
 const smallLabelClass = "text-sm text-content-muted font-bold uppercase";
-const sectionLabelClass = "text-sm font-black text-content-muted uppercase";
+// 16px, no uppercase (DESIGN.md §2, §7); one line high, so a row's fields line up.
+const sectionLabelClass = "text-base font-bold text-content leading-6";
 
 export default function TailoringOrderForm(props: TailoringOrderFormProps) {
   if (typeof document === 'undefined') return null;
@@ -362,7 +366,7 @@ function QuickAddCustomerModal({
             </div>
             <div className="space-y-2">
               <label htmlFor="quick-customer-trn" className="text-sm font-bold text-content-muted">{t('orders.company_trn_label')} <span className="opacity-70 text-sm">{t('common.optional')}</span></label>
-              <input id="quick-customer-trn" type="text" {...register('trn' as any)} className={inputClass} dir="ltr" placeholder="300000000000003" />
+              <input id="quick-customer-trn" type="text" {...register('trn' as any)} className={inputClass} dir="ltr" placeholder={t('common.trn_placeholder')} />
               {errors.trn && <p className="text-sm text-danger font-bold">{String(errors.trn.message)}</p>}
             </div>
           </div>
@@ -412,7 +416,7 @@ function QuickAddCustomerModal({
 }
 
 function TailoringOrderFormBody({
-  onClose, tenantId, initialCustomerId, topSlot, showReceipt, onCreated,
+  onClose: onCloseProp, tenantId, initialCustomerId, topSlot, showReceipt, onCreated,
 }: TailoringOrderFormProps) {
   const { t, i18n } = useTranslation();
   const isRtl = isRtlLang(i18n.language);
@@ -452,11 +456,24 @@ function TailoringOrderFormBody({
   const [isEditingMeasurements, setIsEditingMeasurements] = useState(false);
   const [tempMeasurements, setTempMeasurements] = useState<Measurements>({});
   const [isSavingMeasurements, setIsSavingMeasurements] = useState(false);
-  const [imageUrl, setImageUrl] = useState('');
   const [savedOrder, setSavedOrder] = useState<{ order: Record<string, any>; queuedOffline: boolean; depositSkipped: boolean } | null>(null);
   // One id for this form session: a second click or a retry after a dropped
   // response saves the same order instead of a new one.
   const orderIdRef = useRef<string>(globalThis.crypto.randomUUID());
+  // seen-order-images-upload-task.md: photos upload as they are added, into
+  // this order's folder. Abandoning the form removes them again (no orphan
+  // files); saving keeps them. The order waits for a photo still uploading.
+  const sessionUploadsRef = useRef<string[]>([]);
+  const savedRef = useRef(false);
+  const [imagesBusy, setImagesBusy] = useState(false);
+  const onClose = useCallback(() => {
+    if (!savedRef.current && sessionUploadsRef.current.length) {
+      const paths = sessionUploadsRef.current;
+      sessionUploadsRef.current = [];
+      void Promise.all(paths.map((p) => deleteOrderImage(p).catch(() => undefined)));
+    }
+    onCloseProp();
+  }, [onCloseProp]);
 
   const firstStageKey = isLegacyVertical || workflowStages.length === 0 ? 'measurements_taken' : workflowStages[0].stage_key;
 
@@ -697,6 +714,7 @@ function TailoringOrderFormBody({
         return;
       }
 
+      savedRef.current = true;
       const queuedOffline = result.status === 'queued';
       // The order's choices become the customer's preferences (best effort; not offline).
       if (!queuedOffline && selectedCustomer && items[0]) {
@@ -764,6 +782,9 @@ function TailoringOrderFormBody({
   const unitText = (unit: ContentUnit) => t(unit === 'yard' ? 'inventory.unit_yard' : 'inventory.unit_meter');
   const paidAmount = Number(watch('paidAmount' as any) || 0);
   const images: string[] = watch('images' as any) || [];
+  // seen-ui-responsive-alignment-audit-task.md, finding 03: focus into the form, Esc, focus back.
+  const dialogRef = useRef<HTMLDivElement>(null);
+  useDialogBehavior(dialogRef, onClose);
 
   return (
     <div className="fixed inset-0 z-[100] flex items-end main-900:items-center justify-center main-900:p-4 overflow-hidden">
@@ -775,6 +796,7 @@ function TailoringOrderFormBody({
         className="absolute inset-0 bg-black/50 backdrop-blur-sm"
       />
       <motion.div
+        ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-label={t('orders.create_new_order')}
@@ -858,7 +880,7 @@ function TailoringOrderFormBody({
             {/* Customer, delivery, tailor */}
             <div className="grid grid-cols-1 main-720:grid-cols-3 gap-4">
               <div className="space-y-2">
-                <label className={sectionLabelClass}>{t('common.customer')}</label>
+                <div className="flex items-center h-6"><label className={sectionLabelClass}>{t('common.customer')}</label></div>
                 <div className="flex items-center gap-2">
                   <div className="flex-1 min-w-0" aria-invalid={!!errors.customerId}>
                     <Controller
@@ -895,7 +917,7 @@ function TailoringOrderFormBody({
               </div>
 
               <div className="space-y-2" aria-invalid={!!errors.deliveryDate}>
-                <label className={sectionLabelClass}>{t('orders.expected_delivery_date')}</label>
+                <div className="flex items-center h-6"><label className={sectionLabelClass}>{t('orders.expected_delivery_date')}</label></div>
                 <DatePicker
                   value={watch('deliveryDate' as any) || ''}
                   onChange={(val) => setValue('deliveryDate' as any, val, { shouldValidate: true, shouldDirty: true })}
@@ -907,7 +929,7 @@ function TailoringOrderFormBody({
 
               {/* One tailor per order: the commission trigger works at order level. */}
               <div className="space-y-2">
-                <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center justify-between gap-2 h-6">
                   <label className={sectionLabelClass}>{tv('orders.assigned_tailor')}</label>
                   {hasPermission('staff.create') && (
                     <QuickAddTailor tenantId={tenantId} currentStaffEmail={currentStaff?.email} onAdded={reloadTailors} />
@@ -1272,7 +1294,8 @@ function TailoringOrderFormBody({
                   />
                   <div className="flex justify-between text-sm font-bold pt-1">
                     <span className="text-white/80">{t('orders.remaining_label')}</span>
-                    <span className="bg-danger px-2 py-0.5 rounded-lg"><PriceDisplay amount={totals.total - paidAmount} /></span>
+                    {/* Red only when something is owed: a zero is not an error (audit finding 14). */}
+                    <span className={cn("px-2 py-0.5 rounded-lg", totals.total - paidAmount > 0.005 ? "bg-danger" : "bg-white/15")}><PriceDisplay amount={totals.total - paidAmount} /></span>
                   </div>
                 </div>
               </div>
@@ -1300,44 +1323,14 @@ function TailoringOrderFormBody({
                     <ImageIcon size={16} />
                     {t('orders.illustration_images')}
                   </h4>
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      value={imageUrl}
-                      onChange={(e) => setImageUrl(e.target.value)}
-                      aria-label={t('orders.image_url_placeholder')}
-                      placeholder={t('orders.image_url_placeholder')}
-                      className={cn(inputClass, "flex-1")}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (!imageUrl.trim()) return;
-                        setValue('images' as any, [...images, imageUrl.trim()]);
-                        setImageUrl('');
-                      }}
-                      className="bg-brand text-white px-4 rounded-xl font-bold text-sm"
-                    >
-                      {t('common.add')}
-                    </button>
-                  </div>
-                  {images.length > 0 && (
-                    <div className="grid grid-cols-4 gap-2">
-                      {images.map((img, idx) => (
-                        <div key={img + idx} className="relative aspect-square">
-                          <img src={img} alt="" className="w-full h-full object-cover rounded-xl border border-border" referrerPolicy="no-referrer" />
-                          <button
-                            type="button"
-                            onClick={() => setValue('images' as any, images.filter((_, i) => i !== idx))}
-                            aria-label={t('common.delete')}
-                            className="absolute -top-1 end-[-0.25rem] bg-danger text-white p-1 rounded-full"
-                          >
-                            <X size={10} />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
+                  <OrderImagesField
+                    tenantId={tenantId}
+                    orderId={orderIdRef.current}
+                    value={images}
+                    onChange={(next) => setValue('images' as any, next, { shouldDirty: true })}
+                    onBusyChange={setImagesBusy}
+                    onUploaded={(path) => { sessionUploadsRef.current.push(path); }}
+                  />
                 </div>
 
                 {/* The whole strip toggles it: a 48px target (seen-responsive-layout-task.md Phase 5). */}
@@ -1367,10 +1360,10 @@ function TailoringOrderFormBody({
               </button>
               <button
                 type="submit"
-                disabled={isSubmitting}
+                disabled={isSubmitting || imagesBusy}
                 className="bg-brand text-white px-8 py-2.5 main-640:px-12 main-640:py-3 rounded-xl font-bold hover:bg-brand/90 shadow-lg shadow-brand/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed text-sm main-640:text-base"
               >
-                {isSubmitting ? t('orders.saving') : t('orders.confirm_create_order')}
+                {imagesBusy ? t('orders.images.waiting_upload') : isSubmitting ? t('orders.saving') : t('orders.confirm_create_order')}
               </button>
             </div>
           </div>

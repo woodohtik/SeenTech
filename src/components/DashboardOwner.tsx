@@ -1,3 +1,4 @@
+import { StatGrid } from './ui/StatGrid';
 import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { AutoGrid } from './ui/AutoGrid';
 import { StatBadge, StatCard, StatIcon } from './ui/StatCard';
@@ -1133,8 +1134,11 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
         subtitle={t('dashboard.subtitle', { name: tenant?.name || t('common.tailor_system') })}
       >
         <div className="flex flex-col main-640:flex-row flex-wrap items-stretch main-640:items-center gap-3 w-full main-640:w-auto justify-end">
+          {/* Branch and period side by side on a phone (a row less before the first number),
+              one width above it -- they were 224 and 192 (seen-ui-responsive-alignment-audit-task.md, findings 07, 09). */}
+          <div className="grid grid-cols-2 gap-2 main-640:flex main-640:gap-3">
           {/* Branch Filter */}
-          <div className="w-full main-640:w-56 shrink-0">
+          <div className="min-w-0 main-640:w-52 shrink-0">
             <SmartSelect
               value={selectedBranchId}
               onChange={setSelectedBranchId}
@@ -1146,7 +1150,7 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
           </div>
 
           {/* Timeframe Filter */}
-          <div className="w-full main-640:w-48 shrink-0">
+          <div className="min-w-0 main-640:w-52 shrink-0">
             <SmartSelect
               value={selectedTimeframe}
               onChange={(val) => setSelectedTimeframe(val as any)}
@@ -1160,6 +1164,7 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
                 { value: 'custom', label: t('dashboard.timeframe.custom'), icon: <Calendar size={16} className="text-brand shrink-0" /> },
               ]}
             />
+          </div>
           </div>
 
           <div className="flex flex-wrap main-640:flex-nowrap items-center gap-2 main-640:gap-3 justify-between main-640:justify-end w-full main-640:w-auto">
@@ -1444,7 +1449,7 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
       )}
 
       {/* Number cards: columns of at least 200px, four at most (seen-responsive-layout-task.md Phase 2). */}
-      <AutoGrid min={200} maxColumns={4}>
+      <StatGrid>
         {visibleStatCards.map((stat) => (
           <StatCard
             key={stat.label}
@@ -1471,7 +1476,7 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
             ) : undefined}
           />
         ))}
-      </AutoGrid>
+      </StatGrid>
 
       <div className="grid grid-cols-1 main-900:grid-cols-3 gap-6 main-640:gap-8">
         {/* Revenue Chart */}
@@ -1724,7 +1729,7 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
                   title: t('dashboard.all_orders', 'جميع الطلبات'), 
                   data: r.orders.map(o => ({ id: o.id, [t('common.customers')]: o.customerName, [t('common.amount')]: o.totalAmount, [t('common.date')]: formatDate(o.orderDate), [t('common.status')]: o.status }))
                 }))}
-                className="text-brand text-sm font-bold hover:underline"
+                className="text-brand text-sm font-bold hover:underline inline-flex items-center min-h-11 px-2 -mx-2 -my-3"
               >
                 {t('dashboard.view_all')}
               </button>

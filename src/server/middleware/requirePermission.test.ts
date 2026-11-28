@@ -86,3 +86,15 @@ testS09('a string "false" for the tax switch counts as a change', () => {
   expectS09(taxFingerprintS09(sneaky)).not.toBe(taxFingerprintS09(current));
   expectS09(taxFingerprintS09({ ...current })).toBe(taxFingerprintS09(current));
 });
+
+// Golden path 9 (seen-stability-guardrails-task.md): a refusal says so in the
+// app's own terms -- a code and a kind the screens turn into a sentence
+// (seen-friendly-errors-everywhere-task.md) -- not just "forbidden".
+describe('a refusal', () => {
+  test('carries the permission kind and its code', async () => {
+    const r = res();
+    await requirePermission('staff.create', { load })(req({ role: 'cashier', staffId: 'nobody' }), r, () => {});
+    expect(r.statusCode).toBe(403);
+    expect(r.body).toMatchObject({ kind: 'permission', code: 'PERM-01' });
+  });
+});

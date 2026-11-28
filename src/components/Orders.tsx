@@ -15,6 +15,8 @@ import { saveGarmentComponentDefaults } from '../services/garmentComponentsServi
 import { OrderReadyPrompt, type ReadyOrder } from './orders/OrderReadyPrompt';
 import { customerTotalDue, orderBadgeDue } from '../utils/orderDues';
 import { isBackwardMove } from '../utils/stageMoves';
+import { OrderImageGallery, useOrderImageLinks } from './orders/OrderImageGallery';
+import { deleteOrderImageFolder } from '../lib/orderImages';
 import { createPortal } from 'react-dom';
 import { useSearchParams } from 'react-router-dom';
 import { useRealtimeSync } from '../hooks/useRealtimeSync';
@@ -1129,6 +1131,8 @@ export default function Orders({ tenantId }: { tenantId: string }) {
           .eq('id', id);
         
         if (error) throw error;
+        // Its photos go with it (seen-order-images-upload-task.md, phase 5).
+        void deleteOrderImageFolder(tenantId, id).catch(() => undefined);
         
         // Realtime local update
         setOrders(prev => prev.filter(o => o.id !== id));
@@ -1368,6 +1372,8 @@ export default function Orders({ tenantId }: { tenantId: string }) {
 
   const OrderDetailsDrawer = ({ order }: { order: Order }) => {
     const [isPaying, setIsPaying] = useState(false);
+    // The photos as links, for the work card (ready before it is printed).
+    const workCardImages = useOrderImageLinks((order as any).images);
     const [payAmount, setPayAmount] = useState(order.remainingAmount || 0);
     const [payMethod, setPayMethod] = useState<PaymentMethod>('cash');
     const [isProcessing, setIsProcessing] = useState(false);
@@ -1799,6 +1805,14 @@ export default function Orders({ tenantId }: { tenantId: string }) {
               )}
             </section>
 
+            {/* The order's photos (seen-order-images-upload-task.md, phase 4). */}
+            {Array.isArray((order as any).images) && (order as any).images.length > 0 && (
+              <section className="bg-surface p-5 rounded-3xl border border-border space-y-3">
+                <h3 className="font-black text-content text-sm">{t('orders.illustration_images')}</h3>
+                <OrderImageGallery images={(order as any).images} />
+              </section>
+            )}
+
             {/* Status Timeline */}
             <section className="space-y-4">
               <h3 className="text-sm font-black text-content-muted uppercase flex items-center gap-2">
@@ -1946,6 +1960,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                 stages={workflowStages}
                 showFabric={capabilities.fabric_consumption}
                 measurements={workCardMeasurements(order)}
+                images={workCardImages}
               />
             </div>
           )}
@@ -2330,7 +2345,8 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                 type="button"
                 onClick={() => setIsScannerOpen(true)}
                 aria-label={t('pos.scan_barcode')}
-                className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand rounded cursor-pointer"
+                // A 44px tap box around the 18px icon, the layout unchanged (audit finding 16).
+                className="p-[13px] -m-[13px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand rounded-full cursor-pointer"
               >
                 <Barcode size={18} />
               </button>,
@@ -2366,7 +2382,8 @@ export default function Orders({ tenantId }: { tenantId: string }) {
             <div className="min-w-[140px]">
               <DatePicker value={startDate} onChange={setStartDate} placeholder={t('common.from', 'من')} triggerClassName="bg-surface hover:bg-surface border-border rounded-xl shadow-none" />
             </div>
-            <span className="text-content-muted text-sm">{t('orders.to')}</span>
+            {/* One range «من — إلى»: the second field already says «إلى» (audit finding 09). */}
+            <span className="text-content-muted text-sm" aria-hidden="true">—</span>
             <div className="min-w-[140px]">
               <DatePicker value={endDate} onChange={setEndDate} placeholder={t('common.to', 'إلى')} triggerClassName="bg-surface hover:bg-surface border-border rounded-xl shadow-none" />
             </div>
@@ -2473,7 +2490,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                                 } as Customer;
                                 setDueDetailsCustomer(matchingCustomer);
                               }}
-                              className="flex items-center gap-1 bg-[var(--seen-danger-bg)] text-danger border border-danger/20 px-1.5 py-0.5 rounded-md text-sm font-black shrink-0 animate-pulse"
+                              className="flex items-center gap-1 bg-[var(--seen-danger-bg)] text-danger border border-danger/20 px-1.5 py-0.5 min-h-6 rounded-md text-sm font-black shrink-0 animate-pulse"
                               title={t('orders.order_due_badge_title', { total: money(totalUnpaid) })}
                             >
                               <AlertCircle size={10} />
@@ -2544,8 +2561,19 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                     </div>
                   </div>
 
-                  {/* Info Grid for Mobile & Tablet */}
-                  <div className="grid grid-cols-2 main-640:grid-cols-4 gap-2 text-sm">
+                  {/* On a phone one line -- the total, what is left, the date -- instead of four
+                      boxes on two rows: three orders on the screen, not one and a half
+                      (seen-ui-responsive-alignment-audit-task.md, question 4). */}
+                  <div className="main-640:hidden flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
+                    <span className="font-black text-brand tabular-nums">{money(order.totalAmount)}</span>
+                    {Number(order.remainingAmount) > 0 && (
+                      <span className="font-bold text-danger tabular-nums">{t('orders.remaining_label')}: {money(order.remainingAmount)}</span>
+                    )}
+                    <DateTimeDisplay date={order.orderDate} showTime={true} inline size="xs" />
+                  </div>
+
+                  {/* Info Grid for Tablet and wider */}
+                  <div className="hidden main-640:grid grid-cols-2 main-640:grid-cols-4 gap-2 text-sm">
                     {/* Box 1: Order Date */}
                     <div className="bg-surface-muted/60 p-2.5 rounded-xl border border-border/40 flex flex-col gap-1 justify-center">
                       <span className="text-sm font-bold text-content-muted flex items-center gap-1">
@@ -2693,7 +2721,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                               } as Customer;
                               setDueDetailsCustomer(matchingCustomer);
                             }}
-                            className="flex items-center gap-1 bg-[var(--seen-danger-bg)] hover:bg-danger/20 text-danger border border-danger/20 px-2.5 py-1 rounded-full text-sm font-black transition-all animate-pulse"
+                            className="flex items-center gap-1 bg-[var(--seen-danger-bg)] hover:bg-danger/20 text-danger border border-danger/20 px-2.5 py-1 min-h-6 rounded-full text-sm font-black transition-all animate-pulse"
                             title={t('orders.order_due_badge_title', { total: money(totalUnpaid) })}
                           >
                             <AlertCircle size={14} className="text-danger" />
@@ -2724,7 +2752,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                            order.paymentMethod === 'cash_on_delivery' ? t('common.payment_methods.cash_on_delivery') : t('common.payment_methods.cash')}
                         </span>
                         <div className="w-1 h-1 bg-border rounded-full hidden main-640:block" />
-                        <span className="font-black text-brand text-lg">
+                        <span className="font-black text-brand text-lg tabular-nums">
                           {money(order.totalAmount)}
                         </span>
                       </div>
@@ -2788,7 +2816,8 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                           }
                         }}
                         className={cn(
-                          "px-4 py-2.5 rounded-2xl text-sm font-black flex items-center gap-3 transition-all shadow-sm relative z-30",
+                          // One width for every stage, so each row's buttons start at the same place (audit finding 11).
+                          "w-44 justify-between px-4 py-2.5 rounded-2xl text-sm font-black flex items-center gap-3 transition-all shadow-sm relative z-30",
                           statusDisplay.bgColor,
                           statusDisplay.color,
                           order.status === 'delivered' ? "cursor-not-allowed opacity-80" : "hover:shadow-lg hover:shadow-brand/5 border border-brand/10 cursor-pointer"

@@ -37,9 +37,15 @@ const GENERIC_CANCELLED: Omit<StatusVisual, 'labelKey'> = { icon: X, color: 'tex
  */
 export function getOrderStatusDisplay(key: string, workflowStages: WorkflowStage[]): StatusVisual {
   const legacy = STATUS_CONFIG[key as OrderStatus];
+  const stage = workflowStages.find((s) => s.stage_key === key);
+  // Another vertical's stage that shares a key with men's tailoring (ready,
+  // cutting...) keeps its own name -- a furniture shop's «جاهز للتسليم» --
+  // with the old look (seen-open-verticals-task.md, phase 0).
+  if (legacy && stage && stage.vertical_key !== 'mens_tailoring' && stage.label_ar) {
+    return { ...legacy, labelKey: stage.label_ar };
+  }
   if (legacy) return legacy;
 
-  const stage = workflowStages.find((s) => s.stage_key === key);
   if (!stage) return { labelKey: key, ...GENERIC_IN_PROGRESS };
 
   if (stage.is_terminal) {

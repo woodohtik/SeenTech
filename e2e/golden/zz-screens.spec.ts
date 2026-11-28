@@ -2,7 +2,7 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { test, type Page } from '@playwright/test';
 import { db } from './db';
-import { CUSTOMER, SHOP } from './fixtures';
+import { CUSTOMER, SHOP, STAFF } from './fixtures';
 import { signIn } from './helpers';
 
 /**
@@ -32,6 +32,8 @@ test.beforeAll(async () => {
     status: 'sewing', status_key: 'sewing', kind: 'tailoring', tracking_token: TRACK, branch_id: SHOP.branchId,
   });
   if (orderError) console.log(`[screens] order seed: ${orderError.message}`);
+  // No PINs here: with one, an email sign-in lands on the PIN screen (golden path 10 covers it).
+  await sb.from('staff').update({ pin_hash: null }).in('id', [STAFF.owner.staffId, STAFF.cashier.staffId]);
 });
 
 async function shot(page: Page, width: number, name: string, act?: () => Promise<unknown>) {
@@ -67,6 +69,16 @@ for (const width of WIDTHS) {
     await closeModal(page);
     await shot(page, width, '05-inventory', () => go(page, '/inventory'));
     await shot(page, width, '06-add-item', () => page.getByRole('button', { name: 'إضافة منتج' }).first().click());
+    // seen-product-variants-barcode-po-price-task.md: the advanced form, with variant rows and the opening stock table.
+    await shot(page, width, '06b-add-item-variants', async () => {
+      await page.getByRole('button', { name: 'منتج متقدم (له سمات)' }).click();
+      await page.getByPlaceholder(/اسم السمة/).first().fill('اللون');
+      const value = page.getByPlaceholder(/قيمة/).first();
+      await value.fill('أبيض'); await value.press('Enter');
+      await value.fill('أسود'); await value.press('Enter');
+      await page.getByRole('button', { name: 'توليد المتغيّرات' }).click();
+      await page.getByRole('spinbutton', { name: 'الرصيد الافتتاحي' }).fill('10');
+    });
     await closeModal(page);
     await shot(page, width, '07-settings', () => go(page, '/settings'));
     await shot(page, width, '08-staff', () => go(page, '/settings?tab=staff'));
@@ -89,6 +101,23 @@ for (const width of WIDTHS) {
       if (await open.isVisible().catch(() => false)) await open.click();
     });
     await shot(page, width, '18-tracking', () => go(page, `/track/${TRACK}`));
+    if (width === 1280) {
+      // For golden paths 7-10: returns, closing a shift, the lock/PIN screen.
+      await shot(page, width, '21-returns', async () => {
+        await go(page, '/sales');
+        await page.getByRole('button', { name: 'المرتجعات' }).first().click();
+      });
+      await shot(page, width, '22-shifts', async () => {
+        await go(page, '/sales');
+        await page.getByRole('button', { name: 'الورديات' }).first().click();
+      });
+      await shot(page, width, '23-close-shift', async () => {
+        await go(page, '/sales');
+        await page.getByRole('button', { name: 'نقطة البيع (POS)' }).first().click();
+        await page.getByRole('button', { name: 'إغلاق الوردية' }).first().click();
+      });
+      await closeModal(page);
+    }
     if (width === 820) {
       await shot(page, width, '19-order-status-menu', async () => {
         await go(page, '/orders');
@@ -103,5 +132,19 @@ for (const width of WIDTHS) {
         await page.getByRole('button', { name: /اختر عميل/ }).first().click();
       });
     }
+  });
+}
+
+// What a cashier and a tailor see (golden path 9, permissions).
+for (const who of ['cashier', 'tailor'] as const) {
+  test(`screens as ${who}`, async ({ page }) => {
+    test.setTimeout(180_000);
+    await page.setViewportSize({ width: 1280, height: 800 });
+    page.setDefaultTimeout(8_000);
+    page.setDefaultNavigationTimeout(20_000);
+    await signIn(page, who);
+    await shot(page, 1280, `30-${who}-home`, () => page.waitForTimeout(1500));
+    await shot(page, 1280, `31-${who}-settings`, () => go(page, '/settings?tab=staff'));
+    await shot(page, 1280, `32-${who}-orders`, () => go(page, '/orders'));
   });
 }

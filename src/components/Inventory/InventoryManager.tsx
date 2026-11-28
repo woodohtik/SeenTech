@@ -1,7 +1,12 @@
+import { StatGrid } from '../ui/StatGrid';
+import { useDialogBehavior } from '../ui/DialogFrame';
+import { VariantThumbs } from './VariantThumbs';
+import { VariantOpeningBalance, variantOpeningQuantities, type VariantOpeningState } from './VariantOpeningBalance';
+import { priceOverrideFor } from '../../utils/variantRows';
+import { generateInternalBarcode } from '../../lib/barcode';
 import { PriceDisplay } from '../PriceDisplay';
 import { openingBaseQuantity } from '../../utils/openingBalance';
-import React, { useState, useEffect, useMemo } from "react";
-import { AutoGrid } from '../ui/AutoGrid';
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import { StatCard } from '../ui/StatCard';
 import { PageHeader } from '../ui/PageHeader';
 import {
@@ -610,9 +615,9 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
 
       {activeTab === "inventory" && (
         <>
-          {/* Stats Overview: StatCard on an AutoGrid (seen-responsive-layout-task.md Phase 3) --
+          {/* Stats Overview: StatCard on a StatGrid: two compact columns on a phone (seen-ui-responsive-alignment-audit-task.md, finding 07) --
               two tiny columns at 360px cut every label to "…". */}
-          <AutoGrid min={160} maxColumns={4}>
+          <StatGrid>
             {[
               { label: t("inventory.total_items"), value: items.length, icon: Layers, tone: "bg-brand/10 text-brand" },
               { label: t("inventory.warehouses"), value: branches.filter((b) => b.type === "warehouse").length, icon: Warehouse, tone: "bg-[var(--seen-success-bg)] text-success" },
@@ -626,7 +631,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
                 icon={<span aria-hidden="true" className={cn("flex h-12 w-12 items-center justify-center rounded-[12px]", stat.tone)}><stat.icon size={24} /></span>}
               />
             ))}
-          </AutoGrid>
+          </StatGrid>
 
           {/* Filters */}
           <div className="bg-surface p-3 main-640:p-4 rounded-2xl border border-border shadow-sm flex flex-col main-640:flex-row gap-3 main-640:gap-4">
@@ -683,7 +688,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
                       <h4
                         className={cn(
                           "text-sm font-black",
-                          isLowStockOnly ? "text-white" : "text-danger",
+                          isLowStockOnly ? "text-white" : "text-danger-strong",
                         )}
                       >
                         {isLowStockOnly
@@ -805,6 +810,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
                                 {tenantVariantsByItem[item.id].length} {t("inventory.variants.badge_suffix", "سمات")}
                               </span>
                             )}
+                            <VariantThumbs variants={tenantVariantsByItem[item.id]} />
                           </p>
                           <p className="text-sm font-bold text-content-muted uppercase">
                             SKU: {item.sku || "N/A"}
@@ -1182,6 +1188,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
                                       {tenantVariantsByItem[item.id].length} {t("inventory.variants.badge_suffix", "سمات")}
                                     </span>
                                   )}
+                                  <VariantThumbs variants={tenantVariantsByItem[item.id]} />
                                 </p>
                                 <p className="text-sm font-bold text-content-muted uppercase">
                                   SKU: {item.sku || "N/A"}
@@ -1766,6 +1773,9 @@ const AddItemModal = ({ onClose, tenantId, branches }: any) => {
   // "save product, then go find Edit" step.
   const [productMode, setProductMode] = useState<"simple" | "advanced">("simple");
   const [pendingVariantRows, setPendingVariantRows] = useState<GeneratedRow[]>([]);
+  // seen-product-variants-barcode-po-price-task.md, phase 3: how the opening
+  // balance goes on the variants -- the same for each (default) or shared.
+  const [variantOpening, setVariantOpening] = useState<VariantOpeningState>({ mode: 'same', pinned: {} });
   const isAddItem = true;
   const [formData, setFormData] = useState({
     name: "",
@@ -1937,7 +1947,8 @@ const AddItemModal = ({ onClose, tenantId, branches }: any) => {
         price_per_unit: formData.pricePerUnit,
         description: encodeInventoryDescription(formData.costPrice, formData.taxType, formData.description),
         sku: sanitizedSku,
-        barcode: formData.barcode || Math.random().toString().substring(2, 12),
+        // An EAN-13 the shop does not use yet (lib/barcode.ts), not ten random digits.
+        barcode: formData.barcode?.trim() || await generateInternalBarcode(),
         quantity: defaultQty,
         images: formData.mainImage ? [{ url: formData.mainImage }] : [],
         collar_type:
@@ -1996,9 +2007,12 @@ const AddItemModal = ({ onClose, tenantId, branches }: any) => {
         });
       }
 
-      // The opening quantity, as a stock movement "opening balance" (once per item).
+      // The opening quantity, as a stock movement "opening balance" (once per
+      // item). A product with variants gets it per variant, below, after the
+      // variants exist -- not on the product, where the POS could not sell it.
       const openingQty = openingBaseQuantity(Number(formData.openingBalance) || 0, formData as any);
-      if (openingQty > 0 && mainBranch) {
+      const openingOnVariants = productMode === "advanced" && variantRowsToSave.length > 0;
+      if (openingQty > 0 && mainBranch && !openingOnVariants) {
         const { error: openingError } = await supabase.rpc('record_opening_balance', {
           p_item_id: item.id, p_branch_id: mainBranch.id, p_quantity: openingQty,
         });
@@ -2009,19 +2023,33 @@ const AddItemModal = ({ onClose, tenantId, branches }: any) => {
 
       if (productMode === "advanced" && variantRowsToSave.length > 0) {
         let savedCount = 0;
-        for (const row of variantRowsToSave) {
+        const openingEach = variantOpeningQuantities(
+          variantRowsToSave, Number(formData.openingBalance) || 0, !["meter", "yard"].includes(formData.unit), variantOpening,
+        );
+        // In order: the product, then each variant, then that variant's opening balance.
+        for (const [index, row] of variantRowsToSave.entries()) {
           try {
-            await createVariant({
+            const variant = await createVariant({
               tenantId,
               itemId: item.id,
               name: row.name,
               options: row.options,
               sku: row.sku.trim(),
-              barcode: row.barcode.trim() || undefined,
-              priceAdjustment: Number(row.priceAdjustment) || 0,
+              // Every variant gets its own barcode, generated (no field for it).
+              barcode: await generateInternalBarcode(),
+              priceAdjustment: 0,
+              priceOverride: priceOverrideFor(row, Number(formData.pricePerUnit) || 0),
+              imageUrl: row.imageUrl || undefined,
               branches,
             });
             savedCount += 1;
+            const qty = openingBaseQuantity(openingEach[index] || 0, formData as any);
+            if (qty > 0 && mainBranch) {
+              const { error: openingError } = await supabase.rpc('record_opening_balance', {
+                p_item_id: item.id, p_branch_id: mainBranch.id, p_quantity: qty, p_variant_id: variant.id,
+              });
+              if (openingError) toastError(t('inventory.variant_opening.not_saved', { name: row.name }));
+            }
           } catch (variantError) {
             handleError(variantError, t("inventory.variants.bulk_add_partial_failure", "تمت إضافة المنتج، لكن تعذّرت إضافة بعض السمات"));
           }
@@ -2045,6 +2073,9 @@ const AddItemModal = ({ onClose, tenantId, branches }: any) => {
     }
   };
 
+  // seen-ui-responsive-alignment-audit-task.md, finding 03: a real dialog (focus, Esc, role).
+  const dialogRef = useRef<HTMLDivElement>(null);
+  useDialogBehavior(dialogRef, onClose);
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-2 main-640:p-4">
       <motion.div
@@ -2054,7 +2085,7 @@ const AddItemModal = ({ onClose, tenantId, branches }: any) => {
         className="absolute inset-0 bg-black/60 backdrop-blur-md"
         onClick={onClose}
       />
-      <motion.div
+      <motion.div ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby="dialog-title-1-702"
         initial={{ scale: 0.9, opacity: 0, y: 20 }}
         animate={{ scale: 1, opacity: 1, y: 0 }}
         exit={{ scale: 0.9, opacity: 0, y: 20 }}
@@ -2066,7 +2097,7 @@ const AddItemModal = ({ onClose, tenantId, branches }: any) => {
               <Plus size={20} className="main-640:size-6" />
             </div>
             <div>
-              <h2 className="text-lg main-640:text-2xl font-black text-content">
+              <h2 id="dialog-title-1-702" className="text-lg main-640:text-2xl font-black text-content">
                 {t("inventory.add_item")}
               </h2>
               <p className="text-sm text-content-muted font-bold uppercase">
@@ -2121,11 +2152,24 @@ const AddItemModal = ({ onClose, tenantId, branches }: any) => {
             // seen-merchant-trial-test-2026-11-26.md, phase 3 item 1: stock on hand today.
             showOpeningBalance
             applyCategoryUnitDefaults
+            openingBalanceExtra={productMode === "advanced" && pendingVariantRows.length > 0 ? (
+              <VariantOpeningBalance
+                rows={pendingVariantRows}
+                total={Number(formData.openingBalance) || 0}
+                wholeUnits={!["meter", "yard"].includes(formData.unit)}
+                unitLabel={t(`inventory.units.${formData.unit}`, formData.unit)}
+                value={variantOpening}
+                onChange={setVariantOpening}
+              />
+            ) : null}
           />
 
           {productMode === "advanced" && (
             <VariantAttributeBuilder
               baseSku={formData.sku}
+              basePrice={Number(formData.pricePerUnit) || 0}
+              tenantId={tenantId}
+              hasOpeningBalance={(Number(formData.openingBalance) || 0) > 0}
               onCancel={() => {
                 setProductMode("simple");
                 setPendingVariantRows([]);
@@ -2269,6 +2313,9 @@ const StockTransferModal = ({
     }
   };
 
+  // seen-ui-responsive-alignment-audit-task.md, finding 03: a real dialog (focus, Esc, role).
+  const dialogRef = useRef<HTMLDivElement>(null);
+  useDialogBehavior(dialogRef, onClose);
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-2 main-640:p-4">
       <motion.div
@@ -2278,7 +2325,7 @@ const StockTransferModal = ({
         className="absolute inset-0 bg-black/60 backdrop-blur-md"
         onClick={onClose}
       />
-      <motion.div
+      <motion.div ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby="dialog-title-2-702"
         initial={{ scale: 0.9, opacity: 0, y: 20 }}
         animate={{ scale: 1, opacity: 1, y: 0 }}
         exit={{ scale: 0.9, opacity: 0, y: 20 }}
@@ -2290,7 +2337,7 @@ const StockTransferModal = ({
               <ArrowRightLeft size={24} className="text-white" />
             </div>
             <div>
-              <h2 className="text-2xl font-black text-content">
+              <h2 id="dialog-title-2-702" className="text-2xl font-black text-content">
                 {t("inventory.transfer_stock")}
               </h2>
               <p className="text-sm text-content-muted font-bold uppercase">
@@ -2590,6 +2637,9 @@ const StockAdjustmentModal = ({ onClose, tenantId, item, branch: initialBranch, 
     }
   };
 
+  // seen-ui-responsive-alignment-audit-task.md, finding 03: a real dialog (focus, Esc, role).
+  const dialogRef = useRef<HTMLDivElement>(null);
+  useDialogBehavior(dialogRef, onClose);
   return (
     <div className="fixed inset-0 z-[110] flex items-center justify-center p-2 main-640:p-4">
       <motion.div
@@ -2599,7 +2649,7 @@ const StockAdjustmentModal = ({ onClose, tenantId, item, branch: initialBranch, 
         className="absolute inset-0 bg-black/60 backdrop-blur-md"
         onClick={onClose}
       />
-      <motion.div
+      <motion.div ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby="dialog-title-3-702"
         initial={{ scale: 0.9, opacity: 0, y: 20 }}
         animate={{ scale: 1, opacity: 1, y: 0 }}
         exit={{ scale: 0.9, opacity: 0, y: 20 }}
@@ -2611,7 +2661,7 @@ const StockAdjustmentModal = ({ onClose, tenantId, item, branch: initialBranch, 
               <History size={20} />
             </div>
             <div>
-              <h2 className="text-lg font-black text-content">
+              <h2 id="dialog-title-3-702" className="text-lg font-black text-content">
                 {t("inventory.adjust_stock")}
               </h2>
               <p className="text-sm text-content-muted font-bold uppercase">
@@ -2907,6 +2957,9 @@ const ManualConversionModal = ({ onClose, tenantId, item, branch: initialBranch,
     }
   };
 
+  // seen-ui-responsive-alignment-audit-task.md, finding 03: a real dialog (focus, Esc, role).
+  const dialogRef = useRef<HTMLDivElement>(null);
+  useDialogBehavior(dialogRef, onClose);
   return (
     <div className="fixed inset-0 z-[110] flex items-center justify-center p-2 main-640:p-4">
       <motion.div
@@ -2916,7 +2969,7 @@ const ManualConversionModal = ({ onClose, tenantId, item, branch: initialBranch,
         className="absolute inset-0 bg-black/60 backdrop-blur-md"
         onClick={onClose}
       />
-      <motion.div
+      <motion.div ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby="dialog-title-4-702"
         initial={{ scale: 0.9, opacity: 0, y: 20 }}
         animate={{ scale: 1, opacity: 1, y: 0 }}
         exit={{ scale: 0.9, opacity: 0, y: 20 }}
@@ -2934,7 +2987,7 @@ const ManualConversionModal = ({ onClose, tenantId, item, branch: initialBranch,
             <Scale size={32} />
           </div>
           <div>
-            <h3 className="text-xl font-black text-content">
+            <h3 id="dialog-title-4-702" className="text-xl font-black text-content">
               {t("inventory.manual_convert_action", "فك وتحويل يدوي للوحدات")}
             </h3>
             <p className="text-sm font-bold text-content-muted mt-1">
@@ -3876,6 +3929,9 @@ const EditItemModal = ({ onClose, tenantId, item, branches }: any) => {
     }
   };
 
+  // seen-ui-responsive-alignment-audit-task.md, finding 03: a real dialog (focus, Esc, role).
+  const dialogRef = useRef<HTMLDivElement>(null);
+  useDialogBehavior(dialogRef, onClose);
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-2 main-640:p-4">
       <motion.div
@@ -3885,7 +3941,7 @@ const EditItemModal = ({ onClose, tenantId, item, branches }: any) => {
         className="absolute inset-0 bg-black/60 backdrop-blur-md"
         onClick={onClose}
       />
-      <motion.div
+      <motion.div ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby="dialog-title-5-702"
         initial={{ scale: 0.9, opacity: 0, y: 20 }}
         animate={{ scale: 1, opacity: 1, y: 0 }}
         exit={{ scale: 0.9, opacity: 0, y: 20 }}
@@ -3897,7 +3953,7 @@ const EditItemModal = ({ onClose, tenantId, item, branches }: any) => {
               <Plus size={20} className="main-640:size-6" />
             </div>
             <div>
-              <h2 className="text-lg main-640:text-2xl font-black text-content">
+              <h2 id="dialog-title-5-702" className="text-lg main-640:text-2xl font-black text-content">
                 {t("common.edit")} : {item.name}
               </h2>
               <p className="text-sm text-content-muted font-bold uppercase">
@@ -3928,7 +3984,7 @@ const EditItemModal = ({ onClose, tenantId, item, branches }: any) => {
             showOpeningBalance={false}
           />
 
-          <ProductVariantsSection tenantId={tenantId} itemId={item.id} branches={branches} baseSku={item.sku} />
+          <ProductVariantsSection tenantId={tenantId} itemId={item.id} branches={branches} baseSku={item.sku} basePrice={Number(item.pricePerUnit) || 0} />
 
           <div className="sticky bottom-0 bg-surface -mx-4 main-640:-mx-8 -mb-4 main-640:-mb-8 px-4 main-640:px-8 pb-4 main-640:pb-8 flex flex-col main-640:flex-row main-640:justify-end gap-3 main-640:gap-4 pt-6 border-t border-border">
             <button aria-label={t('common.close')}

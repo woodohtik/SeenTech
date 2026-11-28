@@ -8,6 +8,10 @@ import { useConfirm } from "../../contexts/ConfirmContext";
 import { Branch, ProductVariant } from "../../types";
 import { listVariants, createVariant, updateVariant, deleteVariant } from "../../services/variantService";
 import VariantAttributeBuilder, { type GeneratedRow } from "./VariantAttributeBuilder";
+import { BarcodeField } from "./BarcodeField";
+import { VariantImagePicker } from "./VariantImagePicker";
+import { generateInternalBarcode } from "../../lib/barcode";
+import { effectiveVariantPrice, priceOverrideFor } from "../../utils/variantRows";
 
 /**
  * seen-ux-fixes-batch-task.md item 10 -- lets a merchant define per-item
@@ -29,6 +33,8 @@ interface ProductVariantsSectionProps {
   branches: Branch[];
   /** Base item's own SKU, used only to pre-fill a suggested per-row SKU. */
   baseSku?: string;
+  /** The product's selling price: what a variant without its own price sells at. */
+  basePrice?: number;
 }
 
 interface OptionRow {
@@ -41,7 +47,9 @@ interface EditFormState {
   options: OptionRow[];
   sku: string;
   barcode: string;
-  priceAdjustment: string;
+  /** The variant's price as sold (seen-product-variants-barcode-po-price-task.md). */
+  price: string;
+  imageUrl: string;
 }
 
 const EMPTY_EDIT_FORM: EditFormState = {
@@ -49,7 +57,8 @@ const EMPTY_EDIT_FORM: EditFormState = {
   options: [{ key: "", value: "" }],
   sku: "",
   barcode: "",
-  priceAdjustment: "0",
+  price: "0",
+  imageUrl: "",
 };
 
 function optionsToRecord(rows: OptionRow[]): Record<string, string> {
@@ -60,7 +69,7 @@ function optionsToRecord(rows: OptionRow[]): Record<string, string> {
   return record;
 }
 
-export default function ProductVariantsSection({ tenantId, itemId, branches, baseSku }: ProductVariantsSectionProps) {
+export default function ProductVariantsSection({ tenantId, itemId, branches, baseSku, basePrice = 0 }: ProductVariantsSectionProps) {
   const { t } = useTranslation();
   const { success: toastSuccess, handleError } = useToast();
   const { confirm } = useConfirm();
@@ -74,6 +83,7 @@ export default function ProductVariantsSection({ tenantId, itemId, branches, bas
   });
 
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingVariant, setEditingVariant] = useState<ProductVariant | null>(null);
   const [editForm, setEditForm] = useState<EditFormState>(EMPTY_EDIT_FORM);
   const [savingEdit, setSavingEdit] = useState(false);
   const [isBuilding, setIsBuilding] = useState(false);
@@ -88,14 +98,17 @@ export default function ProductVariantsSection({ tenantId, itemId, branches, bas
       options: rows.length > 0 ? rows : [{ key: "", value: "" }],
       sku: variant.sku,
       barcode: variant.barcode || "",
-      priceAdjustment: String(variant.priceAdjustment ?? 0),
+      price: String(effectiveVariantPrice(basePrice, variant)),
+      imageUrl: variant.imageUrl || "",
     });
     setEditingId(variant.id);
+    setEditingVariant(variant);
     setIsBuilding(false);
   };
 
   const cancelEdit = () => {
     setEditingId(null);
+    setEditingVariant(null);
     setEditForm(EMPTY_EDIT_FORM);
   };
 
@@ -121,7 +134,12 @@ export default function ProductVariantsSection({ tenantId, itemId, branches, bas
         options: optionsToRecord(editForm.options),
         sku: editForm.sku.trim(),
         barcode: editForm.barcode.trim() || undefined,
-        priceAdjustment: Number(editForm.priceAdjustment) || 0,
+        // The price it would sell at without its own: the product's (plus an
+        // old adjustment). The same number = no special price.
+        priceOverride: Number(editForm.price) === effectiveVariantPrice(basePrice, { priceOverride: null, priceAdjustment: editingVariant?.priceAdjustment })
+          ? null
+          : Math.max(0, Number(editForm.price) || 0),
+        imageUrl: editForm.imageUrl,
       });
       queryClient.invalidateQueries({ queryKey });
       toastSuccess(t("inventory.variants.updated", "تم تحديث السمة"));
@@ -162,8 +180,11 @@ export default function ProductVariantsSection({ tenantId, itemId, branches, bas
           name: row.name,
           options: row.options,
           sku: row.sku.trim(),
-          barcode: row.barcode.trim() || undefined,
-          priceAdjustment: Number(row.priceAdjustment) || 0,
+          // A barcode for every variant, generated -- no field for it.
+          barcode: await generateInternalBarcode(),
+          priceAdjustment: 0,
+          priceOverride: priceOverrideFor(row, basePrice),
+          imageUrl: row.imageUrl || undefined,
           branches,
         });
         succeeded.push(row);
@@ -197,9 +218,14 @@ export default function ProductVariantsSection({ tenantId, itemId, branches, bas
               key={variant.id}
               className="flex flex-col main-640:flex-row main-640:items-center justify-between gap-3 p-3 rounded-xl border border-border bg-surface"
             >
-              <div className="min-w-0">
+              <div className="min-w-0 flex items-center gap-3">
+                {variant.imageUrl && <img src={variant.imageUrl} alt="" className="w-12 h-12 rounded-lg object-cover border border-border shrink-0" />}
+                <div className="min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className="font-bold text-content">{variant.name}</span>
+                  {variant.priceOverride != null && (
+                    <span className="text-sm font-bold px-2 py-0.5 rounded-full bg-brand/10 text-brand">{t("inventory.variants.special_price")}</span>
+                  )}
                   {Object.entries(variant.options || {}).map(([key, value]) => (
                     <span key={key} className="text-sm font-bold px-2 py-0.5 rounded-full bg-surface-muted text-content-muted">
                       {key}: {value}
@@ -207,8 +233,9 @@ export default function ProductVariantsSection({ tenantId, itemId, branches, bas
                   ))}
                 </div>
                 <p className="text-sm text-content-muted mt-1">
-                  SKU: {variant.sku} · {t("inventory.variants.total_stock", "المخزون الإجمالي")}: {totalStock(variant)}
+                  SKU: {variant.sku} · {t("inventory.variants.price")}: {effectiveVariantPrice(basePrice, variant).toFixed(2)} · {t("inventory.variants.total_stock", "المخزون الإجمالي")}: {totalStock(variant)}
                 </p>
+                </div>
               </div>
               <div className="flex items-center gap-1 shrink-0 self-end main-640:self-auto">
                 <button
@@ -295,27 +322,37 @@ export default function ProductVariantsSection({ tenantId, itemId, branches, bas
 
           <div className="grid grid-cols-1 main-640:grid-cols-2 gap-3">
             <div className="space-y-1">
-              <label className="text-sm font-black text-content-muted uppercase px-1">
+              <label htmlFor="variant-edit-barcode" className="text-sm font-black text-content-muted px-1">
                 {t("inventory.barcode", "الباركود")}
               </label>
-              <input
-                value={editForm.barcode}
-                onChange={(e) => setEditForm({ ...editForm, barcode: e.target.value })}
-                className="w-full px-4 py-2.5 bg-surface border border-border rounded-xl font-semibold text-content text-right outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand"
-              />
+              <BarcodeField id="variant-edit-barcode" value={editForm.barcode} onChange={(barcode) => setEditForm({ ...editForm, barcode })} />
             </div>
             <div className="space-y-1">
-              <label className="text-sm font-black text-content-muted uppercase px-1">
-                {t("inventory.variants.price_adjustment", "فرق السعر")}
+              <label htmlFor="variant-edit-price" className="text-sm font-black text-content-muted px-1">
+                {t("inventory.variants.price")}
               </label>
               <input
+                id="variant-edit-price"
                 type="number"
+                min="0"
                 step="0.01"
-                value={editForm.priceAdjustment}
-                onChange={(e) => setEditForm({ ...editForm, priceAdjustment: e.target.value })}
+                inputMode="decimal"
+                value={editForm.price}
+                onChange={(e) => setEditForm({ ...editForm, price: e.target.value })}
                 className="w-full px-4 py-2.5 bg-surface border border-border rounded-xl font-semibold text-content text-right outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand"
               />
+              {Number(editForm.price) !== Number(basePrice) && (
+                <button type="button" onClick={() => setEditForm({ ...editForm, price: String(Number(basePrice) || 0) })}
+                  className="min-h-11 px-1 text-sm font-bold text-content-muted hover:text-brand">
+                  {t("inventory.variants.back_to_product_price")}
+                </button>
+              )}
             </div>
+          </div>
+
+          <div className="space-y-1">
+            <span className="text-sm font-black text-content-muted px-1 block">{t("inventory.variants.photo")}</span>
+            <VariantImagePicker tenantId={tenantId} value={editForm.imageUrl} label={editForm.name} onChange={(imageUrl) => setEditForm({ ...editForm, imageUrl })} />
           </div>
 
           <div className="flex items-center gap-2 pt-1">
@@ -335,6 +372,8 @@ export default function ProductVariantsSection({ tenantId, itemId, branches, bas
       ) : isBuilding ? (
         <VariantAttributeBuilder
           baseSku={baseSku}
+          basePrice={basePrice}
+          tenantId={tenantId}
           onCancel={() => setIsBuilding(false)}
           onSaveAll={persistRows}
           onSaved={() => setIsBuilding(false)}

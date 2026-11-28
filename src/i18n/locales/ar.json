@@ -724,7 +724,10 @@
     "to": "إلى",
     "type": "النوع",
     "copied": "تم النسخ",
-    "build_number": "رقم النسخة"
+    "build_number": "رقم النسخة",
+    "trn_placeholder": "15 رقم يبدأ وينتهي بـ 3",
+    "show_password": "إظهار كلمة المرور",
+    "hide_password": "إخفاء كلمة المرور"
   },
   "compliance": {
     "check_legal_name": "الاسم النظامي للمنشأة",
@@ -1699,7 +1702,13 @@
       "save_all": "حفظ الكل",
       "confirm_rows": "تم ✓",
       "po_return_not_supported": "مرتجعات المنتجات ذات السمات غير مدعومة بعد -- عدّل مخزونها يدوياً من شاشة المخزون.",
-      "select_variant_placeholder": "اختر السمة (اللون/المقاس)..."
+      "select_variant_placeholder": "اختر السمة (اللون/المقاس)...",
+      "price": "السعر",
+      "special_price": "سعر خاص",
+      "back_to_product_price": "رجوع لسعر المنتج",
+      "photo": "صورة السمة",
+      "photo_for": "صورة {{name}}",
+      "same_photo_for": "نفس الصورة لكل «{{value}}»"
     },
     "add_success_with_variants": "تمت إضافة المنتج و{{count}} سمة بنجاح",
     "bulk_import_branch_inventory_failed": "تعذّر تهيئة مخزون الفروع لبعض المنتجات المستوردة، راجعها يدوياً من شاشة المخزون",
@@ -1709,7 +1718,22 @@
     "initial_stock_hint": "الموجود عندك اليوم، بوحدة الصنف. يُسجَّل مرة وحدة كرصيد افتتاحي.",
     "tax_inclusive_hint": "15% ضمن السعر",
     "tax_exclusive_hint": "+15% فوق السعر",
-    "tax_exempt_hint": "بدون ضريبة"
+    "tax_exempt_hint": "بدون ضريبة",
+    "barcode_generate": "توليد",
+    "barcode_placeholder": "امسح باركود المصنع، أو اضغط «توليد»",
+    "barcode_generate_failed": "تعذّر توليد باركود. جرّب مرة ثانية.",
+    "barcode_preview": "معاينة الباركود",
+    "barcode_taken": "هذا الباركود مستخدم لصنف آخر في المحل.",
+    "variant_opening": {
+      "same": "نفس الرصيد لكل سمة",
+      "split": "وزّع على السمات",
+      "variant": "السمة",
+      "quantity": "الرصيد ({{unit}})",
+      "quantity_for": "رصيد {{name}}",
+      "set_by_hand": "معدّل يدوياً",
+      "total": "المجموع",
+      "not_saved": "تمت إضافة السمة «{{name}}» لكن رصيدها الافتتاحي ما انحفظ. أضفه من الجرد."
+    }
   },
   "invoice_print": {
     "address": "العنوان",
@@ -2232,7 +2256,6 @@
     "general_notes": "ملاحظات عامة",
     "grand_total": "الإجمالي الكلي",
     "illustration_images": "صور توضيحية / تصاميم",
-    "image_url_placeholder": "رابط الصورة (URL)...",
     "in_tailoring": "قيد الخياطة",
     "invoice": "الفاتورة",
     "item_type": "نوع القطعة",
@@ -2425,7 +2448,28 @@
     "ready_prompt_later": "لاحقاً",
     "ready_prompt_no_phone": "ما فيه رقم جوال للعميل.",
     "order_due_badge_title": "متبقي هذا الطلب. كل مديونية العميل: {{total}}",
-    "move_back_confirm": "ترجّع الطلب من «{{from}}» إلى «{{to}}»؟ المرحلة السابقة انتهت."
+    "move_back_confirm": "ترجّع الطلب من «{{from}}» إلى «{{to}}»؟ المرحلة السابقة انتهت.",
+    "images": {
+      "take_photo": "تصوير",
+      "from_gallery": "من المعرض/الملفات",
+      "hint": "حتى {{max}} صور. تقدر تسحبها هنا أو تلصقها.",
+      "offline": "رفع الصور يحتاج إنترنت، تقدر تضيفها لاحقاً من تعديل الطلب.",
+      "too_many": "الحد {{max}} صور للطلب.",
+      "uploading": "جاري الرفع",
+      "retry": "إعادة المحاولة",
+      "remove": "حذف الصورة",
+      "size_kb": "{{kb}} ك.ب",
+      "waiting_upload": "جاري رفع الصور…",
+      "error_too_large": "الصورة كبيرة جداً (أكثر من 25 ميجا).",
+      "error_heic": "صيغة HEIC ما تنفتح هنا. صوّرها من الكاميرا مباشرة أو حوّلها JPEG.",
+      "error_not_image": "هذا الملف مو صورة.",
+      "error_compress_failed": "تعذّر تجهيز الصورة.",
+      "error_upload": "ما ارتفعت الصورة. جرّب مرة ثانية.",
+      "open": "فتح الصورة",
+      "close": "إغلاق",
+      "next": "الصورة التالية",
+      "prev": "الصورة السابقة"
+    }
   },
   "permissions": {
     "access_denied_desc": "غير محدد",
@@ -3474,7 +3518,14 @@
     "col_total_paid": "المدفوع",
     "col_outstanding_balance": "المستحق للمورد",
     "col_account_status": "الحالة",
-    "col_actions_and_inventory": "الإجراءات"
+    "col_actions_and_inventory": "الإجراءات",
+    "cost_change": "السعر الحالي في المنتج {{from}} ← الجديد {{to}} ر.س {{unit}}",
+    "update_product_cost": "حدّث سعر المنتج عند تأكيد الأمر",
+    "cost_above_selling": "سعر الشراء الجديد أعلى من سعر البيع.",
+    "per_meter": "للمتر",
+    "per_piece": "للقطعة",
+    "cost_not_updated_note": "تأكد الأمر، لكن سعر المنتج ما تحدّث: يحتاج صلاحية تعديل المخزون.",
+    "item_label": "الصنف"
   },
   "public_invoice": {
     "digital_access": "الوصول الرقمي للفاتورة",
@@ -5366,7 +5417,8 @@
       "substep_tests": "اختبارات الامتثال",
       "substep_production": "طلب Production CSID",
       "refresh_status": "تحديث الحالة"
-    }
+    },
+    "section_label": "القسم"
   },
   "shift_closing": {
     "actual_cash_label": "صافي الكاش الفعلي بالدرج",

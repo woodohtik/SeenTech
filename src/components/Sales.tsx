@@ -390,8 +390,11 @@ export default function Sales({ tenantId }: { tenantId: string }) {
           )}
         </div>
         
+        {/* From 720px the two tab bars share one line -- the products start a row
+            higher on a tablet (seen-ui-responsive-alignment-audit-task.md, question 3). */}
+        <div className="main-720:flex main-720:items-center main-720:border-b main-720:border-border/50">
         {/* Primary Top Tabs */}
-        <div id="tour-pos-tabs" data-tour="pos-tabs" className="flex px-4 main-640:px-6 gap-4 main-640:gap-6 border-b border-border/60 overflow-x-auto scrollbar-hide whitespace-nowrap scroll-smooth">
+        <div id="tour-pos-tabs" data-tour="pos-tabs" className="flex px-4 main-640:px-6 gap-4 main-640:gap-6 border-b main-720:border-b-0 border-border/60 overflow-x-auto scrollbar-hide whitespace-nowrap scroll-smooth main-720:shrink-0 main-720:pt-3">
           <button
             onClick={() => handleTopTabChange('pos')}
             className={cn(
@@ -427,7 +430,7 @@ export default function Sales({ tenantId }: { tenantId: string }) {
         </div>
 
         {/* Sub Tabs */}
-        <div id="tour-pos-subtabs" data-tour="pos-subtabs" className="flex px-4 main-640:px-6 gap-2 main-640:gap-2.5 py-2.5 bg-surface-muted/40 overflow-x-auto scrollbar-hide scroll-smooth w-full border-b border-border/50">
+        <div id="tour-pos-subtabs" data-tour="pos-subtabs" className="flex px-4 main-640:px-6 gap-2 main-640:gap-2.5 py-2.5 bg-surface-muted/40 main-720:bg-transparent overflow-x-auto scrollbar-hide scroll-smooth w-full main-720:w-auto main-720:min-w-0 main-720:flex-1 main-720:justify-end border-b main-720:border-b-0 border-border/50">
           {activeTopTab === 'pos' && (
             <>
               <button
@@ -503,6 +506,7 @@ export default function Sales({ tenantId }: { tenantId: string }) {
               </button>
             </>
           )}
+        </div>
         </div>
       </div>
 

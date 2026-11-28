@@ -287,6 +287,8 @@ export interface PurchaseOrderItem {
   baseQuantity: number; // quantity * conversionRate
   pricePerUnit: number; // price per bulk unit
   total: number;
+  /** Update the product's purchase price from this line when the order is confirmed (seen-product-variants-barcode-po-price-task.md). */
+  updateItemCost?: boolean;
 }
 
 export interface PurchaseOrder {
@@ -342,6 +344,10 @@ export interface ProductVariant {
   sku: string;
   barcode?: string;
   priceAdjustment: number;
+  /** Its own price ("special price"); null = follows the product's price (20270123000001). */
+  priceOverride?: number | null;
+  /** A photo of this variant (a link, never Base64). */
+  imageUrl?: string;
   /** branchId -> quantity, populated from branch_inventory when loaded alongside stock. */
   stockByBranch?: Record<string, number>;
   updatedAt: string;

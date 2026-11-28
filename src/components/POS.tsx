@@ -1,3 +1,4 @@
+import { effectiveVariantPrice } from '../utils/variantRows';
 import { ThermalInvoice, StandardInvoice, InvoiceData } from "./printing/InvoiceReceipt";
 import { useUnsavedWork } from '../lib/unsavedWork';
 import { contentReached } from '../lib/shellLayout';
@@ -501,6 +502,8 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
             sku: row.sku,
             barcode: row.barcode || undefined,
             priceAdjustment: Number(row.price_adjustment) || 0,
+            priceOverride: row.price_override == null ? null : Number(row.price_override),
+            imageUrl: row.image_url || undefined,
             updatedAt: row.updated_at,
           };
           (byItem[row.item_id] ||= []).push(variant);
@@ -1078,9 +1081,10 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
         variantId: variant?.id,
         name: displayName,
         nameEn: item.nameEn,
-        price: item.pricePerUnit + (variant?.priceAdjustment || 0),
+        // A variant's own price, or the product's (as create_pos_sale prices it).
+        price: variant ? effectiveVariantPrice(item.pricePerUnit, variant) : item.pricePerUnit,
         taxType: item.taxType || 'exclusive',
-        image: item.mainImage || item.images?.[0] || '',
+        image: variant?.imageUrl || item.mainImage || item.images?.[0] || '',
         quantity: isLength ? firstLengthQuantity(availableStock) : 1,
         ...(isLength ? { isLength: true, conversionRate: Number(item.conversionRate) || 0, lengthUnit: 'meter' as LengthUnit } : {}),
       } as OrderItem];
@@ -1813,7 +1817,8 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
                   focusedItemId && focusedItemId !== item.id ? "opacity-30" : ""
                 )}
               >
-                <div className="flex items-center gap-3">
+                {/* Wraps on a narrow sheet: name and price above, quantity and delete below (audit finding 05). */}
+                <div className="flex flex-wrap items-center gap-3">
                   {/* Item Image */}
                   <div className="relative group w-12 h-12 shrink-0">
                     {item.image ? (
@@ -1841,8 +1846,8 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
                     )}
                   </div>
 
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
+                  <div className="flex-1 min-w-[8rem]">
+                    <div className="flex items-center gap-2 mb-1 min-w-0">
                       {item.type === 'custom' ? (
                         <span className="px-2 py-0.5 bg-brand/10 text-brand text-sm font-bold rounded-md flex items-center gap-1">
                           <Scissors size={12} />
@@ -1865,7 +1870,7 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
                     </div>
                   </div>
                   
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3 ms-auto shrink-0">
                     {(item as any).isLength ? (
                       <LengthQuantityControl
                         meters={item.quantity}
@@ -2084,7 +2089,7 @@ const invoiceData: InvoiceData | null = buildPosInvoiceData(completedOrder, {
           <button
             onClick={() => setIsShortcutsModalOpen(true)}
             aria-label={t('pos.shortcuts_button')}
-            className="hidden main-640:flex items-center justify-center gap-2 px-4 h-11 bg-surface border border-border text-content hover:bg-surface-muted rounded-xl transition-all font-black shadow-sm active:scale-95 cursor-pointer text-sm shrink-0"
+            className="hidden main-640:flex items-center justify-center gap-2 px-4 h-11 bg-surface border border-border text-content hover:bg-surface-muted rounded-xl transition-all font-black shadow-sm active:scale-95 cursor-pointer text-sm shrink-0 pointer-coarse:hidden!"
             title={t('pos.shortcuts_tooltip')}
           >
             <Keyboard size={16} />
@@ -3277,7 +3282,7 @@ const invoiceData: InvoiceData | null = buildPosInvoiceData(completedOrder, {
                 <label className="block text-sm font-bold text-content mb-2">{t('pos.trn_label_clean')} <span className="text-danger">*</span></label>
                 <IconInput
                   type="text"
-                  placeholder="300000000000003"
+                  placeholder={t('common.trn_placeholder')}
                   value={b2bData.trn}
                   onChange={e => setB2bData({...b2bData, trn: e.target.value})}
                 />

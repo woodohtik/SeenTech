@@ -1,3 +1,4 @@
+import { BarcodeField } from './BarcodeField';
 import React from "react";
 import { useTranslation } from "react-i18next";
 import { motion, AnimatePresence } from "motion/react";
@@ -71,6 +72,8 @@ interface ProductFormFieldsProps {
    * حيث لا يزال يمثّل تعديلاً يدوياً شرعياً لرصيد موجود فعلاً.
    */
   showOpeningBalance?: boolean;
+  /** Shown under the opening balance (a product with variants: how it goes on them). */
+  openingBalanceExtra?: React.ReactNode;
   /** Add form only: picking a category resets the unit to that category default (roll / piece). */
   applyCategoryUnitDefaults?: boolean;
 }
@@ -86,6 +89,7 @@ export default function ProductFormFields({
   suppliersList,
   handleError,
   showOpeningBalance = true,
+  openingBalanceExtra = null,
   applyCategoryUnitDefaults = false,
 }: ProductFormFieldsProps) {
   const { t } = useTranslation();
@@ -135,7 +139,7 @@ export default function ProductFormFields({
                 }}
                 placeholder={t("inventory.item_name_placeholder")}
                 className={cn(
-                  "w-full px-5 py-3 pe-10 bg-surface border border-border rounded-xl focus:ring-2 focus:ring-brand/20 focus:border-brand outline-none font-semibold text-content text-right transition-all",
+                  "w-full h-12 px-5 pe-10 bg-surface border border-border rounded-xl focus:ring-2 focus:ring-brand/20 focus:border-brand outline-none font-semibold text-content text-right transition-all",
                   fieldErrors.name && "ring-2 ring-danger border-danger"
                 )}
               />
@@ -365,7 +369,7 @@ export default function ProductFormFields({
               required
               value={formData.minThreshold}
               onChange={(e) => setFormData({ ...formData, minThreshold: Number(e.target.value) })}
-              className="w-full px-5 py-3 bg-surface border border-border rounded-xl font-semibold text-content text-right outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand"
+              className="w-full h-12 px-5 bg-surface border border-border rounded-xl font-semibold text-content text-right outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand"
             />
           </div>
         </div>
@@ -387,7 +391,7 @@ export default function ProductFormFields({
               onChange={(e) => setFormData({ ...formData, fabricWidthCm: e.target.value === "" ? 0 : Number(e.target.value) })}
               placeholder="150"
               aria-describedby={`${idPrefix}-fabric-width-hint`}
-              className="w-full px-5 py-3 bg-surface border border-border rounded-xl font-semibold text-content text-right outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand"
+              className="w-full h-12 px-5 bg-surface border border-border rounded-xl font-semibold text-content text-right outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand"
             />
             <p id={`${idPrefix}-fabric-width-hint`} className="text-sm text-content-muted font-bold mx-1">
               {t("inventory.fabric_width_hint")}
@@ -398,7 +402,9 @@ export default function ProductFormFields({
 
       <div className="bg-surface-muted/50 p-6 rounded-2xl border border-border">
         <div className="grid grid-cols-1 main-720:grid-cols-12 gap-6 text-right">
-          <div className="space-y-2 col-span-1 main-720:col-span-3 text-right">
+          {/* seen-ui-responsive-alignment-audit-task.md, phase 1: cost and price share rows (subgrid), so they line up
+              even when a label wraps; the tax cards get a row of their own. */}
+          <div className="grid grid-rows-subgrid row-span-2 gap-y-2 col-span-1 main-720:col-span-6 text-right">
             <label htmlFor={`${idPrefix}-cost-price`} className="text-sm font-black text-content-muted uppercase mx-1 block">
               {t(isFabric ? "inventory.cost_price_per_meter" : "inventory.cost_price_label")}<span className="text-danger">*</span>
             </label>
@@ -414,13 +420,13 @@ export default function ProductFormFields({
               }}
               placeholder="0.00"
               className={cn(
-                "w-full px-5 py-3 bg-surface border border-border rounded-xl outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand font-semibold text-content text-right",
+                "w-full h-12 px-5 bg-surface border border-border rounded-xl outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand font-semibold text-content text-right",
                 fieldErrors.costPrice && "ring-2 ring-danger border-danger"
               )}
             />
           </div>
 
-          <div className="space-y-2 col-span-1 main-720:col-span-3 text-right">
+          <div className="grid grid-rows-subgrid row-span-2 gap-y-2 col-span-1 main-720:col-span-6 text-right">
             <label htmlFor={`${idPrefix}-selling-price`} className="text-sm font-black text-content-muted uppercase mx-1 block">
               {t(isFabric ? "inventory.selling_price_per_meter" : "inventory.selling_price_label")}<span className="text-danger">*</span>
             </label>
@@ -436,13 +442,13 @@ export default function ProductFormFields({
               }}
               placeholder="0.00"
               className={cn(
-                "w-full px-5 py-3 bg-surface border border-border rounded-xl outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand font-semibold text-content text-right",
+                "w-full h-12 px-5 bg-surface border border-border rounded-xl outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand font-semibold text-content text-right",
                 fieldErrors.pricePerUnit && "ring-2 ring-danger border-danger"
               )}
             />
           </div>
 
-          <div className="space-y-2 col-span-1 main-720:col-span-6 text-right">
+          <div className="space-y-2 col-span-1 main-720:col-span-12 text-right">
             <label className="text-sm font-black text-content-muted uppercase mx-1 block">
               {t("inventory.tax_status_label")}
             </label>
@@ -502,9 +508,10 @@ export default function ProductFormFields({
                 placeholder="0.00"
                 value={formData.openingBalance || ""}
                 onChange={(e) => setFormData({ ...formData, openingBalance: e.target.value === "" ? 0 : Number(e.target.value) })}
-                className="w-full px-5 py-3 bg-surface border border-border rounded-xl font-semibold text-content text-right outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand"
+                className="w-full h-12 px-5 bg-surface border border-border rounded-xl font-semibold text-content text-right outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand"
               />
               <p className="text-sm text-content-muted mx-1">{t("inventory.initial_stock_hint")}</p>
+              {openingBalanceExtra}
             </div>
           )}
         </div>
@@ -521,19 +528,17 @@ export default function ProductFormFields({
               placeholder={t("inventory.sku_placeholder")}
               value={formData.sku}
               onChange={(e) => setFormData({ ...formData, sku: e.target.value.replace(/\D/g, "") })}
-              className="w-full px-5 py-3 bg-surface border border-border rounded-xl font-semibold text-content text-right outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand"
+              className="w-full h-12 px-5 bg-surface border border-border rounded-xl font-semibold text-content text-right outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand"
             />
           </div>
           <div className="space-y-2 col-span-1 main-720:col-span-6">
             <label htmlFor={`${idPrefix}-barcode`} className="text-sm font-black text-content-muted uppercase mx-1 block">
               {t("inventory.barcode")}
             </label>
-            <input
+            <BarcodeField
               id={`${idPrefix}-barcode`}
-              placeholder="Barcode (Auto)"
-              value={formData.barcode}
-              onChange={(e) => setFormData({ ...formData, barcode: e.target.value })}
-              className="w-full px-5 py-3 bg-surface border border-border rounded-xl font-semibold text-content text-right outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand"
+              value={formData.barcode || ""}
+              onChange={(barcode) => setFormData({ ...formData, barcode })}
             />
           </div>
         </div>

@@ -1,3 +1,4 @@
+import { SmartSelect } from './ui/SmartSelect';
 import React, { useState, useEffect, useRef } from 'react';
 import BuildStamp from './BuildStamp';
 import { FormGrid } from './ui/FormGrid';
@@ -587,8 +588,19 @@ export default function Settings({ tenantId }: SettingsProps) {
         subtitle={t('settings_page.subtitle', 'تخصيص تجربة متجرك وإدارة اشتراكك')}
       />
 
+      {/* Under 900px of the page: one menu «القسم: …» instead of 11 chips that ran
+          off the edge (seen-ui-responsive-alignment-audit-task.md, finding 12). */}
+      <div className="main-900:hidden">
+        <SmartSelect
+          id="settings-section"
+          value={activeTab}
+          onChange={(v) => setActiveTab(v as typeof activeTab)}
+          options={TABS.filter(tab => tab.visible).map(tab => ({ value: tab.id, label: `${t('settings_page.section_label')}: ${tab.label}` }))}
+        />
+      </div>
+
       {/* Horizontal Scrollable Tabs Selector */}
-      <div className="relative -mx-3 px-3 main-640:mx-0 main-640:px-0">
+      <div className="relative hidden main-900:block">
         <div className="pointer-events-none absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-surface to-transparent z-10" />
         <div className="pointer-events-none absolute inset-y-0 left-0 w-8 bg-gradient-to-r from-surface to-transparent z-10" />
         <div ref={tabsContainerRef} className="flex gap-2 overflow-x-auto pb-3 pt-1 scrollbar-none">
@@ -688,8 +700,12 @@ export default function Settings({ tenantId }: SettingsProps) {
                         <label htmlFor="settings-profile-phone" className="text-sm font-black text-content-muted">{t('settings_page.profile.phone', 'رقم التواصل الموحد')}</label>
                         <HelpCircle size={14} className="text-content-muted/80 cursor-help" />
                       </div>
-                      <IconInput id="settings-profile-phone" 
-                        type="text" 
+                      {/* A phone number reads left to right (+966... was shown reversed); the phone keypad on mobiles. */}
+                      <IconInput id="settings-profile-phone"
+                        type="tel"
+                        inputMode="tel"
+                        dir="ltr"
+                        autoComplete="tel"
                         {...register('phone')}
                         placeholder="05XXXXXXXX / 9200XXXXX"
                         startIcon={Phone}
@@ -725,7 +741,7 @@ export default function Settings({ tenantId }: SettingsProps) {
                       <button
                         type="button"
                         onClick={() => setIsLocationPickerOpen(true)}
-                        className="text-sm font-bold text-brand hover:text-brand/80 transition-colors flex items-center gap-1.5 px-1"
+                        className="text-sm font-bold text-brand hover:text-brand/80 transition-colors flex items-center gap-1.5 px-1 min-h-11 -my-3"
                       >
                         <MapPin size={13} />
                         {t('settings_page.profile.pick_on_map', 'تحديد على الخريطة')}
@@ -802,7 +818,8 @@ export default function Settings({ tenantId }: SettingsProps) {
                         ['defaultWidthCm', 'settings_page.fabric_estimate.default_width_cm'],
                         ['narrowWidthCm', 'settings_page.fabric_estimate.narrow_width_cm'],
                       ] as const).map(([field, labelKey]) => (
-                        <div key={field} className="space-y-1.5">
+                        // One row for the labels, one for the inputs (subgrid): a wrapped label no longer drops its input.
+                        <div key={field} className="grid grid-rows-subgrid row-span-2 gap-y-1.5">
                           <label htmlFor={`fabric-estimate-${field}`} className="block px-1 text-sm font-black text-content-muted">
                             {t(labelKey)}
                           </label>
@@ -816,7 +833,7 @@ export default function Settings({ tenantId }: SettingsProps) {
                             aria-invalid={!!(errors as any).fabricEstimate?.[field]}
                             {...register(`fabricEstimate.${field}` as const)}
                             className={cn(
-                              "w-full h-11 px-3 rounded-xl border border-border bg-surface text-sm font-bold text-content focus:outline-none focus:ring-2 focus:ring-brand/30",
+                              "w-full h-12 px-3 rounded-xl border border-border bg-surface text-sm font-bold text-content focus:outline-none focus:ring-2 focus:ring-brand/30",
                               (errors as any).fabricEstimate?.[field] && "border-danger ring-2 ring-danger/30"
                             )}
                           />
@@ -980,7 +997,7 @@ export default function Settings({ tenantId }: SettingsProps) {
                           <IconInput
                             type="text"
                             maxLength={15}
-                            placeholder="300000000000003"
+                            placeholder={t('common.trn_placeholder')}
                             required
                             label={t('settings_page.tax.trn', 'الرقم الضريبي (TRN - 15 خانة)')}
                             {...register('taxSettings.trn')}

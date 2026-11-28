@@ -1,3 +1,8 @@
+import { DialogFrame } from './ui/DialogFrame';
+import { FormField } from './ui/FormField';
+import { usePoLinePrice } from './procurement/usePoLinePrice';
+import { PoLinePriceHint } from './procurement/PoLinePriceHint';
+import { generateInternalBarcode } from '../lib/barcode';
 import { PurchaseVatBreakdown } from './procurement/PurchaseVatBreakdown';
 import { resolveTaxSettings } from '../utils/taxSettings';
 import { formatStockQty } from '../utils/stockTotals';
@@ -62,7 +67,7 @@ export default function PurchaseOrders({
     return () => { alive = false; };
   }, [tenantId]);
   const { dir, isRtl } = useDirection();
-  const { error: toastError, success: toastSuccess } = useToast();
+  const { error: toastError, success: toastSuccess, info: toastInfo } = useToast();
   const { confirm } = useConfirm();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -168,7 +173,7 @@ export default function PurchaseOrders({
           price_per_unit: newItemSellingPrice,
           description: encodeInventoryDescription(newItemCostPrice, 'exclusive', ''),
           sku,
-          barcode: Math.random().toString().substring(2, 12),
+          barcode: await generateInternalBarcode(),
           quantity: 0,
           show_in_pos: true,
           opening_balance: 0,
@@ -286,6 +291,12 @@ export default function PurchaseOrders({
     ? contentToMeters(lineRollContent, lineContentUnit)
     : Number(selectedInvItem?.conversionRate || selectedInvItem?.conversion_rate || 1);
   const lineRateInvalid = lineIsRoll && !(lineRollContent > 0);
+  // The line's price starts at the product's purchase price; a different one
+  // can update the product when the order is confirmed.
+  const linePrice = usePoLinePrice({
+    item: selectedInvItem, rate: lineRate, isPurchase: modalType === 'purchase',
+    price: pricePerUnit, setPrice: setPricePerUnit,
+  });
 
   const handleAddItem = () => {
     const invItem = inventory.find(i => i.id === selectedItem);
@@ -304,7 +315,8 @@ export default function PurchaseOrders({
       conversionRate: rate,
       baseQuantity: safeRound(quantity * rate, 4),
       pricePerUnit,
-      total: quantity * pricePerUnit
+      total: quantity * pricePerUnit,
+      updateItemCost: linePrice.updateItemCost,
     };
 
     setItems([...items, newItem]);
@@ -349,7 +361,8 @@ export default function PurchaseOrders({
           conversion_rate: item.conversionRate,
           base_quantity: item.baseQuantity,
           price_per_unit: item.pricePerUnit,
-          total: item.total
+          total: item.total,
+          update_item_cost: modalType === 'purchase' && !!item.updateItemCost,
         })),
       });
 
@@ -439,10 +452,15 @@ export default function PurchaseOrders({
       // idempotency المستخدَمة سابقاً (po:<order_id>:item:<item_id> للمخزون،
       // order.id لرصيد المورد) فيستأنف بأمان أي تأكيد قديم بالنمط السابق
       // انقطع منتصف الطريق دون تكرار أي أثر سبق تطبيقه.
-      const { error: confirmErr } = await supabase.rpc('confirm_purchase_order', {
+      const { data: confirmed, error: confirmErr } = await supabase.rpc('confirm_purchase_order', {
         p_order_id: order.id,
       });
       if (confirmErr) throw confirmErr;
+      // A ticked "update the product's price" needs inventory.edit; without
+      // it the order still goes through and the price stays.
+      if (Number((confirmed as any)?.cost_not_updated) > 0) {
+        toastInfo(t('procurement.cost_not_updated_note'));
+      }
 
       toastSuccess(finalOrderType === 'return' ? t('procurement.return_confirmed_success') : t('procurement.po_confirmed_success'));
       setSelectedOrder(null);
@@ -848,12 +866,11 @@ export default function PurchaseOrders({
 
       {/* Detail view / Confirmation modal */}
       {selectedOrder && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-end main-640:items-center justify-center z-50 overflow-y-auto p-0 main-640:p-4">
-          <div className="bg-surface rounded-t-3xl main-640:rounded-3xl shadow-2xl w-full max-w-3xl overflow-hidden border border-border flex flex-col max-h-[90vh] main-640:max-h-[85vh] animate-in fade-in zoom-in duration-150">
+        <DialogFrame onClose={() => setSelectedOrder(null)} labelledBy="po-detail-title" overlayClassName="flex items-end main-640:items-center justify-center overflow-y-auto p-0 main-640:p-4" panelClassName="bg-surface rounded-t-3xl main-640:rounded-3xl shadow-2xl w-full max-w-3xl overflow-hidden border border-border flex flex-col max-h-[90dvh] main-640:max-h-[85dvh] animate-in fade-in zoom-in duration-150">
             <div className="p-6 border-b border-border flex justify-between items-center bg-surface-muted/40">
               <div>
                 <div className="flex items-center gap-3">
-                  <h2 className="text-lg font-black text-content">{t('procurement.po_detail_title', 'عرض تفاصيل المستند')}</h2>
+                  <h2 id="po-detail-title" className="text-lg font-black text-content">{t('procurement.po_detail_title', 'عرض تفاصيل المستند')}</h2>
                   <span className={cn(
                     "text-sm font-black px-2.5 py-1 rounded-full",
                     (selectedOrder.orderType || (selectedOrder as any).order_type) === 'purchase' ? "bg-brand/15 text-brand" : "bg-[var(--seen-danger-bg)] text-danger"
@@ -863,8 +880,10 @@ export default function PurchaseOrders({
                 </div>
                 <p className="text-sm text-content-muted mt-1">{t('procurement.po_number', 'رقم السند')}: <span className="font-mono font-bold text-content">{selectedOrder.poNumber || (selectedOrder as any).po_number || selectedOrder.id}</span></p>
               </div>
-              <button 
-                onClick={() => setSelectedOrder(null)} 
+              <button
+                type="button"
+                aria-label={t('common.close')}
+                onClick={() => setSelectedOrder(null)}
                 className="text-content-muted hover:text-content p-2 hover:bg-surface rounded-full transition-all"
               >
                 <X size={24} />
@@ -994,17 +1013,15 @@ export default function PurchaseOrders({
                 )}
               </div>
             </div>
-          </div>
-        </div>
+        </DialogFrame>
       )}
 
       {/* Create Order Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-end main-640:items-center justify-center z-50 overflow-y-auto p-0 main-640:p-4">
-          <div className="bg-surface rounded-t-3xl main-640:rounded-3xl shadow-2xl w-full max-w-2xl overflow-hidden border border-border flex flex-col max-h-[92vh] main-640:max-h-[90vh] animate-in fade-in zoom-in duration-150">
+        <DialogFrame onClose={() => { setIsModalOpen(false); setItems([]); setSelectedSupplier(''); }} labelledBy="po-new-title" overlayClassName="flex items-end main-640:items-center justify-center overflow-y-auto p-0 main-640:p-4" panelClassName="bg-surface rounded-t-3xl main-640:rounded-3xl shadow-2xl w-full max-w-2xl overflow-hidden border border-border flex flex-col max-h-[92dvh] main-640:max-h-[90dvh] animate-in fade-in zoom-in duration-150">
             <div className="p-6 border-b border-border flex justify-between items-center bg-surface-muted/50">
               <div>
-                <h2 className="text-xl font-black text-content">
+                <h2 id="po-new-title" className="text-xl font-black text-content">
                   {modalType === 'purchase' ? t('procurement.register_new_po', 'تسجيل أمر شراء جديد') : t('procurement.register_po_return', 'تسجيل مرتجع مشتريات')}
                 </h2>
                 <p className="text-sm text-content-muted mt-1">
@@ -1015,7 +1032,7 @@ export default function PurchaseOrders({
                 setIsModalOpen(false);
                 setItems([]);
                 setSelectedSupplier('');
-              }} className="text-content-muted hover:text-content p-2 hover:bg-surface rounded-full">
+              }} type="button" aria-label={t('common.close')} className="text-content-muted hover:text-content p-2 hover:bg-surface rounded-full">
                 <X size={24} />
               </button>
             </div>
@@ -1033,9 +1050,12 @@ export default function PurchaseOrders({
 
               <div className="bg-surface-muted/40 p-4 rounded-2xl border border-border space-y-4">
                 <h3 className="font-bold text-sm text-content">{t('procurement.add_items_to_invoice', 'إضافة أصناف لقائمة الفاتورة')}</h3>
-                <div className="grid grid-cols-1 main-720:grid-cols-4 gap-4">
-                  <div className="main-720:col-span-2">
+                {/* seen-ui-responsive-alignment-audit-task.md, phase 1: item / quantity / price line up (FormField subgrid). */}
+                <div className="grid grid-cols-1 main-720:grid-cols-4 gap-x-4 gap-y-4">
+                  <FormField className="main-720:col-span-2" id="po-item" label={t('procurement.item_label')}>
+                    {(fieldId) => (<div>
                     <SmartSelect
+                      id={fieldId}
                       value={selectedItem}
                       onChange={(val) => {
                         if (val === ADD_NEW_ITEM_VALUE) {
@@ -1076,13 +1096,12 @@ export default function PurchaseOrders({
                         />
                       </div>
                     )}
-                  </div>
-                  <div className="space-y-2">
-                    <label className="block text-sm font-black text-content-muted uppercase">
-                      {t('procurement.quantity', 'الكمية')}
-                      {selectedInvItem && ` (${t(`inventory.unit_${selectedInvItem.unit}`, selectedInvItem.unit)})`}
-                    </label>
+                    </div>)}
+                  </FormField>
+                  <FormField id="po-quantity" label={<>{t('procurement.quantity', 'الكمية')}{selectedInvItem && ` (${t(`inventory.unit_${selectedInvItem.unit}`, selectedInvItem.unit)})`}</>}>
+                    {(fieldId) => (
                     <input
+                      id={fieldId}
                       type="number"
                       placeholder="0"
                       value={quantity || ''}
@@ -1090,26 +1109,39 @@ export default function PurchaseOrders({
                       inputMode="decimal"
                       dir="ltr"
                       // No spinner arrows: the figure hid behind them (phase 4).
-                      className="w-full px-4 py-2 bg-surface border border-border rounded-xl outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand text-content font-bold text-sm [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                      className="w-full h-12 px-4 bg-surface border border-border rounded-xl outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand text-content font-bold text-sm [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                     />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="block text-sm font-black text-content-muted uppercase">{t('procurement.price_per_unit_short', 'السعر / وحدة')}</label>
+                    )}
+                  </FormField>
+                  <FormField id="po-price" label={t('procurement.price_per_unit_short', 'السعر / وحدة')}>
+                    {(fieldId) => (<div className="space-y-2">
                     <input
+                      id={fieldId}
                       type="number"
                       placeholder="0.00"
                       value={pricePerUnit || ''}
-                      onChange={(e) => setPricePerUnit(Number(e.target.value))}
+                      onChange={(e) => { setPricePerUnit(Number(e.target.value)); linePrice.markTouched(); }}
                       readOnly={modalType === 'return'}
                       title={modalType === 'return' ? t('procurement.return_price_locked', 'السعر مقفل على سعر الشراء الفعلي ولا يمكن تعديله') : undefined}
                       inputMode="decimal"
                       dir="ltr"
                       className={cn(
-                        "w-full px-4 py-2 bg-surface border border-border rounded-xl outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand text-content font-bold text-sm [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none",
+                        "w-full h-12 px-4 bg-surface border border-border rounded-xl outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand text-content font-bold text-sm [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none",
                         modalType === 'return' && "bg-surface-muted cursor-not-allowed opacity-80"
                       )}
                     />
-                  </div>
+                    {linePrice.changed && (
+                      <PoLinePriceHint
+                        currentCost={linePrice.costPerBase}
+                        newCost={linePrice.newCost}
+                        perUnit={t(['meter', 'yard', 'roll', 'bolt'].includes(selectedInvItem?.unit) ? 'procurement.per_meter' : 'procurement.per_piece')}
+                        checked={linePrice.updateCost}
+                        onChange={linePrice.setUpdateCost}
+                        aboveSellingPrice={linePrice.aboveSellingPrice}
+                      />
+                    )}
+                    </div>)}
+                  </FormField>
                 </div>
 
                 {lineIsRoll && modalType === 'purchase' && (
@@ -1382,8 +1414,7 @@ export default function PurchaseOrders({
                 </button>
               </div>
             </div>
-          </div>
-        </div>
+        </DialogFrame>
       )}
     </div>
   );

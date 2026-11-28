@@ -1,3 +1,4 @@
+import { DialogDiv } from './ui/DialogFrame';
 import React, { useState, useEffect, useMemo } from 'react';
 import { useUnsavedWork } from '../lib/unsavedWork';
 import { useDebouncedValue } from '../hooks/useDebouncedValue';
@@ -1051,7 +1052,7 @@ export default function Customers({ tenantId }: CustomersProps) {
               <Users size={16} />
             </div>
             <div className="min-w-0">
-              <span className="block text-sm font-black text-content-muted leading-tight truncate">{t('dashboard.total_customers')}</span>
+              <span className="block text-sm font-black text-content-muted leading-tight line-clamp-2">{t('dashboard.total_customers')}</span>
               <span className="text-sm main-640:text-base font-black text-content mt-1 block">{customers.length}</span>
             </div>
           </div>
@@ -1061,7 +1062,7 @@ export default function Customers({ tenantId }: CustomersProps) {
               <SlidersHorizontal size={16} />
             </div>
             <div className="min-w-0">
-              <span className="block text-sm font-black text-content-muted leading-tight truncate">{t('customers.filter_results')}</span>
+              <span className="block text-sm font-black text-content-muted leading-tight line-clamp-2">{t('customers.filter_results')}</span>
               <span className="text-sm main-640:text-base font-black text-brand mt-1 block">{filteredCustomers.length}</span>
             </div>
           </div>
@@ -1071,7 +1072,7 @@ export default function Customers({ tenantId }: CustomersProps) {
               <ArrowDownLeft size={16} />
             </div>
             <div className="min-w-0">
-              <span className="block text-sm font-black text-content-muted leading-tight truncate">{t('customers.stat_debtors')}</span>
+              <span className="block text-sm font-black text-content-muted leading-tight line-clamp-2">{t('customers.stat_debtors')}</span>
               <span className="text-sm main-640:text-base font-black text-danger mt-1 block">
                 {customers.filter(c => (customerBalances[c.id] || 0) > 0).length}
               </span>
@@ -1083,7 +1084,7 @@ export default function Customers({ tenantId }: CustomersProps) {
               <ArrowUpRight size={16} />
             </div>
             <div className="min-w-0">
-              <span className="block text-sm font-black text-content-muted leading-tight truncate">{t('customers.stat_creditors')}</span>
+              <span className="block text-sm font-black text-content-muted leading-tight line-clamp-2">{t('customers.stat_creditors')}</span>
               <span className="text-sm main-640:text-base font-black text-success mt-1 block">
                 {customers.filter(c => (customerBalances[c.id] || 0) < 0).length}
               </span>
@@ -1798,7 +1799,7 @@ export default function Customers({ tenantId }: CustomersProps) {
       {/* Modals */}
       <AnimatePresence>
         {isModalOpen && (
-          <div role="dialog" aria-modal="true" className="fixed inset-0 z-[150] flex items-end main-640:items-center justify-center p-0 main-640:p-4 bg-black/50 backdrop-blur-sm overflow-y-auto">
+          <DialogDiv onClose={() => setIsModalOpen(false)} aria-labelledby="customer-form-title" className="fixed inset-0 z-[150] flex items-end main-640:items-center justify-center p-0 main-640:p-4 bg-black/50 backdrop-blur-sm overflow-y-auto">
             <motion.div
               initial={{ scale: 0.95, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
@@ -1810,7 +1811,7 @@ export default function Customers({ tenantId }: CustomersProps) {
               <form onSubmit={handleSubmit(onSubmit, onInvalidSubmit)} className="flex flex-col flex-1 max-h-[90vh] overflow-hidden">
                 {/* Header (Fixed) */}
                 <div className="sticky top-0 z-10 flex items-center justify-between p-4 main-640:p-6 border-b border-[var(--border)] bg-[var(--surface)] shrink-0 bg-brand/5">
-                  <h3 className="text-base main-640:text-lg main-900:text-xl font-black text-content">
+                  <h3 id="customer-form-title" className="text-base main-640:text-lg main-900:text-xl font-black text-content">
                     {editingCustomer ? t('customers.edit_customer') : t('pos.add_new_customer')}
                   </h3>
                   <button type="button" onClick={() => setIsModalOpen(false)} className="p-2 hover:bg-surface-muted rounded-full transition-colors text-content-muted">
@@ -1898,7 +1899,7 @@ export default function Customers({ tenantId }: CustomersProps) {
                         setValue('trn' as any, val, { shouldValidate: true });
                       }}
                       dir="ltr"
-                      placeholder="300000000000003"
+                      placeholder={t('common.trn_placeholder')}
                       error={errors.trn?.message as string | undefined}
                     />
                   </div>
@@ -1958,7 +1959,7 @@ export default function Customers({ tenantId }: CustomersProps) {
                     type="checkbox"
                     id="isTest"
                     {...register('isTest')}
-                    className="w-5 h-5 text-brand border-border rounded focus:ring-brand"
+                    className="w-6 h-6 text-brand border-border rounded focus:ring-brand"
                   />
                   <label htmlFor="isTest" className="text-sm font-bold text-warning flex items-center gap-2">
                     <Zap size={16} />
@@ -1991,7 +1992,7 @@ export default function Customers({ tenantId }: CustomersProps) {
                 </div>
               </form>
             </motion.div>
-          </div>
+          </DialogDiv>
         )}
       </AnimatePresence>
 

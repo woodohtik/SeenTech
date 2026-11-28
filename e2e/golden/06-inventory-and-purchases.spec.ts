@@ -46,9 +46,9 @@ test("a purchase order is numbered by the shop: PO-0001", async ({ page }) => {
   await page.getByRole('button', { name: 'إنشاء أمر شراء' }).first().click();
   await page.getByRole('button', { name: 'اختر المورد المسؤول...' }).click();
   await page.getByRole('option', { name: SUPPLIER.name }).click();
-  await page.getByRole('button', { name: 'اختر صنف المخزن...' }).click();
+  await page.getByRole('button', { name: 'الصنف', exact: true }).click();
   await page.getByRole('option', { name: new RegExp(FABRIC.name) }).first().click();
-  await page.getByRole('spinbutton', { name: '0.00' }).fill('12');
+  await page.getByRole('spinbutton', { name: 'السعر / وحدة' }).fill('12');
   await page.getByRole('button', { name: 'أضف الصنف لقائمة المستند' }).click();
   await page.getByRole('button', { name: 'حفظ كمسودة (بدون ترحيل)' }).click();
 
