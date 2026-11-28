@@ -29,7 +29,6 @@ import { BrandingContext } from '../../contexts/BrandingContext';
 import type { Measurements } from '../../types';
 import type { MeasurementUnit } from '../../utils/measurementUnits';
 import VisualMeasurements from '../VisualMeasurements';
-import ThobeMeasurementSelector from '../ThobeMeasurementSelector';
 
 interface MeasurementsFormResponse {
   customer_name: string;

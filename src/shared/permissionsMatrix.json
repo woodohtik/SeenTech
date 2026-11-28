@@ -28,6 +28,7 @@
     "customers.create",
     "customers.edit",
     "customers.delete",
+    "customers.view_measurements",
     "dashboard.revenue",
     "dashboard.orders",
     "dashboard.inventory",
@@ -102,7 +103,8 @@
       "staff.permissions",
       "branches.view",
       "branches.manage",
-      "system.delete"
+      "system.delete",
+      "customers.view_measurements"
     ],
     "admin": [
       "dashboard.view",
@@ -152,7 +154,8 @@
       "staff.manage",
       "staff.permissions",
       "branches.view",
-      "branches.manage"
+      "branches.manage",
+      "customers.view_measurements"
     ],
     "manager": [
       "dashboard.view",
@@ -200,7 +203,8 @@
       "staff.delete",
       "staff.manage",
       "branches.view",
-      "branches.manage"
+      "branches.manage",
+      "customers.view_measurements"
     ],
     "branch_manager": [
       "dashboard.view",
@@ -235,7 +239,8 @@
       "staff.view",
       "staff.create",
       "staff.edit",
-      "branches.view"
+      "branches.view",
+      "customers.view_measurements"
     ],
     "accountant": [
       "dashboard.view",
@@ -286,7 +291,8 @@
       "orders.view",
       "customers.view",
       "orders.view_details",
-      "orders.update_status"
+      "orders.update_status",
+      "customers.view_measurements"
     ]
   }
 }

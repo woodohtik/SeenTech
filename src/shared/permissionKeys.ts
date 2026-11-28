@@ -34,6 +34,7 @@ export const PERMISSION_KEYS = [
   'customers.create',
   'customers.edit',
   'customers.delete',
+  'customers.view_measurements',
   'dashboard.revenue',
   'dashboard.orders',
   'dashboard.inventory',

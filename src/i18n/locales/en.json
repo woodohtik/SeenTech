@@ -2551,6 +2551,10 @@
         "customers_view": {
           "description": "Allow browsing customer data and measurements.",
           "name": "View Customers"
+        },
+        "customers_view_measurements": {
+          "name": "View customers' measurements",
+          "description": "In a women's tailoring shop: sees the customers' measurements in their profile and orders. Off for the cashier by default."
         }
       },
       "dashboard": {

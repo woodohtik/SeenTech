@@ -111,6 +111,8 @@ function buildInvoiceMeasurements(
   set: 'thobe' | 'womens' = 'thobe'
 ): { label: string; value: string | number }[] | undefined {
   if (item.type !== 'custom' || !customer?.measurements) return undefined;
+  // A women's shop's receipt never carries the measurements (seen-open-verticals-task.md, question 6).
+  if (set === 'womens') return undefined;
   // The customer's receipt: values only, never the tailor's notes.
   const list = measurementRows(customer.measurements, false, set).filter((row) => row.value > 0).map((row) => ({
     label: t(row.labelKey),

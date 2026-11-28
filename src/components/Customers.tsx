@@ -1,3 +1,4 @@
+import { canSeeMeasurements } from '../utils/measurementPrivacy';
 import { MeasurementSelector } from './measurements/MeasurementSelector';
 import { DialogDiv } from './ui/DialogFrame';
 import React, { useState, useEffect, useMemo } from 'react';
@@ -79,7 +80,6 @@ import Header from './Header';
 import { IconInput } from './ui/IconInput';
 import { VoiceMicButton } from './ui/VoiceMicButton';
 import { isSpeechRecognitionSupported } from '../hooks/useSpeechRecognition';
-import ThobeMeasurementSelector from './ThobeMeasurementSelector';
 import { CustomerStylePreferences } from './customers/CustomerStylePreferences';
 import { CustomerOrderHistory } from './customers/CustomerOrderHistory';
 import { CustomerMeasurementsGrid } from './customers/CustomerMeasurementsGrid';
@@ -106,7 +106,6 @@ interface CustomersProps {
 
 export default function Customers({ tenantId }: CustomersProps) {
   const { capabilities: verticalCapabilities } = useVerticalConfig();
-  const hasBodyMeasurements = measurementSetFor(verticalCapabilities.body_measurements).length > 0;
   const { t, i18n } = useTranslation();
   // Unsupported browsers render VoiceMicButton as null -- without this
   // gate, IconInput's endIcon (array or single element) would still count
@@ -149,6 +148,9 @@ export default function Customers({ tenantId }: CustomersProps) {
   const [statementOrders, setStatementOrders] = useState<Order[]>([]);
   const { currentStaff } = useStaff();
   const { hasPermission, checkPermission } = usePermissions(currentStaff);
+  // A women's shop: the measurements only with «عرض مقاسات العملاء» (seen-open-verticals-task.md, question 6).
+  const hasBodyMeasurements = measurementSetFor(verticalCapabilities.body_measurements).length > 0
+    && canSeeMeasurements(verticalCapabilities.body_measurements, hasPermission);
   const navigate = useNavigate();
 
   // Centralized Mutations for Secure, Strict Persistence
@@ -2011,6 +2013,7 @@ export default function Customers({ tenantId }: CustomersProps) {
             visualLabels={VISUAL_LABELS}
             visualIcons={VISUAL_ICONS}
             measurementUnit={measurementUnit}
+            showMeasurements={hasBodyMeasurements}
           />
         )}
       </AnimatePresence>
@@ -2090,7 +2093,8 @@ const CustomerDetailsModal = ({
   onNewOrder,
   visualLabels,
   visualIcons,
-  measurementUnit
+  measurementUnit,
+  showMeasurements = true
 }: {
   customer: Customer,
   onClose: () => void,
@@ -2099,10 +2103,12 @@ const CustomerDetailsModal = ({
   onNewOrder: () => void,
   visualLabels: Record<string, string>,
   visualIcons: Record<string, React.ReactNode>,
-  measurementUnit: MeasurementUnit
+  measurementUnit: MeasurementUnit,
+  /** False without «عرض مقاسات العملاء» in a women's shop. */
+  showMeasurements?: boolean
 }) => {
   const { capabilities: verticalCapabilities } = useVerticalConfig();
-  const hasBodyMeasurements = measurementSetFor(verticalCapabilities.body_measurements).length > 0;
+  const hasBodyMeasurements = measurementSetFor(verticalCapabilities.body_measurements).length > 0 && showMeasurements;
   const { t, i18n } = useTranslation();
   const isRtl = isRtlLang(i18n.language);
 

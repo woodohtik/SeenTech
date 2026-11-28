@@ -68,6 +68,8 @@ export const SYSTEM_PERMISSIONS: Permission[] = [
   definePermission('customers.create', 'customers.customers_create', 'permissions.categories.customers'),
   definePermission('customers.edit', 'customers.customers_edit', 'permissions.categories.customers'),
   definePermission('customers.delete', 'customers.customers_delete', 'permissions.categories.customers'),
+  // seen-open-verticals-task.md, wave 1 (question 6): the customers' measurements in a women's shop.
+  definePermission('customers.view_measurements', 'customers.customers_view_measurements', 'permissions.categories.customers'),
 
   // Dashboard
   definePermission('dashboard.revenue', 'dashboard.dashboard_revenue', 'permissions.categories.dashboard'),

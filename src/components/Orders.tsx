@@ -1,4 +1,5 @@
 "use client";
+import { canSeeMeasurements } from '../utils/measurementPrivacy';
 import { contentReached } from '../lib/shellLayout';
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { fuzzyIncludes } from '../utils/fuzzySearch';
@@ -380,7 +381,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
   // The body measurements on the tailor's work card, with each note
   // (seen-measurements-basic-advanced-task.md, question 6).
   const workCardMeasurements = (order: Order): WorkCardMeasurement[] => {
-    if (measurementSetFor(capabilities.body_measurements).length === 0) return [];
+    if (measurementSetFor(capabilities.body_measurements).length === 0 || !canSeeMeasurements(capabilities.body_measurements, hasPermission)) return [];
     const unitLabel = t(unitLabelKey(measurementUnit));
     return measurementRows(orderMeasurements(order), false, (capabilities.body_measurements === 'womens' ? 'womens' : 'thobe')).map((row) => ({
       key: row.key,
@@ -1870,7 +1871,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
             </section>
 
             {/* Customer Measurements -- only for an activity that takes them (Phase 4). */}
-            {measurementSetFor(capabilities.body_measurements).length > 0 && orderMeasurements(order) && (
+            {measurementSetFor(capabilities.body_measurements).length > 0 && canSeeMeasurements(capabilities.body_measurements, hasPermission) && orderMeasurements(order) && (
               <section className="space-y-4">
                 <h3 className="text-sm font-black text-content-muted uppercase flex items-center gap-2">
                   <Ruler size={14} />

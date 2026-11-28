@@ -1,3 +1,4 @@
+import { canSeeMeasurements } from '../utils/measurementPrivacy';
 import { MeasurementSelector } from './measurements/MeasurementSelector';
 import { useDialogBehavior } from './ui/DialogFrame';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -43,7 +44,6 @@ import {
 } from '../utils/tailoringOrder';
 import { PriceDisplay } from './PriceDisplay';
 import VisualMeasurements from './VisualMeasurements';
-import ThobeMeasurementSelector from './ThobeMeasurementSelector';
 import { SmartSelect } from './ui/SmartSelect';
 import { QuickAddTailor } from './staff/QuickAddTailor';
 import { OrderImagesField } from './orders/OrderImagesField';
@@ -434,7 +434,9 @@ function TailoringOrderFormBody({
   // Phase 4 of seen-verticals-readiness-task.md: the activity's own
   // measurement set (thobe for men's tailoring, as before; none -- the
   // section is hidden -- for an activity without an approved set).
-  const hasBodyMeasurements = measurementSetFor(capabilities.body_measurements).length > 0;
+  // A women's shop: the measurements only with «عرض مقاسات العملاء» (question 6).
+  const hasBodyMeasurements = measurementSetFor(capabilities.body_measurements).length > 0
+    && canSeeMeasurements(capabilities.body_measurements, hasPermission);
   const estimatesFabricFromMeasurements = capabilities.body_measurements === 'thobe';
   const measurementUnit = useMeasurementUnit(tenantId);
   const fabricEstimateSettings = useFabricEstimateSettings(tenantId);
