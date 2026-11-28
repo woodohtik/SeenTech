@@ -2107,7 +2107,8 @@ const invoiceData: InvoiceData | null = buildPosInvoiceData(completedOrder, {
                 type="button"
                 onClick={() => setIsScannerOpen(true)}
                 aria-label={t('pos.scan_barcode')}
-                className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand rounded cursor-pointer"
+                // A 44px tap box around the 18px icon, the layout unchanged (audit finding 16).
+                className="p-[13px] -m-[13px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand rounded-full cursor-pointer"
               >
                 <Barcode size={18} />
               </button>,
