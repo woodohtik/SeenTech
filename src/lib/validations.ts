@@ -132,6 +132,9 @@ export const orderSchema = z.object({
   remainingAmount: z.coerce.number().min(0).optional(),
   paymentMethod: z.enum(['cash', 'network', 'cash_on_delivery', 'partial']),
   deliveryDate: z.string().min(1, t('validation.required')),
+  // seen-open-verticals-task.md, wave 1: the occasion and the urgent mark (women's tailoring).
+  occasionDate: z.string().optional().or(z.literal('')),
+  isUrgent: z.boolean().optional(),
   createdBy: z.string().optional(),
   // enum ثابت لمستأجري mens_tailoring، أو stage_key حر لأي نشاط آخر (انظر Orders.tsx: defaultOrderValues/onSubmit).
   status: z.string().min(1, t('validation.required')),

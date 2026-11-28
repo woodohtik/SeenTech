@@ -2491,7 +2491,14 @@
       "close": "بند کریں",
       "next": "اگلی تصویر",
       "prev": "پچھلی تصویر"
-    }
+    },
+    "occasion_date": "تقریب کی تاریخ",
+    "occasion_date_placeholder": "شادی، عید، گریجویشن…",
+    "urgent": "ترجیح",
+    "urgent_label": "فوری",
+    "urgent_badge": "فوری",
+    "occasion_badge": "تقریب {{date}}",
+    "sort_occasion": "قریب ترین تقریب پہلے"
   },
   "permissions": {
     "access_denied_desc": "غیر متعین",

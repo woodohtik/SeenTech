@@ -1,3 +1,4 @@
+import { OccasionFields } from './orders/OccasionFields';
 import { canSeeMeasurements } from '../utils/measurementPrivacy';
 import { MeasurementSelector } from './measurements/MeasurementSelector';
 import { useDialogBehavior } from './ui/DialogFrame';
@@ -429,7 +430,7 @@ function TailoringOrderFormBody({
   const { currentStaff } = useStaff();
   const { user: currentAuthUser } = useAuth();
   const { hasPermission } = usePermissions(currentStaff);
-  const { workflowStages, orderItemFields, isLegacyVertical, capabilities } = useVerticalConfig();
+  const { workflowStages, orderItemFields, isLegacyVertical, capabilities, vertical } = useVerticalConfig();
   const tv = useVerticalTerms();
   // Phase 4 of seen-verticals-readiness-task.md: the activity's own
   // measurement set (thobe for men's tailoring, as before; none -- the
@@ -706,6 +707,8 @@ function TailoringOrderFormBody({
         discountAmount: canDiscount ? Number(data.discountAmount || 0) : 0,
         paymentMethod: data.paymentMethod || 'cash',
         deliveryDate: data.deliveryDate,
+        occasionDate: (data as any).occasionDate || undefined,
+        isUrgent: !!(data as any).isUrgent,
         assignedTailorId: data.assignedTailorId,
         notes: data.notes,
         images: data.images,
@@ -949,6 +952,18 @@ function TailoringOrderFormBody({
                 />
               </div>
             </div>
+
+            {/* The occasion and «مستعجل» -- women's tailoring (seen-open-verticals-task.md, wave 1). */}
+            {vertical === 'womens_tailoring' && (
+              <OccasionFields
+                occasionDate={watch('occasionDate' as any) || ''}
+                isUrgent={!!watch('isUrgent' as any)}
+                onChange={(next) => {
+                  if (next.occasionDate !== undefined) setValue('occasionDate' as any, next.occasionDate, { shouldDirty: true });
+                  if (next.isUrgent !== undefined) setValue('isUrgent' as any, next.isUrgent, { shouldDirty: true });
+                }}
+              />
+            )}
 
             {/* Measurements -- only for an activity that takes them (Phase 4). */}
             {selectedCustomer && hasBodyMeasurements && (

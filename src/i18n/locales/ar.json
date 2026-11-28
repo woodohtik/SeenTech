@@ -2491,7 +2491,14 @@
       "close": "إغلاق",
       "next": "الصورة التالية",
       "prev": "الصورة السابقة"
-    }
+    },
+    "occasion_date": "تاريخ المناسبة",
+    "occasion_date_placeholder": "زواج، عيد، تخرج…",
+    "urgent": "الأولوية",
+    "urgent_label": "مستعجل",
+    "urgent_badge": "مستعجل",
+    "occasion_badge": "المناسبة {{date}}",
+    "sort_occasion": "الأقرب للمناسبة"
   },
   "permissions": {
     "access_denied_desc": "غير محدد",

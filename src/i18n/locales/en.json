@@ -2491,7 +2491,14 @@
       "close": "Close",
       "next": "Next photo",
       "prev": "Previous photo"
-    }
+    },
+    "occasion_date": "Occasion date",
+    "occasion_date_placeholder": "Wedding, Eid, graduation…",
+    "urgent": "Priority",
+    "urgent_label": "Urgent",
+    "urgent_badge": "Urgent",
+    "occasion_badge": "Occasion {{date}}",
+    "sort_occasion": "Nearest occasion first"
   },
   "permissions": {
     "access_denied_desc": "Not specified",

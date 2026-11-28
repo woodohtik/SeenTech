@@ -1,4 +1,6 @@
 "use client";
+import { sortByOccasion } from '../utils/orderOccasion';
+import { OccasionBadges } from './orders/OccasionBadges';
 import { canSeeMeasurements } from '../utils/measurementPrivacy';
 import { contentReached } from '../lib/shellLayout';
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
@@ -318,7 +320,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
   const [searchParams] = useSearchParams();
   const { currentStaff } = useStaff();
   const { user: currentAuthUser } = useAuth();
-  const { workflowStages, isLegacyVertical, orderItemFields, capabilities } = useVerticalConfig();
+  const { workflowStages, isLegacyVertical, orderItemFields, capabilities, vertical } = useVerticalConfig();
   const tv = useVerticalTerms();
   const { hasPermission, checkPermission } = usePermissions(currentStaff);
 
@@ -1190,6 +1192,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
     }
   };
 
+  const [sortMode, setSortMode] = useState<'recent' | 'occasion'>('recent');
   const filteredOrders = useMemo(() => {
     const matchesNonSearch = (o: Order) => {
       const matchesStatus = !statusFilter || o.status === statusFilter;
@@ -1220,14 +1223,16 @@ export default function Orders({ tenantId }: { tenantId: string }) {
              searchLower.includes(invoiceNumberStr);
     };
 
+    // seen-open-verticals-task.md, wave 1: «الأقرب للمناسبة» puts the dated orders first.
+    const arrange = (list: Order[]) => (sortMode === 'occasion' ? sortByOccasion(list as any) as Order[] : list);
     const exact = orders.filter(o => matchesNonSearch(o) && matchesSearchExact(o));
-    if (exact.length > 0 || !searchLower.trim()) return exact;
+    if (exact.length > 0 || !searchLower.trim()) return arrange(exact);
 
     // Exact match found nothing -- voice search may have mis-transcribed a
     // letter in the customer's name. Order/invoice numbers aren't
     // fuzzy-matched: they're scanned or typed exactly, never spoken.
-    return orders.filter(o => matchesNonSearch(o) && fuzzyIncludes(o.customerName || '', debouncedSearch));
-  }, [orders, debouncedSearch, statusFilter, startDate, endDate, activeTab]);
+    return arrange(orders.filter(o => matchesNonSearch(o) && fuzzyIncludes(o.customerName || '', debouncedSearch)));
+  }, [orders, debouncedSearch, statusFilter, startDate, endDate, activeTab, sortMode]);
 
   // Sprint 2 pagination project (seen-cto-sprint2-pagination-task.md,
   // second batch): renders filteredOrders a page at a time instead of
@@ -2390,6 +2395,17 @@ export default function Orders({ tenantId }: { tenantId: string }) {
             </div>
           </div>
 
+          {vertical === 'womens_tailoring' && (
+            <button
+              type="button"
+              aria-pressed={sortMode === 'occasion'}
+              onClick={() => setSortMode(sortMode === 'occasion' ? 'recent' : 'occasion')}
+              className={cn('min-h-11 px-4 rounded-xl border text-sm font-bold', sortMode === 'occasion' ? 'bg-brand text-white border-brand' : 'bg-surface text-content border-border hover:border-brand')}
+            >
+              {t('orders.sort_occasion')}
+            </button>
+          )}
+
           {(statusFilter || startDate || endDate) && (
             <button
               onClick={() => {
@@ -2473,6 +2489,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                           <h3 className="text-sm font-black text-content truncate hover:text-brand transition-colors">
                             {order.customerName}
                           </h3>
+                          <OccasionBadges order={order as any} />
                           <span className="text-sm bg-surface-muted text-content-muted px-2 py-0.5 rounded-md font-bold shrink-0 border border-border/60">
                             #{order.orderNumber || order.id.slice(-6).toUpperCase()}
                           </span>
@@ -2711,6 +2728,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                         <h3 className="text-xl font-black text-content">
                           {order.customerName}
                         </h3>
+                        <OccasionBadges order={order as any} />
                         {orderDue > 0 && (
                           <button
                             onClick={(e) => {

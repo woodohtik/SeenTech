@@ -16,6 +16,8 @@ DECLARE
   v_existing    jsonb;
   v_order       record;
   v_changes     jsonb := COALESCE(p_changes, '{}'::jsonb);
+  v_occasion    date;
+  v_urgent      boolean;
   v_reason      text := NULLIF(btrim(COALESCE(p_reason, '')), '');
   v_notes       text[] := '{}';
   v_delivery    timestamptz;
@@ -87,6 +89,28 @@ BEGIN
     IF v_tailor IS DISTINCT FROM v_order.assigned_tailor_id THEN
       UPDATE public.orders SET assigned_tailor_id = v_tailor WHERE id = p_order_id;
       v_notes := v_notes || ('الخياط: ' || COALESCE((SELECT name FROM public.staff WHERE id = v_tailor), 'بلا خياط'));
+    END IF;
+  END IF;
+
+  -- seen-open-verticals-task.md, wave 1: the occasion's date and the urgent mark
+  -- (always allowed, like the delivery date).
+  IF v_changes ? 'occasion_date' THEN
+    BEGIN
+      v_occasion := NULLIF(v_changes->>'occasion_date', '')::date;
+    EXCEPTION WHEN others THEN
+      RAISE EXCEPTION 'تاريخ المناسبة غير صالح' USING ERRCODE = '22023';
+    END;
+    IF v_occasion IS DISTINCT FROM v_order.occasion_date THEN
+      UPDATE public.orders SET occasion_date = v_occasion WHERE id = p_order_id;
+      v_notes := v_notes || ('تاريخ المناسبة: ' || COALESCE(to_char(v_occasion, 'YYYY-MM-DD'), 'بلا'));
+    END IF;
+  END IF;
+
+  IF v_changes ? 'is_urgent' THEN
+    v_urgent := COALESCE((v_changes->>'is_urgent')::boolean, false);
+    IF v_urgent IS DISTINCT FROM v_order.is_urgent THEN
+      UPDATE public.orders SET is_urgent = v_urgent WHERE id = p_order_id;
+      v_notes := v_notes || (CASE WHEN v_urgent THEN 'مستعجل' ELSE 'غير مستعجل' END);
     END IF;
   END IF;
 

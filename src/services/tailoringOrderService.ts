@@ -55,6 +55,9 @@ export interface CreateTailoringOrderInput {
   paymentMethod: string;
   discountAmount: number;
   deliveryDate: string;
+  /** The occasion's date, YYYY-MM-DD (seen-open-verticals-task.md, wave 1). */
+  occasionDate?: string;
+  isUrgent?: boolean;
   assignedTailorId?: string;
   notes?: string;
   images?: string[];
@@ -98,6 +101,8 @@ export async function createTailoringOrder(input: CreateTailoringOrderInput): Pr
       customer_id: customer?.id || '',
       delivery_date: input.deliveryDate ? new Date(input.deliveryDate).toISOString() : new Date().toISOString(),
       assigned_tailor_id: input.assignedTailorId || '',
+      occasion_date: input.occasionDate || '',
+      is_urgent: !!input.isUrgent,
       notes: input.notes || '',
       images: input.images || [],
       is_test: !!input.isTest,

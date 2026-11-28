@@ -195,7 +195,8 @@ BEGIN
     id, tenant_id, branch_id, customer_id, customer_name, order_number,
     status, status_key, payment_method, total_amount, paid_amount,
     tax_rate, tax_amount, discount_amount, order_date, delivery_date,
-    qr_code, images, notes, created_by, is_test, assigned_tailor_id, kind
+    qr_code, images, notes, created_by, is_test, assigned_tailor_id, kind,
+    occasion_date, is_urgent
   ) VALUES (
     p_operation_id, v_tenant, v_branch, v_customer_id, v_customer_name, v_order_number,
     v_status, v_status_key, v_method, v_total, 0,
@@ -204,7 +205,9 @@ BEGIN
     'tailor-order-' || p_operation_id::text,
     CASE WHEN jsonb_typeof(p_order->'images') = 'array' THEN p_order->'images' ELSE '[]'::jsonb END,
     NULLIF(p_order->>'notes', ''), v_staff,
-    COALESCE((p_order->>'is_test')::boolean, false), v_tailor, 'tailoring'
+    COALESCE((p_order->>'is_test')::boolean, false), v_tailor, 'tailoring',
+    -- seen-open-verticals-task.md, wave 1: the occasion and the urgent mark.
+    NULLIF(p_order->>'occasion_date', '')::date, COALESCE((p_order->>'is_urgent')::boolean, false)
   );
 
   FOR v_item IN SELECT * FROM jsonb_array_elements(p_items) LOOP
