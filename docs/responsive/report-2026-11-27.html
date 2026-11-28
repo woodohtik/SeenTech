@@ -1,0 +1,401 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>مقارنة التخطيط</title>
+<style>
+  :root { --bg: #f6f7f9; --card: #ffffff; --text: #1b1f24; --muted: #5b6470; --line: #dde1e6; --good: #0a7a3d; --bad: #b3261e; }
+  @media (prefers-color-scheme: dark) { :root { --bg: #121417; --card: #1b1e22; --text: #eceff2; --muted: #a3acb6; --line: #2c3138; --good: #4fd18b; --bad: #ff8a80; } }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.6 system-ui, "Segoe UI", Tahoma, sans-serif; }
+  main { max-width: 1200px; margin: 0 auto; padding: 24px 16px 64px; }
+  h1 { font-size: 1.6rem; margin: 0 0 4px; }
+  p.lead { color: var(--muted); margin: 0 0 24px; }
+  table { border-collapse: collapse; background: var(--card); border: 1px solid var(--line); margin-bottom: 32px; min-width: 320px; }
+  th, td { padding: 8px 14px; border-bottom: 1px solid var(--line); text-align: start; font-variant-numeric: tabular-nums; }
+  td.good { color: var(--good); font-weight: 700; } td.bad { color: var(--bad); font-weight: 700; }
+  section { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 16px; margin-bottom: 24px; }
+  h2 { margin: 0 0 12px; font-size: 1.2rem; }
+  .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-items: start; margin-bottom: 16px; }
+  .pair h3 { grid-column: 1 / -1; margin: 8px 0 0; font-size: 1rem; color: var(--muted); }
+  figure { margin: 0; } figcaption { font-size: .9rem; color: var(--muted); margin-bottom: 4px; }
+  img { width: 100%; height: auto; border: 1px solid var(--line); border-radius: 8px; background: #fff; }
+  @media (max-width: 640px) { .pair { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<main>
+  <h1>مقارنة التخطيط: قبل وبعد</h1>
+  <p class="lead">حارس التخطيط (e2e/golden/zz-layout-guard.spec.ts) على محل الاختبار في CI، بيانات وهمية فقط. 151 فشل قبل، 0 بعد.</p>
+  <table>
+    <thead><tr><th>الفحص</th><th>قبل</th><th>بعد</th></tr></thead>
+    <tbody>
+      <tr><td>dialog-focus</td><td>36</td><td class="good">0</td></tr><tr><td>dialog-role</td><td>24</td><td class="good">0</td></tr><tr><td>field-height</td><td>6</td><td class="good">0</td></tr><tr><td>misaligned-row</td><td>7</td><td class="good">0</td></tr><tr><td>target-under-24</td><td>78</td><td class="good">0</td></tr>
+      <tr><th>المجموع (فشل)</th><th>151</th><th>0</th></tr>
+      <tr><td>تحذيرات</td><td>72</td><td>72</td></tr>
+    </tbody>
+  </table>
+  
+  <section>
+    <h2>customers</h2>
+    
+    <div class="pair">
+      <h3>390px</h3>
+      <figure><figcaption>قبل</figcaption><img loading="lazy" src="baseline-2026-11-27/390/customers.png" alt="customers قبل، 390"></figure>
+      <figure><figcaption>بعد</figcaption><img loading="lazy" src="after-2026-11-28/390/customers.png" alt="customers بعد، 390"></figure>
+    </div>
+    <div class="pair">
+      <h3>820px</h3>
+      <figure><figcaption>قبل</figcaption><img loading="lazy" src="baseline-2026-11-27/820/customers.png" alt="customers قبل، 820"></figure>
+      <figure><figcaption>بعد</figcaption><img loading="lazy" src="after-2026-11-28/820/customers.png" alt="customers بعد، 820"></figure>
+    </div>
+    <div class="pair">
+      <h3>1024px</h3>
+      <figure><figcaption>قبل</figcaption><img loading="lazy" src="baseline-2026-11-27/1024/customers.png" alt="customers قبل، 1024"></figure>
+      <figure><figcaption>بعد</figcaption><img loading="lazy" src="after-2026-11-28/1024/customers.png" alt="customers بعد، 1024"></figure>
+    </div>
+    <div class="pair">
+      <h3>1280px</h3>
+      <figure><figcaption>قبل</figcaption><img loading="lazy" src="baseline-2026-11-27/1280/customers.png" alt="customers قبل، 1280"></figure>
+      <figure><figcaption>بعد</figcaption><img loading="lazy" src="after-2026-11-28/1280/customers.png" alt="customers بعد، 1280"></figure>
+    </div>
+  </section>
+  <section>
+    <h2>dashboard</h2>
+    
+    <div class="pair">
+      <h3>390px</h3>
+      <figure><figcaption>قبل</figcaption><img loading="lazy" src="baseline-2026-11-27/390/dashboard.png" alt="dashboard قبل، 390"></figure>
+      <figure><figcaption>بعد</figcaption><img loading="lazy" src="after-2026-11-28/390/dashboard.png" alt="dashboard بعد، 390"></figure>
+    </div>
+    <div class="pair">
+      <h3>820px</h3>
+      <figure><figcaption>قبل</figcaption><img loading="lazy" src="baseline-2026-11-27/820/dashboard.png" alt="dashboard قبل، 820"></figure>
+      <figure><figcaption>بعد</figcaption><img loading="lazy" src="after-2026-11-28/820/dashboard.png" alt="dashboard بعد، 820"></figure>
+    </div>
+    <div class="pair">
+      <h3>1024px</h3>
+      <figure><figcaption>قبل</figcaption><img loading="lazy" src="baseline-2026-11-27/1024/dashboard.png" alt="dashboard قبل، 1024"></figure>
+      <figure><figcaption>بعد</figcaption><img loading="lazy" src="after-2026-11-28/1024/dashboard.png" alt="dashboard بعد، 1024"></figure>
+    </div>
+    <div class="pair">
+      <h3>1280px</h3>
+      <figure><figcaption>قبل</figcaption><img loading="lazy" src="baseline-2026-11-27/1280/dashboard.png" alt="dashboard قبل، 1280"></figure>
+      <figure><figcaption>بعد</figcaption><img loading="lazy" src="after-2026-11-28/1280/dashboard.png" alt="dashboard بعد، 1280"></figure>
+    </div>
+  </section>
+  <section>
+    <h2>inventory</h2>
+    
+    <div class="pair">
+      <h3>390px</h3>
+      <figure><figcaption>قبل</figcaption><img loading="lazy" src="baseline-2026-11-27/390/inventory.png" alt="inventory قبل، 390"></figure>
+      <figure><figcaption>بعد</figcaption><img loading="lazy" src="after-2026-11-28/390/inventory.png" alt="inventory بعد، 390"></figure>
+    </div>
+    <div class="pair">
+      <h3>820px</h3>
+      <figure><figcaption>قبل</figcaption><img loading="lazy" src="baseline-2026-11-27/820/inventory.png" alt="inventory قبل، 820"></figure>
+      <figure><figcaption>بعد</figcaption><img loading="lazy" src="after-2026-11-28/820/inventory.png" alt="inventory بعد، 820"></figure>
+    </div>
+    <div class="pair">
+      <h3>1024px</h3>
+      <figure><figcaption>قبل</figcaption><img loading="lazy" src="baseline-2026-11-27/1024/inventory.png" alt="inventory قبل، 1024"></figure>
+      <figure><figcaption>بعد</figcaption><img loading="lazy" src="after-2026-11-28/1024/inventory.png" alt="inventory بعد، 1024"></figure>
+    </div>
+    <div class="pair">
+      <h3>1280px</h3>
+      <figure><figcaption>قبل</figcaption><img loading="lazy" src="baseline-2026-11-27/1280/inventory.png" alt="inventory قبل، 1280"></figure>
+      <figure><figcaption>بعد</figcaption><img loading="lazy" src="after-2026-11-28/1280/inventory.png" alt="inventory بعد، 1280"></figure>
+    </div>
+  </section>
+  <section>
+    <h2>modal-add-customer</h2>
+    
+    <div class="pair">
+      <h3>390px</h3>
+      <figure><figcaption>قبل</figcaption><img loading="lazy" src="baseline-2026-11-27/390/modal-add-customer.png" alt="modal-add-customer قبل، 390"></figure>
+      <figure><figcaption>بعد</figcaption><img loading="lazy" src="after-2026-11-28/390/modal-add-customer.png" alt="modal-add-customer بعد، 390"></figure>
+    </div>
+    <div class="pair">
+      <h3>820px</h3>
+      <figure><figcaption>قبل</figcaption><img loading="lazy" src="baseline-2026-11-27/820/modal-add-customer.png" alt="modal-add-customer قبل، 820"></figure>
+      <figure><figcaption>بعد</figcaption><img loading="lazy" src="after-2026-11-28/820/modal-add-customer.png" alt="modal-add-customer بعد، 820"></figure>
+    </div>
+    <div class="pair">
+      <h3>1024px</h3>
+      <figure><figcaption>قبل</figcaption><img loading="lazy" src="baseline-2026-11-27/1024/modal-add-customer.png" alt="modal-add-customer قبل، 1024"></figure>
+      <figure><figcaption>بعد</figcaption><img loading="lazy" src="after-2026-11-28/1024/modal-add-customer.png" alt="modal-add-customer بعد، 1024"></figure>
+    </div>
+    <div class="pair">
+      <h3>1280px</h3>
+      <figure><figcaption>قبل</figcaption><img loading="lazy" src="baseline-2026-11-27/1280/modal-add-customer.png" alt="modal-add-customer قبل، 1280"></figure>
+      <figure><figcaption>بعد</figcaption><img loading="lazy" src="after-2026-11-28/1280/modal-add-customer.png" alt="modal-add-customer بعد، 1280"></figure>
+    </div>
+  </section>
+  <section>
+    <h2>modal-add-product</h2>
+    
+    <div class="pair">
+      <h3>390px</h3>
+      <figure><figcaption>قبل</figcaption><img loading="lazy" src="baseline-2026-11-27/390/modal-add-product.png" alt="modal-add-product قبل، 390"></figure>
+      <figure><figcaption>بعد</figcaption><img loading="lazy" src="after-2026-11-28/390/modal-add-product.png" alt="modal-add-product بعد، 390"></figure>
+    </div>
+    <div class="pair">
+      <h3>820px</h3>
+      <figure><figcaption>قبل</figcaption><img loading="lazy" src="baseline-2026-11-27/820/modal-add-product.png" alt="modal-add-product قبل، 820"></figure>
+      <figure><figcaption>بعد</figcaption><img loading="lazy" src="after-2026-11-28/820/modal-add-product.png" alt="modal-add-product بعد، 820"></figure>
+    </div>
+    <div class="pair">
+      <h3>1024px</h3>
+      <figure><figcaption>قبل</figcaption><img loading="lazy" src="baseline-2026-11-27/1024/modal-add-product.png" alt="modal-add-product قبل، 1024"></figure>
+      <figure><figcaption>بعد</figcaption><img loading="lazy" src="after-2026-11-28/1024/modal-add-product.png" alt="modal-add-product بعد، 1024"></figure>
+    </div>
+    <div class="pair">
+      <h3>1280px</h3>
+      <figure><figcaption>قبل</figcaption><img loading="lazy" src="baseline-2026-11-27/1280/modal-add-product.png" alt="modal-add-product قبل، 1280"></figure>
+      <figure><figcaption>بعد</figcaption><img loading="lazy" src="after-2026-11-28/1280/modal-add-product.png" alt="modal-add-product بعد، 1280"></figure>
+    </div>
+  </section>
+  <section>
+    <h2>modal-add-staff</h2>
+    
+    <div class="pair">
+      <h3>390px</h3>
+      <figure><figcaption>قبل</figcaption><img loading="lazy" src="baseline-2026-11-27/390/modal-add-staff.png" alt="modal-add-staff قبل، 390"></figure>
+      <figure><figcaption>بعد</figcaption><img loading="lazy" src="after-2026-11-28/390/modal-add-staff.png" alt="modal-add-staff بعد، 390"></figure>
+    </div>
+    <div class="pair">
+      <h3>820px</h3>
+      <figure><figcaption>قبل</figcaption><img loading="lazy" src="baseline-2026-11-27/820/modal-add-staff.png" alt="modal-add-staff قبل، 820"></figure>
+      <figure><figcaption>بعد</figcaption><img loading="lazy" src="after-2026-11-28/820/modal-add-staff.png" alt="modal-add-staff بعد، 820"></figure>
+    </div>
+    <div class="pair">
+      <h3>1024px</h3>
+      <figure><figcaption>قبل</figcaption><img loading="lazy" src="baseline-2026-11-27/1024/modal-add-staff.png" alt="modal-add-staff قبل، 1024"></figure>
+      <figure><figcaption>بعد</figcaption><img loading="lazy" src="after-2026-11-28/1024/modal-add-staff.png" alt="modal-add-staff بعد، 1024"></figure>
+    </div>
+    <div class="pair">
+      <h3>1280px</h3>
+      <figure><figcaption>قبل</figcaption><img loading="lazy" src="baseline-2026-11-27/1280/modal-add-staff.png" alt="modal-add-staff قبل، 1280"></figure>
+      <figure><figcaption>بعد</figcaption><img loading="lazy" src="after-2026-11-28/1280/modal-add-staff.png" alt="modal-add-staff بعد، 1280"></figure>
+    </div>
+  </section>
+  <section>
+    <h2>modal-add-supplier</h2>
+    
+    <div class="pair">
+      <h3>390px</h3>
+      <figure><figcaption>قبل</figcaption><img loading="lazy" src="baseline-2026-11-27/390/modal-add-supplier.png" alt="modal-add-supplier قبل، 390"></figure>
+      <figure><figcaption>بعد</figcaption><img loading="lazy" src="after-2026-11-28/390/modal-add-supplier.png" alt="modal-add-supplier بعد، 390"></figure>
+    </div>
+    <div class="pair">
+      <h3>820px</h3>
+      <figure><figcaption>قبل</figcaption><img loading="lazy" src="baseline-2026-11-27/820/modal-add-supplier.png" alt="modal-add-supplier قبل، 820"></figure>
+      <figure><figcaption>بعد</figcaption><img loading="lazy" src="after-2026-11-28/820/modal-add-supplier.png" alt="modal-add-supplier بعد، 820"></figure>
+    </div>
+    <div class="pair">
+      <h3>1024px</h3>
+      <figure><figcaption>قبل</figcaption><img loading="lazy" src="baseline-2026-11-27/1024/modal-add-supplier.png" alt="modal-add-supplier قبل، 1024"></figure>
+      <figure><figcaption>بعد</figcaption><img loading="lazy" src="after-2026-11-28/1024/modal-add-supplier.png" alt="modal-add-supplier بعد، 1024"></figure>
+    </div>
+    <div class="pair">
+      <h3>1280px</h3>
+      <figure><figcaption>قبل</figcaption><img loading="lazy" src="baseline-2026-11-27/1280/modal-add-supplier.png" alt="modal-add-supplier قبل، 1280"></figure>
+      <figure><figcaption>بعد</figcaption><img loading="lazy" src="after-2026-11-28/1280/modal-add-supplier.png" alt="modal-add-supplier بعد، 1280"></figure>
+    </div>
+  </section>
+  <section>
+    <h2>modal-new-order</h2>
+    
+    <div class="pair">
+      <h3>390px</h3>
+      <figure><figcaption>قبل</figcaption><img loading="lazy" src="baseline-2026-11-27/390/modal-new-order.png" alt="modal-new-order قبل، 390"></figure>
+      <figure><figcaption>بعد</figcaption><img loading="lazy" src="after-2026-11-28/390/modal-new-order.png" alt="modal-new-order بعد، 390"></figure>
+    </div>
+    <div class="pair">
+      <h3>820px</h3>
+      <figure><figcaption>قبل</figcaption><img loading="lazy" src="baseline-2026-11-27/820/modal-new-order.png" alt="modal-new-order قبل، 820"></figure>
+      <figure><figcaption>بعد</figcaption><img loading="lazy" src="after-2026-11-28/820/modal-new-order.png" alt="modal-new-order بعد، 820"></figure>
+    </div>
+    <div class="pair">
+      <h3>1024px</h3>
+      <figure><figcaption>قبل</figcaption><img loading="lazy" src="baseline-2026-11-27/1024/modal-new-order.png" alt="modal-new-order قبل، 1024"></figure>
+      <figure><figcaption>بعد</figcaption><img loading="lazy" src="after-2026-11-28/1024/modal-new-order.png" alt="modal-new-order بعد، 1024"></figure>
+    </div>
+    <div class="pair">
+      <h3>1280px</h3>
+      <figure><figcaption>قبل</figcaption><img loading="lazy" src="baseline-2026-11-27/1280/modal-new-order.png" alt="modal-new-order قبل، 1280"></figure>
+      <figure><figcaption>بعد</figcaption><img loading="lazy" src="after-2026-11-28/1280/modal-new-order.png" alt="modal-new-order بعد، 1280"></figure>
+    </div>
+  </section>
+  <section>
+    <h2>modal-new-po</h2>
+    
+    <div class="pair">
+      <h3>390px</h3>
+      <figure><figcaption>قبل</figcaption><img loading="lazy" src="baseline-2026-11-27/390/modal-new-po.png" alt="modal-new-po قبل، 390"></figure>
+      <figure><figcaption>بعد</figcaption><img loading="lazy" src="after-2026-11-28/390/modal-new-po.png" alt="modal-new-po بعد، 390"></figure>
+    </div>
+    <div class="pair">
+      <h3>820px</h3>
+      <figure><figcaption>قبل</figcaption><img loading="lazy" src="baseline-2026-11-27/820/modal-new-po.png" alt="modal-new-po قبل، 820"></figure>
+      <figure><figcaption>بعد</figcaption><img loading="lazy" src="after-2026-11-28/820/modal-new-po.png" alt="modal-new-po بعد، 820"></figure>
+    </div>
+    <div class="pair">
+      <h3>1024px</h3>
+      <figure><figcaption>قبل</figcaption><img loading="lazy" src="baseline-2026-11-27/1024/modal-new-po.png" alt="modal-new-po قبل، 1024"></figure>
+      <figure><figcaption>بعد</figcaption><img loading="lazy" src="after-2026-11-28/1024/modal-new-po.png" alt="modal-new-po بعد، 1024"></figure>
+    </div>
+    <div class="pair">
+      <h3>1280px</h3>
+      <figure><figcaption>قبل</figcaption><img loading="lazy" src="baseline-2026-11-27/1280/modal-new-po.png" alt="modal-new-po قبل، 1280"></figure>
+      <figure><figcaption>بعد</figcaption><img loading="lazy" src="after-2026-11-28/1280/modal-new-po.png" alt="modal-new-po بعد، 1280"></figure>
+    </div>
+  </section>
+  <section>
+    <h2>orders</h2>
+    
+    <div class="pair">
+      <h3>390px</h3>
+      <figure><figcaption>قبل</figcaption><img loading="lazy" src="baseline-2026-11-27/390/orders.png" alt="orders قبل، 390"></figure>
+      <figure><figcaption>بعد</figcaption><img loading="lazy" src="after-2026-11-28/390/orders.png" alt="orders بعد، 390"></figure>
+    </div>
+    <div class="pair">
+      <h3>820px</h3>
+      <figure><figcaption>قبل</figcaption><img loading="lazy" src="baseline-2026-11-27/820/orders.png" alt="orders قبل، 820"></figure>
+      <figure><figcaption>بعد</figcaption><img loading="lazy" src="after-2026-11-28/820/orders.png" alt="orders بعد، 820"></figure>
+    </div>
+    <div class="pair">
+      <h3>1024px</h3>
+      <figure><figcaption>قبل</figcaption><img loading="lazy" src="baseline-2026-11-27/1024/orders.png" alt="orders قبل، 1024"></figure>
+      <figure><figcaption>بعد</figcaption><img loading="lazy" src="after-2026-11-28/1024/orders.png" alt="orders بعد، 1024"></figure>
+    </div>
+    <div class="pair">
+      <h3>1280px</h3>
+      <figure><figcaption>قبل</figcaption><img loading="lazy" src="baseline-2026-11-27/1280/orders.png" alt="orders قبل، 1280"></figure>
+      <figure><figcaption>بعد</figcaption><img loading="lazy" src="after-2026-11-28/1280/orders.png" alt="orders بعد، 1280"></figure>
+    </div>
+  </section>
+  <section>
+    <h2>referral</h2>
+    
+    <div class="pair">
+      <h3>390px</h3>
+      <figure><figcaption>قبل</figcaption><img loading="lazy" src="baseline-2026-11-27/390/referral.png" alt="referral قبل، 390"></figure>
+      <figure><figcaption>بعد</figcaption><img loading="lazy" src="after-2026-11-28/390/referral.png" alt="referral بعد، 390"></figure>
+    </div>
+    <div class="pair">
+      <h3>820px</h3>
+      <figure><figcaption>قبل</figcaption><img loading="lazy" src="baseline-2026-11-27/820/referral.png" alt="referral قبل، 820"></figure>
+      <figure><figcaption>بعد</figcaption><img loading="lazy" src="after-2026-11-28/820/referral.png" alt="referral بعد، 820"></figure>
+    </div>
+    <div class="pair">
+      <h3>1024px</h3>
+      <figure><figcaption>قبل</figcaption><img loading="lazy" src="baseline-2026-11-27/1024/referral.png" alt="referral قبل، 1024"></figure>
+      <figure><figcaption>بعد</figcaption><img loading="lazy" src="after-2026-11-28/1024/referral.png" alt="referral بعد، 1024"></figure>
+    </div>
+    <div class="pair">
+      <h3>1280px</h3>
+      <figure><figcaption>قبل</figcaption><img loading="lazy" src="baseline-2026-11-27/1280/referral.png" alt="referral قبل، 1280"></figure>
+      <figure><figcaption>بعد</figcaption><img loading="lazy" src="after-2026-11-28/1280/referral.png" alt="referral بعد، 1280"></figure>
+    </div>
+  </section>
+  <section>
+    <h2>reports</h2>
+    
+    <div class="pair">
+      <h3>390px</h3>
+      <figure><figcaption>قبل</figcaption><img loading="lazy" src="baseline-2026-11-27/390/reports.png" alt="reports قبل، 390"></figure>
+      <figure><figcaption>بعد</figcaption><img loading="lazy" src="after-2026-11-28/390/reports.png" alt="reports بعد، 390"></figure>
+    </div>
+    <div class="pair">
+      <h3>820px</h3>
+      <figure><figcaption>قبل</figcaption><img loading="lazy" src="baseline-2026-11-27/820/reports.png" alt="reports قبل، 820"></figure>
+      <figure><figcaption>بعد</figcaption><img loading="lazy" src="after-2026-11-28/820/reports.png" alt="reports بعد، 820"></figure>
+    </div>
+    <div class="pair">
+      <h3>1024px</h3>
+      <figure><figcaption>قبل</figcaption><img loading="lazy" src="baseline-2026-11-27/1024/reports.png" alt="reports قبل، 1024"></figure>
+      <figure><figcaption>بعد</figcaption><img loading="lazy" src="after-2026-11-28/1024/reports.png" alt="reports بعد، 1024"></figure>
+    </div>
+    <div class="pair">
+      <h3>1280px</h3>
+      <figure><figcaption>قبل</figcaption><img loading="lazy" src="baseline-2026-11-27/1280/reports.png" alt="reports قبل، 1280"></figure>
+      <figure><figcaption>بعد</figcaption><img loading="lazy" src="after-2026-11-28/1280/reports.png" alt="reports بعد، 1280"></figure>
+    </div>
+  </section>
+  <section>
+    <h2>sales</h2>
+    
+    <div class="pair">
+      <h3>390px</h3>
+      <figure><figcaption>قبل</figcaption><img loading="lazy" src="baseline-2026-11-27/390/sales.png" alt="sales قبل، 390"></figure>
+      <figure><figcaption>بعد</figcaption><img loading="lazy" src="after-2026-11-28/390/sales.png" alt="sales بعد، 390"></figure>
+    </div>
+    <div class="pair">
+      <h3>820px</h3>
+      <figure><figcaption>قبل</figcaption><img loading="lazy" src="baseline-2026-11-27/820/sales.png" alt="sales قبل، 820"></figure>
+      <figure><figcaption>بعد</figcaption><img loading="lazy" src="after-2026-11-28/820/sales.png" alt="sales بعد، 820"></figure>
+    </div>
+    <div class="pair">
+      <h3>1024px</h3>
+      <figure><figcaption>قبل</figcaption><img loading="lazy" src="baseline-2026-11-27/1024/sales.png" alt="sales قبل، 1024"></figure>
+      <figure><figcaption>بعد</figcaption><img loading="lazy" src="after-2026-11-28/1024/sales.png" alt="sales بعد، 1024"></figure>
+    </div>
+    <div class="pair">
+      <h3>1280px</h3>
+      <figure><figcaption>قبل</figcaption><img loading="lazy" src="baseline-2026-11-27/1280/sales.png" alt="sales قبل، 1280"></figure>
+      <figure><figcaption>بعد</figcaption><img loading="lazy" src="after-2026-11-28/1280/sales.png" alt="sales بعد، 1280"></figure>
+    </div>
+  </section>
+  <section>
+    <h2>settings</h2>
+    
+    <div class="pair">
+      <h3>390px</h3>
+      <figure><figcaption>قبل</figcaption><img loading="lazy" src="baseline-2026-11-27/390/settings.png" alt="settings قبل، 390"></figure>
+      <figure><figcaption>بعد</figcaption><img loading="lazy" src="after-2026-11-28/390/settings.png" alt="settings بعد، 390"></figure>
+    </div>
+    <div class="pair">
+      <h3>820px</h3>
+      <figure><figcaption>قبل</figcaption><img loading="lazy" src="baseline-2026-11-27/820/settings.png" alt="settings قبل، 820"></figure>
+      <figure><figcaption>بعد</figcaption><img loading="lazy" src="after-2026-11-28/820/settings.png" alt="settings بعد، 820"></figure>
+    </div>
+    <div class="pair">
+      <h3>1024px</h3>
+      <figure><figcaption>قبل</figcaption><img loading="lazy" src="baseline-2026-11-27/1024/settings.png" alt="settings قبل، 1024"></figure>
+      <figure><figcaption>بعد</figcaption><img loading="lazy" src="after-2026-11-28/1024/settings.png" alt="settings بعد، 1024"></figure>
+    </div>
+    <div class="pair">
+      <h3>1280px</h3>
+      <figure><figcaption>قبل</figcaption><img loading="lazy" src="baseline-2026-11-27/1280/settings.png" alt="settings قبل، 1280"></figure>
+      <figure><figcaption>بعد</figcaption><img loading="lazy" src="after-2026-11-28/1280/settings.png" alt="settings بعد، 1280"></figure>
+    </div>
+  </section>
+  <section>
+    <h2>suppliers</h2>
+    
+    <div class="pair">
+      <h3>390px</h3>
+      <figure><figcaption>قبل</figcaption><img loading="lazy" src="baseline-2026-11-27/390/suppliers.png" alt="suppliers قبل، 390"></figure>
+      <figure><figcaption>بعد</figcaption><img loading="lazy" src="after-2026-11-28/390/suppliers.png" alt="suppliers بعد، 390"></figure>
+    </div>
+    <div class="pair">
+      <h3>820px</h3>
+      <figure><figcaption>قبل</figcaption><img loading="lazy" src="baseline-2026-11-27/820/suppliers.png" alt="suppliers قبل، 820"></figure>
+      <figure><figcaption>بعد</figcaption><img loading="lazy" src="after-2026-11-28/820/suppliers.png" alt="suppliers بعد، 820"></figure>
+    </div>
+    <div class="pair">
+      <h3>1024px</h3>
+      <figure><figcaption>قبل</figcaption><img loading="lazy" src="baseline-2026-11-27/1024/suppliers.png" alt="suppliers قبل، 1024"></figure>
+      <figure><figcaption>بعد</figcaption><img loading="lazy" src="after-2026-11-28/1024/suppliers.png" alt="suppliers بعد، 1024"></figure>
+    </div>
+    <div class="pair">
+      <h3>1280px</h3>
+      <figure><figcaption>قبل</figcaption><img loading="lazy" src="baseline-2026-11-27/1280/suppliers.png" alt="suppliers قبل، 1280"></figure>
+      <figure><figcaption>بعد</figcaption><img loading="lazy" src="after-2026-11-28/1280/suppliers.png" alt="suppliers بعد، 1280"></figure>
+    </div>
+  </section>
+</main>
+</body>
+</html>

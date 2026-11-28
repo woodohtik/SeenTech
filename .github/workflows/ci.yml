@@ -173,15 +173,18 @@ jobs:
           GOLDEN_SERVICE_ROLE_KEY: ${{ env.SERVICE_ROLE_KEY }}
         run: npx playwright test -c playwright.golden.config.ts zz-screens || true
 
-      # seen-ui-responsive-alignment-audit-task.md, phase 0: the layout guard,
-      # report-only until phases 1-2 are green (then GOLDEN_LAYOUT_STRICT, on every branch).
+      # seen-ui-responsive-alignment-audit-task.md, phase 0: the layout guard --
+      # strict on every branch since phases 1-2 went green (0 fails, 28 Nov 2026):
+      # a page wider than the window, misaligned fields, a field not 48px, a window
+      # that is not a dialog or leaves the focus behind, a covered button, a tap
+      # target under 24px fail the run. Warnings stay in golden-layout/report.json.
       - name: Layout guard
-        if: always() && startsWith(github.ref, 'refs/heads/ci/')
         env:
           GOLDEN_LAYOUT: '1'
+          GOLDEN_LAYOUT_STRICT: '1'
           GOLDEN_SUPABASE_URL: ${{ env.API_URL }}
           GOLDEN_SERVICE_ROLE_KEY: ${{ env.SERVICE_ROLE_KEY }}
-        run: npx playwright test -c playwright.golden.config.ts zz-layout-guard || true
+        run: npx playwright test -c playwright.golden.config.ts zz-layout-guard
 
       - uses: actions/upload-artifact@v4
         if: always()

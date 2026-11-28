@@ -2382,7 +2382,8 @@ export default function Orders({ tenantId }: { tenantId: string }) {
             <div className="min-w-[140px]">
               <DatePicker value={startDate} onChange={setStartDate} placeholder={t('common.from', 'من')} triggerClassName="bg-surface hover:bg-surface border-border rounded-xl shadow-none" />
             </div>
-            <span className="text-content-muted text-sm">{t('orders.to')}</span>
+            {/* One range «من — إلى»: the second field already says «إلى» (audit finding 09). */}
+            <span className="text-content-muted text-sm" aria-hidden="true">—</span>
             <div className="min-w-[140px]">
               <DatePicker value={endDate} onChange={setEndDate} placeholder={t('common.to', 'إلى')} triggerClassName="bg-surface hover:bg-surface border-border rounded-xl shadow-none" />
             </div>

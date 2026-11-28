@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, X, ChevronDown } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../../lib/utils';
@@ -212,9 +212,8 @@ export function DatePicker({ value, onChange, id, className, placeholder, trigge
               <X size={14} />
             </span>
           )}
-          <span className="text-sm text-brand bg-brand/10 hover:bg-brand/20 transition-all rounded-lg px-2 py-0.5">
-            {t('common.date_picker.change')}
-          </span>
+          {/* A field like the others: a chevron, not a «تغيير» chip that read as a second button (audit, phase 1.5). */}
+          <ChevronDown size={16} className="text-content-muted" aria-hidden="true" />
         </div>
       </button>
 
