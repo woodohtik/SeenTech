@@ -207,6 +207,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
       nameEn: d.name_en,
       minThreshold: d.min_threshold,
       pricePerUnit: d.price_per_unit,
+      wholesalePrice: d.wholesale_price == null ? 0 : Number(d.wholesale_price),
       costPrice: meta.costPrice || 0,
       taxType: meta.taxType || "exclusive",
       productDescription: meta.originalDescription || d.description || "",
@@ -1752,7 +1753,7 @@ const AddItemModal = ({ onClose, tenantId, branches }: any) => {
   const { dir } = useDirection();
   const { currentStaff } = useStaff();
   const { error: toastError, success: toastSuccess, handleError } = useToast();
-  const { inventoryCategories, isLegacyVertical } = useVerticalConfig();
+  const { inventoryCategories, isLegacyVertical, vertical } = useVerticalConfig();
   const categorySeed = useMemo(
     () =>
       isLegacyVertical
@@ -1788,6 +1789,7 @@ const AddItemModal = ({ onClose, tenantId, branches }: any) => {
     minThreshold: 10,
     pricePerUnit: 0,
     costPrice: 0,
+    wholesalePrice: 0,
     description: "",
     sku: "",
     barcode: "",
@@ -1945,6 +1947,8 @@ const AddItemModal = ({ onClose, tenantId, branches }: any) => {
         fabric_width_cm: isFabricCategory(formData.category) && formData.fabricWidthCm > 0 ? formData.fabricWidthCm : null,
         min_threshold: formData.minThreshold,
         price_per_unit: formData.pricePerUnit,
+        // A fabric store's wholesale price; none = NULL (seen-open-verticals-task.md, wave 1).
+        wholesale_price: Number((formData as any).wholesalePrice) > 0 ? Number((formData as any).wholesalePrice) : null,
         description: encodeInventoryDescription(formData.costPrice, formData.taxType, formData.description),
         sku: sanitizedSku,
         // An EAN-13 the shop does not use yet (lib/barcode.ts), not ten random digits.
@@ -2140,6 +2144,7 @@ const AddItemModal = ({ onClose, tenantId, branches }: any) => {
           </div>
 
           <ProductFormFields
+            showWholesalePrice={vertical === 'fabric_store'}
             idPrefix="add-item"
             tenantId={tenantId}
             formData={formData}
@@ -3798,7 +3803,7 @@ const EditItemModal = ({ onClose, tenantId, item, branches }: any) => {
   const { t } = useTranslation();
   const { dir } = useDirection();
   const { error: toastError, success: toastSuccess, handleError } = useToast();
-  const { inventoryCategories, isLegacyVertical } = useVerticalConfig();
+  const { inventoryCategories, isLegacyVertical, vertical } = useVerticalConfig();
   const categorySeed = useMemo(
     () =>
       isLegacyVertical
@@ -3836,6 +3841,7 @@ const EditItemModal = ({ onClose, tenantId, item, branches }: any) => {
     showInPos: item.show_in_pos !== false,
     supplierId: item.supplier_id || item.supplierId || "",
     openingBalance: item.opening_balance || item.openingBalance || 0,
+    wholesalePrice: Number(item.wholesalePrice ?? item.wholesale_price) || 0,
   });
 
   useEffect(() => {
@@ -3895,6 +3901,8 @@ const EditItemModal = ({ onClose, tenantId, item, branches }: any) => {
         fabric_width_cm: isFabricCategory(formData.category) && formData.fabricWidthCm > 0 ? formData.fabricWidthCm : null,
         min_threshold: formData.minThreshold,
         price_per_unit: formData.pricePerUnit,
+        // A fabric store's wholesale price; none = NULL (seen-open-verticals-task.md, wave 1).
+        wholesale_price: Number((formData as any).wholesalePrice) > 0 ? Number((formData as any).wholesalePrice) : null,
         description: encodeInventoryDescription(formData.costPrice, formData.taxType, formData.description),
         sku: formData.sku ? formData.sku.replace(/\D/g, '') : generateSKU(),
         barcode: formData.barcode,
@@ -3971,6 +3979,7 @@ const EditItemModal = ({ onClose, tenantId, item, branches }: any) => {
 
         <form onSubmit={handleUpdate} dir={dir} className="p-4 main-640:p-8 space-y-4 main-640:space-y-8 overflow-y-auto text-right">
           <ProductFormFields
+            showWholesalePrice={vertical === 'fabric_store'}
             idPrefix="edit-item"
             tenantId={tenantId}
             formData={formData}

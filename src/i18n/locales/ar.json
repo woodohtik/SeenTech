@@ -957,7 +957,13 @@
     "measurements_link_revoked": "أُلغي رابط المقاسات",
     "revoke_measurements_link": "إلغاء رابط المقاسات",
     "measurements_not_filled": "مقاسات غير معبّاة",
-    "no_measurements_yet": "ما فيه مقاسات محفوظة بعد."
+    "no_measurements_yet": "ما فيه مقاسات محفوظة بعد.",
+    "price_level": "مستوى السعر",
+    "price_level_retail": "تجزئة",
+    "price_level_wholesale": "جملة",
+    "credit_limit": "الحد الائتماني",
+    "credit_limit_hint": "اختياري: أقصى دين مسموح",
+    "credit_limit_exceeded": "هذا البيع يتجاوز الحد الائتماني للعميل ({{limit}})."
   },
   "dashboard": {
     "above_avg": "فوق المتوسط",
@@ -1733,7 +1739,10 @@
       "set_by_hand": "معدّل يدوياً",
       "total": "المجموع",
       "not_saved": "تمت إضافة السمة «{{name}}» لكن رصيدها الافتتاحي ما انحفظ. أضفه من الجرد."
-    }
+    },
+    "wholesale_price": "سعر الجملة",
+    "wholesale_price_per_meter": "سعر الجملة للمتر",
+    "wholesale_price_hint": "اختياري: لعملاء الجملة (الخياطين)"
   },
   "invoice_print": {
     "address": "العنوان",

@@ -39,6 +39,8 @@ export interface ProductFormFieldsData {
   fabricWidthCm: number;
   minThreshold: number;
   pricePerUnit: number;
+  /** Fabric stores (seen-open-verticals-task.md, wave 1): the wholesale price; 0 = none. */
+  wholesalePrice: number;
   costPrice: number;
   description: string;
   sku: string;
@@ -74,6 +76,8 @@ interface ProductFormFieldsProps {
   showOpeningBalance?: boolean;
   /** Shown under the opening balance (a product with variants: how it goes on them). */
   openingBalanceExtra?: React.ReactNode;
+  /** Show «سعر الجملة» (a fabric store). */
+  showWholesalePrice?: boolean;
   /** Add form only: picking a category resets the unit to that category default (roll / piece). */
   applyCategoryUnitDefaults?: boolean;
 }
@@ -90,6 +94,7 @@ export default function ProductFormFields({
   handleError,
   showOpeningBalance = true,
   openingBalanceExtra = null,
+  showWholesalePrice = false,
   applyCategoryUnitDefaults = false,
 }: ProductFormFieldsProps) {
   const { t } = useTranslation();
@@ -447,6 +452,25 @@ export default function ProductFormFields({
               )}
             />
           </div>
+
+          {showWholesalePrice && (
+            <div className="grid grid-rows-subgrid row-span-2 gap-y-2 col-span-1 main-720:col-span-6 text-right">
+              <label htmlFor={`${idPrefix}-wholesale-price`} className="text-sm font-black text-content-muted mx-1 block">
+                {t(isFabric ? "inventory.wholesale_price_per_meter" : "inventory.wholesale_price")}
+              </label>
+              <input
+                id={`${idPrefix}-wholesale-price`}
+                type="number"
+                step="0.01"
+                min="0"
+                inputMode="decimal"
+                value={formData.wholesalePrice || ""}
+                onChange={(e) => setFormData({ ...formData, wholesalePrice: e.target.value === "" ? 0 : Number(e.target.value) })}
+                placeholder={t("inventory.wholesale_price_hint")}
+                className="w-full h-12 px-5 bg-surface border border-border rounded-xl outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand font-semibold text-content text-right"
+              />
+            </div>
+          )}
 
           <div className="space-y-2 col-span-1 main-720:col-span-12 text-right">
             <label className="text-sm font-black text-content-muted uppercase mx-1 block">

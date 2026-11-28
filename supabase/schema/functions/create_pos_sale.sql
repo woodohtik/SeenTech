@@ -26,6 +26,8 @@ DECLARE
   v_catalog_price       numeric;
   v_variant_adjustment  numeric;
   v_variant_override    numeric;
+  v_wholesale_price     numeric;
+  v_wholesale_customer  boolean := false;
   v_conflicts           int := 0;
   v_prev_hash           text;
   v_invoice_hash        text;
@@ -137,12 +139,18 @@ BEGIN
   -- present and resolvable -- NOT on the client-declared type -- so a
   -- line mislabeled 'custom' while still pointing at a real catalog item
   -- cannot dodge catalog pricing.
+  -- seen-open-verticals-task.md, wave 1 (fabric stores): a wholesale customer
+  -- of this shop pays a product's wholesale price where it has one.
+  v_wholesale_customer := EXISTS (
+    SELECT 1 FROM public.customers
+     WHERE id = NULLIF(p_order->>'customer_id', '')::uuid AND tenant_id = v_tenant AND price_level = 'wholesale');
+
   FOR v_item IN SELECT * FROM jsonb_array_elements(p_items) LOOP
     IF NULLIF(v_item->>'item_id', '') IS NOT NULL THEN
       v_item_id := (v_item->>'item_id')::uuid;
       v_variant_id := NULLIF(v_item->>'variant_id', '')::uuid;
 
-      SELECT price_per_unit, tax_type INTO v_catalog_price, v_line_tax_type
+      SELECT price_per_unit, tax_type, wholesale_price INTO v_catalog_price, v_line_tax_type, v_wholesale_price
         FROM public.inventory_items
        WHERE id = v_item_id AND tenant_id = v_tenant;
       IF v_catalog_price IS NULL THEN
@@ -164,6 +172,9 @@ BEGIN
       END IF;
 
       v_effective_price := COALESCE(v_variant_override, v_catalog_price + COALESCE(v_variant_adjustment, 0));
+      IF v_wholesale_customer AND v_wholesale_price IS NOT NULL THEN
+        v_effective_price := v_wholesale_price;
+      END IF;
     ELSE
       -- true bespoke line: no catalog item_id at all, the tailor's own
       -- quoted price is authoritative, just validated non-negative.

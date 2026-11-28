@@ -957,7 +957,13 @@
     "measurements_link_revoked": "The measurements link was ended",
     "revoke_measurements_link": "End the measurements link",
     "measurements_not_filled": "Not filled",
-    "no_measurements_yet": "No measurements saved yet."
+    "no_measurements_yet": "No measurements saved yet.",
+    "price_level": "Price level",
+    "price_level_retail": "Retail",
+    "price_level_wholesale": "Wholesale",
+    "credit_limit": "Credit limit",
+    "credit_limit_hint": "Optional: the most they may owe",
+    "credit_limit_exceeded": "This sale goes past the customer's credit limit ({{limit}})."
   },
   "dashboard": {
     "above_avg": "Above Average",
@@ -1733,7 +1739,10 @@
       "set_by_hand": "set by hand",
       "total": "Total",
       "not_saved": "Variant \"{{name}}\" was added but its opening stock was not saved. Add it from a stock take."
-    }
+    },
+    "wholesale_price": "Wholesale price",
+    "wholesale_price_per_meter": "Wholesale price per metre",
+    "wholesale_price_hint": "Optional: for wholesale customers (tailors)"
   },
   "invoice_print": {
     "address": "Address",

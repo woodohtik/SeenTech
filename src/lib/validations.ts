@@ -36,6 +36,9 @@ export const customerSchema = z.object({
     message: t('validation.tax_number_format')
   }).optional().or(z.literal('')).nullable(),
   isB2B: z.boolean().optional().default(false),
+  // A fabric store's price level and credit limit (seen-open-verticals-task.md, wave 1).
+  priceLevel: z.enum(['retail', 'wholesale']).optional().default('retail'),
+  creditLimit: z.union([z.literal(''), z.coerce.number().min(0)]).optional().nullable(),
   address: z.string().optional(),
   city: z.string().optional(),
   latitude: z.number().optional(),

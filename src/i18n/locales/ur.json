@@ -957,7 +957,13 @@
     "revoke_measurements_link": "پیمائش کا لنک ختم کریں",
     "send_measurements_link": "پیمائش کا لنک بھیجیں",
     "measurements_not_filled": "خالی پیمائشیں",
-    "no_measurements_yet": "ابھی کوئی پیمائش محفوظ نہیں۔"
+    "no_measurements_yet": "ابھی کوئی پیمائش محفوظ نہیں۔",
+    "price_level": "قیمت کی سطح",
+    "price_level_retail": "پرچون",
+    "price_level_wholesale": "ہول سیل",
+    "credit_limit": "ادھار کی حد",
+    "credit_limit_hint": "اختیاری: زیادہ سے زیادہ ادھار",
+    "credit_limit_exceeded": "یہ فروخت گاہک کی ادھار کی حد ({{limit}}) سے زیادہ ہے۔"
   },
   "dashboard": {
     "above_avg": "اوسط سے زیادہ",
@@ -1733,7 +1739,10 @@
       "set_by_hand": "ہاتھ سے بدلا گیا",
       "total": "کل",
       "not_saved": "ویریئنٹ «{{name}}» شامل ہو گیا لیکن اس کا ابتدائی اسٹاک محفوظ نہیں ہوا۔ اسٹاک گنتی سے شامل کریں۔"
-    }
+    },
+    "wholesale_price": "ہول سیل قیمت",
+    "wholesale_price_per_meter": "ہول سیل قیمت فی میٹر",
+    "wholesale_price_hint": "اختیاری: ہول سیل گاہکوں (درزیوں) کے لیے"
   },
   "invoice_print": {
     "address": "پتہ",

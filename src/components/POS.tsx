@@ -1,5 +1,5 @@
+import { posLinePrice } from '../utils/posLinePrice';
 import { usePosLengthStep } from '../hooks/usePosLengthStep';
-import { effectiveVariantPrice } from '../utils/variantRows';
 import { ThermalInvoice, StandardInvoice, InvoiceData } from "./printing/InvoiceReceipt";
 import { useUnsavedWork } from '../lib/unsavedWork';
 import { contentReached } from '../lib/shellLayout';
@@ -173,6 +173,25 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
   useUnsavedWork('pos-cart', cart.length > 0);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
+  // seen-open-verticals-task.md, wave 1: a wholesale customer chosen after the
+  // lines were added -- the catalog lines take the price the server will charge.
+  useEffect(() => {
+    setCart((prev) => {
+      let changed = false;
+      const next = prev.map((line) => {
+        if (line.type !== 'ready_made' || !line.itemId) return line;
+        const item = inventory.find((i) => i.id === line.itemId);
+        if (!item) return line;
+        const variant = line.variantId ? (itemVariants[line.itemId] || []).find((v) => v.id === line.variantId) : undefined;
+        const price = posLinePrice(item as any, variant, selectedCustomer as any);
+        if (price === line.price) return line;
+        changed = true;
+        return { ...line, price };
+      });
+      return changed ? next : prev;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedCustomer?.id]);
   const [customerUnpaidBalance, setCustomerUnpaidBalance] = useState<number>(0);
   // seen-pos-debt-settlement: standalone debt breakdown/settlement, separate
   // from the new-sale checkout modal -- reachable even with an empty cart.
@@ -1087,8 +1106,8 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
         variantId: variant?.id,
         name: displayName,
         nameEn: item.nameEn,
-        // A variant's own price, or the product's (as create_pos_sale prices it).
-        price: variant ? effectiveVariantPrice(item.pricePerUnit, variant) : item.pricePerUnit,
+        // As create_pos_sale prices it: a wholesale customer's price, a variant's own, or the product's.
+        price: posLinePrice(item as any, variant, selectedCustomer as any),
         taxType: item.taxType || 'exclusive',
         image: variant?.imageUrl || item.mainImage || item.images?.[0] || '',
         quantity: isLength ? firstLengthQuantity(availableStock) : 1,
@@ -1362,6 +1381,14 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
          the sale twice, and any failure (including insufficient stock)
          rolls back the whole sale instead of leaving it half-written.
          -------------------------------------------------------------------- */
+      // A customer's credit limit (seen-open-verticals-task.md, wave 1): a warning, not a block --
+      // what this sale leaves unpaid plus what they already owe, past the limit.
+      const creditLimit = Number((selectedCustomer as any)?.credit_limit);
+      const leftUnpaid = Math.max(0, Number(totalAmount) - (Number(paidAmount) || 0));
+      if (creditLimit > 0 && leftUnpaid > 0 && customerUnpaidBalance + leftUnpaid > creditLimit) {
+        toastError(t('customers.credit_limit_exceeded', { limit: creditLimit.toFixed(2) }));
+      }
+
       const operationId = globalThis.crypto.randomUUID();
 
       const salePayload = {

@@ -1,3 +1,4 @@
+import { CustomerPriceLevelFields } from './customers/CustomerPriceLevelFields';
 import { canSeeMeasurements } from '../utils/measurementPrivacy';
 import { MeasurementSelector } from './measurements/MeasurementSelector';
 import { DialogDiv } from './ui/DialogFrame';
@@ -105,7 +106,7 @@ interface CustomersProps {
 }
 
 export default function Customers({ tenantId }: CustomersProps) {
-  const { capabilities: verticalCapabilities } = useVerticalConfig();
+  const { capabilities: verticalCapabilities, vertical } = useVerticalConfig();
   const { t, i18n } = useTranslation();
   // Unsupported browsers render VoiceMicButton as null -- without this
   // gate, IconInput's endIcon (array or single element) would still count
@@ -215,6 +216,8 @@ export default function Customers({ tenantId }: CustomersProps) {
       notes: '',
       isTest: false,
       isB2B: false,
+      priceLevel: 'retail',
+      creditLimit: '',
       address: '',
       city: '',
       measurements: {
@@ -263,6 +266,8 @@ export default function Customers({ tenantId }: CustomersProps) {
         ...c,
         isTest: c.is_test,
         isB2B: !!c.company_name,
+        priceLevel: c.price_level === 'wholesale' ? 'wholesale' : 'retail',
+        creditLimit: c.credit_limit == null ? '' : Number(c.credit_limit),
         companyName: c.company_name,
         trn: c.vat_number,
         createdAt: c.created_at,
@@ -408,6 +413,8 @@ export default function Customers({ tenantId }: CustomersProps) {
       trn, 
       isB2B, 
       isTest, 
+      priceLevel,
+      creditLimit,
       ...restData 
     } = data;
 
@@ -431,7 +438,10 @@ export default function Customers({ tenantId }: CustomersProps) {
       vat_number: trn ? trn : null,
       tenant_id: tenantId,
       updated_at: new Date().toISOString(),
-      is_test: !!isTest
+      is_test: !!isTest,
+      // A fabric store's price level and credit limit (seen-open-verticals-task.md, wave 1).
+      price_level: priceLevel === 'wholesale' ? 'wholesale' : 'retail',
+      credit_limit: Number(creditLimit) > 0 ? Number(creditLimit) : null,
     };
 
     if (!editingCustomer) {
@@ -491,7 +501,9 @@ export default function Customers({ tenantId }: CustomersProps) {
       longitude: customer.styles?.longitude ? Number(customer.styles.longitude) : undefined,
       companyName: customer.companyName || '',
       trn: customer.trn || '',
-      isTest: customer.isTest || false
+      isTest: customer.isTest || false,
+      priceLevel: ((customer as any).priceLevel === 'wholesale' ? 'wholesale' : 'retail') as 'retail' | 'wholesale',
+      creditLimit: (customer as any).creditLimit ?? '',
     };
     
     reset(formData);
@@ -1945,6 +1957,19 @@ export default function Customers({ tenantId }: CustomersProps) {
                 </div>
 
                 </>
+                )}
+
+                {vertical === 'fabric_store' && (
+                  <div className="mt-8 pt-8 border-t border-border">
+                    <CustomerPriceLevelFields
+                      priceLevel={(watch('priceLevel' as any) as 'retail' | 'wholesale') || 'retail'}
+                      creditLimit={watch('creditLimit' as any) as number | ''}
+                      onChange={(next) => {
+                        if (next.priceLevel !== undefined) setValue('priceLevel' as any, next.priceLevel as any, { shouldDirty: true });
+                        if (next.creditLimit !== undefined) setValue('creditLimit' as any, next.creditLimit as any, { shouldDirty: true });
+                      }}
+                    />
+                  </div>
                 )}
 
                 <div className="space-y-2 mb-8 mt-8 pt-8 border-t border-border">
