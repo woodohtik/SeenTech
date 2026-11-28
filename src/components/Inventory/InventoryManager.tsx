@@ -1,3 +1,4 @@
+import { ConvertToRemnantDialog, remnantAgeDays } from './ConvertToRemnantDialog';
 import { StatGrid } from '../ui/StatGrid';
 import { useDialogBehavior } from '../ui/DialogFrame';
 import { VariantThumbs } from './VariantThumbs';
@@ -55,6 +56,7 @@ import {
   Layout as LayoutIcon,
   ClipboardList,
   Upload,
+  Scissors,
 } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "../../lib/supabase/client";
@@ -138,7 +140,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
   const { currentStaff } = useStaff();
   const { hasPermission } = usePermissions(currentStaff);
   const { error: toastError, success: toastSuccess, warning: toastWarning, handleError } = useToast();
-  const { inventoryCategories, isLegacyVertical } = useVerticalConfig();
+  const { inventoryCategories, isLegacyVertical, vertical } = useVerticalConfig();
   // خريطة category_key -> label_ar جاهزة من إعدادات النشاط، لعرض فئات
   // الأنشطة الجديدة (لا يوجد لها مفتاح ترجمة inventory.category_* أصلاً).
   const categoryLabels = useMemo(
@@ -198,6 +200,9 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
   >("inventory");
   const [lowStockItems, setLowStockItems] = useState<any[]>([]);
   const [isLowStockOnly, setIsLowStockOnly] = useState(false);
+  // seen-open-verticals-task.md, wave 1 (fabric stores): remnants.
+  const [remnantsOnly, setRemnantsOnly] = useState(false);
+  const [remnantItem, setRemnantItem] = useState<any | null>(null);
 
   // Fetch Master Catalog
   const mapInventoryData = useCallback((d: any) => {
@@ -490,19 +495,21 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
       const totalStock = getTotalStock(item.id);
       const isLowStock = totalStock <= (item.minThreshold || 0);
       if (isLowStockOnly && !isLowStock) return false;
+      if (remnantsOnly && !item.remnant_of) return false;
       const matchesCategory =
         selectedCategory === "all" ||
         (isLegacyVertical ? item.category : item.category_key) === selectedCategory;
       return matchesCategory;
     };
 
+    const oldestFirst = (list: typeof items) => (remnantsOnly ? [...list].sort((x, y) => String(x.created_at).localeCompare(String(y.created_at))) : list);
     const exact = items.filter(
       (item) => matchesNonSearch(item) && item.name.toLowerCase().includes(searchTerm.toLowerCase())
     );
-    if (exact.length > 0 || !searchTerm.trim()) return exact;
+    if (exact.length > 0 || !searchTerm.trim()) return oldestFirst(exact);
 
     // Voice search may have mis-transcribed a letter in the item name.
-    return items.filter((item) => matchesNonSearch(item) && fuzzyIncludes(item.name, searchTerm));
+    return oldestFirst(items.filter((item) => matchesNonSearch(item) && fuzzyIncludes(item.name, searchTerm)));
     // getTotalStock reads branchStock via closure -- depend on branchStock
     // directly rather than the function reference, which is recreated every render.
   }, [items, branchStock, isLowStockOnly, searchTerm, selectedCategory, isLegacyVertical]);
@@ -667,6 +674,16 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
                 exit={{ height: 0, opacity: 0 }}
                 className="mb-6 overflow-hidden"
               >
+                {vertical === 'fabric_store' && (
+                  <button
+                    type="button"
+                    aria-pressed={remnantsOnly}
+                    onClick={() => setRemnantsOnly(!remnantsOnly)}
+                    className={cn("min-h-11 px-4 rounded-xl border text-sm font-bold", remnantsOnly ? "bg-brand text-white border-brand" : "bg-surface text-content border-border hover:border-brand")}
+                  >
+                    {t("inventory.remnant.filter")}
+                  </button>
+                )}
                 <button
                   onClick={() => setIsLowStockOnly(!isLowStockOnly)}
                   className={cn(
@@ -811,7 +828,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
                                 {tenantVariantsByItem[item.id].length} {t("inventory.variants.badge_suffix", "سمات")}
                               </span>
                             )}
-                            <VariantThumbs variants={tenantVariantsByItem[item.id]} />
+                            <VariantThumbs variants={tenantVariantsByItem[item.id]} />{item.remnant_of && <span className="text-sm font-bold px-1.5 py-0.5 rounded-full bg-surface-muted text-content-muted">{t("inventory.remnant.age", { days: remnantAgeDays(item.created_at) })}</span>}
                           </p>
                           <p className="text-sm font-bold text-content-muted uppercase">
                             SKU: {item.sku || "N/A"}
@@ -925,6 +942,19 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
                                       >
                                         <Plus size={16} />
                                         {t("inventory.stock_in")}
+                                      </button>
+                                    )}
+                                  </Menu.Item>
+                                )}
+                                {vertical === 'fabric_store' && isLengthItem(item) && !item.remnant_of && hasPermission("inventory.create") && (
+                                  <Menu.Item>
+                                    {({ active }) => (
+                                      <button
+                                        onClick={(e) => { e.stopPropagation(); setRemnantItem(item); }}
+                                        className={cn(active ? "bg-surface-muted text-content" : "text-content", "flex w-full items-center gap-2 rounded-xl px-4 py-3 text-sm font-bold")}
+                                      >
+                                        <Scissors size={16} />
+                                        {t("inventory.remnant.menu")}
                                       </button>
                                     )}
                                   </Menu.Item>
@@ -1189,7 +1219,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
                                       {tenantVariantsByItem[item.id].length} {t("inventory.variants.badge_suffix", "سمات")}
                                     </span>
                                   )}
-                                  <VariantThumbs variants={tenantVariantsByItem[item.id]} />
+                                  <VariantThumbs variants={tenantVariantsByItem[item.id]} />{item.remnant_of && <span className="text-sm font-bold px-1.5 py-0.5 rounded-full bg-surface-muted text-content-muted">{t("inventory.remnant.age", { days: remnantAgeDays(item.created_at) })}</span>}
                                 </p>
                                 <p className="text-sm font-bold text-content-muted uppercase">
                                   SKU: {item.sku || "N/A"}
@@ -1316,6 +1346,19 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
                                           >
                                             <Plus size={16} />
                                             {t("inventory.stock_in")}
+                                          </button>
+                                        )}
+                                      </Menu.Item>
+                                    )}
+                                    {vertical === 'fabric_store' && isLengthItem(item) && !item.remnant_of && hasPermission("inventory.create") && (
+                                      <Menu.Item>
+                                        {({ active }) => (
+                                          <button
+                                            onClick={(e) => { e.stopPropagation(); setRemnantItem(item); }}
+                                            className={cn(active ? "bg-surface-muted text-content" : "text-content", "flex w-full items-center gap-2 rounded-xl px-4 py-3 text-sm font-bold")}
+                                          >
+                                            <Scissors size={16} />
+                                            {t("inventory.remnant.menu")}
                                           </button>
                                         )}
                                       </Menu.Item>
@@ -1591,6 +1634,14 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
             onClose={() => setShowAddModal(false)}
             tenantId={tenantId}
             branches={branches}
+          />
+        )}
+        {remnantItem && (
+          <ConvertToRemnantDialog
+            item={remnantItem}
+            available={getTotalStock(remnantItem.id)}
+            onClose={() => setRemnantItem(null)}
+            onDone={() => router.refresh()}
           />
         )}
         {showEditModal && editingItem && (

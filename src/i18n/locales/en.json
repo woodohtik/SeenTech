@@ -1742,7 +1742,19 @@
     },
     "wholesale_price": "Wholesale price",
     "wholesale_price_per_meter": "Wholesale price per metre",
-    "wholesale_price_hint": "Optional: for wholesale customers (tailors)"
+    "wholesale_price_hint": "Optional: for wholesale customers (tailors)",
+    "remnant": {
+      "menu": "Make a remnant",
+      "title": "Make a remnant",
+      "available": "{{meters}} m in stock",
+      "meters": "Length (m)",
+      "price": "Price as a piece",
+      "convert": "Make a remnant",
+      "too_much": "Only {{meters}} m in stock.",
+      "done": "{{meters}} m made a remnant",
+      "filter": "Remnants",
+      "age": "{{days}} days old"
+    }
   },
   "invoice_print": {
     "address": "Address",

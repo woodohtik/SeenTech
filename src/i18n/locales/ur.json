@@ -1742,7 +1742,19 @@
     },
     "wholesale_price": "ہول سیل قیمت",
     "wholesale_price_per_meter": "ہول سیل قیمت فی میٹر",
-    "wholesale_price_hint": "اختیاری: ہول سیل گاہکوں (درزیوں) کے لیے"
+    "wholesale_price_hint": "اختیاری: ہول سیل گاہکوں (درزیوں) کے لیے",
+    "remnant": {
+      "menu": "بچا ہوا ٹکڑا بنائیں",
+      "title": "بچا ہوا ٹکڑا",
+      "available": "دستیاب {{meters}} میٹر",
+      "meters": "لمبائی (میٹر)",
+      "price": "ٹکڑے کی قیمت",
+      "convert": "بچا ہوا ٹکڑا بنائیں",
+      "too_much": "صرف {{meters}} میٹر دستیاب۔",
+      "done": "{{meters}} میٹر بچا ہوا ٹکڑا بن گیا",
+      "filter": "بچے ہوئے ٹکڑے",
+      "age": "{{days}} دن پرانا"
+    }
   },
   "invoice_print": {
     "address": "پتہ",

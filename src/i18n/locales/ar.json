@@ -1742,7 +1742,19 @@
     },
     "wholesale_price": "سعر الجملة",
     "wholesale_price_per_meter": "سعر الجملة للمتر",
-    "wholesale_price_hint": "اختياري: لعملاء الجملة (الخياطين)"
+    "wholesale_price_hint": "اختياري: لعملاء الجملة (الخياطين)",
+    "remnant": {
+      "menu": "حوّل لبواقي",
+      "title": "تحويل لبواقي",
+      "available": "المتوفر {{meters}} م",
+      "meters": "الطول (م)",
+      "price": "سعر القطعة",
+      "convert": "حوّل لبواقي",
+      "too_much": "المتوفر {{meters}} م فقط.",
+      "done": "تم تحويل {{meters}} م لبواقي",
+      "filter": "البواقي",
+      "age": "عمرها {{days}} يوم"
+    }
   },
   "invoice_print": {
     "address": "العنوان",

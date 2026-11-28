@@ -356,6 +356,10 @@ export interface ProductVariant {
 export type ProductTaxType = 'inclusive' | 'exclusive' | 'exempt';
 
 export interface InventoryItem {
+  /** A remnant: the fabric it was cut from, and its length (seen-open-verticals-task.md, wave 1). */
+  remnant_of?: string | null;
+  remnant_meters?: number | null;
+  created_at?: string;
   id: string;
   name: string;
   nameEn?: string; // English name for bilingual invoices
